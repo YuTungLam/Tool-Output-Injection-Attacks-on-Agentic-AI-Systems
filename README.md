@@ -1,4 +1,4 @@
-# Systematic Characterisation and Boundary-Aware Defence of Tool Output Injection in Agentic AI Systems
+# Trust-Boundary Characterisation and Runtime-Mediated Defence Against Tool-Output Injection in LLM Agents
 
 ## Executive Summary
 
@@ -69,6 +69,12 @@ The attacker in scope can control or influence one or more external data sources
 
 Out of scope are pure jailbreaks without any agent-tool interaction, training-time model poisoning, model extraction, direct runtime RCE against the host, and attacks that require compromising the cloud provider or API infrastructure. Those are important problems, but they are not needed to explain unauthorized control-flow changes induced by untrusted tool-side content. This scope discipline is important for the paper’s clarity and for venue fit: the contribution is a systems-security analysis of a specific trust boundary, not a general survey of all agent risks. 
 
+### Scope of MCP and Protocol-Mediated Analysis
+
+This project includes MCP-mediated tool outputs as one class of protocol-mediated carrier at the agent–tool boundary. The goal is to measure whether and how MCP-style result channels, structured content, execution-error outputs, embedded resources, and metadata-like fields allow untrusted tool-side data to influence privileged agent control objects.
+
+The project makes carrier-level claims about controlled runtime boundary crossing. It does not claim to provide a comprehensive security analysis of MCP as a protocol or ecosystem. Registry trust, OAuth flows, transport security, local server installation risks, production-client behaviour, and broad cross-client differences are outside the primary scope.
+
 ## Research Gap and Contribution Claims
 
 The security literature has established the problem’s foundations. Greshake et al. showed that indirect prompt injection lets attackers place malicious instructions inside data likely to be retrieved by an LLM-integrated application. Liu et al. then formalized prompt injection and benchmarked attacks and defenses systematically. In agent-specific settings, Zhan et al. introduced InjecAgent for tool-integrated agents; Debenedetti et al. introduced AgentDojo with realistic tasks, adaptive-attack support, and explicit security tests; and Zhang et al. broadened the frame with Agent Security Bench, showing vulnerabilities across tool use, prompt handling, and memory retrieval. [[5](#ref-5), [17](#ref-17), [18](#ref-18), [19](#ref-19), [20](#ref-20)]
@@ -83,16 +89,15 @@ The remaining systems question is therefore how untrusted tool-side content cros
 
 The thesis is organized around four research questions.
 
-**RQ1.** Which features of untrusted tool outputs most strongly increase **boundary crossing** from the data plane into the agent’s control plane? 
-This question focuses on payload-level features, authority cue, provenance claim, obfuscation, position, and latency to activation.
+**RQ1. How do untrusted tool outputs cross the agent–tool trust boundary in tool-augmented LLM agents, and which output, interface, and task factors determine the resulting compromise and downstream impact?**
 
-**RQ2.** How do interface and protocol choices—especially structured outputs, execution-error channels, embedded resources, and MCP-mediated invocation—change the rate and form of compromise? 
-This question is motivated directly by the MCP tools model, which supports multiple output channels and encourages clients to pass actionable errors back to the model for self-correction. [[7](#ref-7)]
+**RQ1a — Boundary-crossing factors.** Which tool-output features — including carrier channel, authority cue, provenance claim, payload position, obfuscation, and activation timing — most strongly predict boundary crossing from the data plane into the agent’s control plane?
 
-**RQ3.** How far do successful tool-output attacks propagate beyond the immediate step? 
-This includes follow-on tool switches, argument rewriting, memory contamination, delayed activation, and sensitive-sink reachability over long-horizon tasks.
+**RQ1b — Structured and protocol-mediated carriers.** How do structured fields, execution-error channels, embedded resources, and MCP-mediated tool outputs affect the rate and form of compromise? [[7](#ref-7)]
 
-**RQ4.** Which deployable, boundary-aware runtime controls reduce compromise most effectively while preserving benign task utility under adaptive attack? 
+**RQ1c — Propagation and persistence.** Once boundary crossing occurs, how far does contamination propagate into follow-on tool selection, tool-call arguments, memory state, delayed activation, and sensitive sink actions?
+
+**RQ2. Which boundary-aware runtime controls reduce boundary crossing and downstream impact while preserving benign task utility under adaptive attack?**
 This question explicitly compares simple filters to structural controls, because current guidance and recent empirical work suggest that impact-constraining design is more robust than trying to perfectly classify malicious strings. [[1](#ref-1), [2](#ref-2), [4](#ref-4), [13](#ref-13)]
 
 The core hypotheses are:
@@ -101,6 +106,8 @@ The core hypotheses are:
 - **H2.** Error channels and other “self-correction” carriers will be disproportionately dangerous because they are semantically privileged as actionable feedback for the model. [[7](#ref-7)]
 - **H3.** Long-horizon tasks with memory enabled will exhibit higher persistence and sink reachability than short, stateless tasks.
 - **H4.** Simple filters or “AI firewall” style defenses may perform well on weak benchmarks but will degrade under adaptive bypass, while combined boundary-aware controls will retain a better security–utility trade-off.
+
+H1 and H2 test RQ1a/RQ1b; H3 tests RQ1c; H4 tests RQ2.
 
 ### Contribution Set for the Paper
 
@@ -188,7 +195,7 @@ This factorization turns vague “prompt injection” into a set of measurable t
 | ---------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------- |
 | Pilot calibration            | validate traces, task oracles, factor schema, and labeling rules       | 6 tasks × representative payload conditions × 2–3 seeds, plus matched benign controls              | roughly 200–600 matched runs                              | BCR, TSD, ACR, label agreement     |
 | Screening factorial          | estimate dominant boundary-crossing factors and first-step propagation | D-optimal fractional factorial over payload factors, core tasks, and primary models                | roughly 6,000–10,000 matched runs                         | BCR, TSD, ACR, SR, CTC             |
-| Protocol/carrier study       | isolate direct-tool versus MCP-mediated channel effects                | direct vs MCP × text, JSON mirror, `structuredContent`, embedded resources, and `isError` carriers | roughly 1,000–2,000 matched runs                          | BCR, SR, TTC                       |
+| Protocol/carrier study       | measure carrier-level effects under matched direct/MCP surfaces                | direct vs MCP × text, JSON mirror, `structuredContent`, embedded resources, and `isError` carriers | roughly 1,000–2,000 matched runs                          | BCR, SR, TTC                       |
 | Propagation and persistence  | measure long-horizon contamination across memory and tool chains       | strongest attacks × long-horizon tasks × memory policies and activation timings                    | roughly 1,000–2,000 matched runs                          | PI, CTC, SR, TTC                   |
 | Adaptive defense and utility | compare enforcement layers under bounded adaptive pressure             | selected attack families × defense ablations × held-out seeds, with bounded adaptive search        | roughly 2,000–4,000 final runs plus bounded search trials | SR, UUD, TTC, CTC                  |
 | Flagship audit               | stress-test strongest models on high-risk cells                        | GPT-5.5 and Opus 4.8 on selected worst-case conditions only                                        | roughly 300–800 matched runs                              | robustness and defense interaction |
@@ -471,6 +478,7 @@ The pilot will validate the metric family and task generators. The core measurem
 | Budget overrun                    | flagship models can become expensive quickly                   | main sweep on mini/Sonnet/local models; flagship models only for confirmatory slices        |
 | Defense false positives           | strong defenses may cripple utility                            | explicitly optimize for a utility-security frontier, not only attack suppression            |
 | Protocol complexity               | MCP adds engineering and policy overhead                       | isolate MCP in a separate sub-study with the same underlying synthetic tasks                |
+| RQ2 prominence risk | MCP/protocol results may appear to imply broader protocol-security claims than the study supports | constrain RQ2 to carrier-level claims and add an explicit MCP scope statement |
 
 
 ### Open Questions and Assumptions
