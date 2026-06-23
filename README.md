@@ -6,7 +6,7 @@ The central claim is that tool output injection in LLM agents is best understood
 
 This project therefore asks a more precise question than “did the attack succeed?” It asks **where the first unsafe boundary crossing occurred**, **how contamination propagated**, and **which enforcement layers changed that trajectory at acceptable utility cost**. The proposed deliverables are a reproducible execution platform, a controlled adversarial tool server with both protocol-aware and non-protocol interfaces, a family of stage-resolved causal metrics, and a boundary enforcement architecture that mediates provenance, authority, memory writes, and sink actions. The thesis will extend the same agenda with a fuller literature review, additional ablations, broader model coverage, artefact documentation, and negative results that may not fit into the paper. [[2](#ref-2), [6](#ref-6), [7](#ref-7), [5](#ref-5)]
 
-The planned primary model set is a budget-aware trio: **OpenAI `gpt-5.4-mini`**, **Anthropic `claude-sonnet-4-6`**, and **Meta `Llama-3.3-70B-Instruct` via vLLM**. A higher-cost audit subset will test **`gpt-5.5`** and **`claude-opus-4-8`** on the most informative high-risk cells if access and budget allow. **Gemini 2.5 Pro** is treated as a stretch baseline. On the orchestration side, **LangGraph** will be the core runtime because it exposes explicit state, persistence, memory, and step-level tracing for long-running agents, while **LangChain** will be used mainly for provider abstraction and tool wrappers. On OpenAI, the implementation will use the **Responses API**, not the deprecated Assistants API. [[3](#ref-3), [8](#ref-8), [9](#ref-9), [10](#ref-10), [11](#ref-11)]
+The planned primary model set is a budget-aware trio: **OpenAI `gpt-5.4-mini`**, **Anthropic `claude-sonnet-4-6`**, and **Meta `Llama-3.3-70B-Instruct` via vLLM**. A higher-cost audit subset will test `**gpt-5.5`** and `**claude-opus-4-8**` on the most informative high-risk cells if access and budget allow. **Gemini 2.5 Pro** is treated as a stretch baseline. On the orchestration side, **LangGraph** will be the core runtime because it exposes explicit state, persistence, memory, and step-level tracing for long-running agents, while **LangChain** will be used mainly for provider abstraction and tool wrappers. On OpenAI, the implementation will use the **Responses API**, not the deprecated Assistants API. [[3](#ref-3), [8](#ref-8), [9](#ref-9), [10](#ref-10), [11](#ref-11)]
 
 This project is designed around the standards of a strong systems-security submission: a precise trust-boundary model, a nontrivial empirical artefact with causal metrics, and an enforcement design evaluated under adaptive attacks. The proposal therefore foregrounds empirical rigour, security metrics, architecture, and artefact quality without tying the thesis plan to a named venue.
 
@@ -106,8 +106,9 @@ The core hypotheses are:
 - **H2.** Error channels and other “self-correction” carriers will be disproportionately dangerous because they are semantically privileged as actionable feedback for the model. [[7](#ref-7)]
 - **H3.** Long-horizon tasks with memory enabled will exhibit higher persistence and sink reachability than short, stateless tasks.
 - **H4.** Simple filters or “AI firewall” style defences may perform well on weak benchmarks but will degrade under adaptive bypass, while combined boundary-aware controls will retain a better security–utility trade-off.
+- **H5.** Gradient-optimised (white-box GCG) payloads will achieve higher boundary crossing than black-box LLM-optimised payloads on the open-weight model, but will be more readily flagged by perplexity-based detection — so the relative danger of each attacker depends on which defence layer is active. [[30](#ref-30), [32](#ref-32)]
 
-H1 and H2 test RQ1a/RQ1b; H3 tests RQ1c; H4 tests RQ2.
+H1 and H2 test RQ1a/RQ1b; H3 tests RQ1c; H4 and H5 test RQ2.
 
 ### Contribution Set for the Paper
 
@@ -188,6 +189,22 @@ The task suite will contain **36 tasks** divided equally across three domains: i
 
 This factorisation turns vague “prompt injection” into a set of measurable treatment variables. It supports a sharper empirical claim than “some prompts work better than others”: the study can estimate which aspects of the tool-side channel most reliably cause boundary crossing, and whether protocol structure changes the distribution of those effects. [[1](#ref-1), [7](#ref-7), [12](#ref-12)]
 
+### Attack Generation: Three Strength Tiers
+
+Payload *content* is drawn from the factor table above; payload *generation* is treated as a separate, explicitly reported independent variable. This matters because current evidence shows defences that appear robust against fixed template attacks can degrade sharply under optimisation-based ones, and standard defence evaluations test almost exclusively against heuristic templates. Making attacker strength a factor lets the study estimate how much of a defence's measured robustness survives a stronger adversary. [[30](#ref-30), [33](#ref-33)]
+
+| Tier | Attacker knowledge | Generator | Applies to | Role in study |
+| ---- | ------------------ | --------- | ---------- | ------------- |
+| T1 — Templated | black-box, fixed | adversarial-server `payload_factory` over the factor levels | all models | baseline attack surface for the screening factorial |
+| T2 — Adaptive black-box | black-box, feedback-driven | LLM-driven payload optimiser (20 variants × 5 refinement rounds, held-out-seed eval) | all models, including hosted APIs | adaptive pressure where gradients are unavailable |
+| T3 — Gradient white-box (GCG) | white-box weights | Greedy Coordinate Gradient via `nanogcg`, suffix optimised against a declared malicious target | open-weight (Llama) path only, with transfer tested to hosted models | strongest-adversary confirmatory slice |
+
+**T3 rationale and scope.** GCG optimises an adversarial suffix using model gradients to maximise the probability of a target completion, so it requires white-box weight access and runs only on the open-weight Llama path; hosted models (GPT-5.x, Claude) expose no gradients and are instead covered by the T2 adaptive optimiser. [[30](#ref-30)] To bound cost, suffixes are optimised on a small surrogate (`Llama-3.1-8B-Instruct`) and their **transfer** to `Llama-3.3-70B-Instruct` and to the hosted models is measured as a reported outcome rather than assumed. [[30](#ref-30), [31](#ref-31)] The GCG objective targets a machine-checkable malicious action already instrumented by the metrics pipeline — for example, forcing the next tool call to POST the canary token to `attacker.example` — so the gradient target aligns directly with Sink Reachability and Argument Contamination rather than requiring a separate oracle.
+
+This tier is not only a feasibility choice. A white-box GCG attacker is a **realistic threat for locally deployed open-weight agents**: the adversary can obtain the same public weights and optimise against them offline, an adversary that is simply inexpressible against a closed hosted model. The tier also produces a security–utility contrast worth reporting — gradient suffixes are conspicuously high-perplexity and are frequently caught by perplexity-based detection, whereas the semantically natural T2 payloads evade such filters — so a defence's standing depends on which attacker it faces. [[32](#ref-32), [33](#ref-33)]
+
+Implementation note: GCG runs in a separate Hugging Face–transformers path with gradient access (vLLM is inference-only and exposes no gradients); optimised suffixes are then frozen and replayed through the standard serving pipeline like any other payload. Configuration lives in `configs/attacks/gcg.yaml`, with the optimiser in `src/adversarial_server/gcg_optimizer.py`. [[31](#ref-31)]
+
 ### Core Experiment Matrix
 
 
@@ -195,7 +212,7 @@ This factorisation turns vague “prompt injection” into a set of measurable t
 | ---------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------- |
 | Pilot calibration            | validate traces, task oracles, factor schema, and labelling rules      | 6 tasks × representative payload conditions × 2–3 seeds, plus matched benign controls              | roughly 200–600 matched runs                              | BCR, TSD, ACR, label agreement     |
 | Screening factorial          | estimate dominant boundary-crossing factors and first-step propagation | D-optimal fractional factorial over payload factors, core tasks, and primary models                | roughly 6,000–10,000 matched runs                         | BCR, TSD, ACR, SR, CTC             |
-| Protocol/carrier study       | measure carrier-level effects under matched direct/MCP surfaces                | direct vs MCP × text, JSON mirror, `structuredContent`, embedded resources, and `isError` carriers | roughly 1,000–2,000 matched runs                          | BCR, SR, TTC                       |
+| Protocol/carrier study       | measure carrier-level effects under matched direct/MCP surfaces        | direct vs MCP × text, JSON mirror, `structuredContent`, embedded resources, and `isError` carriers | roughly 1,000–2,000 matched runs                          | BCR, SR, TTC                       |
 | Propagation and persistence  | measure long-horizon contamination across memory and tool chains       | strongest attacks × long-horizon tasks × memory policies and activation timings                    | roughly 1,000–2,000 matched runs                          | PI, CTC, SR, TTC                   |
 | Adaptive defence and utility | compare enforcement layers under bounded adaptive pressure             | selected attack families × defence ablations × held-out seeds, with bounded adaptive search        | roughly 2,000–4,000 final runs plus bounded search trials | SR, UUD, TTC, CTC                  |
 | Flagship audit               | stress-test strongest models on high-risk cells                        | GPT-5.5 and Opus 4.8 on selected worst-case conditions only                                        | roughly 300–800 matched runs                              | robustness and defence interaction |
@@ -253,13 +270,13 @@ This design is intentionally broader than a single parser. A parser-only defence
 
 
 | Attack family                             | Provenance labelling | Schema extraction | Authority stripping | Memory quarantine | Sink guard | MCP policy     |
-| ----------------------------------------- | ------------------- | ----------------- | ------------------- | ----------------- | ---------- | -------------- |
-| Plain-text tool-result injection          | Partial             | Strong            | Strong              | Partial           | Partial    | Not applicable |
-| Structured free-text field attack         | Partial             | Moderate          | Strong              | Partial           | Partial    | Not applicable |
-| Tool-selection manipulation               | Partial             | Partial           | Moderate            | Weak              | Weak       | Partial        |
-| Delayed/memory activation                 | Weak                | Partial           | Moderate            | Strong            | Partial    | Weak           |
-| Remote MCP metadata / result attack       | Partial             | Moderate          | Strong              | Partial           | Partial    | Strong         |
-| Dangerous URL handoff through tool output | Partial             | Weak              | Weak                | Weak              | Strong     | Strong         |
+| ----------------------------------------- | -------------------- | ----------------- | ------------------- | ----------------- | ---------- | -------------- |
+| Plain-text tool-result injection          | Partial              | Strong            | Strong              | Partial           | Partial    | Not applicable |
+| Structured free-text field attack         | Partial              | Moderate          | Strong              | Partial           | Partial    | Not applicable |
+| Tool-selection manipulation               | Partial              | Partial           | Moderate            | Weak              | Weak       | Partial        |
+| Delayed/memory activation                 | Weak                 | Partial           | Moderate            | Strong            | Partial    | Weak           |
+| Remote MCP metadata / result attack       | Partial              | Moderate          | Strong              | Partial           | Partial    | Strong         |
+| Dangerous URL handoff through tool output | Partial              | Weak              | Weak                | Weak              | Strong     | Strong         |
 
 
 The coverage table is not intended to claim formal completeness. Its purpose is to make evaluation compositional and falsifiable. If one layer fails, the evaluation will make clear which other layer was expected to catch the remaining risk, rather than treating the defence as a monolithic guardrail. [[2](#ref-2), [6](#ref-6), [13](#ref-13)]
@@ -269,6 +286,8 @@ The coverage table is not intended to claim formal completeness. Its purpose is 
 The defence study will compare at least five conditions: no defence; a prompt-only baseline; a parser/filter baseline; selected single-component ablations; and the full boundary enforcement stack. The paper will evaluate both **security outcomes** and **utility outcomes**. Security outcomes are the metric family above. Utility outcomes are task success, latency, token cost, number of tool steps, and refusal/false-positive rates. Defences that suppress attacks by disabling useful tool use will be treated as low-utility baselines rather than successful mitigations.
 
 **Adaptive adversary setup.** The adaptive attacker will be a separate LLM-driven payload optimiser. For each task–model–defence cell it receives the task specification, a structured summary of previous failures, the visible defence behaviour, and the allowable payload-factor mutation space. It is given a fixed budget of **20 candidate variants** with up to **5 refinement rounds**, and it optimises a weighted objective favouring boundary crossing and sensitive-sink reachability while penalising obviously implausible outputs. Final evaluation is performed on held-out seeds, so the search budget and the confirmatory trial remain separated. This design keeps the evaluation adaptive without turning the paper into an uncontrolled red-team exercise. [[5](#ref-5), [13](#ref-13)]
+
+On the open-weight path this black-box optimiser is complemented by the white-box **GCG tier (T3)** defined in the Attack-Generation section, so the defence evaluation reports residual risk under both gradient-free and gradient-based optimisation. Reporting both is what lets the study speak to the "defences tested only against heuristic attacks" critique directly rather than by assertion. [[30](#ref-30), [33](#ref-33)]
 
 ## Artefact, Repository, and Thesis-to-Paper Packaging
 
@@ -298,7 +317,8 @@ agent-tool-boundary/
 │ │ └── memory_enabled.yaml
 │ ├── attacks/
 │ │ ├── payload_factors.yaml
-│ │ └── adaptive_search.yaml
+│ │ ├── adaptive_search.yaml
+│ │ └── gcg.yaml
 │ └── defences/
 │ ├── none.yaml
 │ ├── parser_only.yaml
@@ -335,6 +355,7 @@ agent-tool-boundary/
 │ ├── adversarial_server/
 │ │ ├── app.py
 │ │ ├── payload_factory.py
+│ │ ├── gcg_optimizer.py
 │ │ ├── templates/
 │ │ └── mcp_server/
 │ ├── tracing/
@@ -469,16 +490,16 @@ The pilot will validate the metric family and task generators. The core measurem
 ### Main Risks and Mitigations
 
 
-| Risk                              | Why it matters                                                 | Mitigation                                                                                  |
-| --------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Novelty risk                      | reviewers may say “this is another prompt-injection benchmark” | keep the paper centred on the trust boundary, causal metrics, and enforcement architecture |
-| Scope explosion                   | full factorial study can become too large                      | use a pilot, fractional design, and expensive-model audit subsets only                      |
-| Hosted-model drift                | vendor APIs can change behaviour during the study              | log exact model names/metadata, bound evaluation windows, keep a local open-weight anchor   |
-| High variance / low replayability | hosted APIs may not support strict deterministic replay        | use paired controls, repeated runs, mixed-effects models, and bootstrap CIs                 |
-| Budget overrun                    | flagship models can become expensive quickly                   | main sweep on mini/Sonnet/local models; flagship models only for confirmatory slices        |
-| Defence false positives           | strong defences may cripple utility                            | explicitly optimise for a utility-security frontier, not only attack suppression            |
-| Protocol complexity               | MCP adds engineering and policy overhead                       | isolate MCP in a separate sub-study with the same underlying synthetic tasks                |
-| RQ2 prominence risk | MCP/protocol results may appear to imply broader protocol-security claims than the study supports | constrain RQ2 to carrier-level claims and add an explicit MCP scope statement |
+| Risk                              | Why it matters                                                                                    | Mitigation                                                                                 |
+| --------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Novelty risk                      | reviewers may say “this is another prompt-injection benchmark”                                    | keep the paper centred on the trust boundary, causal metrics, and enforcement architecture |
+| Scope explosion                   | full factorial study can become too large                                                         | use a pilot, fractional design, and expensive-model audit subsets only                     |
+| Hosted-model drift                | vendor APIs can change behaviour during the study                                                 | log exact model names/metadata, bound evaluation windows, keep a local open-weight anchor  |
+| High variance / low replayability | hosted APIs may not support strict deterministic replay                                           | use paired controls, repeated runs, mixed-effects models, and bootstrap CIs                |
+| Budget overrun                    | flagship models can become expensive quickly                                                      | main sweep on mini/Sonnet/local models; flagship models only for confirmatory slices       |
+| Defence false positives           | strong defences may cripple utility                                                               | explicitly optimise for a utility-security frontier, not only attack suppression           |
+| Protocol complexity               | MCP adds engineering and policy overhead                                                          | isolate MCP in a separate sub-study with the same underlying synthetic tasks               |
+| RQ2 prominence risk               | MCP/protocol results may appear to imply broader protocol-security claims than the study supports | constrain RQ2 to carrier-level claims and add an explicit MCP scope statement              |
 
 
 ### Open Questions and Assumptions
@@ -488,6 +509,7 @@ The pilot will validate the metric family and task generators. The core measurem
 | ------------------------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
 | Exact access to GPT-5.5 and Claude Opus 4.8 | assume audit-only access                                                       | determines whether flagship audit is feasible                    |
 | Local GPU availability for Llama 3.3 70B    | assume access to at least one suitable multi-GPU or quantised setup            | affects reproducibility baseline                                 |
+| White-box compute for GCG suffix search     | assume suffixes optimised on an 8B surrogate and transferred to larger/hosted models | keeps the gradient-attack tier (T3) feasible without 70B backprop |
 | Inclusion of Gemini 2.5 Pro                 | treat as optional stretch                                                      | avoids blocking the thesis on one extra provider                 |
 | Deterministic replay for hosted APIs        | assume not guaranteed                                                          | motivates repeated paired runs and robust statistics             |
 | Final task corpus source                    | assume mostly synthetic tasks inspired by office, API, and retrieval workflows | avoids human-subject and live-service entanglement               |
@@ -561,3 +583,11 @@ The defence artefact will also avoid overclaiming. OpenAI, Anthropic, and NCSC a
 [28] Model Context Protocol. [Security best practices](https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices)
 
 [29] OpenAI. [Designing agents to resist prompt injection](https://openai.com/index/designing-agents-to-resist-prompt-injection/)
+
+[30] Zou et al. [Universal and Transferable Adversarial Attacks on Aligned Language Models](https://arxiv.org/abs/2307.15043) (arXiv:2307.15043, 2023) — the GCG algorithm; code at [llm-attacks/llm-attacks](https://github.com/llm-attacks/llm-attacks)
+
+[31] GraySwanAI. [nanoGCG: a fast, lightweight PyTorch implementation of GCG](https://github.com/GraySwanAI/nanoGCG) (`pip install nanogcg`)
+
+[32] Alon & Kamfonas. [Detecting Language Model Attacks with Perplexity](https://arxiv.org/abs/2308.14132) (arXiv:2308.14132, 2023)
+
+[33] Jain et al. [Baseline Defenses for Adversarial Attacks Against Aligned Language Models](https://arxiv.org/abs/2309.00614) (arXiv:2309.00614, 2023)
