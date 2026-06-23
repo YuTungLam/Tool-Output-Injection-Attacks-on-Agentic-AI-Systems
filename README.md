@@ -87,7 +87,7 @@ The remaining systems question is therefore how untrusted tool-side content cros
 
 ### Research Questions and Hypotheses
 
-The thesis is organised around four research questions.
+The thesis is organised around two main research questions, with three RQ1 subquestions.
 
 **RQ1. How do untrusted tool outputs cross the agent–tool trust boundary in tool-augmented LLM agents, and which output, interface, and task factors determine the resulting compromise and downstream impact?**
 
@@ -106,7 +106,7 @@ The core hypotheses are:
 - **H2.** Error channels and other “self-correction” carriers will be disproportionately dangerous because they are semantically privileged as actionable feedback for the model. [[7](#ref-7)]
 - **H3.** Long-horizon tasks with memory enabled will exhibit higher persistence and sink reachability than short, stateless tasks.
 - **H4.** Simple filters or “AI firewall” style defences may perform well on weak benchmarks but will degrade under adaptive bypass, while combined boundary-aware controls will retain a better security–utility trade-off.
-- **H5.** Gradient-optimised (white-box GCG) payloads will achieve higher boundary crossing than black-box LLM-optimised payloads on the open-weight model, but will be more readily flagged by perplexity-based detection — so the relative danger of each attacker depends on which defence layer is active. [[30](#ref-30), [32](#ref-32)]
+- **H5.** Gradient-optimised (white-box GCG) payloads are expected to provide a stronger white-box stress test on the open-weight model, but may be more readily flagged by perplexity-based detection — so the relative danger of each attacker depends on which defence layer is active. [[30](#ref-30), [32](#ref-32)]
 
 H1 and H2 test RQ1a/RQ1b; H3 tests RQ1c; H4 and H5 test RQ2.
 
@@ -283,7 +283,7 @@ The coverage table is not intended to claim formal completeness. Its purpose is 
 
 ### Defence Evaluation Plan
 
-The defence study will compare at least five conditions: no defence; a prompt-only baseline; a parser/filter baseline; selected single-component ablations; and the full boundary enforcement stack. The paper will evaluate both **security outcomes** and **utility outcomes**. Security outcomes are the metric family above. Utility outcomes are task success, latency, token cost, number of tool steps, and refusal/false-positive rates. Defences that suppress attacks by disabling useful tool use will be treated as low-utility baselines rather than successful mitigations.
+The defence study will compare at least six conditions: no defence; a prompt-only baseline; a parser/filter baseline; a perplexity-detector baseline; selected single-component ablations; and the full boundary enforcement stack. The paper will evaluate both **security outcomes** and **utility outcomes**. Security outcomes are the metric family above. Utility outcomes are task success, latency, token cost, number of tool steps, and refusal/false-positive rates. Defences that suppress attacks by disabling useful tool use will be treated as low-utility baselines rather than successful mitigations.
 
 **Adaptive adversary setup.** The adaptive attacker will be a separate LLM-driven payload optimiser. For each task–model–defence cell it receives the task specification, a structured summary of previous failures, the visible defence behaviour, and the allowable payload-factor mutation space. It is given a fixed budget of **20 candidate variants** with up to **5 refinement rounds**, and it optimises a weighted objective favouring boundary crossing and sensitive-sink reachability while penalising obviously implausible outputs. Final evaluation is performed on held-out seeds, so the search budget and the confirmatory trial remain separated. This design keeps the evaluation adaptive without turning the paper into an uncontrolled red-team exercise. [[5](#ref-5), [13](#ref-13)]
 
