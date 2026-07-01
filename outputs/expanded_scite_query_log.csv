@@ -1,0 +1,5 @@
+generated_at,source,query,result_summary,limitations
+2026-07-01,zotero_local_api_and_sqlite,Zotero local API users/0/items + SQLite immutable collection path fallback,"Extracted Zotero paper inventory, excluding notes/attachments; Zotero T1/T2/T3 folders were empty.",No Zotero writes performed. Provisional tiers are inferred outside Zotero.
+2026-07-01,scite,"Zotero DOI batches, limit=20",Matched most Zotero DOI-bearing papers in Scite by DOI; raw tally JSON was not returned.,Citation context ranges are carried over only where already threshold-estimated in previous pass.
+2026-07-01,scite,Zotero no-DOI title batches,"Recovered DOIs for no-DOI Zotero items including Toolformer, ReAct, MCP-Bench, MELON, AgentHarm, WebArena, Gorilla, and others.",Title matching can produce variant DOI records; verify before final citation.
+2026-07-01,scite,date_from=2026-05-01 date_to=2026-07-01; prompt injection / MCP / tool poisoning queries,"Added recent Scite candidates and watchlist records, including exact-phrase indirect prompt injection and MCP security hits.",Recent results are noisy and include low-quality venues; most should be skimmed before Zotero import.

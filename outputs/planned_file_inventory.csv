@@ -1,0 +1,24 @@
+group,path_or_file,purpose
+actual repo,README.md,research proposal source used for this deck
+actual repo,.gitattributes,repository metadata
+root,LICENSE; CITATION.cff; pyproject.toml,release metadata and packaging
+requirements,requirements/base.txt; dev.txt; hosted-models.txt,environment split
+configs/models,openai_gpt54mini; anthropic_sonnet46; llama33_70b_vllm; audit_models,model sweep and audit setup
+configs/agents,single_step; planner_executor; memory_enabled,agent runtime conditions
+configs/attacks,payload_factors; adaptive_search; gcg,attack factorisation and generation
+configs/defences,none; parser_only; sink_guard; full_boundary_enforcer,defence ablations
+docker,agent-runtime; adversarial-server; vllm; docker-compose,reproducible services
+src/runtime,graph; state; prompt_build; model_step; tool_dispatch; boundary_mediator; memory_commit; sink_guard,explicit boundary runtime
+src/providers,openai_client; anthropic_client; gemini_client; vllm_client; trace_normaliser,provider adapters
+src/tools,local_tools; http_tools; mcp_adapter; schemas,tool interfaces and schemas
+src/adversarial_server,app; payload_factory; gcg_optimizer; templates; mcp_server,controlled adversarial tools
+src/tracing,schema; exporters; parquet_writer,trace capture and export
+src/metrics,boundary_crossing; tool_divergence; argument_taint; memory_persistence; sink_reachability; utility,metric computation
+src/defences,provenance; extraction; authority_strip; memory_quarantine; sink_policy,runtime defence components
+src/analysis,stats_models; bootstrap; plots,statistical analysis
+datasets,tasks; tool_outputs_clean; tool_outputs_attack; splits,benchmark data
+experiments,pilot; core_measurement; persistence_protocol; defence_eval; flagship_audit,experiment phases
+notebooks,pilot_validation; main_results; defence_tradeoffs,analysis notebooks
+scripts,run_experiment; run_batch; export_artefact; anonymise_submission_bundle,experiment and release automation
+tests,unit; integration; regression; attack_replays; smoke,verification layers
+artefacts/docs/.github,paper; thesis; zenodo; disclosure; methodology; trace_schema; dataset_card; workflows,submission and documentation bundle
