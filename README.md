@@ -44,7 +44,7 @@ flowchart LR
  N --> O[Statistical Analysis]
 ```
 
-The attack surface extends beyond plain-text tool outputs. Recent work shows attacks through dynamic tool-using environments, malicious tool documents that alter tool selection, indirect prompt injection in web agents via HTML accessibility trees, and direct malicious content in tool results. MCP adds a standardised interface through which tools, schemas, and outputs can reach the model, and vendor documentation warns that remote MCP servers and connector outputs may carry prompt injections or dangerous URLs. The boundary model covers classic tool results and protocol-mediated interfaces. [[5](#ref-5), [6](#ref-6), [7](#ref-7), [12](#ref-12)]
+The attack surface extends beyond plain-text tool outputs. Recent work shows attacks through dynamic tool-using environments, malicious tool documents that alter tool selection, indirect prompt injection in web agents via HTML accessibility trees, and direct malicious content in tool results. MCP-focused work shows the same pattern at protocol level: malicious servers, tool descriptions, tool-selection channels, tool poisoning, false-error escalation, over-privileged tool capabilities, and multi-tool poisoning can all carry control influence. MCP standardises the path from tool-side metadata and results into agent context, so this thesis treats MCP as a concrete carrier of the agent-tool trust-boundary problem. [[5](#ref-5), [6](#ref-6), [7](#ref-7), [12](#ref-12), [34](#ref-34), [35](#ref-35), [36](#ref-36), [37](#ref-37), [41](#ref-41), [42](#ref-42), [44](#ref-44), [45](#ref-45)]
 
 ### Entry Points to Study
 
@@ -53,11 +53,14 @@ The attack surface extends beyond plain-text tool outputs. Recent work shows att
 | Tool result body                                  | search snippet, file text, API response message     | direct indirect-prompt-injection surface                           | Yes              |
 | Structured free-text field                        | JSON `summary`, `notes`, `error`                    | “structured output” still contains natural-language authority cues | Yes              |
 | Tool catalogue / tool description                 | malicious tool document or capability description   | can bias retrieval or selection before execution                   | Yes              |
+| Cross-tool or distributed tool-description poisoning | mutually benign-looking descriptions that reconstruct a malicious instruction | tests whether poisoning can be split across tools and planning context | Exploratory      |
+| Operational-feedback carrier                      | execution error, warning, policy note, permission message | models may treat feedback-like text as action-guiding context      | Yes              |
+| Over-privileged tool choice                        | high-authority tool selected when a lower-privilege tool would suffice | links prompt injection to least-privilege failure                  | Secondary metric |
 | MCP tool metadata and runtime result              | remote server schema, labels, output payloads, URLs | protocol mediation may reduce or relocate risk                     | Yes              |
 | Browser-rendered or accessibility-derived content | hidden instructions in HTML / rendered page         | relevant to web-style tool agents                                  | Yes              |
 | Persisted memory / retrieved prior state          | tainted note that activates later                   | captures delayed compromise and persistence                        | Yes              |
 
-These entry points follow existing benchmark, attack, and vendor documentation. AgentDojo studies tool-using agents over untrusted data; the NDSS tool-selection paper studies malicious tool documents; a recent web-agent paper studies HTML accessibility-tree injection; OpenAI and Anthropic document tool and MCP interfaces as routes through which external content reaches the model. [[5](#ref-5), [6](#ref-6), [7](#ref-7)]
+These entry points follow existing benchmark, attack, and vendor documentation. AgentDojo studies tool-using agents over untrusted data; the NDSS tool-selection paper studies malicious tool documents; recent MCP benchmarks and datasets study MCP-specific servers, tools, and poisoning channels; and vendor documentation treats tool and MCP interfaces as routes through which external content reaches the model. [[5](#ref-5), [6](#ref-6), [7](#ref-7), [34](#ref-34), [35](#ref-35), [36](#ref-36), [37](#ref-37), [40](#ref-40)]
 
 ### Threat Model
 
@@ -75,9 +78,9 @@ The security literature has established the problem’s foundations. Greshake et
 
 Defence work has also progressed, but it is still fragmented. Hines et al. proposed Spotlighting, a provenance-marking prompt-engineering defence; Chen et al. proposed StruQ, which separates prompt and data into structured channels; Liu et al. proposed DataSentinel, a game-theoretic detector for adaptive prompt injection; Zhu et al. proposed MELON, which detects attacks through masked re-execution and action comparison; Yu et al. proposed tool-result parsing; and Beurer-Kellner et al. argued for structural design patterns that constrain what an agent may do after ingesting untrusted input. Practitioner guidance from OWASP, NCSC, OpenAI, Microsoft, and the MCP project increasingly converges on the same systems lesson: filtering alone is not enough; the architecture must constrain the **impact** of manipulation even when some malicious inputs are missed. [[1](#ref-1), [12](#ref-12), [21](#ref-21), [22](#ref-22), [23](#ref-23), [24](#ref-24), [25](#ref-25), [26](#ref-26), [27](#ref-27), [28](#ref-28), [29](#ref-29)]
 
-MCP raises the stakes. The MCP tools specification makes tools model-controlled, allows tool results to include free text, structured content, resource links, embedded resources, and execution errors, and says clients should validate tool results before passing them to the LLM. It also treats tool annotations as untrusted unless they come from trusted servers, and recommends user confirmation for sensitive operations and audit logging. The architecture standardises context exchange without dictating how hosts use LLMs or manage provided context, leaving boundary management to the application. [[7](#ref-7), [28](#ref-28)]
+MCP raises the stakes because it makes tool discovery, schemas, metadata, resources, execution errors, and remote server behaviour part of the agent interface. Recent MCP security work establishes the core fact: MCP-mediated systems are vulnerable to malicious servers, tool poisoning, tool-description attacks, false-error escalation, safety benchmark failures, ecosystem-scale exposure, and policy or integrity gaps. The remaining systems problem is runtime boundary control: where untrusted tool-side content first becomes privileged control flow, how it propagates across tools, planning context, memory, and sinks, and which controls preserve useful agent behaviour under adaptive attack. [[7](#ref-7), [28](#ref-28), [34](#ref-34), [35](#ref-35), [36](#ref-36), [38](#ref-38), [39](#ref-39), [40](#ref-40)]
 
-The open systems question is how untrusted tool-side content crosses the agent–tool trust boundary and becomes privileged control flow. Existing work demonstrates indirect prompt injection, offers broad benchmarks, and proposes point defences. The stage-resolved boundary mechanism remains under-characterised: which tool-response features cause control-plane contamination, how that contamination propagates through memory and later actions, and which boundary-aware runtime controls retain utility under adaptive attack. [[1](#ref-1), [5](#ref-5), [7](#ref-7), [12](#ref-12), [17](#ref-17), [18](#ref-18), [19](#ref-19), [20](#ref-20), [25](#ref-25), [29](#ref-29)]
+This thesis contributes a stage-resolved measurement and defence framework for that problem. It complements benchmarks and MCP attack papers by measuring first unsafe boundary crossing, downstream propagation, and defence utility in matched clean-versus-attack traces. The result is a runtime-level account of compromise, not another catalogue of prompt-injection strings. [[1](#ref-1), [5](#ref-5), [7](#ref-7), [12](#ref-12), [17](#ref-17), [18](#ref-18), [19](#ref-19), [20](#ref-20), [25](#ref-25), [29](#ref-29), [34](#ref-34), [35](#ref-35), [36](#ref-36), [37](#ref-37), [38](#ref-38), [41](#ref-41)]
 
 ### Research Questions and Hypotheses
 
@@ -85,11 +88,11 @@ The thesis is organised around two main research questions, with three RQ1 subqu
 
 **RQ1. How do untrusted tool outputs cross the agent–tool trust boundary in tool-augmented LLM agents, and which output, interface, and task factors determine the resulting compromise and downstream impact?**
 
-**RQ1a — Boundary-crossing factors.** Which tool-output features — including carrier channel, authority cue, provenance claim, payload position, obfuscation, and activation timing — most strongly predict boundary crossing from the data plane into the agent’s control plane?
+**RQ1a — Boundary-crossing factors.** Which tool-output features — including carrier channel, authority cue, provenance claim, payload position, obfuscation, activation timing, tool-description placement, and cross-tool distribution — most strongly predict boundary crossing from the data plane into the agent’s control plane?
 
-**RQ1b — Structured and protocol-mediated carriers.** How do structured fields, execution-error channels, embedded resources, and MCP-mediated tool outputs affect the rate and form of compromise? [[7](#ref-7)]
+**RQ1b — Structured, feedback-like, and protocol-mediated carriers.** How do structured fields, execution-error channels, warning or policy-like messages, embedded resources, tool metadata, and MCP-mediated tool outputs affect the rate and form of compromise? [[7](#ref-7), [36](#ref-36)]
 
-**RQ1c — Propagation and persistence.** Once boundary crossing occurs, how far does contamination propagate into follow-on tool selection, tool-call arguments, memory state, delayed activation, and sensitive sink actions?
+**RQ1c — Propagation and persistence.** Once boundary crossing occurs, how far does contamination propagate into follow-on tool selection, tool-call arguments, planning context, memory state, delayed activation, cross-tool influence, and sensitive sink actions?
 
 **RQ2. Which boundary-aware runtime controls reduce boundary crossing and downstream impact while preserving benign task utility under adaptive attack?**
 RQ2 compares simple filters with structural controls because current guidance and empirical work favour impact-constraining design over perfect malicious-string classification. [[1](#ref-1), [2](#ref-2), [4](#ref-4), [13](#ref-13)]
@@ -97,12 +100,13 @@ RQ2 compares simple filters with structural controls because current guidance an
 The core hypotheses are:
 
 - **H1.** Free-text tool results with authority cues and plausible provenance claims will produce substantially higher boundary crossing than schema-validated structured outputs parsed through a constrained interface.
-- **H2.** Error channels and other “self-correction” carriers will be disproportionately dangerous because they are semantically privileged as actionable feedback for the model. [[7](#ref-7)]
+- **H2.** Operational-feedback carriers, including execution errors, warning or policy-like messages, permission text, and planner-visible tool metadata, will produce higher boundary crossing and propagation than equivalent low-authority data fields because agents treat them as action-guiding context. [[7](#ref-7), [36](#ref-36)]
 - **H3.** Long-horizon tasks with memory enabled will exhibit higher persistence and sink reachability than short, stateless tasks.
 - **H4.** Simple filters or “AI firewall” style defences may perform well on weak benchmarks but will degrade under adaptive bypass, while combined boundary-aware controls will retain a better security–utility trade-off.
-- **H5.** Gradient-optimised (white-box GCG) payloads are expected to provide a stronger white-box stress test on the open-weight model, but may be more readily flagged by perplexity-based detection — so the relative danger of each attacker depends on which defence layer is active. [[30](#ref-30), [32](#ref-32)]
+- **H5.** Gradient-optimised (white-box GCG) payloads are expected to provide a stronger white-box stress test on the open-weight model, while perplexity-based detection will reveal whether stronger optimisation also makes attacks easier to flag. [[30](#ref-30), [32](#ref-32)]
+- **H6.** Multi-tool or cross-tool poisoning will have different detectability and propagation profiles from single-output injection because malicious influence can be distributed across tool descriptions, planning context, and later reconstruction triggers. [[41](#ref-41), [46](#ref-46)]
 
-H1 and H2 test RQ1a/RQ1b; H3 tests RQ1c; H4 and H5 test RQ2.
+H1 and H2 test RQ1a/RQ1b; H3 tests RQ1c; H4 and H5 test RQ2; H6 is evaluated in the pilot and promoted to the main matrix when cross-tool contamination produces measurable signal.
 
 ### Contribution Set for the Paper
 
@@ -170,10 +174,12 @@ The task suite will contain **36 tasks** divided equally across three domains: i
 | Authority cue     | none, user-style suggestion, developer-style note, system/security-style directive               | operationalises authority confusion                             |
 | Provenance cue    | unknown external source, partner API, “internal trusted source,” remote MCP connector            | tests whether trust labels amplify compromise                   |
 | Placement         | top-level body, nested field, metadata, error message, hidden/indirect text                      | identifies where mediation must occur                           |
+| Tool relationship | single-tool payload, cross-tool influence, multi-tool distributed payload                        | tests whether poisoning can be split across tool descriptions or reconstructed later |
+| Privilege context | no lower-privilege alternative, lower-privilege alternative available, transient failure then retry | tests whether agents escalate to overly powerful tools          |
 | Obfuscation       | none, instruction splitting, Unicode confusables, benign rationale wrapping                      | tests adaptive attacker flexibility                             |
 | Activation timing | immediate, after memory write, after later tool availability                                     | measures persistence and delayed compromise                     |
 
-This factorisation turns prompt injection into measurable treatment variables. It supports estimates of which tool-side channel features cause boundary crossing most reliably, and whether protocol structure changes the distribution of those effects. [[1](#ref-1), [7](#ref-7), [12](#ref-12)]
+This factorisation turns prompt injection into measurable treatment variables. It supports estimates of which tool-side channel features cause boundary crossing most reliably, whether protocol structure changes the distribution of those effects, and whether tool selection fails by choosing more privilege than the task requires. [[1](#ref-1), [7](#ref-7), [12](#ref-12), [36](#ref-36), [41](#ref-41), [42](#ref-42)]
 
 ### Attack Generation: Three Strength Tiers
 
@@ -218,9 +224,10 @@ The core design is **fractional**. That keeps the study ambitious and thesis-fea
 | **Time-to-Compromise** (**TTC**)          | Minimum post-injection step until first `cross_r`, persistent memory contamination, or sensitive-sink reachability; right-censored at the task horizon for survival analysis.                                            |
 | **Utility under Defence** (**UUD**)       | `UUD = Success(defence, benign) / Success(no_defence, benign)` with companion reports for absolute benign success, latency overhead, token overhead, and human-approval rate.                                            |
 | **Cross-Tool Contamination** (**CTC**)    | `CTC = (1/N) Σ I(cross_tool_r)`, where `cross_tool_r = 1` if taint entering through one tool later appears in a different tool’s selected call, argument field, result-dependent decision, or sink pathway.              |
+| **Privileged Tool Selection Rate** (**PTSR**) | `PTSR = (1/N) Σ I(overprivileged_tool_r)`, where `overprivileged_tool_r = 1` if the agent selects a higher-privilege tool when a lower-privilege sufficient tool is available, including after transient failures.       |
 | **Confidence intervals**                  | 95% **clustered BCa bootstrap** confidence intervals, clustered at minimum by task and model; model-based intervals from the fitted mixed-effects models are reported as secondary confirmation.                         |
 
-Metric computation relies **primarily on structured traces and environment state**. The adversarial tool server injects payload IDs, declared malicious targets, and attack-intent labels into experiment metadata so that contamination can be detected deterministically wherever possible. If the attacker wants the agent to POST data to `attacker.example`, argument contamination is satisfied when the next tool arguments contain that endpoint or the designated exfiltration token. If the attacker wants delayed activation, the metric depends on tainted memory being written and later consumed. [[5](#ref-5), [13](#ref-13)]
+Metric computation relies **primarily on structured traces and environment state**. The adversarial tool server injects payload IDs, declared malicious targets, and attack-intent labels into experiment metadata so that contamination can be detected deterministically wherever possible. If the attacker wants the agent to POST data to `attacker.example`, argument contamination is satisfied when the next tool arguments contain that endpoint or the designated exfiltration token. If the attacker wants delayed activation, the metric depends on tainted memory being written and later consumed. If the attacker induces tool escalation, PTSR compares the chosen tool against a task-level least-privilege oracle. [[5](#ref-5), [13](#ref-13), [42](#ref-42)]
 
 ### Statistical Plan
 
@@ -243,8 +250,11 @@ The defence design assumes missed injections and limits impact through runtime c
 | Sink guard                    | pre-action verification for sensitive sinks such as external POST, email, file write, shell                    | exfiltration and unauthorised side effects                     | moderate         |
 | Cross-check / dual execution  | for certain high-risk sinks, require confirmation by a second policy or extraction path                        | single-point model failure at critical actions                 | moderate to high |
 | MCP policy adapter            | allowlist official servers, strip dangerous URL fields, require approvals for risky tools, log server metadata | remote MCP server and connector risk                           | low to moderate  |
+| Isolated planning             | hide or quarantine tool-description text from the planner until a low-risk plan is formed                      | cross-tool description poisoning and planner contamination      | moderate         |
+| Trusted description generation | derive tool descriptions from implementation or trusted metadata rather than server-provided prose             | explicit and implicit tool-description poisoning                | moderate         |
+| Capability and privilege audit | pre-scan MCP servers/tools for file, network, command, or high-authority capabilities and enforce least privilege | over-privileged tool exposure and unsafe escalation             | low to moderate  |
 
-Boundary defence combines parsing with provenance, memory, and sink controls. A parser-only condition remains in the evaluation as a baseline reflecting recent tool-result parsing work. [[6](#ref-6), [7](#ref-7), [12](#ref-12)]
+Boundary defence combines parsing with provenance, memory, planning, capability, and sink controls. A parser-only condition remains in the evaluation as a baseline reflecting recent tool-result parsing work. Isolated-planning and trusted-description variants test whether planning isolation and description hardening reduce tool-description poisoning. [[6](#ref-6), [7](#ref-7), [12](#ref-12), [41](#ref-41), [43](#ref-43), [44](#ref-44)]
 
 ### Coverage View
 
@@ -253,6 +263,8 @@ Boundary defence combines parsing with provenance, memory, and sink controls. A 
 | Plain-text tool-result injection          | Partial              | Strong            | Strong              | Partial           | Partial    | Not applicable |
 | Structured free-text field attack         | Partial              | Moderate          | Strong              | Partial           | Partial    | Not applicable |
 | Tool-selection manipulation               | Partial              | Partial           | Moderate            | Weak              | Weak       | Partial        |
+| Cross-tool description poisoning           | Partial              | Partial           | Moderate            | Weak              | Weak       | Partial        |
+| Over-privileged tool selection             | Partial              | Weak              | Weak                | Weak              | Strong     | Strong         |
 | Delayed/memory activation                 | Weak                 | Partial           | Moderate            | Strong            | Partial    | Weak           |
 | Remote MCP metadata / result attack       | Partial              | Moderate          | Strong              | Partial           | Partial    | Strong         |
 | Dangerous URL handoff through tool output | Partial              | Weak              | Weak                | Weak              | Strong     | Strong         |
@@ -261,7 +273,7 @@ The coverage table turns a layered design into falsifiable expectations. When a 
 
 ### Defence Evaluation Plan
 
-The evaluation compares at least six conditions: no defence; a prompt-only baseline; a parser/filter baseline; a perplexity-detector baseline; selected single-component ablations; and the full boundary defence stack. Security outcomes use the metric family above. Utility outcomes include task success, latency, token cost, number of tool steps, and refusal/false-positive rates. Controls that suppress attacks by disabling useful tool use count as low-utility baselines.
+The evaluation compares eight conditions: no defence; a prompt-only baseline; a parser/filter baseline; a perplexity-detector baseline; isolated planning; least-privilege tool authorization; selected single-component ablations; and the full boundary defence stack. Security outcomes use the metric family above. Utility outcomes include task success, latency, token cost, number of tool steps, and refusal/false-positive rates. Controls that suppress attacks by disabling useful tool use count as low-utility baselines.
 
 **Adaptive adversary setup.** The adaptive attacker will be a separate LLM-driven payload optimiser. For each task–model–defence cell it receives the task specification, a structured summary of previous failures, visible defence behaviour, and the allowable payload-factor mutation space. It is given a fixed budget of **20 candidate variants** with up to **5 refinement rounds**, and it optimises a weighted objective favouring boundary crossing and sensitive-sink reachability while penalising implausible outputs. Final evaluation is performed on held-out seeds, keeping the search budget and confirmatory trial separated. [[5](#ref-5), [13](#ref-13)]
 
@@ -561,3 +573,29 @@ The artefact and paper will describe the system as **risk-reducing boundary defe
 [32] Alon & Kamfonas. [Detecting Language Model Attacks with Perplexity](https://arxiv.org/abs/2308.14132) (arXiv:2308.14132, 2023)
 
 [33] Jain et al. [Baseline Defenses for Adversarial Attacks Against Aligned Language Models](https://arxiv.org/abs/2309.00614) (arXiv:2309.00614, 2023)
+
+[34] Song et al. [Beyond the Protocol: Unveiling Attack Vectors in the Model Context Protocol (MCP) Ecosystem](https://doi.org/10.1109/tse.2026.3694876) (IEEE Transactions on Software Engineering, 2026); arXiv version: <https://arxiv.org/abs/2506.02040>
+
+[35] Wang et al. [MCPTox: A Benchmark for Tool Poisoning on Real-World MCP Servers](https://doi.org/10.1609/aaai.v40i42.40895) (AAAI, 2026); arXiv version: <https://arxiv.org/abs/2508.14925>
+
+[36] Zhang et al. [MCP Security Bench (MSB): Benchmarking Attacks Against Model Context Protocol in LLM Agents](https://arxiv.org/abs/2510.15994) (ICLR 2026 record in Zotero; verify final venue metadata before submission)
+
+[37] Shi et al. [Prompt Injection Attack to Tool Selection in LLM Agents](https://doi.org/10.14722/ndss.2026.230675) (NDSS, 2026); arXiv version: <https://arxiv.org/abs/2504.19793>
+
+[38] He et al. [Automatic Red Teaming LLM-Based Agents With Model Context Protocol Tools](https://doi.org/10.1109/tifs.2026.3691201) (IEEE Transactions on Information Forensics and Security, 2026); arXiv version: <https://arxiv.org/abs/2509.21011>
+
+[39] Jing et al. [MCIP: Protecting MCP Safety via Model Contextual Integrity Protocol](https://doi.org/10.18653/v1/2025.emnlp-main.62) (EMNLP, 2025); arXiv version: <https://arxiv.org/abs/2505.14590>
+
+[40] Lin et al. [A Large-Scale Evolvable Dataset for Model Context Protocol Ecosystem and Security Analysis](https://doi.org/10.1109/ase63991.2025.00356) (ASE, 2025); arXiv version: <https://arxiv.org/abs/2506.23474>
+
+[41] Shi et al. [Think Twice Before You Act: Protecting LLM Agents Against Tool Description Poisoning via Isolated Planning](https://arxiv.org/abs/2606.20922) (arXiv, 2026)
+
+[42] Yang et al. [When Lower Privileges Suffice: Investigating Over-Privileged Tool Selection in LLM Agents](https://arxiv.org/abs/2606.20023) (arXiv, 2026)
+
+[43] Ye et al. [TRUSTDESC: Preventing Tool Poisoning in LLM Applications via Trusted Description Generation](https://doi.org/10.48550/arxiv.2604.07536) (arXiv, 2026)
+
+[44] Huang et al. [Auditing MCP Servers for Over-Privileged Tool Capabilities](https://doi.org/10.48550/arxiv.2603.21641) (arXiv, 2026)
+
+[45] Bhatt et al. [ETDI: Mitigating Tool Squatting and Rug Pull Attacks in Model Context Protocol (MCP) by Using OAuth-Enhanced Tool Definitions and Policy-Based Access Control](https://doi.org/10.1109/cars67163.2025.11337310) (IEEE CARS, 2025; verify final paper before core citation)
+
+[46] Liu et al. [ShareLock: A Stealthy Multi-Tool Threshold Poisoning Attack Against MCP](https://arxiv.org/abs/2606.27027) (arXiv, 2026)
