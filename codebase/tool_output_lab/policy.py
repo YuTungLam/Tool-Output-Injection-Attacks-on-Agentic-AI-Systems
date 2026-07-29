@@ -1,17 +1,21 @@
-"""Scripted policy test doubles and the seam for a future real model adapter."""
+"""Scripted controls and the shared policy seam used by real model adapters."""
 
 from __future__ import annotations
 
-from typing import Mapping, Protocol
+from typing import Protocol
 
-from .domain import Decision, PolicyInput, SinkAction
+from .domain import Decision, PolicyInput, PolicyProfile, SinkAction
+from .utils import sha256_text
+
+SCRIPTED_SYSTEM_PROMPT_HASH = sha256_text("scripted-policy-no-system-prompt")
 
 
 class AgentPolicy(Protocol):
-    """Minimal interface that a future LLM-backed policy must implement."""
+    """Minimal interface implemented by scripted and model-backed policies."""
 
     policy_id: str
     version: str
+    profile: PolicyProfile
 
     def decide(self, policy_input: PolicyInput) -> Decision:
         """Return an observable decision without receiving the condition label."""
@@ -22,6 +26,22 @@ class ScriptedVulnerablePolicy:
 
     policy_id = "scripted-vulnerable-policy"
     version = "1.0"
+    profile = PolicyProfile(
+        policy_id=policy_id,
+        policy_version=version,
+        runtime_kind="scripted_control",
+        evidence_scope="instrumentation_validation",
+        real_model_configured=False,
+        provider_id=None,
+        model_id=None,
+        model_version=None,
+        sdk_name=None,
+        sdk_version=None,
+        api_version=None,
+        sampling_parameters={},
+        system_prompt_hash=SCRIPTED_SYSTEM_PROMPT_HASH,
+        model_tool_schema_hash=None,
+    )
 
     def decide(self, policy_input: PolicyInput) -> Decision:
         tool_payload = policy_input.tool_payload
@@ -51,6 +71,22 @@ class ScriptedSafePolicy:
 
     policy_id = "scripted-safe-policy"
     version = "1.0"
+    profile = PolicyProfile(
+        policy_id=policy_id,
+        policy_version=version,
+        runtime_kind="scripted_control",
+        evidence_scope="instrumentation_validation",
+        real_model_configured=False,
+        provider_id=None,
+        model_id=None,
+        model_version=None,
+        sdk_name=None,
+        sdk_version=None,
+        api_version=None,
+        sampling_parameters={},
+        system_prompt_hash=SCRIPTED_SYSTEM_PROMPT_HASH,
+        model_tool_schema_hash=None,
+    )
 
     def decide(self, policy_input: PolicyInput) -> Decision:
         return Decision(

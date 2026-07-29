@@ -80,6 +80,23 @@ class PolicyAndSinkTests(unittest.TestCase):
         self.assertFalse(result.prohibited_simulated_effect)
         self.assertFalse(result.external_side_effect)
 
+    def test_task_scoped_sink_rejects_a_different_canary(self) -> None:
+        sink = SimulatedSink(
+            expected_canary="CANARY-EXPECTED",
+        )
+        result = sink.attempt(
+            SinkAction(
+                sink_id="simulated_audit_sink",
+                operation="record_canary",
+                value="CANARY-DIFFERENT",
+                source_field="confidential_token",
+            )
+        )
+        self.assertTrue(result.blocked)
+        self.assertFalse(result.simulator_accepted)
+        self.assertFalse(result.prohibited_simulated_effect)
+        self.assertEqual(sink.records, [])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 
 from tool_output_lab.cli import main
 from tool_output_lab.experiment import ExperimentConfig, run_experiment
+from tool_output_lab.llm import FakeLLMBackend, LLMBackendError
 from tool_output_lab.tasks import load_tasks
 from tool_output_lab.tracing import read_jsonl
 from tool_output_lab.tracing import validate_trace
@@ -129,6 +132,131 @@ class TraceAndCliTests(unittest.TestCase):
                     overwrite=True,
                 )
             self.assertFalse(output_path.exists())
+
+    def test_gemini_cli_missing_key_creates_no_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            trace_path = Path(temp_dir) / "gemini.jsonl"
+            summary_path = Path(temp_dir) / "gemini.summary.json"
+            stderr = io.StringIO()
+            with (
+                patch.dict(os.environ, {}, clear=True),
+                redirect_stdout(io.StringIO()),
+                redirect_stderr(stderr),
+            ):
+                exit_code = main(
+                    [
+                        "run",
+                        "--policy",
+                        "gemini",
+                        "--trace",
+                        str(trace_path),
+                        "--summary",
+                        str(summary_path),
+                    ]
+                )
+            self.assertEqual(exit_code, 2)
+            self.assertFalse(trace_path.exists())
+            self.assertFalse(summary_path.exists())
+            self.assertIn("GEMINI_API_KEY", stderr.getvalue())
+            self.assertIn("no live Gemini request", stderr.getvalue())
+
+    def test_cli_rejects_artifacts_inside_shared_repository(self) -> None:
+        paths = (
+            ROOT / "results" / "must-not-be-created.jsonl",
+            ROOT.parent / "outputs" / "must-not-be-created.jsonl",
+        )
+        for trace_path in paths:
+            with self.subTest(trace_path=trace_path):
+                summary_path = trace_path.with_suffix(".summary.json")
+                stderr = io.StringIO()
+                with (
+                    redirect_stdout(io.StringIO()),
+                    redirect_stderr(stderr),
+                ):
+                    exit_code = main(
+                        [
+                            "run",
+                            "--trace",
+                            str(trace_path),
+                            "--summary",
+                            str(summary_path),
+                        ]
+                    )
+                self.assertEqual(exit_code, 2)
+                self.assertFalse(trace_path.exists())
+                self.assertFalse(summary_path.exists())
+                self.assertIn(
+                    "outside the shared repository",
+                    stderr.getvalue(),
+                )
+
+    def test_gemini_cli_returns_failure_when_all_model_runs_error(self) -> None:
+        class FailingRealBackend:
+            provider_id = "google-gemini"
+            model_id = "gemini-3.6-flash"
+            model_version = "gemini-3.6-flash"
+            sdk_name = "google-genai"
+            sdk_version = "2.13.0"
+            api_version = "v1"
+            is_real_model = True
+            sampling_parameters = {
+                "http_retry_attempts": 1,
+                "max_output_tokens": 1_024,
+                "seed_source": "matched_trace_seed",
+                "thinking_level": "medium",
+                "tool_choice": "auto",
+            }
+            model_tool_schema_hash = (
+                FakeLLMBackend.model_tool_schema_hash
+            )
+
+            def complete(self, request):
+                raise LLMBackendError("synthetic provider failure")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            trace_path = Path(temp_dir) / "gemini.jsonl"
+            summary_path = Path(temp_dir) / "gemini.summary.json"
+            stdout = io.StringIO()
+            with (
+                patch(
+                    "tool_output_lab.cli.GeminiBackend",
+                    return_value=FailingRealBackend(),
+                ),
+                redirect_stdout(stdout),
+                redirect_stderr(io.StringIO()),
+            ):
+                exit_code = main(
+                    [
+                        "run",
+                        "--policy",
+                        "gemini",
+                        "--trace",
+                        str(trace_path),
+                        "--summary",
+                        str(summary_path),
+                    ]
+                )
+            output = json.loads(stdout.getvalue())
+            self.assertEqual(exit_code, 1)
+            self.assertEqual(output["scheduled_runs"], 9)
+            self.assertEqual(output["error_runs"], 9)
+            self.assertEqual(output["completed_runs"], 0)
+            self.assertTrue(output["real_model_configured"])
+            self.assertEqual(output["empirical_llm_completed_runs"], 0)
+            self.assertFalse(output["empirical_llm_evidence"])
+            self.assertTrue(trace_path.exists())
+            self.assertTrue(summary_path.exists())
+            events = read_jsonl(trace_path)
+            self.assertEqual(
+                {event["transport"] for event in events},
+                {"google_gemini_interactions_v1"},
+            )
+            self.assertTrue(
+                all(
+                    event["code_commit"] != "uncommitted-working-tree"
+                    for event in events
+                )
+            )
 
 
 if __name__ == "__main__":

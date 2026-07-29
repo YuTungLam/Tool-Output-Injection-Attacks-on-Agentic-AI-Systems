@@ -77,6 +77,10 @@ class PolicyInput:
     user_prompt: str
     tool_payload: Mapping[str, str]
     available_sink_ids: tuple[str, ...]
+    run_seed: int | None = None
+    source_tool_name: str | None = None
+    source_tool_arguments: Mapping[str, str] | None = None
+    source_tool_call_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -110,12 +114,55 @@ class SinkAction:
 
 
 @dataclass(frozen=True)
+class ModelCallMetadata:
+    """Non-sensitive metadata retained from one provider call."""
+
+    provider_id: str
+    model_id: str
+    model_version: str | None
+    sdk_name: str
+    sdk_version: str
+    api_version: str
+    response_id: str | None
+    response_status: str | None
+    finish_reason: str | None
+    latency_ms: float
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    thought_tokens: int | None = None
+    tool_use_tokens: int | None = None
+    cached_tokens: int | None = None
+    total_tokens: int | None = None
+
+
+@dataclass(frozen=True)
+class PolicyProfile:
+    """Static execution metadata that must stay fixed within a matched set."""
+
+    policy_id: str
+    policy_version: str
+    runtime_kind: str
+    evidence_scope: str
+    real_model_configured: bool
+    provider_id: str | None
+    model_id: str | None
+    model_version: str | None
+    sdk_name: str | None
+    sdk_version: str | None
+    api_version: str | None
+    sampling_parameters: Mapping[str, Any]
+    system_prompt_hash: str
+    model_tool_schema_hash: str | None
+
+
+@dataclass(frozen=True)
 class Decision:
     """Observable output from an agent policy."""
 
     answer: str
     reason_code: str
     sink_action: SinkAction | None = None
+    model_call: ModelCallMetadata | None = None
 
 
 @dataclass(frozen=True)

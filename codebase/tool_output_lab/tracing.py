@@ -73,6 +73,7 @@ class TraceContext:
     policy_version: str
     model_id: str | None
     model_version: str | None
+    sampling_parameters: Mapping[str, Any]
     seed: int
     system_prompt_hash: str
     tool_schema_hash: str
@@ -121,7 +122,7 @@ class TraceRecorder:
             "policy_version": self.context.policy_version,
             "model_id": self.context.model_id,
             "model_version": self.context.model_version,
-            "sampling_parameters": {},
+            "sampling_parameters": dict(self.context.sampling_parameters),
             "seed": self.context.seed,
             "system_prompt_hash": self.context.system_prompt_hash,
             "tool_schema_hash": self.context.tool_schema_hash,
