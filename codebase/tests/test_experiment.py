@@ -6,7 +6,11 @@ from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
-from tool_output_lab.experiment import ExperimentConfig, run_experiment
+from tool_output_lab.experiment import (
+    MODEL_SEED_MAX,
+    ExperimentConfig,
+    run_experiment,
+)
 from tool_output_lab.tasks import load_tasks
 from tool_output_lab.tools import MockDocumentTool
 from tool_output_lab.tracing import validate_trace
@@ -86,6 +90,11 @@ class ExperimentTests(unittest.TestCase):
         self.assertEqual(first.config_hash, second.config_hash)
         self.assertEqual(first.manifest, second.manifest)
         self.assertEqual(first.aggregate_by_condition, second.aggregate_by_condition)
+        for record in first.manifest:
+            self.assertGreaterEqual(record["run_seed"], 0)
+            self.assertLessEqual(record["run_seed"], MODEL_SEED_MAX)
+            self.assertGreaterEqual(record["prelude_seed"], 0)
+            self.assertLessEqual(record["prelude_seed"], MODEL_SEED_MAX)
 
     def test_task_content_is_part_of_configuration_identity(self) -> None:
         config = ExperimentConfig(repetitions=1, seed=12345)

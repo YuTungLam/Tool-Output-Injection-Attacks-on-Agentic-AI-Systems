@@ -39,6 +39,7 @@ from .utils import (
 )
 
 SUMMARY_SCHEMA_VERSION = "experiment-summary-v2"
+MODEL_SEED_MAX = 2_147_483_647
 _CHECKOUT_ROOT_CANDIDATE = Path(__file__).resolve().parents[2]
 SHARED_REPOSITORY_ROOT = (
     _CHECKOUT_ROOT_CANDIDATE
@@ -350,13 +351,13 @@ def build_run_plan(
                     f"{config.seed}:{matched_set_id}:post-tool"
                 )[:8],
                 16,
-            )
+            ) & MODEL_SEED_MAX
             prelude_seed = int(
                 sha256_text(
                     f"{config.seed}:{matched_set_id}:pre-tool"
                 )[:8],
                 16,
-            )
+            ) & MODEL_SEED_MAX
             for condition in Condition:
                 run_id = stable_identifier(
                     "run", matched_set_id, condition.value, length=20
