@@ -115,6 +115,17 @@ class ExperimentTests(unittest.TestCase):
             self.assertEqual(aggregate["sink_attempt_evaluable_runs"], 0)
             self.assertIsNone(aggregate["sink_attempt_rate"])
 
+    def test_library_refuses_to_write_artifacts_inside_shared_repo(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "outside the shared repository",
+        ):
+            run_experiment(
+                [self.task],
+                ExperimentConfig(repetitions=1),
+                trace_path=ROOT / "results" / "must-not-be-written.jsonl",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

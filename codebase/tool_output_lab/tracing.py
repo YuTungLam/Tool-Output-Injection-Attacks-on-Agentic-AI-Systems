@@ -9,9 +9,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from .utils import canonical_json
+from .utils import canonical_json, sha256_text
 
-TRACE_SCHEMA_VERSION = "trace-event-v1"
+TRACE_SCHEMA_VERSION = "trace-event-v2"
+PRELUDE_SCHEMA_VERSION = "matched-set-prelude-v1"
 ALLOWED_EVENT_TYPES = {
     "run_start",
     "user_input",
@@ -45,9 +46,24 @@ EVENT_DATA_REQUIREMENTS = {
         "external_side_effect",
     },
     "sink_effect": {"prohibited_simulated_effect", "external_side_effect"},
-    "task_evaluation": {"task_success", "sink_attempted", "external_side_effect"},
+    "task_evaluation": {
+        "task_success",
+        "sink_attempted",
+        "external_side_effect",
+        "outcome_evaluable",
+    },
     "run_error": {"error_type", "error_message", "outcome_evaluable"},
-    "run_end": {"status", "termination_reason", "step_count", "task_success"},
+    "run_end": {
+        "status",
+        "termination_reason",
+        "step_count",
+        "prelude_completed",
+        "source_result_exposed",
+        "post_model_call_attempted",
+        "post_model_call_completed",
+        "task_success",
+        "empirical_llm_observation",
+    },
 }
 
 
@@ -76,9 +92,11 @@ class TraceContext:
     sampling_parameters: Mapping[str, Any]
     seed: int
     system_prompt_hash: str
+    phase_prompt_hashes: Mapping[str, str]
     tool_schema_hash: str
     transport: str
     max_steps: int
+    shared_prelude_id: str | None
 
 
 class TraceRecorder:
@@ -125,9 +143,13 @@ class TraceRecorder:
             "sampling_parameters": dict(self.context.sampling_parameters),
             "seed": self.context.seed,
             "system_prompt_hash": self.context.system_prompt_hash,
+            "phase_prompt_hashes": dict(
+                self.context.phase_prompt_hashes
+            ),
             "tool_schema_hash": self.context.tool_schema_hash,
             "transport": self.context.transport,
             "max_steps": self.context.max_steps,
+            "shared_prelude_id": self.context.shared_prelude_id,
             "event_id": event_id,
             "event_index": index,
             "event_type": event_type,
@@ -204,9 +226,11 @@ def validate_trace(events: Iterable[Mapping[str, Any]]) -> None:
         "sampling_parameters",
         "seed",
         "system_prompt_hash",
+        "phase_prompt_hashes",
         "tool_schema_hash",
         "transport",
         "max_steps",
+        "shared_prelude_id",
         "event_id",
         "event_index",
         "event_type",
@@ -242,9 +266,11 @@ def validate_trace(events: Iterable[Mapping[str, Any]]) -> None:
         "sampling_parameters",
         "seed",
         "system_prompt_hash",
+        "phase_prompt_hashes",
         "tool_schema_hash",
         "transport",
         "max_steps",
+        "shared_prelude_id",
     }
 
     by_run: dict[str, list[Mapping[str, Any]]] = {}
@@ -264,6 +290,10 @@ def validate_trace(events: Iterable[Mapping[str, Any]]) -> None:
         if not isinstance(event["sampling_parameters"], Mapping):
             raise ValueError(
                 f"Trace event {ordinal} sampling_parameters must be an object"
+            )
+        if not isinstance(event["phase_prompt_hashes"], Mapping):
+            raise ValueError(
+                f"Trace event {ordinal} phase_prompt_hashes must be an object"
             )
         if not isinstance(event["event_index"], int) or event["event_index"] < 0:
             raise ValueError(f"Trace event {ordinal} has an invalid event_index")
@@ -386,6 +416,114 @@ def validate_trace(events: Iterable[Mapping[str, Any]]) -> None:
             seen_events.add(str(event["event_id"]))
             seen_event_types[str(event["event_id"])] = str(event_type)
 
+        run_end = run_events[-1]
+        run_status = run_end["data"].get("status")
+        run_errors = [
+            event
+            for event in run_events
+            if event["event_type"] == "run_error"
+        ]
+        evaluations = [
+            event
+            for event in run_events
+            if event["event_type"] == "task_evaluation"
+        ]
+        step_count = run_end["data"].get("step_count")
+        if (
+            not isinstance(step_count, int)
+            or isinstance(step_count, bool)
+            or step_count < 0
+            or step_count > baseline["max_steps"]
+        ):
+            raise ValueError(f"Run {run_id} has an invalid terminal step count")
+        phase_flags = {
+            field: run_end["data"].get(field)
+            for field in (
+                "prelude_completed",
+                "source_result_exposed",
+                "post_model_call_attempted",
+                "post_model_call_completed",
+                "empirical_llm_observation",
+            )
+        }
+        if any(type(value) is not bool for value in phase_flags.values()):
+            raise ValueError(
+                f"Run {run_id} has non-boolean terminal phase flags"
+            )
+        if (
+            phase_flags["post_model_call_completed"]
+            and not phase_flags["post_model_call_attempted"]
+        ):
+            raise ValueError(
+                f"Run {run_id} completed an unattempted post-model call"
+            )
+        if (
+            phase_flags["post_model_call_attempted"]
+            and not phase_flags["prelude_completed"]
+        ):
+            raise ValueError(
+                f"Run {run_id} attempted a post-model call without a prelude"
+            )
+        if (
+            phase_flags["empirical_llm_observation"]
+            and not phase_flags["post_model_call_completed"]
+        ):
+            raise ValueError(
+                f"Run {run_id} claims empirical evidence without a completed "
+                "post-model call"
+            )
+        expected_step_count = int(
+            phase_flags["source_result_exposed"]
+        ) + int(phase_flags["post_model_call_completed"])
+        if step_count != expected_step_count:
+            raise ValueError(
+                f"Run {run_id} terminal step count disagrees with phase flags"
+            )
+        if run_status == "completed":
+            if run_errors:
+                raise ValueError(
+                    f"Completed run {run_id} must not contain run_error"
+                )
+            if len(evaluations) != 1:
+                raise ValueError(
+                    f"Completed run {run_id} must contain exactly one "
+                    "task_evaluation"
+                )
+            evaluation = evaluations[0]
+            if evaluation["data"].get("outcome_evaluable") is not True:
+                raise ValueError(
+                    f"Completed run {run_id} must be outcome-evaluable"
+                )
+            if (
+                run_end["data"].get("task_success")
+                != evaluation["data"].get("task_success")
+            ):
+                raise ValueError(
+                    f"Completed run {run_id} changes terminal task_success"
+                )
+        elif run_status == "error":
+            if len(run_errors) != 1:
+                raise ValueError(
+                    f"Error run {run_id} must contain exactly one run_error"
+                )
+            if evaluations:
+                raise ValueError(
+                    f"Error run {run_id} must not contain task_evaluation"
+                )
+            if run_errors[0]["data"].get("outcome_evaluable") is not False:
+                raise ValueError(
+                    f"Error run {run_id} must be non-evaluable"
+                )
+            if run_end["data"].get("task_success") is not None:
+                raise ValueError(
+                    f"Error run {run_id} must not report task_success"
+                )
+        else:
+            raise ValueError(
+                f"Run {run_id} has unsupported terminal status "
+                f"{run_status!r}"
+            )
+
     by_match: dict[str, list[Mapping[str, Any]]] = {}
     for run_events in by_run.values():
         by_match.setdefault(str(run_events[0]["matched_set_id"]), []).append(
@@ -410,9 +548,11 @@ def validate_trace(events: Iterable[Mapping[str, Any]]) -> None:
         "sampling_parameters",
         "seed",
         "system_prompt_hash",
+        "phase_prompt_hashes",
         "tool_schema_hash",
         "transport",
         "max_steps",
+        "shared_prelude_id",
     }
     for matched_set_id, first_events in by_match.items():
         baseline = first_events[0]
@@ -434,3 +574,500 @@ def validate_trace(events: Iterable[Mapping[str, Any]]) -> None:
                     f"Matched set {matched_set_id} changes fields: "
                     f"{', '.join(sorted(changed))}"
                 )
+        expected_conditions = {"attack", "clean", "placebo"}
+        if conditions != expected_conditions:
+            raise ValueError(
+                f"Matched set {matched_set_id} must contain exactly "
+                "clean, placebo, and attack branches"
+            )
+
+
+def _is_sha256_digest(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
+def validate_shared_preludes(
+    preludes: Iterable[Mapping[str, Any]],
+    events: Iterable[Mapping[str, Any]],
+) -> None:
+    """Validate one condition-free provider prelude per matched set."""
+
+    preludes = list(preludes)
+    events = list(events)
+    if not preludes:
+        if any(event.get("shared_prelude_id") is not None for event in events):
+            raise ValueError("Trace references a missing shared prelude")
+        return
+
+    required = {
+        "agent_version",
+        "api_version",
+        "code_commit",
+        "code_dirty",
+        "config_hash",
+        "error_message",
+        "error_type",
+        "evidence_scope",
+        "experiment_id",
+        "matched_set_id",
+        "model_id",
+        "model_version",
+        "phase_prompt_hashes",
+        "policy_id",
+        "policy_version",
+        "prelude_id",
+        "prelude_plan_index",
+        "prelude_seed",
+        "model_backend_invoked",
+        "provider_id",
+        "record_scope",
+        "replicate_id",
+        "runtime_kind",
+        "sampling_parameters",
+        "schema_version",
+        "sdk_name",
+        "sdk_version",
+        "status",
+        "store",
+        "system_prompt_hash",
+        "task_id",
+        "task_version",
+        "tool_selection",
+        "transport",
+    }
+    by_match: dict[str, Mapping[str, Any]] = {}
+    prelude_ids: set[str] = set()
+    cache_keys: set[str] = set()
+    provider_call_ids: set[str] = set()
+    prelude_plan_indexes: set[int] = set()
+    for ordinal, prelude in enumerate(preludes):
+        if not isinstance(prelude, Mapping):
+            raise ValueError(f"Shared prelude {ordinal} must be an object")
+        missing = sorted(required - set(prelude))
+        if missing:
+            raise ValueError(
+                f"Shared prelude {ordinal} is missing fields: "
+                f"{', '.join(missing)}"
+            )
+        if prelude["schema_version"] != PRELUDE_SCHEMA_VERSION:
+            raise ValueError(
+                f"Unsupported shared-prelude schema at record {ordinal}"
+            )
+        if prelude["record_scope"] != "matched_set":
+            raise ValueError("Shared prelude has an invalid record scope")
+        if prelude["model_backend_invoked"] is not True:
+            raise ValueError(
+                "Shared prelude model_backend_invoked must be boolean true"
+            )
+        if prelude["store"] is not False:
+            raise ValueError("Shared prelude must use store=False")
+        if not isinstance(prelude["sampling_parameters"], Mapping):
+            raise ValueError(
+                "Shared prelude sampling_parameters must be an object"
+            )
+        if not isinstance(prelude["phase_prompt_hashes"], Mapping):
+            raise ValueError(
+                "Shared prelude phase_prompt_hashes must be an object"
+            )
+        for forbidden in ("condition", "payload_id", "run_id"):
+            if forbidden in prelude:
+                raise ValueError(
+                    f"Shared prelude leaks branch field {forbidden}"
+                )
+        matched_set_id = prelude["matched_set_id"]
+        prelude_id = prelude["prelude_id"]
+        if not isinstance(matched_set_id, str) or not matched_set_id:
+            raise ValueError("Shared prelude matched-set ID must be non-empty")
+        if not isinstance(prelude_id, str) or not prelude_id:
+            raise ValueError("Shared prelude ID must be non-empty")
+        if matched_set_id in by_match:
+            raise ValueError(
+                f"Matched set {matched_set_id} has duplicate preludes"
+            )
+        if prelude_id in prelude_ids:
+            raise ValueError("Shared prelude IDs must be unique")
+        plan_index = prelude["prelude_plan_index"]
+        if (
+            not isinstance(plan_index, int)
+            or isinstance(plan_index, bool)
+            or plan_index < 0
+            or plan_index in prelude_plan_indexes
+        ):
+            raise ValueError(
+                "Shared prelude plan indexes must be unique non-negative integers"
+            )
+        by_match[matched_set_id] = prelude
+        prelude_ids.add(prelude_id)
+        prelude_plan_indexes.add(plan_index)
+
+        status = prelude["status"]
+        selection = prelude["tool_selection"]
+        if status == "completed":
+            if not isinstance(selection, Mapping):
+                raise ValueError(
+                    "Completed shared prelude lacks a tool selection"
+                )
+            selection_required = {
+                "arguments_sha256",
+                "cache_key",
+                "canonical_arguments",
+                "matched_set_id",
+                "model_call",
+                "prelude_id",
+                "provider_context_sha256",
+                "provider_call_id",
+                "source_tool_schema_hash",
+                "step_types",
+                "store",
+                "tool_name",
+                "user_prompt_sha256",
+            }
+            selection_missing = sorted(selection_required - set(selection))
+            if selection_missing:
+                raise ValueError(
+                    "Completed shared prelude tool selection is missing: "
+                    f"{', '.join(selection_missing)}"
+                )
+            if selection["prelude_id"] != prelude_id:
+                raise ValueError(
+                    "Shared prelude and tool selection IDs differ"
+                )
+            if selection["matched_set_id"] != matched_set_id:
+                raise ValueError(
+                    "Shared prelude and tool selection matched-set IDs differ"
+                )
+            if selection["store"] is not False:
+                raise ValueError("Tool selection must use store=False")
+            if (
+                prelude["error_type"] is not None
+                or prelude["error_message"] is not None
+            ):
+                raise ValueError(
+                    "Completed shared prelude contains an error"
+                )
+            for forbidden in ("condition", "payload_id", "run_id"):
+                if forbidden in selection:
+                    raise ValueError(
+                        "Shared prelude tool selection leaks branch field "
+                        f"{forbidden}"
+                    )
+            arguments = selection["canonical_arguments"]
+            if not isinstance(arguments, Mapping):
+                raise ValueError(
+                    "Shared prelude tool arguments must be an object"
+                )
+            expected_arguments_hash = sha256_text(
+                canonical_json(dict(arguments))
+            )
+            if selection["arguments_sha256"] != expected_arguments_hash:
+                raise ValueError(
+                    "Shared prelude argument hash does not match its arguments"
+                )
+            if not _is_sha256_digest(selection["cache_key"]):
+                raise ValueError(
+                    "Shared prelude cache key must be a SHA-256 digest"
+                )
+            if selection["cache_key"] in cache_keys:
+                raise ValueError("Shared prelude cache keys must be unique")
+            cache_keys.add(selection["cache_key"])
+            if not _is_sha256_digest(selection["source_tool_schema_hash"]):
+                raise ValueError(
+                    "Shared prelude source-tool schema hash must be SHA-256"
+                )
+            if not _is_sha256_digest(selection["user_prompt_sha256"]):
+                raise ValueError(
+                    "Shared prelude user-prompt hash must be SHA-256"
+                )
+            if not _is_sha256_digest(
+                selection["provider_context_sha256"]
+            ):
+                raise ValueError(
+                    "Shared prelude provider-context hash must be SHA-256"
+                )
+            tool_name = selection["tool_name"]
+            if not isinstance(tool_name, str) or not tool_name:
+                raise ValueError(
+                    "Shared prelude source-tool name must be non-empty"
+                )
+            provider_call_id = selection["provider_call_id"]
+            if (
+                not isinstance(provider_call_id, str)
+                or not provider_call_id
+                or provider_call_id in provider_call_ids
+            ):
+                raise ValueError(
+                    "Shared prelude provider call IDs must be non-empty "
+                    "and unique"
+                )
+            provider_call_ids.add(provider_call_id)
+            step_types = selection["step_types"]
+            if (
+                not isinstance(step_types, (list, tuple))
+                or step_types.count("function_call") != 1
+                or any(
+                    step_type not in {"function_call", "thought"}
+                    for step_type in step_types
+                )
+            ):
+                raise ValueError(
+                    "Shared prelude must contain exactly one source "
+                    "function_call and optional thought steps"
+                )
+            model_call = selection["model_call"]
+            if not isinstance(model_call, Mapping):
+                raise ValueError(
+                    "Shared prelude model_call must be an object"
+                )
+            for field in (
+                "api_version",
+                "model_id",
+                "model_version",
+                "provider_id",
+                "sdk_name",
+                "sdk_version",
+            ):
+                if model_call.get(field) != prelude[field]:
+                    raise ValueError(
+                        "Shared prelude model-call provenance differs "
+                        f"from top-level field {field}"
+                    )
+        elif status == "error":
+            if selection is not None:
+                raise ValueError(
+                    "Failed shared prelude contains a tool selection"
+                )
+            if not prelude["error_type"]:
+                raise ValueError("Failed shared prelude lacks an error type")
+            if not isinstance(prelude["error_message"], str):
+                raise ValueError(
+                    "Failed shared prelude lacks an error message"
+                )
+        else:
+            raise ValueError(f"Unsupported shared prelude status: {status!r}")
+
+    if prelude_plan_indexes != set(range(len(preludes))):
+        raise ValueError("Shared prelude plan indexes must be contiguous")
+
+    events_by_match: dict[str, list[Mapping[str, Any]]] = {}
+    for event in events:
+        events_by_match.setdefault(str(event["matched_set_id"]), []).append(
+            event
+        )
+    if set(events_by_match) != set(by_match):
+        raise ValueError(
+            "Shared prelude matched sets differ from branch matched sets"
+        )
+
+    for matched_set_id, matched_events in events_by_match.items():
+        prelude = by_match[matched_set_id]
+        expected_prelude_id = prelude["prelude_id"]
+        if any(
+            event["shared_prelude_id"] != expected_prelude_id
+            for event in matched_events
+        ):
+            raise ValueError(
+                f"Matched set {matched_set_id} changes shared prelude"
+            )
+        run_starts = [
+            event
+            for event in matched_events
+            if event["event_type"] == "run_start"
+        ]
+        expected_conditions = {"attack", "clean", "placebo"}
+        if (
+            len(run_starts) != 3
+            or {
+                str(event["condition"])
+                for event in run_starts
+            }
+            != expected_conditions
+        ):
+            raise ValueError(
+                f"Matched set {matched_set_id} lacks three branches"
+            )
+
+        top_level_provenance_fields = {
+            "agent_version",
+            "code_commit",
+            "code_dirty",
+            "config_hash",
+            "evidence_scope",
+            "experiment_id",
+            "matched_set_id",
+            "model_id",
+            "model_version",
+            "phase_prompt_hashes",
+            "policy_id",
+            "policy_version",
+            "replicate_id",
+            "runtime_kind",
+            "sampling_parameters",
+            "system_prompt_hash",
+            "task_id",
+            "task_version",
+            "transport",
+        }
+        provider_provenance_fields = {
+            "api_version",
+            "provider_id",
+            "sdk_name",
+            "sdk_version",
+        }
+        for run_start in run_starts:
+            changed = sorted(
+                field
+                for field in top_level_provenance_fields
+                if run_start[field] != prelude[field]
+            )
+            if changed:
+                raise ValueError(
+                    f"Shared prelude {matched_set_id} differs from branch "
+                    f"provenance: {', '.join(changed)}"
+                )
+            provider_changed = sorted(
+                field
+                for field in provider_provenance_fields
+                if run_start["data"].get(field) != prelude[field]
+            )
+            if provider_changed:
+                raise ValueError(
+                    f"Shared prelude {matched_set_id} differs from branch "
+                    "provider provenance: "
+                    f"{', '.join(provider_changed)}"
+                )
+
+        tool_calls = [
+            event
+            for event in matched_events
+            if event["event_type"] == "tool_call"
+        ]
+        if prelude["status"] == "error":
+            if tool_calls:
+                raise ValueError(
+                    "Failed shared prelude produced branch tool calls"
+                )
+            runs: dict[str, list[Mapping[str, Any]]] = {}
+            for event in matched_events:
+                runs.setdefault(str(event["run_id"]), []).append(event)
+            for run_id, run_events in runs.items():
+                event_types = [
+                    str(event["event_type"])
+                    for event in run_events
+                ]
+                if event_types != [
+                    "run_start",
+                    "user_input",
+                    "run_error",
+                    "run_end",
+                ]:
+                    raise ValueError(
+                        "Failed shared prelude branch must stop before "
+                        f"tool execution in {run_id}"
+                    )
+                error_data = run_events[-2]["data"]
+                terminal_data = run_events[-1]["data"]
+                if (
+                    error_data.get("error_type")
+                    != "SharedPreludeFailure"
+                    or error_data.get("missingness_reason")
+                    != "shared_prelude_failed"
+                    or error_data.get("outcome_evaluable") is not False
+                    or terminal_data.get("status") != "error"
+                    or terminal_data.get("task_success") is not None
+                ):
+                    raise ValueError(
+                        "Failed shared prelude branch has inconsistent "
+                        f"terminal semantics in {run_id}"
+                    )
+            continue
+
+        selection = prelude["tool_selection"]
+        expected_call_id = str(selection["provider_call_id"])
+        expected_tool_name = selection["tool_name"]
+        expected_arguments = selection["canonical_arguments"]
+        expected_arguments_hash = selection["arguments_sha256"]
+        user_inputs = [
+            event
+            for event in matched_events
+            if event["event_type"] == "user_input"
+        ]
+        if len(user_inputs) != 3 or any(
+            event["data"].get("prompt_sha256")
+            != selection["user_prompt_sha256"]
+            for event in user_inputs
+        ):
+            raise ValueError(
+                "Branch user prompt differs from the shared prelude"
+            )
+        if len(tool_calls) != 3:
+            raise ValueError(
+                "Completed shared prelude must feed three branch tool calls"
+            )
+        for event in tool_calls:
+            if str(event["tool_call_id"]) != expected_call_id:
+                raise ValueError(
+                    "Branch tool call ID differs from the shared prelude"
+                )
+            if event["data"].get("canonical_arguments") != expected_arguments:
+                raise ValueError(
+                    "Branch tool arguments differ from the shared prelude"
+                )
+            if event["data"].get("argument_sha256") != expected_arguments_hash:
+                raise ValueError(
+                    "Branch argument hash differs from the shared prelude"
+                )
+            if event["data"].get("tool_name") != expected_tool_name:
+                raise ValueError(
+                    "Branch tool name differs from the shared prelude"
+                )
+            if (
+                event["data"].get("origin")
+                != "provider_generated_shared_prelude"
+            ):
+                raise ValueError(
+                    "Branch tool call lacks provider-generated provenance"
+                )
+            if (
+                event["data"].get("shared_prelude_id")
+                != expected_prelude_id
+            ):
+                raise ValueError(
+                    "Branch tool call changes its nested shared prelude ID"
+                )
+            branch_arguments = event["data"].get(
+                "canonical_arguments"
+            )
+            if not isinstance(branch_arguments, Mapping):
+                raise ValueError("Branch tool arguments must be an object")
+            if (
+                sha256_text(canonical_json(dict(branch_arguments)))
+                != event["data"].get("argument_sha256")
+            ):
+                raise ValueError(
+                    "Branch argument hash does not match its arguments"
+                )
+
+
+def validate_trace_records(
+    records: Iterable[Mapping[str, Any]],
+) -> None:
+    """Validate a persisted mixed-scope trace file."""
+
+    preludes: list[Mapping[str, Any]] = []
+    events: list[Mapping[str, Any]] = []
+    for ordinal, record in enumerate(records):
+        schema_version = record.get("schema_version")
+        if schema_version == PRELUDE_SCHEMA_VERSION:
+            preludes.append(record)
+        elif schema_version == TRACE_SCHEMA_VERSION:
+            events.append(record)
+        else:
+            raise ValueError(
+                f"Trace record {ordinal} has an unknown schema version"
+            )
+    validate_trace(events)
+    validate_shared_preludes(preludes, events)

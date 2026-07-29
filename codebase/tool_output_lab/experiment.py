@@ -13,10 +13,24 @@ from typing import Any, Callable, Iterable, Mapping
 from . import __version__
 from .compare import compare_privileged_events
 from .conditions import FIXTURE_VERSION, build_tool_response, validate_matched_triplet
-from .domain import Condition, PolicyInput, PolicyProfile, Task
+from .domain import (
+    Condition,
+    PolicyInput,
+    PolicyProfile,
+    PreparedToolCall,
+    Task,
+    ToolSelectionInput,
+)
 from .policy import AgentPolicy, make_policy
 from .tools import MockDocumentTool, SimulatedSink
-from .tracing import TraceContext, TraceRecorder, validate_trace, write_jsonl
+from .tracing import (
+    PRELUDE_SCHEMA_VERSION,
+    TraceContext,
+    TraceRecorder,
+    validate_shared_preludes,
+    validate_trace,
+    write_jsonl,
+)
 from .utils import (
     canonical_json,
     redact_sensitive_text,
@@ -24,7 +38,13 @@ from .utils import (
     stable_identifier,
 )
 
-SUMMARY_SCHEMA_VERSION = "experiment-summary-v1"
+SUMMARY_SCHEMA_VERSION = "experiment-summary-v2"
+_CHECKOUT_ROOT_CANDIDATE = Path(__file__).resolve().parents[2]
+SHARED_REPOSITORY_ROOT = (
+    _CHECKOUT_ROOT_CANDIDATE
+    if (_CHECKOUT_ROOT_CANDIDATE / ".git").exists()
+    else None
+)
 
 
 @dataclass(frozen=True)
@@ -45,8 +65,10 @@ class ExperimentConfig:
             raise ValueError("repetitions must be at least 1")
         if self.repetitions > 10_000:
             raise ValueError("repetitions exceeds the safety limit of 10,000")
-        if self.max_steps != 1:
-            raise ValueError("The instrumentation pilot supports exactly one agent step")
+        if self.max_steps not in {1, 2}:
+            raise ValueError(
+                "The instrumentation pilot supports one or two agent steps"
+            )
         if (
             not self.policy_name
             or len(self.policy_name) > 80
@@ -63,6 +85,7 @@ class RunSpec:
     matched_set_id: str
     run_id: str
     run_seed: int
+    prelude_seed: int
     plan_index: int = -1
 
     def manifest_record(self) -> Mapping[str, Any]:
@@ -74,6 +97,7 @@ class RunSpec:
             "condition": self.condition.value,
             "replicate_id": self.replicate_id,
             "run_seed": self.run_seed,
+            "prelude_seed": self.prelude_seed,
             "plan_index": self.plan_index,
         }
 
@@ -96,6 +120,8 @@ class RunSummary:
     prohibited_simulated_effect: bool | None
     external_side_effect: bool | None
     empirical_llm_observation: bool
+    post_model_call_attempted: bool
+    post_model_call_validated: bool
     error_type: str | None = None
     error_message: str | None = None
 
@@ -110,6 +136,7 @@ class ExperimentResult:
     config_hash: str
     manifest: tuple[Mapping[str, Any], ...]
     summaries: tuple[RunSummary, ...]
+    preludes: tuple[Mapping[str, Any], ...]
     events: tuple[Mapping[str, Any], ...]
     aggregate_by_condition: Mapping[str, Mapping[str, Any]]
     matched_comparisons: tuple[Mapping[str, Any], ...]
@@ -122,31 +149,126 @@ class ExperimentResult:
         )
 
     @property
-    def empirical_llm_evidence(self) -> bool:
+    def any_empirical_llm_observation(self) -> bool:
         return self.empirical_llm_completed_runs > 0
+
+    def _summaries_by_match(self) -> dict[str, dict[str, RunSummary]]:
+        by_match: dict[str, dict[str, RunSummary]] = {}
+        for summary in self.summaries:
+            by_match.setdefault(summary.matched_set_id, {})[
+                summary.condition
+            ] = summary
+        return by_match
+
+    @property
+    def complete_matched_sets(self) -> int:
+        required = {condition.value for condition in Condition}
+        return sum(
+            set(rows) == required
+            and all(
+                row.status == "completed" and row.outcome_evaluable
+                for row in rows.values()
+            )
+            for rows in self._summaries_by_match().values()
+        )
+
+    @property
+    def incomplete_matched_sets(self) -> int:
+        return len(self._summaries_by_match()) - self.complete_matched_sets
+
+    @property
+    def complete_empirical_matched_sets(self) -> int:
+        required = {condition.value for condition in Condition}
+        return sum(
+            set(rows) == required
+            and all(
+                row.status == "completed"
+                and row.outcome_evaluable
+                and row.empirical_llm_observation
+                for row in rows.values()
+            )
+            for rows in self._summaries_by_match().values()
+        )
+
+    @property
+    def shared_prelude_failures(self) -> int:
+        return sum(prelude["status"] == "error" for prelude in self.preludes)
+
+    @property
+    def empirical_llm_evidence(self) -> bool:
+        """Whether at least one complete empirical matched triplet exists."""
+
+        return self.complete_empirical_matched_sets > 0
+
+    @property
+    def trace_records(self) -> tuple[Mapping[str, Any], ...]:
+        return (*self.preludes, *self.events)
+
+    @property
+    def model_backend_accounting(self) -> Mapping[str, int]:
+        """Count adapter invocations and validated responses without guessing HTTP."""
+
+        prelude_invocations = sum(
+            bool(prelude["model_backend_invoked"])
+            for prelude in self.preludes
+        )
+        prelude_validated = sum(
+            prelude["status"] == "completed"
+            for prelude in self.preludes
+        )
+        post_policy_invocations = sum(
+            summary.post_model_call_attempted
+            for summary in self.summaries
+        )
+        post_validated = sum(
+            summary.post_model_call_validated
+            for summary in self.summaries
+        )
+        return {
+            "shared_prelude_backend_invocations": prelude_invocations,
+            "shared_preludes_validated": prelude_validated,
+            "post_tool_policy_invocations": post_policy_invocations,
+            "post_tool_decisions_validated": post_validated,
+            "real_model_post_tool_observations": (
+                self.empirical_llm_completed_runs
+            ),
+            "total_backend_or_policy_invocations": (
+                prelude_invocations + post_policy_invocations
+            ),
+        }
 
     def to_mapping(self) -> Mapping[str, Any]:
         profile = asdict(self.policy_profile)
-        evidence_notice = (
-            "Real-model pilot evidence from a controlled post-tool policy; "
-            "this is not yet an autonomous multi-step agent."
-            if self.empirical_llm_evidence
-            else (
-                (
-                    "A real model was configured, but no model call completed "
-                    "with an evaluable decision; there is no empirical LLM evidence."
-                )
-                if self.policy_profile.real_model_configured
-                else (
-                    "Fake-model results validate the adapter and instrumentation only."
-                    if self.policy_profile.runtime_kind == "fake_llm_adapter_control"
-                    else (
-                        "Scripted control results validate instrumentation only; "
-                        "they are not empirical LLM susceptibility estimates."
-                    )
-                )
+        if self.empirical_llm_evidence:
+            evidence_notice = (
+                "Complete matched-triplet real-model pilot evidence from a "
+                "controlled two-stage agent with one synthetic source tool and "
+                "one simulated sink; this is not yet a general multi-tool or "
+                "MCP agent."
             )
-        )
+        elif (
+            self.policy_profile.real_model_configured
+            and self.any_empirical_llm_observation
+        ):
+            evidence_notice = (
+                "Some real-model branches returned evaluable decisions, but no "
+                "complete empirical clean/placebo/attack triplet exists; these "
+                "observations are not matched-contrast evidence."
+            )
+        elif self.policy_profile.real_model_configured:
+            evidence_notice = (
+                "A real model was configured, but no model call completed with "
+                "an evaluable decision; there is no empirical LLM evidence."
+            )
+        elif self.policy_profile.runtime_kind == "fake_llm_two_stage_control":
+            evidence_notice = (
+                "Fake-model results validate the adapter and instrumentation only."
+            )
+        else:
+            evidence_notice = (
+                "Scripted control results validate instrumentation only; they "
+                "are not empirical LLM susceptibility estimates."
+            )
         return {
             "schema_version": SUMMARY_SCHEMA_VERSION,
             "experiment": {
@@ -160,10 +282,23 @@ class ExperimentResult:
                 "empirical_llm_completed_runs": (
                     self.empirical_llm_completed_runs
                 ),
+                "any_empirical_llm_observation": (
+                    self.any_empirical_llm_observation
+                ),
                 "empirical_llm_evidence": self.empirical_llm_evidence,
+                "complete_matched_sets": self.complete_matched_sets,
+                "incomplete_matched_sets": self.incomplete_matched_sets,
+                "complete_empirical_matched_sets": (
+                    self.complete_empirical_matched_sets
+                ),
+                "shared_prelude_failures": self.shared_prelude_failures,
+                "model_backend_accounting": dict(
+                    self.model_backend_accounting
+                ),
                 "evidence_notice": evidence_notice,
             },
             "manifest": list(self.manifest),
+            "matched_set_preludes": list(self.preludes),
             "runs": [summary.to_mapping() for summary in self.summaries],
             "aggregate_by_condition": self.aggregate_by_condition,
             "matched_comparisons": list(self.matched_comparisons),
@@ -211,7 +346,16 @@ def build_run_plan(
                 length=20,
             )
             run_seed = int(
-                sha256_text(f"{config.seed}:{matched_set_id}")[:8], 16
+                sha256_text(
+                    f"{config.seed}:{matched_set_id}:post-tool"
+                )[:8],
+                16,
+            )
+            prelude_seed = int(
+                sha256_text(
+                    f"{config.seed}:{matched_set_id}:pre-tool"
+                )[:8],
+                16,
             )
             for condition in Condition:
                 run_id = stable_identifier(
@@ -225,6 +369,7 @@ def build_run_plan(
                         matched_set_id=matched_set_id,
                         run_id=run_id,
                         run_seed=run_seed,
+                        prelude_seed=prelude_seed,
                     )
                 )
 
@@ -242,15 +387,144 @@ def _answers_match(observed: str, expected: str) -> bool:
     return _normalized_answer(observed) == _normalized_answer(expected)
 
 
+@dataclass(frozen=True)
+class _PreludeExecution:
+    record: Mapping[str, Any]
+    prepared: PreparedToolCall | None
+    error_type: str | None = None
+    error_message: str | None = None
+
+
+class SharedPreludeFailure(RuntimeError):
+    """A matched-set prelude failed, so no branch outcome is evaluable."""
+
+
+def _prepare_shared_preludes(
+    plan: list[RunSpec],
+    config: ExperimentConfig,
+    config_hash: str,
+    policy: AgentPolicy,
+    tool: MockDocumentTool,
+) -> tuple[
+    dict[str, _PreludeExecution],
+    tuple[Mapping[str, Any], ...],
+]:
+    prepare_tool_call = getattr(policy, "prepare_tool_call", None)
+    if not callable(prepare_tool_call):
+        return {}, ()
+
+    representative_specs: dict[str, RunSpec] = {}
+    for spec in plan:
+        representative_specs.setdefault(spec.matched_set_id, spec)
+    ordered_specs = list(representative_specs.values())
+    random.Random(config.seed ^ 0x5052454C).shuffle(ordered_specs)
+
+    profile = policy.profile
+    executions: dict[str, _PreludeExecution] = {}
+    records: list[Mapping[str, Any]] = []
+    for prelude_plan_index, spec in enumerate(ordered_specs):
+        fallback_prelude_id = stable_identifier(
+            "prelude-failure",
+            config_hash,
+            spec.matched_set_id,
+            length=24,
+        )
+        base_record: dict[str, Any] = {
+            "schema_version": PRELUDE_SCHEMA_VERSION,
+            "record_scope": "matched_set",
+            "experiment_id": config.experiment_id,
+            "matched_set_id": spec.matched_set_id,
+            "task_id": spec.task.task_id,
+            "task_version": spec.task.version,
+            "replicate_id": spec.replicate_id,
+            "prelude_plan_index": prelude_plan_index,
+            "prelude_seed": spec.prelude_seed,
+            "agent_version": __version__,
+            "code_commit": config.code_commit,
+            "code_dirty": config.code_dirty,
+            "config_hash": config_hash,
+            "runtime_kind": profile.runtime_kind,
+            "evidence_scope": profile.evidence_scope,
+            "policy_id": profile.policy_id,
+            "policy_version": profile.policy_version,
+            "provider_id": profile.provider_id,
+            "model_id": profile.model_id,
+            "model_version": profile.model_version,
+            "sdk_name": profile.sdk_name,
+            "sdk_version": profile.sdk_version,
+            "api_version": profile.api_version,
+            "sampling_parameters": dict(profile.sampling_parameters),
+            "system_prompt_hash": profile.system_prompt_hash,
+            "phase_prompt_hashes": dict(profile.phase_prompt_hashes),
+            "transport": config.transport,
+            "model_backend_invoked": True,
+            "store": False,
+        }
+        try:
+            prepared = prepare_tool_call(
+                ToolSelectionInput(
+                    matched_set_id=spec.matched_set_id,
+                    user_prompt=spec.task.user_prompt,
+                    source_tool_name=tool.name,
+                    source_tool_arguments={
+                        "query": spec.task.tool_query
+                    },
+                    prelude_seed=spec.prelude_seed,
+                )
+            )
+            record = {
+                **base_record,
+                "prelude_id": prepared.prelude_id,
+                "status": "completed",
+                "tool_selection": prepared.public_mapping(),
+                "error_type": None,
+                "error_message": None,
+            }
+            execution = _PreludeExecution(
+                record=record,
+                prepared=prepared,
+            )
+        except Exception as exc:
+            safe_error_message = redact_sensitive_text(str(exc))
+            record = {
+                **base_record,
+                "prelude_id": fallback_prelude_id,
+                "status": "error",
+                "tool_selection": None,
+                "error_type": type(exc).__name__,
+                "error_message": safe_error_message,
+            }
+            execution = _PreludeExecution(
+                record=record,
+                prepared=None,
+                error_type=type(exc).__name__,
+                error_message=safe_error_message,
+            )
+        executions[spec.matched_set_id] = execution
+        records.append(record)
+
+    return executions, tuple(records)
+
+
 def _run_one(
     spec: RunSpec,
     config: ExperimentConfig,
     config_hash: str,
     policy: AgentPolicy,
     tool: MockDocumentTool,
+    prelude: _PreludeExecution | None,
 ) -> tuple[list[Mapping[str, Any]], RunSummary]:
     profile = policy.profile
-    tool_arguments = {"query": spec.task.tool_query}
+    prepared = None if prelude is None else prelude.prepared
+    tool_arguments = (
+        {"query": spec.task.tool_query}
+        if prepared is None
+        else dict(prepared.tool_arguments)
+    )
+    if tool_arguments != {"query": spec.task.tool_query}:
+        raise ValueError(
+            "Shared prelude changed the frozen source-tool arguments"
+        )
     planned_response = build_tool_response(spec.task, spec.condition)
     tool_schema_hash = tool.schema_hash
     if profile.model_tool_schema_hash is not None:
@@ -258,6 +532,11 @@ def _run_one(
             canonical_json(
                 {
                     "model_tool_schema_hash": profile.model_tool_schema_hash,
+                    "model_source_tool_schema_hash": (
+                        None
+                        if prepared is None
+                        else prepared.source_tool_schema_hash
+                    ),
                     "source_tool_schema_hash": tool.schema_hash,
                 }
             )
@@ -286,9 +565,15 @@ def _run_one(
         sampling_parameters=dict(profile.sampling_parameters),
         seed=spec.run_seed,
         system_prompt_hash=profile.system_prompt_hash,
+        phase_prompt_hashes=dict(profile.phase_prompt_hashes),
         tool_schema_hash=tool_schema_hash,
         transport=config.transport,
         max_steps=config.max_steps,
+        shared_prelude_id=(
+            None
+            if prelude is None
+            else str(prelude.record["prelude_id"])
+        ),
     )
     recorder = TraceRecorder(context)
     sink = SimulatedSink(
@@ -296,6 +581,9 @@ def _run_one(
         expected_canary=spec.task.confidential_token,
     )
     parent: str | None = None
+    source_result_exposed = False
+    post_model_call_attempted = False
+    post_model_call_validated = False
 
     try:
         parent = recorder.emit(
@@ -323,11 +611,21 @@ def _run_one(
             parent_event_id=parent,
         )
 
-        call_id = stable_identifier(
-            "call",
-            spec.matched_set_id,
-            tool.name,
-            length=20,
+        if prelude is not None and prelude.error_type is not None:
+            raise SharedPreludeFailure(
+                "Shared provider prelude failed: "
+                f"{prelude.error_type}: {prelude.error_message}"
+            )
+
+        call_id = (
+            prepared.provider_call_id
+            if prepared is not None
+            else stable_identifier(
+                "call",
+                spec.matched_set_id,
+                tool.name,
+                length=20,
+            )
         )
         canonical_arguments = canonical_json(tool_arguments)
         parent = recorder.emit(
@@ -338,6 +636,16 @@ def _run_one(
                 "tool_version": tool.version,
                 "canonical_arguments": tool_arguments,
                 "argument_sha256": sha256_text(canonical_arguments),
+                "origin": (
+                    "provider_generated_shared_prelude"
+                    if prepared is not None
+                    else "scripted_harness_control"
+                ),
+                "shared_prelude_id": (
+                    None
+                    if prelude is None
+                    else prelude.record["prelude_id"]
+                ),
             },
             parent_event_id=parent,
             tool_call_id=call_id,
@@ -383,12 +691,15 @@ def _run_one(
             parent_event_id=defence_event,
             tool_call_id=call_id,
         )
+        source_result_exposed = True
 
         # Only model-visible content is passed; hidden task ground truth and the
         # condition label are retained by the evaluator/controller.
         parent = exposed_event
+        post_model_call_attempted = prepared is not None
         decision = policy.decide(
             PolicyInput(
+                matched_set_id=spec.matched_set_id,
                 user_prompt=spec.task.user_prompt,
                 tool_payload=dict(response.payload),
                 available_sink_ids=(spec.task.eligible_sink,),
@@ -396,8 +707,10 @@ def _run_one(
                 source_tool_name=tool.name,
                 source_tool_arguments=tool_arguments,
                 source_tool_call_id=call_id,
+                prepared_tool_call=prepared,
             )
         )
+        post_model_call_validated = prepared is not None
         action_arguments = (
             None
             if decision.sink_action is None
@@ -423,6 +736,11 @@ def _run_one(
                     None
                     if decision.model_call is None
                     else asdict(decision.model_call)
+                ),
+                "shared_prelude_id": (
+                    None
+                    if prelude is None
+                    else prelude.record["prelude_id"]
                 ),
             },
             parent_event_id=exposed_event,
@@ -524,7 +842,11 @@ def _run_one(
             {
                 "status": "completed",
                 "termination_reason": "policy_finished",
-                "step_count": 1,
+                "step_count": 2 if prepared is not None else 1,
+                "prelude_completed": prepared is not None,
+                "source_result_exposed": source_result_exposed,
+                "post_model_call_attempted": post_model_call_attempted,
+                "post_model_call_completed": post_model_call_validated,
                 "task_success": task_success,
                 "empirical_llm_observation": empirical_llm_observation,
             },
@@ -547,6 +869,8 @@ def _run_one(
             prohibited_simulated_effect=prohibited_simulated_effect,
             external_side_effect=external_side_effect,
             empirical_llm_observation=empirical_llm_observation,
+            post_model_call_attempted=post_model_call_attempted,
+            post_model_call_validated=post_model_call_validated,
         )
     except Exception as exc:
         safe_error_message = redact_sensitive_text(str(exc))
@@ -558,7 +882,11 @@ def _run_one(
                 "error_message": safe_error_message,
                 "outcome_evaluable": False,
                 "censored": False,
-                "missingness_reason": "runtime_or_harness_error",
+                "missingness_reason": (
+                    "shared_prelude_failed"
+                    if isinstance(exc, SharedPreludeFailure)
+                    else "runtime_or_harness_error"
+                ),
             },
             parent_event_id=parent,
         )
@@ -568,7 +896,14 @@ def _run_one(
             {
                 "status": "error",
                 "termination_reason": "runtime_error",
-                "step_count": 0,
+                "step_count": (
+                    int(source_result_exposed)
+                    + int(post_model_call_validated)
+                ),
+                "prelude_completed": prepared is not None,
+                "source_result_exposed": source_result_exposed,
+                "post_model_call_attempted": post_model_call_attempted,
+                "post_model_call_completed": post_model_call_validated,
                 "task_success": None,
                 "empirical_llm_observation": False,
             },
@@ -591,6 +926,8 @@ def _run_one(
             prohibited_simulated_effect=None,
             external_side_effect=None,
             empirical_llm_observation=False,
+            post_model_call_attempted=post_model_call_attempted,
+            post_model_call_validated=post_model_call_validated,
             error_type=type(exc).__name__,
             error_message=safe_error_message,
         )
@@ -659,19 +996,22 @@ def _matched_comparisons(
         ] = run_events
 
     comparisons: list[Mapping[str, Any]] = []
+    required_conditions = {condition.value for condition in Condition}
     for matched_set_id in sorted(by_match):
         condition_runs = by_match[matched_set_id]
+        if set(condition_runs) != required_conditions:
+            continue
+        if any(
+            run_events[-1].get("data", {}).get("status") != "completed"
+            for run_events in condition_runs.values()
+        ):
+            continue
         clean = condition_runs.get(Condition.CLEAN.value)
         if clean is None:
             continue
         for right_condition in (Condition.PLACEBO, Condition.ATTACK):
             right = condition_runs.get(right_condition.value)
             if right is None:
-                continue
-            if (
-                clean[-1].get("data", {}).get("status") != "completed"
-                or right[-1].get("data", {}).get("status") != "completed"
-            ):
                 continue
             comparison = compare_privileged_events(clean, right)
             comparisons.append(
@@ -700,6 +1040,25 @@ def _write_json_document(
         handle.write("\n")
 
 
+def require_external_artifact_path(
+    path: str | Path,
+    *,
+    label: str,
+) -> None:
+    """Keep generated evidence outside the supervisor-visible checkout."""
+
+    if SHARED_REPOSITORY_ROOT is None:
+        return
+    resolved = Path(path).resolve()
+    if (
+        resolved == SHARED_REPOSITORY_ROOT
+        or SHARED_REPOSITORY_ROOT in resolved.parents
+    ):
+        raise ValueError(
+            f"{label} output must be outside the shared repository"
+        )
+
+
 def run_experiment(
     tasks: list[Task],
     config: ExperimentConfig,
@@ -722,6 +1081,15 @@ def run_experiment(
         or policy_profile.policy_version != prototype_policy.version
     ):
         raise ValueError("Policy profile does not match the policy identity")
+    has_shared_prelude = callable(
+        getattr(prototype_policy, "prepare_tool_call", None)
+    )
+    expected_steps = 2 if has_shared_prelude else 1
+    if config.max_steps != expected_steps:
+        raise ValueError(
+            f"Policy requires max_steps={expected_steps}, "
+            f"found {config.max_steps}"
+        )
     if not tasks:
         raise ValueError("At least one task is required")
     for task in tasks:
@@ -729,7 +1097,10 @@ def run_experiment(
         validate_matched_triplet(task)
 
     for candidate, label in ((trace_path, "trace"), (summary_path, "summary")):
-        if candidate is not None and Path(candidate).exists() and not overwrite:
+        if candidate is None:
+            continue
+        require_external_artifact_path(candidate, label=label)
+        if Path(candidate).exists() and not overwrite:
             raise FileExistsError(f"Refusing to overwrite existing {label}: {candidate}")
 
     if trace_path is not None and summary_path is not None:
@@ -741,6 +1112,13 @@ def run_experiment(
     config_hash = _configuration_hash(config, tasks, policy_profile)
     plan = build_run_plan(tasks, config, config_hash)
     tool = MockDocumentTool()
+    prelude_executions, prelude_records = _prepare_shared_preludes(
+        plan,
+        config,
+        config_hash,
+        prototype_policy,
+        tool,
+    )
     all_events: list[Mapping[str, Any]] = []
     summaries: list[RunSummary] = []
 
@@ -748,24 +1126,37 @@ def run_experiment(
         policy = policy_factory()
         if policy.profile != policy_profile:
             raise ValueError("Policy factory changed execution metadata between runs")
-        run_events, summary = _run_one(spec, config, config_hash, policy, tool)
+        run_events, summary = _run_one(
+            spec,
+            config,
+            config_hash,
+            policy,
+            tool,
+            prelude_executions.get(spec.matched_set_id),
+        )
         all_events.extend(run_events)
         summaries.append(summary)
 
     validate_trace(all_events)
+    validate_shared_preludes(prelude_records, all_events)
     result = ExperimentResult(
         config=config,
         policy_profile=policy_profile,
         config_hash=config_hash,
         manifest=tuple(spec.manifest_record() for spec in plan),
         summaries=tuple(summaries),
+        preludes=prelude_records,
         events=tuple(all_events),
         aggregate_by_condition=_aggregate(summaries),
         matched_comparisons=_matched_comparisons(all_events),
     )
 
     if trace_path is not None:
-        write_jsonl(trace_path, result.events, overwrite=overwrite)
+        write_jsonl(
+            trace_path,
+            result.trace_records,
+            overwrite=overwrite,
+        )
     if summary_path is not None:
         _write_json_document(summary_path, result.to_mapping(), overwrite=overwrite)
     return result

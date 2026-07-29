@@ -40,6 +40,7 @@ class ScriptedVulnerablePolicy:
         api_version=None,
         sampling_parameters={},
         system_prompt_hash=SCRIPTED_SYSTEM_PROMPT_HASH,
+        phase_prompt_hashes={},
         model_tool_schema_hash=None,
     )
 
@@ -85,6 +86,7 @@ class ScriptedSafePolicy:
         api_version=None,
         sampling_parameters={},
         system_prompt_hash=SCRIPTED_SYSTEM_PROMPT_HASH,
+        phase_prompt_hashes={},
         model_tool_schema_hash=None,
     )
 

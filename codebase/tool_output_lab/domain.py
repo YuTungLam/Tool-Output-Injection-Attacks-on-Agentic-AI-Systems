@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Mapping
 
@@ -21,6 +22,7 @@ class Task:
 
     task_id: str
     version: str
+    data_classification: str
     user_prompt: str
     tool_query: str
     public_answer: str
@@ -34,6 +36,7 @@ class Task:
         required = {
             "task_id",
             "version",
+            "data_classification",
             "user_prompt",
             "tool_query",
             "public_answer",
@@ -60,6 +63,10 @@ class Task:
     def validate(self) -> None:
         if not self.task_id.replace("-", "").isalnum():
             raise ValueError(f"Unsafe task_id: {self.task_id!r}")
+        if self.data_classification != "synthetic":
+            raise ValueError(
+                "Only tasks explicitly classified as synthetic are allowed"
+            )
         if not self.confidential_token.startswith("CANARY-"):
             raise ValueError("Only synthetic CANARY-* tokens are allowed")
         if self.eligible_sink != "simulated_audit_sink":
@@ -71,16 +78,29 @@ class Task:
 
 
 @dataclass(frozen=True)
+class ToolSelectionInput:
+    """Condition-independent input used to select the source tool once."""
+
+    matched_set_id: str
+    user_prompt: str
+    source_tool_name: str
+    source_tool_arguments: Mapping[str, str]
+    prelude_seed: int
+
+
+@dataclass(frozen=True)
 class PolicyInput:
     """Only the information visible to the post-tool policy under test."""
 
     user_prompt: str
     tool_payload: Mapping[str, str]
     available_sink_ids: tuple[str, ...]
+    matched_set_id: str = ""
     run_seed: int | None = None
     source_tool_name: str | None = None
     source_tool_arguments: Mapping[str, str] | None = None
     source_tool_call_id: str | None = None
+    prepared_tool_call: PreparedToolCall | None = None
 
 
 @dataclass(frozen=True)
@@ -136,6 +156,62 @@ class ModelCallMetadata:
 
 
 @dataclass(frozen=True)
+class PreparedToolCall:
+    """One provider-generated source-tool call shared by a matched triplet."""
+
+    prelude_id: str
+    cache_key: str
+    matched_set_id: str
+    user_prompt_sha256: str
+    tool_name: str
+    tool_arguments: Mapping[str, str]
+    arguments_sha256: str
+    provider_call_id: str
+    source_tool_schema_hash: str
+    model_call: ModelCallMetadata
+    step_types: tuple[str, ...]
+    provider_context_json: str = field(
+        repr=False,
+        compare=False,
+    )
+    provider_context_sha256: str
+    store: bool = False
+
+    @property
+    def provider_context(self) -> tuple[Mapping[str, Any], ...]:
+        """Return a fresh decoded copy of the immutable provider history."""
+
+        value = json.loads(self.provider_context_json)
+        if not isinstance(value, list) or any(
+            not isinstance(step, dict) for step in value
+        ):
+            raise ValueError("Prepared provider context is not a JSON step list")
+        return tuple(dict(step) for step in value)
+
+    def public_mapping(self) -> Mapping[str, Any]:
+        """Return provenance without provider thought/signature history."""
+
+        return {
+            "prelude_id": self.prelude_id,
+            "cache_key": self.cache_key,
+            "matched_set_id": self.matched_set_id,
+            "user_prompt_sha256": self.user_prompt_sha256,
+            "tool_name": self.tool_name,
+            "canonical_arguments": dict(self.tool_arguments),
+            "arguments_sha256": self.arguments_sha256,
+            "provider_call_id": self.provider_call_id,
+            "source_tool_schema_hash": self.source_tool_schema_hash,
+            "provider_context_sha256": self.provider_context_sha256,
+            "model_call": {
+                key: value
+                for key, value in self.model_call.__dict__.items()
+            },
+            "step_types": list(self.step_types),
+            "store": self.store,
+        }
+
+
+@dataclass(frozen=True)
 class PolicyProfile:
     """Static execution metadata that must stay fixed within a matched set."""
 
@@ -152,6 +228,7 @@ class PolicyProfile:
     api_version: str | None
     sampling_parameters: Mapping[str, Any]
     system_prompt_hash: str
+    phase_prompt_hashes: Mapping[str, str]
     model_tool_schema_hash: str | None
 
 
