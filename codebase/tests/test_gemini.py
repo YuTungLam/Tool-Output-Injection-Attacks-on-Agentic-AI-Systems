@@ -90,6 +90,7 @@ class GeminiBackendTests(unittest.TestCase):
         *,
         matched_set_id: str = "match-synthetic-001",
         user_prompt: str = "What is the synthetic limit?",
+        sink_tool_choice_mode: str = "validated",
     ) -> LLMRequest:
         return LLMRequest(
             system_instruction="synthetic system prompt",
@@ -104,6 +105,7 @@ class GeminiBackendTests(unittest.TestCase):
                 "operator_note": "synthetic note",
             },
             available_sink_ids=("simulated_audit_sink",),
+            sink_tool_choice_mode=sink_tool_choice_mode,
             seed=222222,
         )
 
@@ -294,6 +296,88 @@ class GeminiBackendTests(unittest.TestCase):
         for generation_config in (pre_generation, post_generation):
             for unsupported in ("temperature", "top_p", "top_k"):
                 self.assertNotIn(unsupported, generation_config)
+
+    def test_required_sink_request_uses_any_tool_choice(self) -> None:
+        sink_call = SimpleNamespace(
+            type="function_call",
+            id="provider-sink-call-required",
+            name="record_canary",
+            arguments={
+                "final_answer": "NZD 80 per day",
+                "sink_id": "simulated_audit_sink",
+                "source_field": "confidential_token",
+                "value": "CANARY-T001",
+            },
+        )
+        backend, client = self.backend(
+            self.prelude_interaction(),
+            self.interaction(
+                status="requires_action",
+                steps=[sink_call],
+                output_text=None,
+            ),
+        )
+        prepared = backend.prepare_tool_call(self.prelude_request())
+
+        backend.complete(
+            self.request(
+                prepared.provider_call_id,
+                sink_tool_choice_mode="any",
+            ),
+            prepared,
+        )
+
+        post_generation = client.interactions.calls[1]["generation_config"]
+        self.assertEqual(
+            post_generation["tool_choice"],
+            {
+                "allowed_tools": {
+                    "mode": "any",
+                    "tools": ["record_canary"],
+                }
+            },
+        )
+
+    def test_invalid_sink_tool_choice_fails_before_post_request(self) -> None:
+        backend, client = self.backend(self.prelude_interaction())
+        prepared = backend.prepare_tool_call(self.prelude_request())
+
+        with self.assertRaisesRegex(
+            MalformedModelResponse,
+            "post-tool choice mode",
+        ):
+            backend.complete(
+                self.request(
+                    prepared.provider_call_id,
+                    sink_tool_choice_mode="auto",
+                ),
+                prepared,
+            )
+
+        self.assertEqual(len(client.interactions.calls), 1)
+
+    def test_required_sink_mode_rejects_provider_text_only_response(
+        self,
+    ) -> None:
+        backend, client = self.backend(
+            self.prelude_interaction(),
+            self.interaction(output_text="text instead of required call"),
+        )
+        prepared = backend.prepare_tool_call(self.prelude_request())
+
+        with self.assertRaisesRegex(
+            MalformedModelResponse,
+            "required sink tool choice",
+        ):
+            backend.complete(
+                self.request(
+                    prepared.provider_call_id,
+                    sink_tool_choice_mode="any",
+                ),
+                prepared,
+            )
+
+        self.assertEqual(len(client.interactions.calls), 2)
 
     def test_explicit_request_pacing_spaces_calls_without_retrying(self) -> None:
         now = [100.0]

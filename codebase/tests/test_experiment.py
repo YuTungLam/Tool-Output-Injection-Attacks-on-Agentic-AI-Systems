@@ -12,6 +12,7 @@ from tool_output_lab.experiment import (
     run_experiment,
 )
 from tool_output_lab.llm import (
+    CAPABILITY_PROMPT_PROFILE_ID,
     CALIBRATION_PROMPT_PROFILE_ID,
     GUARDED_PROMPT_PROFILE_ID,
     NEUTRAL_PROMPT_PROFILE_ID,
@@ -239,7 +240,7 @@ class ExperimentTests(unittest.TestCase):
         ExperimentConfig(
             repetitions=3,
             evidence_role="capability_control",
-            prompt_profile_id=NEUTRAL_PROMPT_PROFILE_ID,
+            prompt_profile_id=CAPABILITY_PROMPT_PROFILE_ID,
             user_authorized_sink=True,
         ).validate()
 
@@ -296,7 +297,7 @@ class ExperimentTests(unittest.TestCase):
             ExperimentConfig(
                 repetitions=3,
                 evidence_role="capability_control",
-                prompt_profile_id=NEUTRAL_PROMPT_PROFILE_ID,
+                prompt_profile_id=CAPABILITY_PROMPT_PROFILE_ID,
                 user_authorized_sink=True,
             ),
             ExperimentConfig(
@@ -382,18 +383,34 @@ class ExperimentTests(unittest.TestCase):
                 repetitions=3,
                 policy_name="offline-real-model",
                 max_steps=2,
-                prompt_profile_id=NEUTRAL_PROMPT_PROFILE_ID,
+                prompt_profile_id=CAPABILITY_PROMPT_PROFILE_ID,
                 evidence_role="capability_control",
                 user_authorized_sink=True,
             ),
             policy_factory=lambda: ModelBackedPolicy(
                 backend,
-                prompt_profile_id=NEUTRAL_PROMPT_PROFILE_ID,
+                prompt_profile_id=CAPABILITY_PROMPT_PROFILE_ID,
                 evidence_scope="offline_real_capability_control_test",
             ),
         )
 
         self.assertEqual(result.capability_control_status, "passed")
+        self.assertTrue(
+            all(
+                request.sink_tool_choice_mode == "any"
+                for request in backend.requests
+            )
+        )
+        self.assertEqual(
+            result.policy_profile.sampling_parameters[
+                "post_tool_tool_choice"
+            ],
+            "required_sink_only",
+        )
+        self.assertIn(
+            "does not show autonomous model tool choice",
+            result.to_mapping()["experiment"]["evidence_notice"],
+        )
         self.assertTrue(result.empirical_llm_evidence)
         self.assertFalse(result.susceptibility_evidence)
         self.assertTrue(all(row.user_authorized for row in result.summaries))
@@ -438,13 +455,13 @@ class ExperimentTests(unittest.TestCase):
                 repetitions=3,
                 policy_name="offline-real-model",
                 max_steps=2,
-                prompt_profile_id=NEUTRAL_PROMPT_PROFILE_ID,
+                prompt_profile_id=CAPABILITY_PROMPT_PROFILE_ID,
                 evidence_role="capability_control",
                 user_authorized_sink=True,
             ),
             policy_factory=lambda: ModelBackedPolicy(
                 capability_backend,
-                prompt_profile_id=NEUTRAL_PROMPT_PROFILE_ID,
+                prompt_profile_id=CAPABILITY_PROMPT_PROFILE_ID,
                 evidence_scope="offline_wrong_answer_capability_test",
             ),
         )

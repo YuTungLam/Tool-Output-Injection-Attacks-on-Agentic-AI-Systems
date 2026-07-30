@@ -37,18 +37,22 @@ ROLE_SPLITS = {
 
 NOT_APPLICABLE_PROMPT_PROFILE_ID = "not_applicable"
 GUARDED_PROMPT_PROFILE_ID = "guarded_authorization"
+CAPABILITY_PROMPT_PROFILE_ID = "authorized_capability_control"
 NEUTRAL_PROMPT_PROFILE_ID = "neutral_no_semantic_guard"
 CALIBRATION_PROMPT_PROFILE_ID = "vulnerable_tool_workflow"
 PROMPT_PROFILE_VERSIONS = {
     NOT_APPLICABLE_PROMPT_PROFILE_ID: "not_applicable",
     GUARDED_PROMPT_PROFILE_ID: "1.0",
+    CAPABILITY_PROMPT_PROFILE_ID: "1.0",
     NEUTRAL_PROMPT_PROFILE_ID: "1.0",
     CALIBRATION_PROMPT_PROFILE_ID: "1.0",
 }
 ROLE_ALLOWED_PROMPT_PROFILES = {
-    INSTRUMENTATION_ROLE: set(PROMPT_PROFILE_VERSIONS),
+    INSTRUMENTATION_ROLE: (
+        set(PROMPT_PROFILE_VERSIONS) - {CAPABILITY_PROMPT_PROFILE_ID}
+    ),
     SMOKE_ROLE: {GUARDED_PROMPT_PROFILE_ID},
-    CAPABILITY_ROLE: {NEUTRAL_PROMPT_PROFILE_ID},
+    CAPABILITY_ROLE: {CAPABILITY_PROMPT_PROFILE_ID},
     CALIBRATION_ROLE: {
         CALIBRATION_PROMPT_PROFILE_ID,
         NEUTRAL_PROMPT_PROFILE_ID,
@@ -118,14 +122,58 @@ FROZEN_HELD_OUT_PHASE_PROMPT_HASHES = {
         "93503abcc6de89bd106108453a3bc6fea7fe1d1acdee05329a9179b3836b715d"
     ),
 }
+FROZEN_GATE_PROMPT_PROFILES = {
+    CAPABILITY_RECEIPT_KEY: {
+        "phase_prompt_hashes": {
+            "post_tool": (
+                "b7f802bb5ae2ed26e4a247fc7e0bb3603cf052b637e7a3bfb5f0a21acf9068b2"
+            ),
+            "pre_tool": (
+                "a3114dc95f9b43fad671910700bd3460541d8679969c555be01f42427ea081c1"
+            ),
+        },
+        "prompt_profile_id": CAPABILITY_PROMPT_PROFILE_ID,
+        "prompt_profile_version": PROMPT_PROFILE_VERSIONS[
+            CAPABILITY_PROMPT_PROFILE_ID
+        ],
+        "system_prompt_hash": (
+            "f35b7555ad451498b694df92ff922dc2e6811ccae27ac5f6edf8d81b5d67ffae"
+        ),
+    },
+    ATTACK_CALIBRATION_RECEIPT_KEY: {
+        "phase_prompt_hashes": {
+            "post_tool": (
+                "09bad6ca5105b8e70993062e809157379797e3cc92924ce344b55248839c90a6"
+            ),
+            "pre_tool": (
+                "dad2f507aea94aba5f3dbf948908b7adbc98e6e375ae4a5e064187737b129778"
+            ),
+        },
+        "prompt_profile_id": CALIBRATION_PROMPT_PROFILE_ID,
+        "prompt_profile_version": PROMPT_PROFILE_VERSIONS[
+            CALIBRATION_PROMPT_PROFILE_ID
+        ],
+        "system_prompt_hash": (
+            "55943cc45fe3226d23889b2f6bcad7521906394d32a3ac29c3ebc4ae9fede596"
+        ),
+    },
+}
 FROZEN_HELD_OUT_GATE_REQUIREMENTS = {
     ATTACK_CALIBRATION_RECEIPT_KEY: {
         "evidence_role": CALIBRATION_ROLE,
+        "post_tool_tool_choice": "validated_sink_only",
+        "prompt_profile": FROZEN_GATE_PROMPT_PROFILES[
+            ATTACK_CALIBRATION_RECEIPT_KEY
+        ],
         "required_status": "qualified",
         "status_field": "attack_calibration_status",
     },
     CAPABILITY_RECEIPT_KEY: {
         "evidence_role": CAPABILITY_ROLE,
+        "post_tool_tool_choice": "required_sink_only",
+        "prompt_profile": FROZEN_GATE_PROMPT_PROFILES[
+            CAPABILITY_RECEIPT_KEY
+        ],
         "required_status": "passed",
         "status_field": "capability_control_status",
     },
@@ -148,7 +196,7 @@ FROZEN_HELD_OUT_PROTOCOL_MANIFEST = {
     "phase_prompt_hashes": FROZEN_HELD_OUT_PHASE_PROMPT_HASHES,
     "policy_id": "model-backed-two-stage-policy",
     "policy_name": "gemini",
-    "policy_version": "3.0",
+    "policy_version": "3.1",
     "prompt_profile_id": NEUTRAL_PROMPT_PROFILE_ID,
     "prompt_profile_version": PROMPT_PROFILE_VERSIONS[
         NEUTRAL_PROMPT_PROFILE_ID
@@ -172,7 +220,7 @@ FROZEN_HELD_OUT_PROTOCOL_MANIFEST = {
     "user_authorized_sink": False,
 }
 FROZEN_HELD_OUT_PROTOCOL_MANIFEST_SHA256 = (
-    "a3f1dbb7756adfcf836d904862a0d533e9c9d1e097733f8f0aa66aa42657a574"
+    "45751b4ffae3fc05925ebd49f846bbc7e5c10fa0a478f4a0a0adc833ea4745b7"
 )
 _COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40,64}$")
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
@@ -603,8 +651,19 @@ def validate_held_out_gate_receipts(
             "capability_control_status": "passed",
             "dataset_split": "not_applicable",
             "evidence_role": CAPABILITY_ROLE,
+            "evidence_scope": "real_llm_capability_control",
             "fixture_variant": FixtureVariant.LEGACY_OVERRIDE.value,
-            "prompt_profile_id": NEUTRAL_PROMPT_PROFILE_ID,
+            **FROZEN_HELD_OUT_GATE_REQUIREMENTS[
+                CAPABILITY_RECEIPT_KEY
+            ]["prompt_profile"],
+            "sampling_parameters": {
+                **dict(policy_profile.get("sampling_parameters", {})),
+                "post_tool_tool_choice": (
+                    FROZEN_HELD_OUT_GATE_REQUIREMENTS[
+                        CAPABILITY_RECEIPT_KEY
+                    ]["post_tool_tool_choice"]
+                ),
+            },
             "user_authorized_sink": True,
         },
         ATTACK_CALIBRATION_RECEIPT_KEY: {
@@ -612,8 +671,19 @@ def validate_held_out_gate_receipts(
             "capability_control_status": "not_applicable",
             "dataset_split": "calibration",
             "evidence_role": CALIBRATION_ROLE,
+            "evidence_scope": "real_llm_attack_calibration",
             "fixture_variant": FixtureVariant.EXACT_FUNCTION_CALL.value,
-            "prompt_profile_id": CALIBRATION_PROMPT_PROFILE_ID,
+            **FROZEN_HELD_OUT_GATE_REQUIREMENTS[
+                ATTACK_CALIBRATION_RECEIPT_KEY
+            ]["prompt_profile"],
+            "sampling_parameters": {
+                **dict(policy_profile.get("sampling_parameters", {})),
+                "post_tool_tool_choice": (
+                    FROZEN_HELD_OUT_GATE_REQUIREMENTS[
+                        ATTACK_CALIBRATION_RECEIPT_KEY
+                    ]["post_tool_tool_choice"]
+                ),
+            },
             "user_authorized_sink": False,
         },
     }
@@ -634,9 +704,6 @@ def validate_held_out_gate_receipts(
         "provider_id": policy_profile.get("provider_id"),
         "real_model_configured": True,
         "runtime_kind": policy_profile.get("runtime_kind"),
-        "sampling_parameters": dict(
-            policy_profile.get("sampling_parameters", {})
-        ),
         "sdk_name": policy_profile.get("sdk_name"),
         "sdk_version": policy_profile.get("sdk_version"),
         "transport": config.get("transport"),

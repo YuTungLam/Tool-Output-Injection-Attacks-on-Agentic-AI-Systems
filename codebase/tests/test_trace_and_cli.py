@@ -4,16 +4,19 @@ import io
 import json
 import os
 import tempfile
+import tomllib
 import unittest
 from copy import deepcopy
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
-from tool_output_lab.cli import main
+from tool_output_lab import __version__
+from tool_output_lab.cli import QUALIFICATION_MODES, main
 from tool_output_lab.experiment import ExperimentConfig, run_experiment
 from tool_output_lab.llm import (
     BackendDecision,
+    CAPABILITY_PROMPT_PROFILE_ID,
     FakeLLMBackend,
     GUARDED_PROMPT_PROFILE_ID,
     LLMBackendError,
@@ -35,6 +38,20 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class TraceAndCliTests(unittest.TestCase):
+    def test_runtime_version_matches_package_metadata(self) -> None:
+        with (ROOT / "pyproject.toml").open("rb") as handle:
+            package_version = tomllib.load(handle)["project"]["version"]
+        self.assertEqual(__version__, package_version)
+
+    def test_capability_cli_uses_dedicated_authorized_profile(self) -> None:
+        self.assertEqual(
+            QUALIFICATION_MODES["capability"]["prompt_profile_id"],
+            CAPABILITY_PROMPT_PROFILE_ID,
+        )
+        self.assertTrue(
+            QUALIFICATION_MODES["capability"]["user_authorized_sink"]
+        )
+
     def test_jsonl_is_canonical_and_complete(self) -> None:
         task = load_tasks(ROOT / "configs" / "tasks.json")[0]
         with tempfile.TemporaryDirectory() as temp_dir:

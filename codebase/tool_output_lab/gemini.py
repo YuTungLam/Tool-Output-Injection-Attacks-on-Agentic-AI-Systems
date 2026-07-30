@@ -248,6 +248,10 @@ class GeminiBackend:
         prepared: PreparedToolCall,
     ) -> BackendDecision:
         self._validate_branch_context(request, prepared)
+        if request.sink_tool_choice_mode not in {"any", "validated"}:
+            raise MalformedModelResponse(
+                "Gemini post-tool choice mode must be 'any' or 'validated'"
+            )
         source_schema = source_function_schema(
             prepared.tool_name,
             prepared.tool_arguments,
@@ -275,7 +279,7 @@ class GeminiBackend:
                     ],
                     "tool_choice": {
                         "allowed_tools": {
-                            "mode": "validated",
+                            "mode": request.sink_tool_choice_mode,
                             "tools": [SINK_FUNCTION_NAME],
                         }
                     },
@@ -286,7 +290,13 @@ class GeminiBackend:
         if provider_error is not None:
             raise LLMBackendError(provider_error)
         latency_ms = (time.perf_counter_ns() - started_ns) / 1_000_000
-        return self._parse_interaction(interaction, latency_ms=latency_ms)
+        return self._parse_interaction(
+            interaction,
+            latency_ms=latency_ms,
+            sink_action_required=(
+                request.sink_tool_choice_mode == "any"
+            ),
+        )
 
     def _parse_prelude(
         self,
@@ -439,6 +449,7 @@ class GeminiBackend:
         interaction: Any,
         *,
         latency_ms: float,
+        sink_action_required: bool = False,
     ) -> BackendDecision:
         status = self._terminal_status(interaction)
 
@@ -524,6 +535,10 @@ class GeminiBackend:
             }
             finish_reason = "function_call"
         else:
+            if sink_action_required:
+                raise MalformedModelResponse(
+                    "Gemini required sink tool choice returned no function call"
+                )
             if status == "requires_action":
                 raise MalformedModelResponse(
                     "Gemini requires_action response has no function call"

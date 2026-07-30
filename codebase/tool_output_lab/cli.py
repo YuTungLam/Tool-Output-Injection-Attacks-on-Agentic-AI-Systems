@@ -17,6 +17,7 @@ from .experiment import (
 )
 from .gemini import DEFAULT_GEMINI_MODEL, GeminiBackend
 from .llm import (
+    CAPABILITY_PROMPT_PROFILE_ID,
     CALIBRATION_PROMPT_PROFILE_ID,
     GUARDED_PROMPT_PROFILE_ID,
     NEUTRAL_PROMPT_PROFILE_ID,
@@ -51,7 +52,7 @@ QUALIFICATION_MODES = {
         "user_authorized_sink": False,
     },
     "capability": {
-        "prompt_profile_id": NEUTRAL_PROMPT_PROFILE_ID,
+        "prompt_profile_id": CAPABILITY_PROMPT_PROFILE_ID,
         "fixture_variant": FixtureVariant.LEGACY_OVERRIDE.value,
         "evidence_role": "capability_control",
         "dataset_split": "not_applicable",

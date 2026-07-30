@@ -11,6 +11,7 @@ from tool_output_lab.experiment import (
     run_experiment,
 )
 from tool_output_lab.llm import (
+    CAPABILITY_PROMPT_PROFILE_ID,
     CALIBRATION_PROMPT_PROFILE_ID,
     NEUTRAL_PROMPT_PROFILE_ID,
     BackendDecision,
@@ -19,6 +20,7 @@ from tool_output_lab.llm import (
     fake_call_metadata,
 )
 from tool_output_lab.qualification import (
+    FROZEN_GATE_PROMPT_PROFILES,
     FROZEN_HELD_OUT_PROTOCOL_MANIFEST,
     FROZEN_HELD_OUT_PROTOCOL_MANIFEST_SHA256,
     FROZEN_HELD_OUT_TASK_SHA256,
@@ -166,6 +168,30 @@ class QualificationProtocolTests(unittest.TestCase):
             [capability],
             "capability_control",
         )
+        ExperimentConfig(
+            repetitions=3,
+            evidence_role="capability_control",
+            prompt_profile_id=CAPABILITY_PROMPT_PROFILE_ID,
+            user_authorized_sink=True,
+        ).validate()
+        with self.assertRaisesRegex(
+            ValueError,
+            "does not allow prompt profile",
+        ):
+            ExperimentConfig(
+                repetitions=3,
+                evidence_role="capability_control",
+                prompt_profile_id=NEUTRAL_PROMPT_PROFILE_ID,
+                user_authorized_sink=True,
+            ).validate()
+        with self.assertRaisesRegex(
+            ValueError,
+            "does not allow prompt profile",
+        ):
+            ExperimentConfig(
+                evidence_role="instrumentation_control",
+                prompt_profile_id=CAPABILITY_PROMPT_PROFILE_ID,
+            ).validate()
         forged = replace(
             capability,
             user_prompt=ordinary.user_prompt,
@@ -240,6 +266,19 @@ class QualificationProtocolTests(unittest.TestCase):
                 canonical_json(FROZEN_HELD_OUT_PROTOCOL_MANIFEST)
             ),
             FROZEN_HELD_OUT_PROTOCOL_MANIFEST_SHA256,
+        )
+        requirements = FROZEN_HELD_OUT_PROTOCOL_MANIFEST[
+            "required_gate_receipts"
+        ]
+        self.assertEqual(
+            requirements["capability"]["prompt_profile"][
+                "prompt_profile_id"
+            ],
+            CAPABILITY_PROMPT_PROFILE_ID,
+        )
+        self.assertEqual(
+            requirements["capability"]["post_tool_tool_choice"],
+            "required_sink_only",
         )
         manifest = dict(FROZEN_HELD_OUT_PROTOCOL_MANIFEST)
         config_fields = {
@@ -335,8 +374,13 @@ class QualificationProtocolTests(unittest.TestCase):
                 "capability_control_status": "passed",
                 "dataset_split": "not_applicable",
                 "evidence_role": "capability_control",
+                "evidence_scope": "real_llm_capability_control",
                 "fixture_variant": "legacy_override",
-                "prompt_profile_id": NEUTRAL_PROMPT_PROFILE_ID,
+                **FROZEN_GATE_PROMPT_PROFILES["capability"],
+                "sampling_parameters": {
+                    **common["sampling_parameters"],
+                    "post_tool_tool_choice": "required_sink_only",
+                },
                 "user_authorized_sink": True,
             },
         }
@@ -348,8 +392,9 @@ class QualificationProtocolTests(unittest.TestCase):
                 "capability_control_status": "not_applicable",
                 "dataset_split": "calibration",
                 "evidence_role": "attack_calibration",
+                "evidence_scope": "real_llm_attack_calibration",
                 "fixture_variant": "exact_function_call",
-                "prompt_profile_id": CALIBRATION_PROMPT_PROFILE_ID,
+                **FROZEN_GATE_PROMPT_PROFILES["attack_calibration"],
                 "user_authorized_sink": False,
             },
         }
@@ -418,6 +463,46 @@ class QualificationProtocolTests(unittest.TestCase):
                 config=failed_config,
                 policy_profile=profile,
             )
+
+        for field, changed_value in (
+            ("prompt_profile_id", NEUTRAL_PROMPT_PROFILE_ID),
+            ("prompt_profile_version", "tampered"),
+            ("system_prompt_hash", "0" * 64),
+            (
+                "phase_prompt_hashes",
+                {"post_tool": "0" * 64, "pre_tool": "0" * 64},
+            ),
+            (
+                "sampling_parameters",
+                common["sampling_parameters"],
+            ),
+        ):
+            with self.subTest(capability_receipt_field=field):
+                tampered_capability = {
+                    **capability,
+                    "experiment": {
+                        **capability["experiment"],
+                        field: changed_value,
+                    },
+                }
+                tampered_receipts = {
+                    **receipts,
+                    "capability": tampered_capability,
+                }
+                tampered_config = {
+                    **config,
+                    "capability_receipt_sha256": (
+                        qualification_receipt_sha256(
+                            tampered_capability
+                        )
+                    ),
+                }
+                with self.assertRaisesRegex(ValueError, field):
+                    validate_held_out_gate_receipts(
+                        tampered_receipts,
+                        config=tampered_config,
+                        policy_profile=profile,
+                    )
 
     def test_library_rejects_calibration_task_as_held_out_evidence(self) -> None:
         config = ExperimentConfig(

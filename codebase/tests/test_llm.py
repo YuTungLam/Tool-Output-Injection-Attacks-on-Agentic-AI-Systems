@@ -16,6 +16,7 @@ from tool_output_lab.domain import (
 from tool_output_lab.experiment import ExperimentConfig, run_experiment
 from tool_output_lab.llm import (
     BackendDecision,
+    CAPABILITY_PROMPT_PROFILE_ID,
     CALIBRATION_PROMPT_PROFILE_ID,
     DEFAULT_PROMPT_PROFILE_ID,
     FakeLLMBackend,
@@ -82,6 +83,7 @@ class ModelBackedPolicyTests(unittest.TestCase):
     def test_prompt_profiles_resolve_to_distinct_instructions(self) -> None:
         profile_ids = (
             GUARDED_PROMPT_PROFILE_ID,
+            CAPABILITY_PROMPT_PROFILE_ID,
             NEUTRAL_PROMPT_PROFILE_ID,
             CALIBRATION_PROMPT_PROFILE_ID,
         )
@@ -113,6 +115,7 @@ class ModelBackedPolicyTests(unittest.TestCase):
     def test_selected_prompt_changes_hash_and_both_model_requests(self) -> None:
         profile_ids = (
             GUARDED_PROMPT_PROFILE_ID,
+            CAPABILITY_PROMPT_PROFILE_ID,
             NEUTRAL_PROMPT_PROFILE_ID,
             CALIBRATION_PROMPT_PROFILE_ID,
         )
@@ -157,9 +160,59 @@ class ModelBackedPolicyTests(unittest.TestCase):
 
         self.assertEqual(len(system_hashes), len(profile_ids))
 
+        expected_choice_modes = {
+            GUARDED_PROMPT_PROFILE_ID: (
+                "validated",
+                "validated_sink_only",
+            ),
+            CAPABILITY_PROMPT_PROFILE_ID: (
+                "any",
+                "required_sink_only",
+            ),
+            NEUTRAL_PROMPT_PROFILE_ID: (
+                "validated",
+                "validated_sink_only",
+            ),
+            CALIBRATION_PROMPT_PROFILE_ID: (
+                "validated",
+                "validated_sink_only",
+            ),
+        }
+        for profile_id, (
+            request_mode,
+            provenance_mode,
+        ) in expected_choice_modes.items():
+            with self.subTest(choice_profile_id=profile_id):
+                backend = FakeLLMBackend(
+                    BackendDecision(
+                        answer=self.task.public_answer,
+                        sink_action=None,
+                        metadata=fake_call_metadata(),
+                    )
+                )
+                policy = ModelBackedPolicy(
+                    backend,
+                    prompt_profile_id=profile_id,
+                )
+                prepared = self.prepare(policy)
+                policy.decide(
+                    self.policy_input(Condition.CLEAN, prepared)
+                )
+                self.assertEqual(
+                    backend.requests[0].sink_tool_choice_mode,
+                    request_mode,
+                )
+                self.assertEqual(
+                    policy.profile.sampling_parameters[
+                        "post_tool_tool_choice"
+                    ],
+                    provenance_mode,
+                )
+
     def test_sink_schema_is_profile_invariant_and_neutral(self) -> None:
         profile_ids = (
             GUARDED_PROMPT_PROFILE_ID,
+            CAPABILITY_PROMPT_PROFILE_ID,
             NEUTRAL_PROMPT_PROFILE_ID,
             CALIBRATION_PROMPT_PROFILE_ID,
         )
@@ -420,7 +473,11 @@ class ModelBackedPolicyTests(unittest.TestCase):
         )
         self.assertTrue(
             all(
-                event["sampling_parameters"] == {"deterministic": True}
+                event["sampling_parameters"]
+                == {
+                    "deterministic": True,
+                    "post_tool_tool_choice": "validated_sink_only",
+                }
                 for event in agent_events
             )
         )

@@ -480,9 +480,10 @@ class ExperimentResult:
         profile = asdict(self.policy_profile)
         if self.config.evidence_role == "capability_control":
             evidence_notice = (
-                "Authorized capability control only. It checks whether the model "
-                "can issue the exact synthetic sink action; it must never enter an "
-                "attack-success or susceptibility estimate."
+                "Provider-enforced capability control only. It validates forced "
+                "record_canary plumbing, exact argument construction, parsing, "
+                "and simulation; it does not show autonomous model tool choice "
+                "and must never enter an attack-success or susceptibility estimate."
             )
         elif self.config.evidence_role == "attack_calibration":
             evidence_notice = (
