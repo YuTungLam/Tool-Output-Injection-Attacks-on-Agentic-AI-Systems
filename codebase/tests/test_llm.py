@@ -16,11 +16,17 @@ from tool_output_lab.domain import (
 from tool_output_lab.experiment import ExperimentConfig, run_experiment
 from tool_output_lab.llm import (
     BackendDecision,
+    CALIBRATION_PROMPT_PROFILE_ID,
+    DEFAULT_PROMPT_PROFILE_ID,
     FakeLLMBackend,
+    GUARDED_PROMPT_PROFILE_ID,
     LLMBackendError,
     MalformedModelResponse,
     ModelBackedPolicy,
+    NEUTRAL_PROMPT_PROFILE_ID,
     fake_call_metadata,
+    resolve_prompt_profile,
+    sink_function_schema,
 )
 from tool_output_lab.tasks import load_tasks
 from tool_output_lab.tools import MockDocumentTool
@@ -72,6 +78,115 @@ class ModelBackedPolicyTests(unittest.TestCase):
             source_tool_call_id=prepared.provider_call_id,
             prepared_tool_call=prepared,
         )
+
+    def test_prompt_profiles_resolve_to_distinct_instructions(self) -> None:
+        profile_ids = (
+            GUARDED_PROMPT_PROFILE_ID,
+            NEUTRAL_PROMPT_PROFILE_ID,
+            CALIBRATION_PROMPT_PROFILE_ID,
+        )
+        profiles = [
+            resolve_prompt_profile(profile_id)
+            for profile_id in profile_ids
+        ]
+
+        self.assertEqual(
+            [profile.profile_id for profile in profiles],
+            list(profile_ids),
+        )
+        self.assertEqual(
+            len(
+                {
+                    profile.system_instruction
+                    for profile in profiles
+                }
+            ),
+            len(profile_ids),
+        )
+        self.assertEqual(
+            resolve_prompt_profile(),
+            resolve_prompt_profile(DEFAULT_PROMPT_PROFILE_ID),
+        )
+        with self.assertRaisesRegex(ValueError, "Unknown prompt profile"):
+            resolve_prompt_profile("unknown_prompt_profile")
+
+    def test_selected_prompt_changes_hash_and_both_model_requests(self) -> None:
+        profile_ids = (
+            GUARDED_PROMPT_PROFILE_ID,
+            NEUTRAL_PROMPT_PROFILE_ID,
+            CALIBRATION_PROMPT_PROFILE_ID,
+        )
+        system_hashes: set[str] = set()
+
+        for profile_id in profile_ids:
+            with self.subTest(prompt_profile_id=profile_id):
+                backend = FakeLLMBackend(
+                    BackendDecision(
+                        answer=self.task.public_answer,
+                        sink_action=None,
+                        metadata=fake_call_metadata(),
+                    )
+                )
+                policy = ModelBackedPolicy(
+                    backend,
+                    prompt_profile_id=profile_id,
+                )
+                prompt_profile = resolve_prompt_profile(profile_id)
+                prepared = self.prepare(policy)
+                policy.decide(
+                    self.policy_input(Condition.CLEAN, prepared)
+                )
+
+                self.assertEqual(
+                    policy.profile.prompt_profile_id,
+                    profile_id,
+                )
+                self.assertEqual(
+                    policy.profile.prompt_profile_version,
+                    prompt_profile.version,
+                )
+                self.assertEqual(
+                    backend.prelude_requests[0].system_instruction,
+                    prompt_profile.system_instruction,
+                )
+                self.assertEqual(
+                    backend.requests[0].system_instruction,
+                    prompt_profile.system_instruction,
+                )
+                system_hashes.add(policy.profile.system_prompt_hash)
+
+        self.assertEqual(len(system_hashes), len(profile_ids))
+
+    def test_sink_schema_is_profile_invariant_and_neutral(self) -> None:
+        profile_ids = (
+            GUARDED_PROMPT_PROFILE_ID,
+            NEUTRAL_PROMPT_PROFILE_ID,
+            CALIBRATION_PROMPT_PROFILE_ID,
+        )
+        schemas = {
+            profile_id: sink_function_schema(
+                (self.task.eligible_sink,)
+            )
+            for profile_id in profile_ids
+        }
+
+        first_schema = schemas[GUARDED_PROMPT_PROFILE_ID]
+        self.assertTrue(
+            all(schema == first_schema for schema in schemas.values())
+        )
+        description = first_schema["description"].casefold()
+        for forbidden in (
+            "authorization",
+            "authorize",
+            "authorized",
+            "authorised",
+            "necessary",
+            "necessity",
+            "only when",
+            "user request",
+        ):
+            with self.subTest(forbidden=forbidden):
+                self.assertNotIn(forbidden, description)
 
     def test_fake_backend_maps_text_decision_without_claiming_llm_evidence(
         self,
@@ -215,6 +330,7 @@ class ModelBackedPolicyTests(unittest.TestCase):
                 repetitions=1,
                 policy_name="fake-llm",
                 max_steps=2,
+                prompt_profile_id=DEFAULT_PROMPT_PROFILE_ID,
             ),
             policy_factory=lambda: ModelBackedPolicy(backend),
         )
@@ -332,6 +448,7 @@ class ModelBackedPolicyTests(unittest.TestCase):
                 repetitions=1,
                 policy_name="fake-llm",
                 max_steps=2,
+                prompt_profile_id=DEFAULT_PROMPT_PROFILE_ID,
             ),
             policy_factory=lambda: ModelBackedPolicy(backend),
         )
@@ -393,6 +510,7 @@ class ModelBackedPolicyTests(unittest.TestCase):
                 repetitions=1,
                 policy_name="stub-real-llm",
                 max_steps=2,
+                prompt_profile_id=DEFAULT_PROMPT_PROFILE_ID,
             ),
             policy_factory=lambda: ModelBackedPolicy(backend),
         )
@@ -421,6 +539,7 @@ class ModelBackedPolicyTests(unittest.TestCase):
                 repetitions=1,
                 policy_name="fake-llm",
                 max_steps=2,
+                prompt_profile_id=DEFAULT_PROMPT_PROFILE_ID,
             ),
             policy_factory=lambda: ModelBackedPolicy(backend),
         )
@@ -480,6 +599,7 @@ class ModelBackedPolicyTests(unittest.TestCase):
                 repetitions=1,
                 policy_name="fake-llm",
                 max_steps=2,
+                prompt_profile_id=DEFAULT_PROMPT_PROFILE_ID,
             ),
             policy_factory=lambda: ModelBackedPolicy(backend),
         )
@@ -543,6 +663,7 @@ class ModelBackedPolicyTests(unittest.TestCase):
                 repetitions=1,
                 policy_name="fake-llm",
                 max_steps=2,
+                prompt_profile_id=DEFAULT_PROMPT_PROFILE_ID,
             ),
             policy_factory=lambda: ModelBackedPolicy(backend),
         )
@@ -612,6 +733,7 @@ class ModelBackedPolicyTests(unittest.TestCase):
                 repetitions=1,
                 policy_name="fake-llm",
                 max_steps=2,
+                prompt_profile_id=DEFAULT_PROMPT_PROFILE_ID,
             ),
             policy_factory=lambda: ModelBackedPolicy(backend),
         )

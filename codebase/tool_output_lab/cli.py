@@ -3,25 +3,82 @@
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import sys
 from pathlib import Path
 from typing import Callable, Sequence
 
+from .conditions import FixtureVariant
 from .experiment import (
     ExperimentConfig,
     require_external_artifact_path,
     run_experiment,
 )
 from .gemini import DEFAULT_GEMINI_MODEL, GeminiBackend
-from .llm import ModelBackedPolicy
+from .llm import (
+    CALIBRATION_PROMPT_PROFILE_ID,
+    GUARDED_PROMPT_PROFILE_ID,
+    NEUTRAL_PROMPT_PROFILE_ID,
+    ModelBackedPolicy,
+)
 from .policy import AgentPolicy
-from .tasks import load_tasks
+from .qualification import (
+    ATTACK_CALIBRATION_RECEIPT_KEY,
+    CAPABILITY_RECEIPT_KEY,
+    CALIBRATION_TASK_IDS,
+    FROZEN_HELD_OUT_EXPERIMENT_ID,
+    FROZEN_HELD_OUT_PROTOCOL_MANIFEST_SHA256,
+    HELD_OUT_TASK_IDS,
+    NOT_APPLICABLE_GATE_RECEIPT_HASH,
+    NOT_APPLICABLE_PROTOCOL_MANIFEST_HASH,
+    QUALIFICATION_PROTOCOL_VERSION,
+    qualification_receipt_sha256,
+    validate_tasks_for_evidence_role,
+)
+from .tasks import build_capability_control_task, load_tasks
 from .utils import canonical_json
 
 CODEBASE_ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY_ROOT = CODEBASE_ROOT.parent
 DEFAULT_TASKS_PATH = CODEBASE_ROOT / "configs" / "tasks.json"
+QUALIFICATION_MODES = {
+    "smoke": {
+        "prompt_profile_id": GUARDED_PROMPT_PROFILE_ID,
+        "fixture_variant": FixtureVariant.LEGACY_OVERRIDE.value,
+        "evidence_role": "smoke_test",
+        "dataset_split": "not_applicable",
+        "user_authorized_sink": False,
+    },
+    "capability": {
+        "prompt_profile_id": NEUTRAL_PROMPT_PROFILE_ID,
+        "fixture_variant": FixtureVariant.LEGACY_OVERRIDE.value,
+        "evidence_role": "capability_control",
+        "dataset_split": "not_applicable",
+        "user_authorized_sink": True,
+    },
+    "vulnerable-calibration": {
+        "prompt_profile_id": CALIBRATION_PROMPT_PROFILE_ID,
+        "fixture_variant": FixtureVariant.EXACT_FUNCTION_CALL.value,
+        "evidence_role": "attack_calibration",
+        "dataset_split": "calibration",
+        "user_authorized_sink": False,
+    },
+    "neutral-calibration": {
+        "prompt_profile_id": NEUTRAL_PROMPT_PROFILE_ID,
+        "fixture_variant": FixtureVariant.EXACT_FUNCTION_CALL.value,
+        "evidence_role": "attack_calibration",
+        "dataset_split": "calibration",
+        "user_authorized_sink": False,
+    },
+    "held-out-evaluation": {
+        "prompt_profile_id": NEUTRAL_PROMPT_PROFILE_ID,
+        "fixture_variant": FixtureVariant.EXACT_FUNCTION_CALL.value,
+        "evidence_role": "susceptibility_evaluation",
+        "dataset_split": "held_out",
+        "user_authorized_sink": False,
+    },
+}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -76,12 +133,55 @@ def build_parser() -> argparse.ArgumentParser:
         help="fixed Gemini model ID; moving *-latest aliases are rejected",
     )
     run_parser.add_argument(
+        "--qualification-mode",
+        choices=tuple(QUALIFICATION_MODES),
+        default=None,
+        help=(
+            "explicit Gemini evidence role; defaults to smoke for Gemini and "
+            "is unavailable for scripted policies"
+        ),
+    )
+    run_parser.add_argument(
+        "--fixture-variant",
+        choices=tuple(variant.value for variant in FixtureVariant),
+        default=None,
+        help=(
+            "predeclared attack carrier; otherwise the qualification-mode "
+            "default is used"
+        ),
+    )
+    run_parser.add_argument(
+        "--confirm-held-out-evaluation",
+        action="store_true",
+        help=(
+            "confirm that the protocol is frozen before consuming held-out tasks"
+        ),
+    )
+    run_parser.add_argument(
+        "--capability-receipt",
+        type=Path,
+        default=None,
+        help=(
+            "successful capability-control summary required for held-out "
+            "evaluation"
+        ),
+    )
+    run_parser.add_argument(
+        "--attack-calibration-receipt",
+        type=Path,
+        default=None,
+        help=(
+            "qualified vulnerable-calibration summary required for held-out "
+            "evaluation"
+        ),
+    )
+    run_parser.add_argument(
         "--task-id",
         default=None,
         help=(
-            "run one synthetic task; Gemini defaults to the first task "
-            "to keep the initial pilot to 9 branches and at most 12 model "
-            "backend calls (3 shared preludes plus 9 post-tool calls)"
+            "run one synthetic task; non-held-out Gemini modes default to "
+            "the first allowed task, while held-out evaluation defaults to "
+            "the frozen held-out task set"
         ),
     )
     run_parser.add_argument(
@@ -93,6 +193,77 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _run(args: argparse.Namespace) -> int:
+    if args.policy != "gemini" and args.qualification_mode is not None:
+        raise ValueError(
+            "--qualification-mode is available only with --policy gemini"
+        )
+    if args.policy != "gemini" and args.fixture_variant is not None:
+        raise ValueError(
+            "--fixture-variant is available only with --policy gemini"
+        )
+    qualification_mode = (
+        args.qualification_mode or "smoke"
+        if args.policy == "gemini"
+        else None
+    )
+    mode_config = (
+        QUALIFICATION_MODES[qualification_mode]
+        if qualification_mode is not None
+        else {
+            "prompt_profile_id": "not_applicable",
+            "fixture_variant": FixtureVariant.LEGACY_OVERRIDE.value,
+            "evidence_role": "instrumentation_control",
+            "dataset_split": "not_applicable",
+            "user_authorized_sink": False,
+        }
+    )
+    if (
+        qualification_mode == "held-out-evaluation"
+        and not args.confirm_held_out_evaluation
+    ):
+        raise ValueError(
+            "held-out evaluation requires --confirm-held-out-evaluation"
+        )
+    if (
+        qualification_mode == "held-out-evaluation"
+        and args.tasks.resolve() != DEFAULT_TASKS_PATH.resolve()
+    ):
+        raise ValueError(
+            "held-out evaluation requires the frozen default task manifest"
+        )
+    if (
+        qualification_mode == "held-out-evaluation"
+        and args.fixture_variant is not None
+    ):
+        raise ValueError(
+            "held-out evaluation does not allow a fixture override"
+        )
+    if (
+        qualification_mode == "held-out-evaluation"
+        and args.task_id is not None
+    ):
+        raise ValueError(
+            "held-out evaluation requires the complete frozen held-out task set"
+        )
+    receipt_paths = {
+        CAPABILITY_RECEIPT_KEY: args.capability_receipt,
+        ATTACK_CALIBRATION_RECEIPT_KEY: (
+            args.attack_calibration_receipt
+        ),
+    }
+    if qualification_mode == "held-out-evaluation":
+        missing_receipts = sorted(
+            name for name, path in receipt_paths.items() if path is None
+        )
+        if missing_receipts:
+            raise ValueError(
+                "held-out evaluation requires successful capability and "
+                "attack-calibration summary receipts"
+            )
+    elif any(path is not None for path in receipt_paths.values()):
+        raise ValueError(
+            "qualification receipts are accepted only for held-out evaluation"
+        )
     if (
         args.policy == "gemini"
         and args.tasks.resolve() != DEFAULT_TASKS_PATH.resolve()
@@ -107,28 +278,82 @@ def _run(args: argparse.Namespace) -> int:
         tasks = [task for task in tasks if task.task_id == args.task_id]
         if not tasks:
             raise ValueError(f"Unknown task_id: {args.task_id}")
+    elif qualification_mode in {
+        "vulnerable-calibration",
+        "neutral-calibration",
+    }:
+        tasks = [
+            task for task in tasks if task.task_id in CALIBRATION_TASK_IDS
+        ]
+    elif qualification_mode == "held-out-evaluation":
+        tasks = [
+            task for task in tasks if task.task_id in HELD_OUT_TASK_IDS
+        ]
+    if qualification_mode in {
+        "vulnerable-calibration",
+        "neutral-calibration",
+    }:
+        unexpected = [
+            task.task_id
+            for task in tasks
+            if task.task_id not in CALIBRATION_TASK_IDS
+        ]
+        if unexpected:
+            raise ValueError(
+                "Calibration modes may use only frozen calibration tasks "
+                f"{sorted(CALIBRATION_TASK_IDS)}; found {unexpected}"
+            )
+    if qualification_mode == "held-out-evaluation":
+        unexpected = [
+            task.task_id
+            for task in tasks
+            if task.task_id not in HELD_OUT_TASK_IDS
+        ]
+        if unexpected:
+            raise ValueError(
+                "Held-out evaluation may use only frozen held-out tasks "
+                f"{sorted(HELD_OUT_TASK_IDS)}; found {unexpected}"
+            )
 
     summary_path = args.summary or args.trace.with_suffix(".summary.json")
     require_external_artifact_path(args.trace, label="trace")
     require_external_artifact_path(summary_path, label="summary")
+    qualification_receipts = None
+    if qualification_mode == "held-out-evaluation":
+        qualification_receipts = {}
+        for receipt_name, receipt_path in receipt_paths.items():
+            assert receipt_path is not None
+            require_external_artifact_path(
+                receipt_path,
+                label=f"{receipt_name} receipt",
+            )
+            qualification_receipts[receipt_name] = _read_json_receipt(
+                receipt_path
+            )
 
-    policy_factory: Callable[[], AgentPolicy] | None = None
     if args.policy == "gemini":
-        if args.task_id is None:
+        if qualification_mode == "held-out-evaluation":
+            tasks = [
+                task for task in tasks if task.task_id in HELD_OUT_TASK_IDS
+            ]
+        elif args.task_id is None:
             tasks = tasks[:1]
-        backend = GeminiBackend(model_id=args.model)
-        policy_factory = lambda backend=backend: ModelBackedPolicy(backend)
+        if qualification_mode == "capability":
+            tasks = [build_capability_control_task(task) for task in tasks]
 
     repetitions = args.repetitions
     if repetitions is None:
         repetitions = 3 if args.policy == "gemini" else 2
     experiment_id = args.experiment_id
     if experiment_id is None:
-        experiment_id = (
-            "gemini-real-llm-pilot"
-            if args.policy == "gemini"
-            else "instrumentation-pilot"
-        )
+        if qualification_mode == "held-out-evaluation":
+            experiment_id = FROZEN_HELD_OUT_EXPERIMENT_ID
+        else:
+            experiment_id = (
+                f"gemini-{qualification_mode}"
+                if args.policy == "gemini"
+                else "instrumentation-pilot"
+            )
     code_commit, code_dirty = _git_provenance()
 
     config = ExperimentConfig(
@@ -144,11 +369,59 @@ def _run(args: argparse.Namespace) -> int:
         ),
         code_commit=code_commit,
         code_dirty=code_dirty,
+        fixture_variant=(
+            args.fixture_variant
+            or str(mode_config["fixture_variant"])
+        ),
+        prompt_profile_id=str(mode_config["prompt_profile_id"]),
+        evidence_role=str(mode_config["evidence_role"]),
+        dataset_split=str(mode_config["dataset_split"]),
+        protocol_version=QUALIFICATION_PROTOCOL_VERSION,
+        protocol_manifest_hash=(
+            FROZEN_HELD_OUT_PROTOCOL_MANIFEST_SHA256
+            if qualification_mode == "held-out-evaluation"
+            else NOT_APPLICABLE_PROTOCOL_MANIFEST_HASH
+        ),
+        capability_receipt_sha256=(
+            qualification_receipt_sha256(
+                qualification_receipts[CAPABILITY_RECEIPT_KEY]
+            )
+            if qualification_receipts is not None
+            else NOT_APPLICABLE_GATE_RECEIPT_HASH
+        ),
+        attack_calibration_receipt_sha256=(
+            qualification_receipt_sha256(
+                qualification_receipts[
+                    ATTACK_CALIBRATION_RECEIPT_KEY
+                ]
+            )
+            if qualification_receipts is not None
+            else NOT_APPLICABLE_GATE_RECEIPT_HASH
+        ),
+        user_authorized_sink=bool(
+            mode_config["user_authorized_sink"]
+        ),
     )
+    config.validate()
+    validate_tasks_for_evidence_role(
+        tasks,
+        config.evidence_role,
+        real_model_configured=(args.policy == "gemini"),
+    )
+
+    policy_factory: Callable[[], AgentPolicy] | None = None
+    if args.policy == "gemini":
+        backend = GeminiBackend(model_id=args.model)
+        policy_factory = lambda backend=backend: ModelBackedPolicy(
+            backend,
+            prompt_profile_id=str(mode_config["prompt_profile_id"]),
+            evidence_scope=f"real_llm_{mode_config['evidence_role']}",
+        )
     result = run_experiment(
         tasks,
         config,
         policy_factory=policy_factory,
+        qualification_receipts=qualification_receipts,
         trace_path=args.trace,
         summary_path=summary_path,
         overwrite=args.overwrite,
@@ -180,6 +453,26 @@ def _run(args: argparse.Namespace) -> int:
                     result.any_empirical_llm_observation
                 ),
                 "empirical_llm_evidence": result.empirical_llm_evidence,
+                "qualification_mode": qualification_mode,
+                "prompt_profile_id": profile.prompt_profile_id,
+                "prompt_profile_version": profile.prompt_profile_version,
+                "fixture_variant": config.fixture_variant,
+                "evidence_role": config.evidence_role,
+                "dataset_split": config.dataset_split,
+                "protocol_version": config.protocol_version,
+                "protocol_manifest_hash": (
+                    config.protocol_manifest_hash
+                ),
+                "attack_estimate_eligible": (
+                    config.attack_estimate_eligible
+                ),
+                "susceptibility_evidence": result.susceptibility_evidence,
+                "capability_control_status": (
+                    result.capability_control_status
+                ),
+                "attack_calibration_status": (
+                    result.attack_calibration_status
+                ),
                 "complete_matched_sets": result.complete_matched_sets,
                 "incomplete_matched_sets": result.incomplete_matched_sets,
                 "complete_empirical_matched_sets": (
@@ -188,6 +481,9 @@ def _run(args: argparse.Namespace) -> int:
                 "shared_prelude_failures": result.shared_prelude_failures,
                 "model_backend_accounting": dict(
                     result.model_backend_accounting
+                ),
+                "matched_attack_metrics": dict(
+                    result.matched_attack_metrics
                 ),
                 "evidence_notice": (
                     result_experiment["evidence_notice"]
@@ -227,6 +523,21 @@ def _git_provenance() -> tuple[str, bool]:
     except (OSError, subprocess.SubprocessError):
         return "unavailable", True
     return commit or "unavailable", bool(status.strip())
+
+
+def _read_json_receipt(path: Path) -> dict[str, object]:
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            value = json.load(handle)
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"Qualification receipt is not valid JSON: {path}"
+        ) from exc
+    if not isinstance(value, dict):
+        raise ValueError(
+            f"Qualification receipt must contain a JSON object: {path}"
+        )
+    return value
 
 
 def main(argv: Sequence[str] | None = None) -> int:

@@ -230,6 +230,8 @@ class PolicyProfile:
     system_prompt_hash: str
     phase_prompt_hashes: Mapping[str, str]
     model_tool_schema_hash: str | None
+    prompt_profile_id: str = "not_applicable"
+    prompt_profile_version: str = "not_applicable"
 
 
 @dataclass(frozen=True)

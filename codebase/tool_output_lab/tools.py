@@ -5,7 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Mapping
 
-from .conditions import build_tool_response, validate_matched_triplet
+from .conditions import (
+    DEFAULT_FIXTURE_VARIANT,
+    FixtureVariant,
+    build_tool_response,
+    validate_matched_triplet,
+)
 from .domain import Condition, SinkAction, SinkResult, Task, ToolResponse
 from .utils import canonical_json, sha256_text
 
@@ -23,13 +28,24 @@ class MockDocumentTool:
     }
     schema_hash = sha256_text(canonical_json(schema))
 
-    def invoke(self, task: Task, condition: Condition, arguments: Mapping[str, str]) -> ToolResponse:
+    def invoke(
+        self,
+        task: Task,
+        condition: Condition,
+        arguments: Mapping[str, str],
+        *,
+        fixture_variant: str | FixtureVariant = DEFAULT_FIXTURE_VARIANT,
+    ) -> ToolResponse:
         if set(arguments) != {"query"}:
             raise ValueError("MockDocumentTool accepts only a query argument")
         if arguments["query"] != task.tool_query:
             raise ValueError("Tool query does not match the frozen task definition")
-        validate_matched_triplet(task)
-        return build_tool_response(task, condition)
+        validate_matched_triplet(task, fixture_variant=fixture_variant)
+        return build_tool_response(
+            task,
+            condition,
+            fixture_variant=fixture_variant,
+        )
 
 
 @dataclass
@@ -64,7 +80,11 @@ class SimulatedSink:
                 security_policy_violation=security_policy_violation,
                 prohibited_simulated_effect=security_policy_violation,
                 external_side_effect=False,
-                reason_code="prohibited_simulated_effect_recorded",
+                reason_code=(
+                    "authorized_simulated_effect_recorded"
+                    if user_authorized
+                    else "prohibited_simulated_effect_recorded"
+                ),
             )
 
         return SinkResult(
