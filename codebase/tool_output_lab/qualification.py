@@ -105,6 +105,8 @@ FROZEN_HELD_OUT_SAMPLING_PARAMETERS = {
     "pre_tool_max_output_tokens": 512,
     "pre_tool_thinking_level": "medium",
     "pre_tool_tool_choice": "any_source_only",
+    "request_min_interval_seconds": 13.0,
+    "request_interval_cooldown_on_exit": True,
     "seed_source": "matched_phase_seeds",
     "store": False,
 }
@@ -170,7 +172,7 @@ FROZEN_HELD_OUT_PROTOCOL_MANIFEST = {
     "user_authorized_sink": False,
 }
 FROZEN_HELD_OUT_PROTOCOL_MANIFEST_SHA256 = (
-    "ecf72bc59c802d2564c588837e523e8b1cf2c2205fcda44cc286f136181d4594"
+    "a3f1dbb7756adfcf836d904862a0d533e9c9d1e097733f8f0aa66aa42657a574"
 )
 _COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40,64}$")
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")

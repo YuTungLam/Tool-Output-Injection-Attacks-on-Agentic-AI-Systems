@@ -10,6 +10,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from tool_output_lab.gemini import (
+    DEFAULT_GEMINI_MIN_REQUEST_INTERVAL_SECONDS,
     DEFAULT_GEMINI_MODEL,
     PINNED_GOOGLE_GENAI_VERSION,
     GeminiBackend,
@@ -205,6 +206,7 @@ class GeminiBackendTests(unittest.TestCase):
         self.assertFalse(prepared.store)
 
         self.assertEqual(len(client.interactions.calls), 2)
+
         pre_call, post_call = client.interactions.calls
 
         self.assertEqual(pre_call["model"], DEFAULT_GEMINI_MODEL)
@@ -292,6 +294,95 @@ class GeminiBackendTests(unittest.TestCase):
         for generation_config in (pre_generation, post_generation):
             for unsupported in ("temperature", "top_p", "top_k"):
                 self.assertNotIn(unsupported, generation_config)
+
+    def test_explicit_request_pacing_spaces_calls_without_retrying(self) -> None:
+        now = [100.0]
+        sleeps: list[float] = []
+
+        def monotonic() -> float:
+            return now[0]
+
+        def sleeper(seconds: float) -> None:
+            sleeps.append(seconds)
+            now[0] += seconds
+
+        client = FakeClient(
+            results=[
+                self.prelude_interaction(),
+                self.interaction(),
+            ]
+        )
+        backend = GeminiBackend(
+            client=client,
+            sdk_version=PINNED_GOOGLE_GENAI_VERSION,
+            min_request_interval_seconds=(
+                DEFAULT_GEMINI_MIN_REQUEST_INTERVAL_SECONDS
+            ),
+            monotonic=monotonic,
+            sleeper=sleeper,
+        )
+
+        prepared = backend.prepare_tool_call(self.prelude_request())
+        backend.complete(
+            self.request(prepared.provider_call_id),
+            prepared,
+        )
+        backend.finish_request_schedule()
+
+        self.assertEqual(
+            sleeps,
+            [
+                DEFAULT_GEMINI_MIN_REQUEST_INTERVAL_SECONDS,
+                DEFAULT_GEMINI_MIN_REQUEST_INTERVAL_SECONDS,
+            ],
+        )
+        self.assertEqual(len(client.interactions.calls), 2)
+        self.assertEqual(
+            backend.sampling_parameters["request_min_interval_seconds"],
+            DEFAULT_GEMINI_MIN_REQUEST_INTERVAL_SECONDS,
+        )
+        self.assertEqual(
+            backend.sampling_parameters[
+                "http_max_attempts_including_initial"
+            ],
+            1,
+        )
+        self.assertTrue(
+            backend.sampling_parameters[
+                "request_interval_cooldown_on_exit"
+            ]
+        )
+
+    def test_request_schedule_finish_is_a_noop_before_any_call(self) -> None:
+        sleeps: list[float] = []
+        backend = GeminiBackend(
+            client=FakeClient(),
+            sdk_version=PINNED_GOOGLE_GENAI_VERSION,
+            min_request_interval_seconds=(
+                DEFAULT_GEMINI_MIN_REQUEST_INTERVAL_SECONDS
+            ),
+            monotonic=lambda: 100.0,
+            sleeper=sleeps.append,
+        )
+
+        backend.finish_request_schedule()
+
+        self.assertEqual(sleeps, [])
+
+    def test_invalid_request_pacing_fails_before_a_provider_call(self) -> None:
+        client = FakeClient()
+        for value in (-1, 61, True):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(
+                    GeminiConfigurationError,
+                    "between 0 and 60",
+                ):
+                    GeminiBackend(
+                        client=client,
+                        sdk_version=PINNED_GOOGLE_GENAI_VERSION,
+                        min_request_interval_seconds=value,
+                    )
+        self.assertEqual(client.interactions.calls, [])
 
     def test_prepared_context_is_immutable_and_bound_before_post_request(
         self,

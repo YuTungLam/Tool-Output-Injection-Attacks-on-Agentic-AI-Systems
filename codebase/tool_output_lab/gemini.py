@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import time
 from importlib import metadata as package_metadata
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 from .domain import ModelCallMetadata, PreparedToolCall
 from .llm import (
@@ -29,6 +29,7 @@ GOOGLE_GENAI_PACKAGE = "google-genai"
 PINNED_GOOGLE_GENAI_VERSION = "2.13.0"
 GEMINI_API_VERSION = "v1"
 TERMINAL_INTERACTION_STATUSES = {"completed", "requires_action"}
+DEFAULT_GEMINI_MIN_REQUEST_INTERVAL_SECONDS = 13.0
 
 
 class GeminiConfigurationError(ValueError):
@@ -50,6 +51,10 @@ class GeminiBackend:
         "pre_tool_max_output_tokens": 512,
         "pre_tool_thinking_level": "medium",
         "pre_tool_tool_choice": "any_source_only",
+        "request_min_interval_seconds": (
+            DEFAULT_GEMINI_MIN_REQUEST_INTERVAL_SECONDS
+        ),
+        "request_interval_cooldown_on_exit": True,
         "seed_source": "matched_phase_seeds",
         "store": False,
     }
@@ -74,6 +79,9 @@ class GeminiBackend:
         client: Any | None = None,
         api_key: str | None = None,
         sdk_version: str | None = None,
+        min_request_interval_seconds: float | None = None,
+        monotonic: Callable[[], float] = time.monotonic,
+        sleeper: Callable[[float], None] = time.sleep,
     ) -> None:
         if not model_id.strip():
             raise GeminiConfigurationError("Gemini model ID must not be empty")
@@ -84,6 +92,33 @@ class GeminiBackend:
         self.model_id = model_id
         self.model_version: str | None = model_id
         self._secrets: tuple[str, ...] = ()
+        resolved_interval = (
+            (
+                0.0
+                if client is not None
+                else DEFAULT_GEMINI_MIN_REQUEST_INTERVAL_SECONDS
+            )
+            if min_request_interval_seconds is None
+            else min_request_interval_seconds
+        )
+        if (
+            isinstance(resolved_interval, bool)
+            or not isinstance(resolved_interval, (int, float))
+            or not 0 <= float(resolved_interval) <= 60
+        ):
+            raise GeminiConfigurationError(
+                "Gemini minimum request interval must be between 0 and 60 seconds"
+            )
+        self._min_request_interval_seconds = float(resolved_interval)
+        self._monotonic = monotonic
+        self._sleeper = sleeper
+        self._last_request_started_at: float | None = None
+        self.sampling_parameters = {
+            **type(self).sampling_parameters,
+            "request_min_interval_seconds": (
+                self._min_request_interval_seconds
+            ),
+        }
 
         if client is not None:
             self._client = client
@@ -140,10 +175,37 @@ class GeminiBackend:
                 "Gemini support is not installed; install the 'gemini' extra"
             ) from None
 
+    def _wait_for_request_slot(self) -> None:
+        """Pace request starts without retrying any provider call."""
+
+        now = self._monotonic()
+        if self._last_request_started_at is not None:
+            remaining = (
+                self._min_request_interval_seconds
+                - (now - self._last_request_started_at)
+            )
+            if remaining > 0:
+                self._sleeper(remaining)
+                now = self._monotonic()
+        self._last_request_started_at = now
+
+    def finish_request_schedule(self) -> None:
+        """Leave one full interval after the last call for the next process."""
+
+        if self._last_request_started_at is None:
+            return
+        remaining = (
+            self._min_request_interval_seconds
+            - (self._monotonic() - self._last_request_started_at)
+        )
+        if remaining > 0:
+            self._sleeper(remaining)
+
     def prepare_tool_call(
         self,
         request: PreludeRequest,
     ) -> PreparedToolCall:
+        self._wait_for_request_slot()
         started_ns = time.perf_counter_ns()
         provider_error: str | None = None
         try:
@@ -190,6 +252,7 @@ class GeminiBackend:
             prepared.tool_name,
             prepared.tool_arguments,
         )
+        self._wait_for_request_slot()
         started_ns = time.perf_counter_ns()
         provider_error: str | None = None
         try:

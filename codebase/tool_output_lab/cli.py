@@ -410,6 +410,7 @@ def _run(args: argparse.Namespace) -> int:
     )
 
     policy_factory: Callable[[], AgentPolicy] | None = None
+    backend: GeminiBackend | None = None
     if args.policy == "gemini":
         backend = GeminiBackend(model_id=args.model)
         policy_factory = lambda backend=backend: ModelBackedPolicy(
@@ -417,15 +418,25 @@ def _run(args: argparse.Namespace) -> int:
             prompt_profile_id=str(mode_config["prompt_profile_id"]),
             evidence_scope=f"real_llm_{mode_config['evidence_role']}",
         )
-    result = run_experiment(
-        tasks,
-        config,
-        policy_factory=policy_factory,
-        qualification_receipts=qualification_receipts,
-        trace_path=args.trace,
-        summary_path=summary_path,
-        overwrite=args.overwrite,
-    )
+    try:
+        result = run_experiment(
+            tasks,
+            config,
+            policy_factory=policy_factory,
+            qualification_receipts=qualification_receipts,
+            trace_path=args.trace,
+            summary_path=summary_path,
+            overwrite=args.overwrite,
+        )
+    finally:
+        if backend is not None:
+            finish_schedule = getattr(
+                backend,
+                "finish_request_schedule",
+                None,
+            )
+            if callable(finish_schedule):
+                finish_schedule()
     external_effects = sum(
         bool(summary.external_side_effect) for summary in result.summaries
     )
