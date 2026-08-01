@@ -16,6 +16,7 @@ from .experiment import (
     run_experiment,
 )
 from .gemini import DEFAULT_GEMINI_MODEL, GeminiBackend
+from .groq import DEFAULT_GROQ_MODEL, GroqBackend
 from .llm import (
     CAPABILITY_PROMPT_PROFILE_ID,
     CALIBRATION_PROMPT_PROFILE_ID,
@@ -43,6 +44,15 @@ from .utils import canonical_json
 CODEBASE_ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY_ROOT = CODEBASE_ROOT.parent
 DEFAULT_TASKS_PATH = CODEBASE_ROOT / "configs" / "tasks.json"
+REAL_MODEL_POLICIES = {"gemini", "groq"}
+DEFAULT_MODELS = {
+    "gemini": DEFAULT_GEMINI_MODEL,
+    "groq": DEFAULT_GROQ_MODEL,
+}
+REAL_MODEL_TRANSPORTS = {
+    "gemini": "google_gemini_interactions_v1",
+    "groq": "groq_openai_chat_completions_v1",
+}
 QUALIFICATION_MODES = {
     "smoke": {
         "prompt_profile_id": GUARDED_PROMPT_PROFILE_ID,
@@ -99,7 +109,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--allow-custom-synthetic-tasks",
         action="store_true",
         help=(
-            "confirm that a custom Gemini task file contains synthetic, "
+            "confirm that a custom real-model task file contains synthetic, "
             "non-private data only"
         ),
     )
@@ -120,26 +130,26 @@ def build_parser() -> argparse.ArgumentParser:
         "--repetitions",
         type=int,
         default=None,
-        help="matched repetitions (defaults to 3 for Gemini and 2 for scripts)",
+        help="matched repetitions (defaults to 3 for real models and 2 for scripts)",
     )
     run_parser.add_argument("--seed", type=int, default=20260723)
     run_parser.add_argument(
         "--policy",
-        choices=("vulnerable", "safe", "gemini"),
+        choices=("vulnerable", "safe", "gemini", "groq"),
         default="vulnerable",
     )
     run_parser.add_argument(
         "--model",
-        default=DEFAULT_GEMINI_MODEL,
-        help="fixed Gemini model ID; moving *-latest aliases are rejected",
+        default=None,
+        help="fixed provider model ID; defaults by policy and rejects moving aliases",
     )
     run_parser.add_argument(
         "--qualification-mode",
         choices=tuple(QUALIFICATION_MODES),
         default=None,
         help=(
-            "explicit Gemini evidence role; defaults to smoke for Gemini and "
-            "is unavailable for scripted policies"
+            "explicit real-model evidence role; defaults to smoke and is "
+            "unavailable for scripted policies"
         ),
     )
     run_parser.add_argument(
@@ -180,7 +190,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--task-id",
         default=None,
         help=(
-            "run one synthetic task; non-held-out Gemini modes default to "
+            "run one synthetic task; non-held-out real-model modes default to "
             "the first allowed task, while held-out evaluation defaults to "
             "the frozen held-out task set"
         ),
@@ -194,19 +204,28 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _run(args: argparse.Namespace) -> int:
-    if args.policy != "gemini" and args.qualification_mode is not None:
+    is_real_model_policy = args.policy in REAL_MODEL_POLICIES
+    if not is_real_model_policy and args.qualification_mode is not None:
         raise ValueError(
-            "--qualification-mode is available only with --policy gemini"
+            "--qualification-mode is available only with a real-model policy"
         )
-    if args.policy != "gemini" and args.fixture_variant is not None:
+    if not is_real_model_policy and args.fixture_variant is not None:
         raise ValueError(
-            "--fixture-variant is available only with --policy gemini"
+            "--fixture-variant is available only with a real-model policy"
         )
     qualification_mode = (
         args.qualification_mode or "smoke"
-        if args.policy == "gemini"
+        if is_real_model_policy
         else None
     )
+    if (
+        args.policy == "groq"
+        and qualification_mode == "held-out-evaluation"
+    ):
+        raise ValueError(
+            "The frozen held-out protocol is Gemini-specific; Groq requires "
+            "a separately frozen protocol"
+        )
     mode_config = (
         QUALIFICATION_MODES[qualification_mode]
         if qualification_mode is not None
@@ -266,12 +285,12 @@ def _run(args: argparse.Namespace) -> int:
             "qualification receipts are accepted only for held-out evaluation"
         )
     if (
-        args.policy == "gemini"
+        is_real_model_policy
         and args.tasks.resolve() != DEFAULT_TASKS_PATH.resolve()
         and not args.allow_custom_synthetic_tasks
     ):
         raise ValueError(
-            "Custom Gemini task files require "
+            "Custom real-model task files require "
             "--allow-custom-synthetic-tasks to confirm synthetic-only data"
         )
     tasks = load_tasks(args.tasks)
@@ -332,7 +351,7 @@ def _run(args: argparse.Namespace) -> int:
                 receipt_path
             )
 
-    if args.policy == "gemini":
+    if is_real_model_policy:
         if qualification_mode == "held-out-evaluation":
             tasks = [
                 task for task in tasks if task.task_id in HELD_OUT_TASK_IDS
@@ -344,15 +363,15 @@ def _run(args: argparse.Namespace) -> int:
 
     repetitions = args.repetitions
     if repetitions is None:
-        repetitions = 3 if args.policy == "gemini" else 2
+        repetitions = 3 if is_real_model_policy else 2
     experiment_id = args.experiment_id
     if experiment_id is None:
         if qualification_mode == "held-out-evaluation":
             experiment_id = FROZEN_HELD_OUT_EXPERIMENT_ID
         else:
             experiment_id = (
-                f"gemini-{qualification_mode}"
-                if args.policy == "gemini"
+                f"{args.policy}-{qualification_mode}"
+                if is_real_model_policy
                 else "instrumentation-pilot"
             )
     code_commit, code_dirty = _git_provenance()
@@ -362,10 +381,10 @@ def _run(args: argparse.Namespace) -> int:
         repetitions=repetitions,
         seed=args.seed,
         policy_name=args.policy,
-        max_steps=2 if args.policy == "gemini" else 1,
+        max_steps=2 if is_real_model_policy else 1,
         transport=(
-            "google_gemini_interactions_v1"
-            if args.policy == "gemini"
+            REAL_MODEL_TRANSPORTS[args.policy]
+            if is_real_model_policy
             else "in_process_mock"
         ),
         code_commit=code_commit,
@@ -407,13 +426,24 @@ def _run(args: argparse.Namespace) -> int:
     validate_tasks_for_evidence_role(
         tasks,
         config.evidence_role,
-        real_model_configured=(args.policy == "gemini"),
+        real_model_configured=is_real_model_policy,
     )
 
     policy_factory: Callable[[], AgentPolicy] | None = None
-    backend: GeminiBackend | None = None
+    backend: GeminiBackend | GroqBackend | None = None
     if args.policy == "gemini":
-        backend = GeminiBackend(model_id=args.model)
+        backend = GeminiBackend(
+            model_id=args.model or DEFAULT_MODELS["gemini"]
+        )
+        policy_factory = lambda backend=backend: ModelBackedPolicy(
+            backend,
+            prompt_profile_id=str(mode_config["prompt_profile_id"]),
+            evidence_scope=f"real_llm_{mode_config['evidence_role']}",
+        )
+    elif args.policy == "groq":
+        backend = GroqBackend(
+            model_id=args.model or DEFAULT_MODELS["groq"]
+        )
         policy_factory = lambda backend=backend: ModelBackedPolicy(
             backend,
             prompt_profile_id=str(mode_config["prompt_profile_id"]),

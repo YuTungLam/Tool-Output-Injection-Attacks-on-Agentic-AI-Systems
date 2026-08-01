@@ -27,6 +27,7 @@ from .domain import (
     PreparedToolCall,
     Task,
     ToolSelectionInput,
+    model_call_public_mapping,
 )
 from .policy import AgentPolicy, make_policy
 from .qualification import (
@@ -1072,7 +1073,7 @@ def _run_one(
                 "model_call": (
                     None
                     if decision.model_call is None
-                    else asdict(decision.model_call)
+                    else model_call_public_mapping(decision.model_call)
                 ),
                 "shared_prelude_id": (
                     None

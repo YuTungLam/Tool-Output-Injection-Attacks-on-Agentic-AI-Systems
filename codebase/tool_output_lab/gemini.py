@@ -201,6 +201,22 @@ class GeminiBackend:
         if remaining > 0:
             self._sleeper(remaining)
 
+    @staticmethod
+    def model_tool_schema_hash_for(
+        available_sink_ids: tuple[str, ...],
+    ) -> str:
+        return sha256_text(
+            canonical_json(
+                {
+                    "sink": sink_function_schema(available_sink_ids),
+                    "source_template": source_function_schema(
+                        "synthetic_document_lookup",
+                        {"query": "<matched-task-query>"},
+                    ),
+                }
+            )
+        )
+
     def prepare_tool_call(
         self,
         request: PreludeRequest,

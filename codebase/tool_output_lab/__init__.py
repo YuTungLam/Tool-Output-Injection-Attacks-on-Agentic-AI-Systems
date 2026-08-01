@@ -1,6 +1,6 @@
 """Sandboxed tool-output injection research harness."""
 
-__version__ = "0.4.2"
+__version__ = "0.5.0"
 
 from .domain import Condition, Task
 from .experiment import ExperimentConfig, ExperimentResult, run_experiment

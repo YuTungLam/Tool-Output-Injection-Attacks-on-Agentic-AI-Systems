@@ -350,6 +350,12 @@ class LLMBackend(Protocol):
     ) -> BackendDecision:
         """Return one answer/action decision without executing any action."""
 
+    def model_tool_schema_hash_for(
+        self,
+        available_sink_ids: tuple[str, ...],
+    ) -> str:
+        """Hash the exact provider-visible source/sink schema profile."""
+
 
 class FakeLLMBackend:
     """Deterministic offline test double for the real-provider seam."""
@@ -457,6 +463,22 @@ class FakeLLMBackend:
         if callable(self._responder):
             return self._responder(request)
         return self._responder
+
+    @staticmethod
+    def model_tool_schema_hash_for(
+        available_sink_ids: tuple[str, ...],
+    ) -> str:
+        return sha256_text(
+            canonical_json(
+                {
+                    "sink": sink_function_schema(available_sink_ids),
+                    "source_template": source_function_schema(
+                        "synthetic_document_lookup",
+                        {"query": "<matched-task-query>"},
+                    ),
+                }
+            )
+        )
 
 
 def fake_call_metadata(
@@ -635,18 +657,8 @@ class ModelBackedPolicy:
             ),
             seed=policy_input.run_seed,
         )
-        request_schema_hash = sha256_text(
-            canonical_json(
-                {
-                    "sink": sink_function_schema(
-                        policy_input.available_sink_ids
-                    ),
-                    "source_template": source_function_schema(
-                        "synthetic_document_lookup",
-                        {"query": "<matched-task-query>"},
-                    ),
-                }
-            )
+        request_schema_hash = self.backend.model_tool_schema_hash_for(
+            policy_input.available_sink_ids
         )
         if request_schema_hash != self.backend.model_tool_schema_hash:
             raise ValueError(
@@ -817,7 +829,10 @@ def safe_backend_error(error: BaseException, *, secrets: tuple[str, ...] = ()) -
     """Normalize provider exceptions before experiment tracing."""
 
     code = getattr(error, "code", None)
-    status = getattr(error, "status", None)
+    status = (
+        getattr(error, "status", None)
+        or getattr(error, "status_code", None)
+    )
     message = getattr(error, "message", None) or str(error)
     components = [
         f"code={code}" if code is not None else None,

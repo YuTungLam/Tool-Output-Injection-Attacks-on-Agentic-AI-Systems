@@ -34,12 +34,17 @@ def stable_identifier(prefix: str, *parts: object, length: int = 16) -> str:
 
 _SENSITIVE_PATTERNS = (
     re.compile(r"AIza[0-9A-Za-z_-]{20,}"),
+    re.compile(r"gsk_[0-9A-Za-z_-]{20,}"),
     re.compile(
         r"(?i)(authorization\s*:\s*bearer\s+)"
         r"[0-9A-Za-z._~+/=-]{8,}"
     ),
     re.compile(
         r"(?i)(GEMINI_API_KEY\s*[=:]\s*)"
+        r"[^\s,;]+"
+    ),
+    re.compile(
+        r"(?i)(GROQ_API_KEY\s*[=:]\s*)"
         r"[^\s,;]+"
     ),
 )

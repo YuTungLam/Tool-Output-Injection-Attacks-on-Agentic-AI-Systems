@@ -8,12 +8,14 @@ import tomllib
 import unittest
 from copy import deepcopy
 from contextlib import redirect_stderr, redirect_stdout
+from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
 from tool_output_lab import __version__
 from tool_output_lab.cli import QUALIFICATION_MODES, main
 from tool_output_lab.experiment import ExperimentConfig, run_experiment
+from tool_output_lab.groq import DEFAULT_GROQ_MODEL
 from tool_output_lab.llm import (
     BackendDecision,
     CAPABILITY_PROMPT_PROFILE_ID,
@@ -597,6 +599,180 @@ class TraceAndCliTests(unittest.TestCase):
             self.assertFalse(summary_path.exists())
             self.assertIn("GEMINI_API_KEY", stderr.getvalue())
             self.assertIn("no live Gemini request", stderr.getvalue())
+
+    def test_groq_cli_missing_key_creates_no_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            trace_path = Path(temp_dir) / "groq.jsonl"
+            summary_path = Path(temp_dir) / "groq.summary.json"
+            stderr = io.StringIO()
+            with (
+                patch.dict(os.environ, {}, clear=True),
+                redirect_stdout(io.StringIO()),
+                redirect_stderr(stderr),
+            ):
+                exit_code = main(
+                    [
+                        "run",
+                        "--policy",
+                        "groq",
+                        "--trace",
+                        str(trace_path),
+                        "--summary",
+                        str(summary_path),
+                    ]
+                )
+            self.assertEqual(exit_code, 2)
+            self.assertFalse(trace_path.exists())
+            self.assertFalse(summary_path.exists())
+            self.assertIn("GROQ_API_KEY", stderr.getvalue())
+            self.assertIn("no live Groq request", stderr.getvalue())
+
+    def test_groq_held_out_is_rejected_before_backend_or_writes(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            trace_path = Path(temp_dir) / "groq-held-out.jsonl"
+            stderr = io.StringIO()
+            with (
+                patch("tool_output_lab.cli.GroqBackend") as backend,
+                redirect_stdout(io.StringIO()),
+                redirect_stderr(stderr),
+            ):
+                exit_code = main(
+                    [
+                        "run",
+                        "--policy",
+                        "groq",
+                        "--qualification-mode",
+                        "held-out-evaluation",
+                        "--confirm-held-out-evaluation",
+                        "--trace",
+                        str(trace_path),
+                    ]
+                )
+
+            self.assertEqual(exit_code, 2)
+            backend.assert_not_called()
+            self.assertFalse(trace_path.exists())
+            self.assertIn("Gemini-specific", stderr.getvalue())
+            self.assertIn("separately frozen", stderr.getvalue())
+
+    def test_groq_cli_uses_default_model_and_provider_transport(self) -> None:
+        class SuccessfulGroqControl(FakeLLMBackend):
+            provider_id = "groq"
+            model_id = DEFAULT_GROQ_MODEL
+            model_version = DEFAULT_GROQ_MODEL
+            sdk_name = "groq"
+            sdk_version = "1.6.0"
+            api_version = "openai/v1/chat/completions"
+            is_real_model = True
+            sampling_parameters = {
+                "http_max_attempts_including_initial": 1,
+                "parallel_tool_calls": False,
+                "seed_source": "matched_phase_seeds",
+            }
+
+            def __init__(self) -> None:
+                metadata = replace(
+                    fake_call_metadata(),
+                    provider_id=self.provider_id,
+                    model_id=self.model_id,
+                    model_version=self.model_version,
+                    sdk_name=self.sdk_name,
+                    sdk_version=self.sdk_version,
+                    api_version=self.api_version,
+                    system_fingerprint="fp_synthetic_groq",
+                )
+                super().__init__(
+                    BackendDecision(
+                        answer="NZD 80 per day",
+                        sink_action=None,
+                        metadata=metadata,
+                    )
+                )
+
+            def prepare_tool_call(self, request):
+                prepared = super().prepare_tool_call(request)
+                return replace(
+                    prepared,
+                    model_call=replace(
+                        prepared.model_call,
+                        system_fingerprint="fp_synthetic_groq",
+                    ),
+                )
+
+        fake_backend = SuccessfulGroqControl()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            trace_path = Path(temp_dir) / "groq.jsonl"
+            summary_path = Path(temp_dir) / "groq.summary.json"
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with (
+                patch(
+                    "tool_output_lab.cli.GroqBackend",
+                    return_value=fake_backend,
+                ) as backend_factory,
+                redirect_stdout(stdout),
+                redirect_stderr(stderr),
+            ):
+                exit_code = main(
+                    [
+                        "run",
+                        "--policy",
+                        "groq",
+                        "--repetitions",
+                        "1",
+                        "--trace",
+                        str(trace_path),
+                        "--summary",
+                        str(summary_path),
+                    ]
+                )
+
+            self.assertEqual(exit_code, 0, stderr.getvalue())
+            backend_factory.assert_called_once_with(
+                model_id=DEFAULT_GROQ_MODEL
+            )
+            output = json.loads(stdout.getvalue())
+            self.assertEqual(output["provider_id"], "groq")
+            self.assertEqual(output["model_id"], DEFAULT_GROQ_MODEL)
+            events = read_jsonl(trace_path)
+            self.assertEqual(
+                {event["transport"] for event in events},
+                {"groq_openai_chat_completions_v1"},
+            )
+            validate_trace_records(events)
+
+            changed_fingerprint = deepcopy(events)
+            attack_decision = next(
+                event
+                for event in changed_fingerprint
+                if event.get("condition") == "attack"
+                and event.get("event_type") == "agent_decision"
+            )
+            attack_decision["data"]["model_call"][
+                "system_fingerprint"
+            ] = "fp_different_backend"
+            with self.assertRaisesRegex(
+                ValueError,
+                "fingerprint changes within matched set",
+            ):
+                validate_trace_records(changed_fingerprint)
+
+            missing_prelude_fingerprint = deepcopy(events)
+            prelude = next(
+                record
+                for record in missing_prelude_fingerprint
+                if record.get("schema_version") == PRELUDE_SCHEMA_VERSION
+            )
+            prelude["tool_selection"]["model_call"].pop(
+                "system_fingerprint"
+            )
+            with self.assertRaisesRegex(
+                ValueError,
+                "shared prelude lacks a system fingerprint",
+            ):
+                validate_trace_records(missing_prelude_fingerprint)
 
     def test_held_out_cli_requires_explicit_confirmation_before_writes(
         self,

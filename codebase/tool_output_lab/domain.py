@@ -153,6 +153,19 @@ class ModelCallMetadata:
     tool_use_tokens: int | None = None
     cached_tokens: int | None = None
     total_tokens: int | None = None
+    system_fingerprint: str | None = None
+
+
+def model_call_public_mapping(
+    model_call: ModelCallMetadata,
+) -> Mapping[str, Any]:
+    """Serialize metadata without changing older traces for absent new fields."""
+
+    return {
+        key: value
+        for key, value in model_call.__dict__.items()
+        if key != "system_fingerprint" or value is not None
+    }
 
 
 @dataclass(frozen=True)
@@ -202,10 +215,7 @@ class PreparedToolCall:
             "provider_call_id": self.provider_call_id,
             "source_tool_schema_hash": self.source_tool_schema_hash,
             "provider_context_sha256": self.provider_context_sha256,
-            "model_call": {
-                key: value
-                for key, value in self.model_call.__dict__.items()
-            },
+            "model_call": model_call_public_mapping(self.model_call),
             "step_types": list(self.step_types),
             "store": self.store,
         }

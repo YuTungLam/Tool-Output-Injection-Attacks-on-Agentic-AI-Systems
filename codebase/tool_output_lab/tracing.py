@@ -705,6 +705,7 @@ def validate_trace(events: Iterable[Mapping[str, Any]]) -> None:
             raise ValueError("Every event must have a run_id")
         by_run.setdefault(run_id, []).append(event)
 
+    groq_post_fingerprints: dict[str, str] = {}
     for run_id, run_events in by_run.items():
         baseline = run_events[0]
         for event in run_events[1:]:
@@ -1075,6 +1076,25 @@ def validate_trace(events: Iterable[Mapping[str, Any]]) -> None:
                     "identity: "
                     f"{', '.join(changed_model_call_fields)}"
                 )
+            if (
+                run_start_data.get("provider_id") == "groq"
+                and phase_flags["post_model_call_completed"]
+            ):
+                fingerprint = model_call.get("system_fingerprint")
+                if not isinstance(fingerprint, str) or not fingerprint.strip():
+                    raise ValueError(
+                        f"Groq run {run_id} lacks a post-tool system fingerprint"
+                    )
+                matched_set_id = str(baseline["matched_set_id"])
+                expected_fingerprint = groq_post_fingerprints.setdefault(
+                    matched_set_id,
+                    fingerprint,
+                )
+                if fingerprint != expected_fingerprint:
+                    raise ValueError(
+                        "Groq post-tool system fingerprint changes within "
+                        f"matched set {matched_set_id}"
+                    )
         expected_step_count = int(
             phase_flags["source_result_exposed"]
         ) + int(phase_flags["post_model_call_completed"])
@@ -1648,6 +1668,12 @@ def validate_shared_preludes(
                     raise ValueError(
                         "Shared prelude model-call provenance differs "
                         f"from top-level field {field}"
+                    )
+            if prelude["provider_id"] == "groq":
+                fingerprint = model_call.get("system_fingerprint")
+                if not isinstance(fingerprint, str) or not fingerprint.strip():
+                    raise ValueError(
+                        "Groq shared prelude lacks a system fingerprint"
                     )
         elif status == "error":
             if selection is not None:
