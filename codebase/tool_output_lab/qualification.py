@@ -44,8 +44,8 @@ PROMPT_PROFILE_VERSIONS = {
     NOT_APPLICABLE_PROMPT_PROFILE_ID: "not_applicable",
     GUARDED_PROMPT_PROFILE_ID: "1.0",
     CAPABILITY_PROMPT_PROFILE_ID: "1.0",
-    NEUTRAL_PROMPT_PROFILE_ID: "1.0",
-    CALIBRATION_PROMPT_PROFILE_ID: "1.0",
+    NEUTRAL_PROMPT_PROFILE_ID: "1.1",
+    CALIBRATION_PROMPT_PROFILE_ID: "1.1",
 }
 ROLE_ALLOWED_PROMPT_PROFILES = {
     INSTRUMENTATION_ROLE: (
@@ -116,10 +116,10 @@ FROZEN_HELD_OUT_SAMPLING_PARAMETERS = {
 }
 FROZEN_HELD_OUT_PHASE_PROMPT_HASHES = {
     "post_tool": (
-        "2ebe16735966b4015c3e1de53601281e7b723fca2bcee783beb80311b074732a"
+        "ee97a06687607c6e3fdcba29eaef154f0db0e6707bcdea5c8977c6ba3129125f"
     ),
     "pre_tool": (
-        "93503abcc6de89bd106108453a3bc6fea7fe1d1acdee05329a9179b3836b715d"
+        "c0f5f9374e1a96f22c454d32aad645eca183cd60684a950ff93511dd433b898d"
     ),
 }
 FROZEN_GATE_PROMPT_PROFILES = {
@@ -143,10 +143,10 @@ FROZEN_GATE_PROMPT_PROFILES = {
     ATTACK_CALIBRATION_RECEIPT_KEY: {
         "phase_prompt_hashes": {
             "post_tool": (
-                "09bad6ca5105b8e70993062e809157379797e3cc92924ce344b55248839c90a6"
+                "8643e7e82aaf44b0d8f86f8a8e35edc353b802fdabc29b63e828440b61c3d679"
             ),
             "pre_tool": (
-                "dad2f507aea94aba5f3dbf948908b7adbc98e6e375ae4a5e064187737b129778"
+                "9abec87c0ff56383e114aa75a40a9a1e56fc788d036c3fa792a829354cbae08f"
             ),
         },
         "prompt_profile_id": CALIBRATION_PROMPT_PROFILE_ID,
@@ -154,7 +154,7 @@ FROZEN_GATE_PROMPT_PROFILES = {
             CALIBRATION_PROMPT_PROFILE_ID
         ],
         "system_prompt_hash": (
-            "55943cc45fe3226d23889b2f6bcad7521906394d32a3ac29c3ebc4ae9fede596"
+            "4e5443d48729c8bc67ef3a955ba5c4806d8348e6df24b57657d700eeed97267f"
         ),
     },
 }
@@ -212,7 +212,7 @@ FROZEN_HELD_OUT_PROTOCOL_MANIFEST = {
     "sdk_version": "2.13.0",
     "seed": FROZEN_HELD_OUT_SEED,
     "system_prompt_hash": (
-        "d5627cb3b88b749754d9cc8467ea622a994c1cd7ea1985b4032178dd6518e73d"
+        "d730974b268288ca77c83861fe483f618d7dc4f3b94f113af0381f39a548607e"
     ),
     "task_sequence": FROZEN_HELD_OUT_TASK_SEQUENCE,
     "task_sha256": FROZEN_HELD_OUT_TASK_SHA256,
@@ -220,7 +220,7 @@ FROZEN_HELD_OUT_PROTOCOL_MANIFEST = {
     "user_authorized_sink": False,
 }
 FROZEN_HELD_OUT_PROTOCOL_MANIFEST_SHA256 = (
-    "45751b4ffae3fc05925ebd49f846bbc7e5c10fa0a478f4a0a0adc833ea4745b7"
+    "2125f0ff8d5361ffeb4506c939a20176dfceb36f2ddaf9c63059840b59d2d1c2"
 )
 _COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40,64}$")
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
