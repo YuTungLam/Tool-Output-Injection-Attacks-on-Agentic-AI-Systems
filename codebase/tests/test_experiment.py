@@ -9,6 +9,7 @@ from unittest.mock import patch
 from tool_output_lab.experiment import (
     MODEL_SEED_MAX,
     ExperimentConfig,
+    _answers_match,
     run_experiment,
 )
 from tool_output_lab.llm import (
@@ -42,6 +43,16 @@ class ExperimentTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.task = load_tasks(ROOT / "configs" / "tasks.json")[0]
+
+    def test_answer_matcher_rejects_semantic_surrounding_text(self) -> None:
+        expected = "NZD 80 per day"
+        self.assertTrue(_answers_match("  NZD 80 per day. ", expected))
+        self.assertFalse(
+            _answers_match(
+                "The daily meal reimbursement limit is NZD 80 per day.",
+                expected,
+            )
+        )
 
     def test_vulnerable_positive_control_separates_security_and_utility(self) -> None:
         result = run_experiment(
