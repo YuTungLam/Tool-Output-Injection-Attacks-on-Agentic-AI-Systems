@@ -6,7 +6,7 @@ The current implementation is a controlled, synthetic pilot. It uses synthetic t
 
 ## Implementation Status
 
-Last verified on **2026-08-07** against `main` commit `d69bb961fc47420279e5706c3b3771bf7180e29a`.
+Last verified on **2026-08-09** while integrating the paired clean noise-floor protocol from commit `694906e044ee76f2e0b30d9c2322e3710190269d` into `main`.
 
 Legend:
 
@@ -107,14 +107,23 @@ Current main-branch implementation
 │   │   ├── ✅ First observable structural mismatch
 │   │   └── ✅ Control-object divergence position
 │   │
+│   ├── ✅ Paired Clean Test-retest Noise Floor
+│   │   ├── ✅ Dedicated clean-noise-floor analysis mode
+│   │   ├── ✅ Matched clean-A/clean-B planning under one shared prelude
+│   │   ├── ✅ Complete empirical-pair eligibility checks
+│   │   ├── ✅ Control-object discordance comparison
+│   │   ├── ✅ First-divergence-stage and missingness metrics
+│   │   └── ✅ Explicitly diagnostic rather than attack/defence evidence
+│   │
 │   └── ✅ Offline Test Coverage
-│       ├── ✅ 117 unit tests passing on main
+│       ├── ✅ 138 unit tests passing on the integrated main tree
 │       ├── ✅ Condition and fixture tests
 │       ├── ✅ Experiment-planning tests
 │       ├── ✅ Gemini and Groq adapter tests
 │       ├── ✅ Trace-validation tests
 │       ├── ✅ Qualification-gate tests
-│       └── ✅ Sink and policy tests
+│       ├── ✅ Sink and policy tests
+│       └── ✅ Clean-noise planning, qualification and comparator tests
 │
 ├── 🟡 Partially Implemented
 │   │
@@ -160,11 +169,6 @@ Current main-branch implementation
 │   │   ├── 🟡 No qualified Gemini held-out ASR is established here
 │   │   ├── 🟡 No frozen Groq-specific held-out protocol or ASR is established
 │   │   └── 🟡 No provider-backed defence-effectiveness result is established
-│   │
-│   └── 🟡 Paired Clean Test-retest Noise Floor
-│       ├── ✅ Implemented and tested on codex/clean-noise-floor
-│       ├── ✅ Adds 21 offline tests on that feature branch
-│       └── 🟡 Pending merge and reverification on main
 │
 └── 🟡 Not Yet Implemented
     │
@@ -332,7 +336,7 @@ py -m venv .venv
 Expected result for the verified `main` snapshot above:
 
 ```text
-Ran 117 tests
+Ran 138 tests
 OK
 ```
 
@@ -354,4 +358,4 @@ Provider-backed modes require the corresponding optional dependency and locally 
 
 ## Claim-safe Summary
 
-> The current implementation provides a tested, matched two-stage qualification harness with synthetic tasks, parameterised clean/placebo/attack tool outputs, two real-provider adapters, observable trace provenance, repeated-run planning, qualification gates and a simulated sensitive sink. It does not yet implement the proposed multi-interface attack taxonomy, multi-hop or memory propagation, three named model backends, short/long-horizon evaluation, GCG optimisation, MCP cross-client study, genuine D1–D4 defences, their combined profile, or the final security–utility analysis.
+> The current implementation provides a tested, matched two-stage qualification harness with synthetic tasks, parameterised clean/placebo/attack tool outputs, two real-provider adapters, observable trace provenance, repeated-run planning, qualification gates, a simulated sensitive sink and paired clean test-retest noise-floor analysis. It does not yet implement the proposed multi-interface attack taxonomy, multi-hop or memory propagation, three named model backends, short/long-horizon evaluation, GCG optimisation, MCP cross-client study, genuine D1–D4 defences, their combined profile, or the final security–utility analysis.

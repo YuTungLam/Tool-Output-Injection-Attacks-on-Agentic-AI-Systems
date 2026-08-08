@@ -12,11 +12,13 @@ from .domain import Task
 from .utils import canonical_json, sha256_text
 
 QUALIFICATION_PROTOCOL_VERSION = "attack-qualification-v1"
+CLEAN_NOISE_FLOOR_PROTOCOL_VERSION = "clean-noise-floor-v1"
 
 INSTRUMENTATION_ROLE = "instrumentation_control"
 SMOKE_ROLE = "smoke_test"
 CAPABILITY_ROLE = "capability_control"
 CALIBRATION_ROLE = "attack_calibration"
+CLEAN_NOISE_FLOOR_ROLE = "clean_noise_floor"
 SUSCEPTIBILITY_ROLE = "susceptibility_evaluation"
 
 EVIDENCE_ROLES = {
@@ -24,6 +26,7 @@ EVIDENCE_ROLES = {
     SMOKE_ROLE,
     CAPABILITY_ROLE,
     CALIBRATION_ROLE,
+    CLEAN_NOISE_FLOOR_ROLE,
     SUSCEPTIBILITY_ROLE,
 }
 DATASET_SPLITS = {"not_applicable", "calibration", "held_out"}
@@ -32,6 +35,7 @@ ROLE_SPLITS = {
     SMOKE_ROLE: "not_applicable",
     CAPABILITY_ROLE: "not_applicable",
     CALIBRATION_ROLE: "calibration",
+    CLEAN_NOISE_FLOOR_ROLE: "calibration",
     SUSCEPTIBILITY_ROLE: "held_out",
 }
 
@@ -56,6 +60,10 @@ ROLE_ALLOWED_PROMPT_PROFILES = {
     CALIBRATION_ROLE: {
         CALIBRATION_PROMPT_PROFILE_ID,
         NEUTRAL_PROMPT_PROFILE_ID,
+    },
+    CLEAN_NOISE_FLOOR_ROLE: {
+        NEUTRAL_PROMPT_PROFILE_ID,
+        NOT_APPLICABLE_PROMPT_PROFILE_ID,
     },
     SUSCEPTIBILITY_ROLE: {NEUTRAL_PROMPT_PROFILE_ID},
 }
@@ -288,10 +296,16 @@ def validate_qualification_provenance(
             f"evidence_role {evidence_role!r} requires "
             f"dataset_split={expected_split!r}"
         )
-    if protocol_version != QUALIFICATION_PROTOCOL_VERSION:
+    expected_protocol_version = (
+        CLEAN_NOISE_FLOOR_PROTOCOL_VERSION
+        if evidence_role == CLEAN_NOISE_FLOOR_ROLE
+        else QUALIFICATION_PROTOCOL_VERSION
+    )
+    if protocol_version != expected_protocol_version:
         raise ValueError(
             "Unsupported qualification protocol version: "
-            f"{protocol_version!r}"
+            f"{protocol_version!r}; evidence_role {evidence_role!r} requires "
+            f"{expected_protocol_version!r}"
         )
     allowed_profiles = ROLE_ALLOWED_PROMPT_PROFILES[evidence_role]
     if prompt_profile_id not in allowed_profiles:
@@ -324,6 +338,12 @@ def validate_qualification_provenance(
     ):
         raise ValueError(
             "capability_control requires the frozen legacy_override fixture"
+        )
+    if evidence_role == CLEAN_NOISE_FLOOR_ROLE and (
+        fixture_variant != FixtureVariant.EXACT_FUNCTION_CALL.value
+    ):
+        raise ValueError(
+            "clean_noise_floor requires the frozen exact_function_call fixture"
         )
     if evidence_role == SUSCEPTIBILITY_ROLE:
         if (
@@ -485,11 +505,16 @@ def validate_tasks_for_evidence_role(
         for task in task_list:
             validate_capability_control_task(task)
         return
-    if evidence_role == CALIBRATION_ROLE:
+    if evidence_role in {CALIBRATION_ROLE, CLEAN_NOISE_FLOOR_ROLE}:
+        role_label = (
+            "Attack calibration"
+            if evidence_role == CALIBRATION_ROLE
+            else "Clean noise-floor calibration"
+        )
         unexpected = sorted(set(task_ids) - CALIBRATION_TASK_IDS)
         if unexpected:
             raise ValueError(
-                "Attack calibration may use only frozen calibration task IDs; "
+                f"{role_label} may use only frozen calibration task IDs; "
                 f"found {unexpected}"
             )
         for task in task_list:
@@ -498,8 +523,8 @@ def validate_tasks_for_evidence_role(
                 != FROZEN_CALIBRATION_TASK_SHA256[task.task_id]
             ):
                 raise ValueError(
-                    f"Calibration task {task.task_id} differs from the "
-                    "frozen manifest"
+                    f"{role_label} task {task.task_id} differs from the frozen "
+                    "manifest"
                 )
         return
     if evidence_role == SMOKE_ROLE:

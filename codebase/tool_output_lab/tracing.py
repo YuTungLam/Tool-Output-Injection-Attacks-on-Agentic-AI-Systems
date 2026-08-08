@@ -10,10 +10,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from .domain import Task
+from .conditions import build_tool_response
+from .domain import Condition, Task
 from .qualification import (
     CALIBRATION_ROLE,
     CAPABILITY_ROLE,
+    CLEAN_NOISE_FLOOR_ROLE,
     FROZEN_CALIBRATION_TASK_SHA256,
     FROZEN_CAPABILITY_TASK_SHA256,
     FROZEN_HELD_OUT_TASK_SHA256,
@@ -444,6 +446,7 @@ def _validate_task_definition_binding(
     frozen_hashes_by_role = {
         CAPABILITY_ROLE: FROZEN_CAPABILITY_TASK_SHA256,
         CALIBRATION_ROLE: FROZEN_CALIBRATION_TASK_SHA256,
+        CLEAN_NOISE_FLOOR_ROLE: FROZEN_CALIBRATION_TASK_SHA256,
         SUSCEPTIBILITY_ROLE: FROZEN_HELD_OUT_TASK_SHA256,
     }
     frozen_hashes = frozen_hashes_by_role.get(str(baseline["evidence_role"]))
@@ -497,6 +500,17 @@ def _validate_task_definition_binding(
                     f"Run {run_id} raw tool result differs from its "
                     "task definition"
                 )
+            if baseline["evidence_role"] == CLEAN_NOISE_FLOOR_ROLE:
+                expected_clean = build_tool_response(
+                    task,
+                    Condition.CLEAN,
+                    fixture_variant=str(baseline["fixture_variant"]),
+                )
+                if event["data"]["raw_result"] != expected_clean.raw_text:
+                    raise ValueError(
+                        f"Run {run_id} clean noise-floor payload differs "
+                        "from the frozen clean fixture"
+                    )
         if event["event_type"] == "task_evaluation" and (
             event["data"]["expected_answer"] != task.public_answer
         ):
@@ -1372,8 +1386,45 @@ def validate_trace(events: Iterable[Mapping[str, Any]]) -> None:
     } | ATTACK_QUALIFICATION_PROVENANCE_FIELDS
     for matched_set_id, first_events in by_match.items():
         baseline = first_events[0]
+        if baseline["evidence_role"] == CLEAN_NOISE_FLOOR_ROLE:
+            if len(first_events) != 2:
+                raise ValueError(
+                    f"Clean noise-floor pair {matched_set_id} must contain "
+                    "exactly two clean arms"
+                )
+            if any(event["condition"] != "clean" for event in first_events):
+                raise ValueError(
+                    f"Clean noise-floor pair {matched_set_id} may contain only "
+                    "clean conditions"
+                )
+            analysis_arms = {
+                event["data"].get("analysis_arm") for event in first_events
+            }
+            if analysis_arms != {"clean_a", "clean_b"}:
+                raise ValueError(
+                    f"Clean noise-floor pair {matched_set_id} must contain "
+                    "clean_a and clean_b arms"
+                )
+            for event in first_events:
+                changed = [
+                    field
+                    for field in matched_invariants
+                    | {"fixture_version", "payload_id"}
+                    if event[field] != baseline[field]
+                ]
+                if changed:
+                    raise ValueError(
+                        f"Clean noise-floor pair {matched_set_id} changes "
+                        f"fields: {', '.join(sorted(changed))}"
+                    )
+            continue
+
         conditions: set[str] = set()
         for event in first_events:
+            if "analysis_arm" in event["data"]:
+                raise ValueError(
+                    f"Matched attack set {matched_set_id} claims a noise-floor arm"
+                )
             condition = str(event["condition"])
             if condition in conditions:
                 raise ValueError(
@@ -1507,7 +1558,12 @@ def validate_shared_preludes(
         validate_qualification_provenance(
             **qualification_provenance_from_mapping(prelude)
         )
-        for forbidden in ("condition", "payload_id", "run_id"):
+        for forbidden in (
+            "analysis_arm",
+            "condition",
+            "payload_id",
+            "run_id",
+        ):
             if forbidden in prelude:
                 raise ValueError(
                     f"Shared prelude leaks branch field {forbidden}"
@@ -1583,7 +1639,12 @@ def validate_shared_preludes(
                 raise ValueError(
                     "Completed shared prelude contains an error"
                 )
-            for forbidden in ("condition", "payload_id", "run_id"):
+            for forbidden in (
+                "analysis_arm",
+                "condition",
+                "payload_id",
+                "run_id",
+            ):
                 if forbidden in selection:
                     raise ValueError(
                         "Shared prelude tool selection leaks branch field "
@@ -1717,17 +1778,39 @@ def validate_shared_preludes(
             for event in matched_events
             if event["event_type"] == "run_start"
         ]
-        expected_conditions = {"attack", "clean", "placebo"}
-        if (
-            len(run_starts) != 3
-            or {
-                str(event["condition"])
-                for event in run_starts
-            }
-            != expected_conditions
-        ):
+        is_clean_noise_floor = (
+            prelude["evidence_role"] == CLEAN_NOISE_FLOOR_ROLE
+        )
+        expected_branch_count = 2 if is_clean_noise_floor else 3
+        if is_clean_noise_floor:
+            valid_branches = (
+                len(run_starts) == expected_branch_count
+                and all(
+                    str(event["condition"]) == "clean"
+                    for event in run_starts
+                )
+                and {
+                    event["data"].get("analysis_arm")
+                    for event in run_starts
+                }
+                == {"clean_a", "clean_b"}
+            )
+        else:
+            valid_branches = (
+                len(run_starts) == expected_branch_count
+                and {
+                    str(event["condition"])
+                    for event in run_starts
+                }
+                == {"attack", "clean", "placebo"}
+                and all(
+                    "analysis_arm" not in event["data"]
+                    for event in run_starts
+                )
+            )
+        if not valid_branches:
             raise ValueError(
-                f"Matched set {matched_set_id} lacks three branches"
+                f"Matched set {matched_set_id} lacks its declared branches"
             )
 
         top_level_provenance_fields = {
@@ -1836,7 +1919,7 @@ def validate_shared_preludes(
             for event in matched_events
             if event["event_type"] == "user_input"
         ]
-        if len(user_inputs) != 3 or any(
+        if len(user_inputs) != expected_branch_count or any(
             event["data"].get("prompt_sha256")
             != selection["user_prompt_sha256"]
             for event in user_inputs
@@ -1844,9 +1927,9 @@ def validate_shared_preludes(
             raise ValueError(
                 "Branch user prompt differs from the shared prelude"
             )
-        if len(tool_calls) != 3:
+        if len(tool_calls) != expected_branch_count:
             raise ValueError(
-                "Completed shared prelude must feed three branch tool calls"
+                "Completed shared prelude must feed every declared branch tool call"
             )
         for event in tool_calls:
             if str(event["tool_call_id"]) != expected_call_id:

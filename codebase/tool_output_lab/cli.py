@@ -29,6 +29,8 @@ from .qualification import (
     ATTACK_CALIBRATION_RECEIPT_KEY,
     CAPABILITY_RECEIPT_KEY,
     CALIBRATION_TASK_IDS,
+    CLEAN_NOISE_FLOOR_PROTOCOL_VERSION,
+    CLEAN_NOISE_FLOOR_ROLE,
     FROZEN_HELD_OUT_EXPERIMENT_ID,
     FROZEN_HELD_OUT_PROTOCOL_MANIFEST_SHA256,
     HELD_OUT_TASK_IDS,
@@ -90,6 +92,14 @@ QUALIFICATION_MODES = {
         "user_authorized_sink": False,
     },
 }
+ANALYSIS_MODES = {
+    "clean-noise-floor": {
+        "fixture_variant": FixtureVariant.EXACT_FUNCTION_CALL.value,
+        "evidence_role": CLEAN_NOISE_FLOOR_ROLE,
+        "dataset_split": "calibration",
+        "user_authorized_sink": False,
+    }
+}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -98,7 +108,10 @@ def build_parser() -> argparse.ArgumentParser:
         description="Run the sandboxed matched tool-output injection pilot.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
-    run_parser = subparsers.add_parser("run", help="run all matched conditions")
+    run_parser = subparsers.add_parser(
+        "run",
+        help="run a declared matched attack or clean-noise protocol",
+    )
     run_parser.add_argument(
         "--tasks",
         type=Path,
@@ -130,7 +143,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--repetitions",
         type=int,
         default=None,
-        help="matched repetitions (defaults to 3 for real models and 2 for scripts)",
+        help="matched units (defaults to 3 for real models and 2 for scripts)",
     )
     run_parser.add_argument("--seed", type=int, default=20260723)
     run_parser.add_argument(
@@ -143,13 +156,23 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="fixed provider model ID; defaults by policy and rejects moving aliases",
     )
-    run_parser.add_argument(
+    evidence_mode_group = run_parser.add_mutually_exclusive_group()
+    evidence_mode_group.add_argument(
         "--qualification-mode",
         choices=tuple(QUALIFICATION_MODES),
         default=None,
         help=(
             "explicit real-model evidence role; defaults to smoke and is "
             "unavailable for scripted policies"
+        ),
+    )
+    evidence_mode_group.add_argument(
+        "--analysis-mode",
+        choices=tuple(ANALYSIS_MODES),
+        default=None,
+        help=(
+            "independent diagnostic analysis; clean-noise-floor runs paired "
+            "clean A/B decisions and never contributes to attack estimates"
         ),
     )
     run_parser.add_argument(
@@ -205,6 +228,13 @@ def build_parser() -> argparse.ArgumentParser:
 
 def _run(args: argparse.Namespace) -> int:
     is_real_model_policy = args.policy in REAL_MODEL_POLICIES
+    analysis_mode = args.analysis_mode
+    if analysis_mode is not None and not is_real_model_policy:
+        raise ValueError(
+            "--analysis-mode clean-noise-floor requires --policy gemini or "
+            "--policy groq; scripted controls are available only through the "
+            "library test harness"
+        )
     if not is_real_model_policy and args.qualification_mode is not None:
         raise ValueError(
             "--qualification-mode is available only with a real-model policy"
@@ -213,11 +243,9 @@ def _run(args: argparse.Namespace) -> int:
         raise ValueError(
             "--fixture-variant is available only with a real-model policy"
         )
-    qualification_mode = (
-        args.qualification_mode or "smoke"
-        if is_real_model_policy
-        else None
-    )
+    qualification_mode = None
+    if is_real_model_policy and analysis_mode is None:
+        qualification_mode = args.qualification_mode or "smoke"
     if (
         args.policy == "groq"
         and qualification_mode == "held-out-evaluation"
@@ -226,17 +254,35 @@ def _run(args: argparse.Namespace) -> int:
             "The frozen held-out protocol is Gemini-specific; Groq requires "
             "a separately frozen protocol"
         )
-    mode_config = (
-        QUALIFICATION_MODES[qualification_mode]
-        if qualification_mode is not None
-        else {
+    if analysis_mode is not None:
+        mode_config = {
+            **ANALYSIS_MODES[analysis_mode],
+            "prompt_profile_id": (
+                NEUTRAL_PROMPT_PROFILE_ID
+                if is_real_model_policy
+                else "not_applicable"
+            ),
+        }
+    elif qualification_mode is not None:
+        mode_config = QUALIFICATION_MODES[qualification_mode]
+    else:
+        mode_config = {
             "prompt_profile_id": "not_applicable",
             "fixture_variant": FixtureVariant.LEGACY_OVERRIDE.value,
             "evidence_role": "instrumentation_control",
             "dataset_split": "not_applicable",
             "user_authorized_sink": False,
         }
-    )
+    if analysis_mode is not None and args.fixture_variant is not None:
+        raise ValueError(
+            "clean-noise-floor uses its fixed clean fixture and does not allow "
+            "--fixture-variant"
+        )
+    if analysis_mode is not None and args.confirm_held_out_evaluation:
+        raise ValueError(
+            "clean-noise-floor is not held-out evaluation and does not accept "
+            "--confirm-held-out-evaluation"
+        )
     if (
         qualification_mode == "held-out-evaluation"
         and not args.confirm_held_out_evaluation
@@ -305,6 +351,10 @@ def _run(args: argparse.Namespace) -> int:
         tasks = [
             task for task in tasks if task.task_id in CALIBRATION_TASK_IDS
         ]
+    elif analysis_mode == "clean-noise-floor":
+        tasks = [
+            task for task in tasks if task.task_id in CALIBRATION_TASK_IDS
+        ]
     elif qualification_mode == "held-out-evaluation":
         tasks = [
             task for task in tasks if task.task_id in HELD_OUT_TASK_IDS
@@ -312,15 +362,20 @@ def _run(args: argparse.Namespace) -> int:
     if qualification_mode in {
         "vulnerable-calibration",
         "neutral-calibration",
-    }:
+    } or analysis_mode == "clean-noise-floor":
         unexpected = [
             task.task_id
             for task in tasks
             if task.task_id not in CALIBRATION_TASK_IDS
         ]
         if unexpected:
+            mode_label = (
+                "Clean noise-floor"
+                if analysis_mode == "clean-noise-floor"
+                else "Calibration"
+            )
             raise ValueError(
-                "Calibration modes may use only frozen calibration tasks "
+                f"{mode_label} may use only frozen calibration tasks "
                 f"{sorted(CALIBRATION_TASK_IDS)}; found {unexpected}"
             )
     if qualification_mode == "held-out-evaluation":
@@ -368,6 +423,8 @@ def _run(args: argparse.Namespace) -> int:
     if experiment_id is None:
         if qualification_mode == "held-out-evaluation":
             experiment_id = FROZEN_HELD_OUT_EXPERIMENT_ID
+        elif analysis_mode is not None:
+            experiment_id = f"{args.policy}-{analysis_mode}"
         else:
             experiment_id = (
                 f"{args.policy}-{qualification_mode}"
@@ -396,7 +453,11 @@ def _run(args: argparse.Namespace) -> int:
         prompt_profile_id=str(mode_config["prompt_profile_id"]),
         evidence_role=str(mode_config["evidence_role"]),
         dataset_split=str(mode_config["dataset_split"]),
-        protocol_version=QUALIFICATION_PROTOCOL_VERSION,
+        protocol_version=(
+            CLEAN_NOISE_FLOOR_PROTOCOL_VERSION
+            if analysis_mode == "clean-noise-floor"
+            else QUALIFICATION_PROTOCOL_VERSION
+        ),
         protocol_manifest_hash=(
             FROZEN_HELD_OUT_PROTOCOL_MANIFEST_SHA256
             if qualification_mode == "held-out-evaluation"
@@ -495,7 +556,11 @@ def _run(args: argparse.Namespace) -> int:
                     result.any_empirical_llm_observation
                 ),
                 "empirical_llm_evidence": result.empirical_llm_evidence,
+                "empirical_clean_pair_evidence": (
+                    result.empirical_clean_pair_evidence
+                ),
                 "qualification_mode": qualification_mode,
+                "analysis_mode": analysis_mode,
                 "prompt_profile_id": profile.prompt_profile_id,
                 "prompt_profile_version": profile.prompt_profile_version,
                 "fixture_variant": config.fixture_variant,
@@ -526,6 +591,9 @@ def _run(args: argparse.Namespace) -> int:
                 ),
                 "matched_attack_metrics": dict(
                     result.matched_attack_metrics
+                ),
+                "clean_noise_floor_metrics": dict(
+                    result.clean_noise_floor_metrics
                 ),
                 "evidence_notice": (
                     result_experiment["evidence_notice"]
