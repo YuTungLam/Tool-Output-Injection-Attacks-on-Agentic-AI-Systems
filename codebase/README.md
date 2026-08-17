@@ -6,7 +6,7 @@ The current implementation is a controlled, synthetic pilot. It uses synthetic t
 
 ## Implementation Status
 
-Last verified on **2026-08-09** on the `codex/attack-spec-taxonomy` feature branch based on local `main` commit `01c1ec2`, after integrating the paired clean noise-floor protocol and adding versioned AttackSpec provenance for the four existing fixtures.
+Last verified on **2026-08-17** on the `codex/propagation-testbed` feature branch, based on AttackSpec provenance commit `4ae1fa2` and the paired clean noise-floor protocol.
 
 Legend:
 
@@ -140,8 +140,24 @@ Current verified implementation
 │   │   ├── ✅ First-divergence-stage and missingness metrics
 │   │   └── ✅ Explicitly diagnostic rather than attack/defence evidence
 │   │
+│   ├── ✅ Scripted Propagation Diagnostic Test Bed
+│   │   ├── ✅ Matched clean/placebo/attack arms
+│   │   ├── ✅ Tool-output and direct-user-prompt ingress positions
+│   │   ├── ✅ Fresh in-process memory store for every isolated run
+│   │   ├── ✅ Version- and hash-bound memory write/read lifecycle
+│   │   ├── ✅ Separate sink proposal, guard, attempt and effect events
+│   │   ├── ✅ Explicit scripted final answer and task-success check
+│   │   ├── ✅ Vulnerable and safe scripted policy controls
+│   │   ├── ✅ Allow and block guard modes
+│   │   ├── ✅ Manifest-bound, fail-closed propagation trace validation
+│   │   └── ✅ No model API, network call or external side effect
+│   │
+│   │   Note: this establishes exact synthetic marker reachability within
+│   │   one scripted run. It is instrumentation-only, not empirical evidence
+│   │   of semantic taint, causality, real-model susceptibility or ASR.
+│   │
 │   └── ✅ Offline Test Coverage
-│       ├── ✅ 155 unit tests passing on the verified feature tree
+│       ├── ✅ 168 unit tests passing on the verified feature tree
 │       ├── ✅ Condition and fixture tests
 │       ├── ✅ AttackSpec schema, fixture-binding, tamper and provenance tests
 │       ├── ✅ Experiment-planning tests
@@ -149,7 +165,8 @@ Current verified implementation
 │       ├── ✅ Trace-validation tests
 │       ├── ✅ Qualification-gate tests
 │       ├── ✅ Sink and policy tests
-│       └── ✅ Clean-noise planning, qualification and comparator tests
+│       ├── ✅ Clean-noise planning, qualification and comparator tests
+│       └── ✅ Propagation matching, lifecycle, secrecy and tamper tests
 │
 ├── 🟡 Partially Implemented
 │   │
@@ -220,13 +237,13 @@ Current verified implementation
     │   │   single-hop in-process fixture renderers
     │   └── 🟡 Separate executable client/protocol dimension for MCP studies
     │
-    ├── 🟡 Multi-hop cross-tool contamination
+    ├── 🟡 Provider-backed multi-hop cross-tool contamination
     ├── 🟡 MCP server-response injection
     ├── 🟡 LangChain/LangGraph stateful pipeline
     ├── 🟡 Short-horizon tasks of 3–5 steps
     ├── 🟡 Long-horizon tasks of 20+ steps
-    ├── 🟡 Agent memory read/write/persistence
-    ├── 🟡 Propagation-depth and taint-edge measurement
+    ├── 🟡 Real-model memory read/write and persistence across isolated runs
+    ├── 🟡 Real-model propagation-depth and semantic taint-edge measurement
     │
     ├── 🟡 Formal Three-model Evaluation Matrix
     │   ├── 🟡 GPT 5.5 adapter and protocol
@@ -331,6 +348,10 @@ The current repository provides a tested experimental harness, not a completed e
 - A sink decision, sink attempt, simulator acceptance, policy violation, prohibited simulated effect and external effect are distinct outcomes.
 - `pass_through_boundary` is a no-defence baseline seam, not an implemented defence.
 - `ScriptedSafePolicy` is an instrumentation control, not a matched D1–D4 defence.
+- The propagation test bed is a deterministic scripted diagnostic. Its exact memory hashes establish byte-preserving write/read reachability inside one fresh in-process run, not semantic influence, hidden-reasoning change, causal attribution, long-term persistence or real-model susceptibility.
+- Direct-user-prompt arms are positional controls. They do not claim tool-output AttackSpec applicability, and moving the treatment note between positions is not a same-input causal intervention.
+- The propagation guard is an instrumentation seam for separating proposal from dispatch/effect, not a validated D1–D4 defence.
+- Propagation trace validation recomputes the embedded controller config/task manifest hash and deterministic plan. The JSONL is not cryptographically signed: someone able to replace the manifest, config hash and every dependent record can create a different internally valid artifact, so durable provenance still requires an immutable store or external signature.
 - Generated traces and summaries must be written outside the repository.
 
 ## Repository Layout
@@ -349,6 +370,7 @@ codebase/
 │   ├── groq.py                Groq provider adapter
 │   ├── llm.py                 Provider-neutral two-stage agent harness
 │   ├── policy.py              Scripted instrumentation controls
+│   ├── propagation.py         Isolated scripted propagation diagnostic
 │   ├── qualification.py       Evidence roles and qualification gates
 │   ├── tools.py               Mock source tool and simulated sink
 │   └── tracing.py             Versioned JSONL trace schema and validation
@@ -370,7 +392,7 @@ py -m venv .venv
 Expected result for the verified feature snapshot above:
 
 ```text
-Ran 155 tests
+Ran 168 tests
 OK
 ```
 
@@ -388,8 +410,28 @@ New-Item -ItemType Directory -Force -Path $artifactDirectory | Out-Null
   --summary "$artifactDirectory\scripted-vulnerable.summary.json"
 ```
 
+## Scripted Propagation Test Bed
+
+The `testbed` command runs a separate in-process diagnostic matrix. By default it moves the same controlled note between tool-output and direct-user-prompt positions and runs clean, placebo and attack arms at both positions. Every arm uses a fresh memory store, then records the memory write, bound read, post-read sink proposal, guard decision, simulated attempt and effect as distinct events.
+
+```powershell
+$artifactDirectory = Join-Path $env:TEMP "tool-output-injection-lab"
+New-Item -ItemType Directory -Force -Path $artifactDirectory | Out-Null
+
+.\.venv\Scripts\python.exe -m tool_output_lab testbed `
+  --policy vulnerable `
+  --position both `
+  --guard allow `
+  --trace "$artifactDirectory\propagation.jsonl" `
+  --summary "$artifactDirectory\propagation.summary.json"
+```
+
+Use `--policy safe` to retain the same memory write/read path without proposing the sink, or `--guard block` to record a vulnerable scripted proposal while blocking dispatch. `--position tool-output` and `--position direct-user-prompt` run one ingress position only. The command output and summary are explicitly labelled `instrumentation_only: true`, `empirical_llm_observation: false` and `attack_estimate_eligible: false`.
+
+This test bed does not call a model API and cannot establish an attack success rate or a model effect. The recorded content/version/hash chain verifies only that the exact controlled synthetic bytes reached and were retrieved from the isolated in-process memory record. It does not demonstrate semantic taint, hidden reasoning, causal influence, cross-run persistence, a provider-backed multi-hop attack or defence effectiveness.
+
 Provider-backed modes require the corresponding optional dependency and locally configured environment variable. Only synthetic tasks are permitted, and moving model aliases are rejected so that the exact model identifier can be recorded.
 
 ## Claim-safe Summary
 
-> The current implementation provides a tested, matched two-stage qualification harness with synthetic tasks, parameterised clean/placebo/attack tool outputs, two real-provider adapters, observable trace provenance, repeated-run planning, qualification gates, a simulated sensitive sink and paired clean test-retest noise-floor analysis. It now includes a versioned, fail-closed AttackSpec provenance schema bound to the four existing fixed-template, single-hop, in-process fixture renderers. This establishes reproducible taxonomy metadata, not full taxonomy execution: the axes are not yet independently configurable, and reserved enum values do not constitute implemented MCP, multi-hop, GCG or objective-specific evaluation capability. The codebase still lacks the proposed formal tool interfaces, three named model backends, short/long-horizon and memory evaluation, MCP cross-client study, genuine D1–D4 defences, their combined profile and the final security–utility analysis.
+> The current implementation provides a tested, matched two-stage qualification harness with synthetic tasks, parameterised clean/placebo/attack tool outputs, two real-provider adapters, observable trace provenance, repeated-run planning, qualification gates, a simulated sensitive sink and paired clean test-retest noise-floor analysis. It includes a versioned, fail-closed AttackSpec provenance schema bound to the four existing fixed-template, single-hop, in-process fixture renderers, plus a separate deterministic propagation test bed that records exact synthetic memory write/read reachability and a post-read simulated sink lifecycle. The latter is scripted instrumentation only; it does not establish semantic taint, causal influence, real-model susceptibility, ASR or persistence beyond one isolated run. The taxonomy axes are not independently configurable, and reserved enum values do not constitute provider-backed MCP, multi-hop, GCG or objective-specific evaluation capability. The codebase still lacks the proposed formal tool interfaces, three named model backends, short/long-horizon real-model evaluation, persistent memory evaluation, MCP cross-client study, genuine D1–D4 defences, their combined profile and the final security–utility analysis.

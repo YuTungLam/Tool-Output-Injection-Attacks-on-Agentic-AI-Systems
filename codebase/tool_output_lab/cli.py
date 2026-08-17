@@ -25,6 +25,12 @@ from .llm import (
     ModelBackedPolicy,
 )
 from .policy import AgentPolicy
+from .propagation import (
+    GuardMode,
+    IngressChannel,
+    PropagationConfig,
+    run_propagation_testbed,
+)
 from .qualification import (
     ATTACK_CALIBRATION_RECEIPT_KEY,
     CAPABILITY_RECEIPT_KEY,
@@ -219,6 +225,67 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     run_parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="replace existing trace and summary files",
+    )
+    testbed_parser = subparsers.add_parser(
+        "testbed",
+        help="run the isolated scripted propagation diagnostic",
+        description=(
+            "Run a scripted, in-process memory-propagation diagnostic. "
+            "This mode is instrumentation-only and never attack-estimate "
+            "eligible."
+        ),
+    )
+    testbed_parser.add_argument(
+        "--tasks",
+        type=Path,
+        default=DEFAULT_TASKS_PATH,
+        help="path to the synthetic task JSON file",
+    )
+    testbed_parser.add_argument(
+        "--trace",
+        type=Path,
+        required=True,
+        help="output JSONL trace path outside the shared repository",
+    )
+    testbed_parser.add_argument(
+        "--summary",
+        type=Path,
+        default=None,
+        help="output summary JSON path (defaults next to the trace)",
+    )
+    testbed_parser.add_argument(
+        "--experiment-id",
+        default="scripted-propagation-testbed",
+    )
+    testbed_parser.add_argument("--repetitions", type=int, default=1)
+    testbed_parser.add_argument("--seed", type=int, default=20260817)
+    testbed_parser.add_argument(
+        "--policy",
+        choices=("vulnerable", "safe"),
+        default="vulnerable",
+        help="scripted post-memory-read decision policy",
+    )
+    testbed_parser.add_argument(
+        "--position",
+        choices=("both", "tool-output", "direct-user-prompt"),
+        default="both",
+        help="place the matched treatment note in one or both ingress positions",
+    )
+    testbed_parser.add_argument(
+        "--guard",
+        choices=("allow", "block"),
+        default="allow",
+        help="allow or block a proposed simulated sink dispatch",
+    )
+    testbed_parser.add_argument(
+        "--task-id",
+        default=None,
+        help="run one synthetic task instead of the complete task manifest",
+    )
+    testbed_parser.add_argument(
         "--overwrite",
         action="store_true",
         help="replace existing trace and summary files",
@@ -635,6 +702,69 @@ def _git_provenance() -> tuple[str, bool]:
     return commit or "unavailable", bool(status.strip())
 
 
+def _run_testbed(args: argparse.Namespace) -> int:
+    tasks = load_tasks(args.tasks)
+    if args.task_id is not None:
+        tasks = [task for task in tasks if task.task_id == args.task_id]
+        if not tasks:
+            raise ValueError(f"Unknown task_id: {args.task_id}")
+
+    position_channels = {
+        "both": (
+            IngressChannel.TOOL_OUTPUT.value,
+            IngressChannel.DIRECT_USER_PROMPT.value,
+        ),
+        "tool-output": (IngressChannel.TOOL_OUTPUT.value,),
+        "direct-user-prompt": (IngressChannel.DIRECT_USER_PROMPT.value,),
+    }
+    summary_path = args.summary or args.trace.with_suffix(".summary.json")
+    code_commit, code_dirty = _git_provenance()
+    config = PropagationConfig(
+        experiment_id=args.experiment_id,
+        repetitions=args.repetitions,
+        seed=args.seed,
+        policy_name=args.policy,
+        guard_mode=GuardMode(args.guard).value,
+        ingress_channels=position_channels[args.position],
+        code_commit=code_commit,
+        code_dirty=code_dirty,
+    )
+    result = run_propagation_testbed(
+        tasks,
+        config,
+        trace_path=args.trace,
+        summary_path=summary_path,
+        overwrite=args.overwrite,
+    )
+    result_mapping = result.to_mapping()
+    external_side_effects = sum(
+        bool(summary.external_side_effect) for summary in result.summaries
+    )
+    print(
+        canonical_json(
+            {
+                "mode": "scripted_propagation_diagnostic",
+                "instrumentation_only": True,
+                "evidence_scope": result_mapping["evidence_scope"],
+                "attack_estimate_eligible": False,
+                "empirical_llm_observation": False,
+                "evidence_notice": result_mapping["evidence_notice"],
+                "experiment_id": config.experiment_id,
+                "policy": config.policy_name,
+                "guard_mode": config.guard_mode,
+                "ingress_channels": list(config.ingress_channels),
+                "scheduled_runs": len(result.manifest),
+                "completed_runs": len(result.summaries),
+                "external_side_effects": external_side_effects,
+                "aggregate": result.aggregate,
+                "trace_path": str(args.trace.resolve()),
+                "summary_path": str(summary_path.resolve()),
+            }
+        )
+    )
+    return 0
+
+
 def _read_json_receipt(path: Path) -> dict[str, object]:
     try:
         with path.open("r", encoding="utf-8") as handle:
@@ -656,6 +786,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         if args.command == "run":
             return _run(args)
+        if args.command == "testbed":
+            return _run_testbed(args)
     except (ValueError, FileNotFoundError) as exc:
         print(f"configuration error: {exc}", file=sys.stderr)
         return 2
