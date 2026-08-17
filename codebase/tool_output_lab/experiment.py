@@ -7,16 +7,18 @@ import os
 import random
 import subprocess
 import unicodedata
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, fields, replace
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
 from . import __version__
+from .attack_spec import ATTACK_SPEC_SCHEMA_VERSION, AttackSpec
 from .compare import compare_control_object_events, compare_privileged_events
 from .conditions import (
     DEFAULT_FIXTURE_VARIANT,
     FIXTURE_VERSION,
     build_tool_response,
+    resolve_attack_spec,
     resolve_fixture_variant,
     validate_matched_triplet,
 )
@@ -63,8 +65,8 @@ from .utils import (
     stable_identifier,
 )
 
-SUMMARY_SCHEMA_VERSION = "experiment-summary-v3"
-CLEAN_NOISE_FLOOR_SUMMARY_SCHEMA_VERSION = "clean-noise-floor-summary-v1"
+SUMMARY_SCHEMA_VERSION = "experiment-summary-v4"
+CLEAN_NOISE_FLOOR_SUMMARY_SCHEMA_VERSION = "clean-noise-floor-summary-v2"
 CLEAN_NOISE_FLOOR_ARMS = ("clean_a", "clean_b")
 MODEL_SEED_MAX = 2_147_483_647
 _CHECKOUT_ROOT_CANDIDATE = Path(__file__).resolve().parents[2]
@@ -86,6 +88,7 @@ class ExperimentConfig:
     code_commit: str = "uncommitted-working-tree"
     code_dirty: bool = True
     fixture_variant: str = DEFAULT_FIXTURE_VARIANT.value
+    attack_spec: AttackSpec | Mapping[str, Any] | None = None
     prompt_profile_id: str = "not_applicable"
     evidence_role: str = "instrumentation_control"
     dataset_split: str = "not_applicable"
@@ -97,6 +100,15 @@ class ExperimentConfig:
     )
     user_authorized_sink: bool = False
 
+    def __post_init__(self) -> None:
+        """Canonicalise compatibility inputs before they enter any identity."""
+
+        variant = resolve_fixture_variant(self.fixture_variant)
+        resolved_spec = resolve_attack_spec(variant, self.attack_spec)
+        if self.attack_spec is not None:
+            object.__setattr__(self, "attack_spec", resolved_spec)
+        object.__setattr__(self, "fixture_variant", variant.value)
+
     @property
     def attack_estimate_eligible(self) -> bool:
         """Whether this frozen role/split may contribute to susceptibility estimates."""
@@ -105,6 +117,27 @@ class ExperimentConfig:
             self.evidence_role,
             self.dataset_split,
         )
+
+    @property
+    def resolved_attack_spec(self) -> AttackSpec:
+        """Return the canonical taxonomy bound to the selected renderer."""
+
+        return resolve_attack_spec(self.fixture_variant, self.attack_spec)
+
+    def to_mapping(self) -> dict[str, Any]:
+        """Serialize config with resolved taxonomy, independent of input form."""
+
+        value = {
+            field.name: getattr(self, field.name)
+            for field in fields(self)
+            if field.name != "attack_spec"
+        }
+        spec = self.resolved_attack_spec
+        value["attack_spec"] = spec.to_mapping()
+        value["attack_spec_schema_version"] = ATTACK_SPEC_SCHEMA_VERSION
+        value["attack_spec_id"] = spec.spec_id
+        value["attack_spec_sha256"] = spec.sha256
+        return value
 
     def validate(self) -> None:
         if not self.experiment_id or len(self.experiment_id) > 80:
@@ -124,6 +157,7 @@ class ExperimentConfig:
         ):
             raise ValueError("policy_name must be a safe 1-80 character identifier")
         resolve_fixture_variant(self.fixture_variant)
+        self.resolved_attack_spec
         if type(self.user_authorized_sink) is not bool:
             raise ValueError("user_authorized_sink must be boolean")
         if self.user_authorized_sink != (
@@ -182,6 +216,7 @@ class RunSpec:
     run_id: str
     run_seed: int
     prelude_seed: int
+    attack_spec: AttackSpec
     plan_index: int = -1
     analysis_arm: str | None = None
 
@@ -196,6 +231,10 @@ class RunSpec:
             "run_seed": self.run_seed,
             "prelude_seed": self.prelude_seed,
             "plan_index": self.plan_index,
+            "attack_spec_schema_version": ATTACK_SPEC_SCHEMA_VERSION,
+            "attack_spec_id": self.attack_spec.spec_id,
+            "attack_spec_sha256": self.attack_spec.sha256,
+            "attack_spec": self.attack_spec.to_mapping(),
         }
         if self.analysis_arm is not None:
             record["analysis_arm"] = self.analysis_arm
@@ -746,7 +785,7 @@ class ExperimentResult:
                 else SUMMARY_SCHEMA_VERSION
             ),
             "experiment": {
-                **asdict(self.config),
+                **self.config.to_mapping(),
                 **profile,
                 "config_hash": self.config_hash,
                 "scheduled_runs": len(self.manifest),
@@ -821,7 +860,7 @@ def _configuration_hash(
         else tuple(Condition)
     )
     material = {
-        "config": asdict(config),
+        "config": config.to_mapping(),
         "policy_profile": asdict(policy_profile),
         "fixture_version": FIXTURE_VERSION,
         "fixture_variant": config.fixture_variant,
@@ -833,6 +872,7 @@ def _configuration_hash(
                         task,
                         condition,
                         fixture_variant=config.fixture_variant,
+                        attack_spec=config.resolved_attack_spec,
                     ).raw_sha256
                     for condition in fixture_conditions
                 },
@@ -885,6 +925,7 @@ def build_run_plan(
                         run_id=run_id,
                         run_seed=run_seed,
                         prelude_seed=prelude_seed,
+                        attack_spec=config.resolved_attack_spec,
                     )
                 )
 
@@ -941,12 +982,27 @@ def build_clean_noise_floor_plan(
                         run_id=run_id,
                         run_seed=run_seed,
                         prelude_seed=prelude_seed,
+                        attack_spec=config.resolved_attack_spec,
                         analysis_arm=analysis_arm,
                     )
                 )
 
     random.Random(config.seed).shuffle(plan)
     return [replace(spec, plan_index=index) for index, spec in enumerate(plan)]
+
+
+def _validate_run_plan_attack_spec(
+    plan: Iterable[RunSpec],
+    config: ExperimentConfig,
+) -> None:
+    """Reject controller/manifest taxonomy drift before any provider call."""
+
+    expected = config.resolved_attack_spec
+    for spec in plan:
+        if spec.attack_spec != expected:
+            raise ValueError(
+                f"Run plan {spec.run_id} AttackSpec differs from config"
+            )
 
 
 def _normalized_answer(value: str) -> str:
@@ -1052,6 +1108,10 @@ def _prepare_shared_preludes(
             ),
             "attack_estimate_eligible": config.attack_estimate_eligible,
             "fixture_variant": config.fixture_variant,
+            "attack_spec_schema_version": ATTACK_SPEC_SCHEMA_VERSION,
+            "attack_spec_id": config.resolved_attack_spec.spec_id,
+            "attack_spec_sha256": config.resolved_attack_spec.sha256,
+            "attack_spec": config.resolved_attack_spec.to_mapping(),
             "provider_id": profile.provider_id,
             "model_id": profile.model_id,
             "model_version": profile.model_version,
@@ -1119,6 +1179,10 @@ def _run_one(
     tool: MockDocumentTool,
     prelude: _PreludeExecution | None,
 ) -> tuple[list[Mapping[str, Any]], RunSummary]:
+    if spec.attack_spec != config.resolved_attack_spec:
+        raise ValueError(
+            f"Run plan {spec.run_id} AttackSpec differs from config"
+        )
     profile = policy.profile
     prepared = None if prelude is None else prelude.prepared
     tool_arguments = (
@@ -1134,6 +1198,7 @@ def _run_one(
         spec.task,
         spec.condition,
         fixture_variant=config.fixture_variant,
+        attack_spec=config.resolved_attack_spec,
     )
     tool_schema_hash = tool.schema_hash
     if profile.model_tool_schema_hash is not None:
@@ -1182,6 +1247,10 @@ def _run_one(
         ),
         attack_estimate_eligible=config.attack_estimate_eligible,
         fixture_variant=config.fixture_variant,
+        attack_spec_schema_version=ATTACK_SPEC_SCHEMA_VERSION,
+        attack_spec_id=planned_response.attack_spec.spec_id,
+        attack_spec_sha256=planned_response.attack_spec_sha256,
+        attack_spec=planned_response.attack_spec.to_mapping(),
         model_id=profile.model_id,
         model_version=profile.model_version,
         sampling_parameters=dict(profile.sampling_parameters),
@@ -1283,9 +1352,18 @@ def _run_one(
             spec.condition,
             tool_arguments,
             fixture_variant=config.fixture_variant,
+            attack_spec=config.resolved_attack_spec,
         )
         if response.raw_sha256 != planned_response.raw_sha256:
             raise RuntimeError("Resolved tool fixture differs from the scheduled fixture")
+        if (
+            response.attack_spec != planned_response.attack_spec
+            or response.attack_spec_sha256
+            != planned_response.attack_spec_sha256
+        ):
+            raise RuntimeError(
+                "Resolved AttackSpec differs from the scheduled taxonomy"
+            )
         raw_result_event = recorder.emit(
             "tool_result_raw",
             tool.name,
@@ -1696,6 +1774,14 @@ def _matched_comparisons(
         clean = condition_runs.get(Condition.CLEAN.value)
         if clean is None:
             continue
+        attack_spec_hashes = {
+            str(run_events[0]["attack_spec_sha256"])
+            for run_events in condition_runs.values()
+        }
+        if len(attack_spec_hashes) != 1:
+            raise ValueError(
+                f"Matched set {matched_set_id} changes AttackSpec"
+            )
         for right_condition in (Condition.PLACEBO, Condition.ATTACK):
             right = condition_runs.get(right_condition.value)
             if right is None:
@@ -1706,6 +1792,12 @@ def _matched_comparisons(
                     "matched_set_id": matched_set_id,
                     "task_id": clean[0]["task_id"],
                     "replicate_id": clean[0]["replicate_id"],
+                    "attack_spec_schema_version": clean[0][
+                        "attack_spec_schema_version"
+                    ],
+                    "attack_spec_id": clean[0]["attack_spec_id"],
+                    "attack_spec_sha256": clean[0]["attack_spec_sha256"],
+                    "attack_spec": dict(clean[0]["attack_spec"]),
                     "left_condition": Condition.CLEAN.value,
                     "right_condition": right_condition.value,
                     **comparison,
@@ -1793,6 +1885,14 @@ def _clean_noise_floor_comparisons(
             "matched_set_id": matched_set_id,
             "task_id": representative[0]["task_id"],
             "replicate_id": representative[0]["replicate_id"],
+            "attack_spec_schema_version": representative[0][
+                "attack_spec_schema_version"
+            ],
+            "attack_spec_id": representative[0]["attack_spec_id"],
+            "attack_spec_sha256": representative[0][
+                "attack_spec_sha256"
+            ],
+            "attack_spec": dict(representative[0]["attack_spec"]),
             "left_condition": Condition.CLEAN.value,
             "right_condition": Condition.CLEAN.value,
             "left_analysis_arm": CLEAN_NOISE_FLOOR_ARMS[0],
@@ -2011,20 +2111,22 @@ def run_experiment(
                 task,
                 Condition.CLEAN,
                 fixture_variant=config.fixture_variant,
+                attack_spec=config.resolved_attack_spec,
             )
         else:
             validate_matched_triplet(
                 task,
                 fixture_variant=config.fixture_variant,
+                attack_spec=config.resolved_attack_spec,
             )
     validate_frozen_held_out_protocol(
         tasks,
-        config=asdict(config),
+        config=config.to_mapping(),
         policy_profile=asdict(policy_profile),
     )
     validate_held_out_gate_receipts(
         qualification_receipts,
-        config=asdict(config),
+        config=config.to_mapping(),
         policy_profile=asdict(policy_profile),
     )
 
@@ -2048,6 +2150,7 @@ def run_experiment(
         if config.evidence_role == CLEAN_NOISE_FLOOR_ROLE
         else build_run_plan(tasks, config, config_hash)
     )
+    _validate_run_plan_attack_spec(plan, config)
     tool = MockDocumentTool()
     prelude_executions, prelude_records = _prepare_shared_preludes(
         plan,

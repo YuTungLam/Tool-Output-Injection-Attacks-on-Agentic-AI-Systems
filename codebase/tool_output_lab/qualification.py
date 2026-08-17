@@ -7,12 +7,17 @@ import re
 from dataclasses import asdict
 from typing import Any, Iterable, Mapping
 
-from .conditions import FIXTURE_VERSION, FixtureVariant
+from .attack_spec import ATTACK_SPEC_SCHEMA_VERSION
+from .conditions import (
+    FIXTURE_VERSION,
+    FixtureVariant,
+    attack_spec_for_fixture_variant,
+)
 from .domain import Task
 from .utils import canonical_json, sha256_text
 
-QUALIFICATION_PROTOCOL_VERSION = "attack-qualification-v1"
-CLEAN_NOISE_FLOOR_PROTOCOL_VERSION = "clean-noise-floor-v1"
+QUALIFICATION_PROTOCOL_VERSION = "attack-qualification-v2"
+CLEAN_NOISE_FLOOR_PROTOCOL_VERSION = "clean-noise-floor-v2"
 
 INSTRUMENTATION_ROLE = "instrumentation_control"
 SMOKE_ROLE = "smoke_test"
@@ -97,6 +102,9 @@ FROZEN_CAPABILITY_TASK_SHA256 = {
     ),
 }
 FROZEN_HELD_OUT_FIXTURE_VARIANT = FixtureVariant.EXACT_FUNCTION_CALL.value
+FROZEN_HELD_OUT_ATTACK_SPEC = attack_spec_for_fixture_variant(
+    FROZEN_HELD_OUT_FIXTURE_VARIANT
+)
 NOT_APPLICABLE_PROTOCOL_MANIFEST_HASH = "not_applicable"
 NOT_APPLICABLE_GATE_RECEIPT_HASH = "not_applicable"
 CAPABILITY_RECEIPT_KEY = "capability"
@@ -185,7 +193,7 @@ FROZEN_HELD_OUT_GATE_REQUIREMENTS = {
         "required_status": "passed",
         "status_field": "capability_control_status",
     },
-    "summary_schema_version": "experiment-summary-v3",
+    "summary_schema_version": "experiment-summary-v4",
 }
 FROZEN_HELD_OUT_PROTOCOL_MANIFEST = {
     "api_version": "v1",
@@ -195,6 +203,10 @@ FROZEN_HELD_OUT_PROTOCOL_MANIFEST = {
     "experiment_id": FROZEN_HELD_OUT_EXPERIMENT_ID,
     "fixture_variant": FROZEN_HELD_OUT_FIXTURE_VARIANT,
     "fixture_version": FIXTURE_VERSION,
+    "attack_spec_schema_version": ATTACK_SPEC_SCHEMA_VERSION,
+    "attack_spec_id": FROZEN_HELD_OUT_ATTACK_SPEC.spec_id,
+    "attack_spec_sha256": FROZEN_HELD_OUT_ATTACK_SPEC.sha256,
+    "attack_spec": FROZEN_HELD_OUT_ATTACK_SPEC.to_mapping(),
     "max_steps": 2,
     "model_id": "gemini-3.6-flash",
     "model_tool_schema_hash": (
@@ -228,7 +240,7 @@ FROZEN_HELD_OUT_PROTOCOL_MANIFEST = {
     "user_authorized_sink": False,
 }
 FROZEN_HELD_OUT_PROTOCOL_MANIFEST_SHA256 = (
-    "2125f0ff8d5361ffeb4506c939a20176dfceb36f2ddaf9c63059840b59d2d1c2"
+    "fdf7a89668fdcc65e4e0dec9cd4218b3e743599baab7117473cfbc9f8a518d9a"
 )
 _COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40,64}$")
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
@@ -583,6 +595,12 @@ def validate_frozen_held_out_protocol(
         "experiment_id": config.get("experiment_id"),
         "fixture_variant": config.get("fixture_variant"),
         "fixture_version": FIXTURE_VERSION,
+        "attack_spec_schema_version": config.get(
+            "attack_spec_schema_version"
+        ),
+        "attack_spec_id": config.get("attack_spec_id"),
+        "attack_spec_sha256": config.get("attack_spec_sha256"),
+        "attack_spec": dict(config.get("attack_spec", {})),
         "max_steps": config.get("max_steps"),
         "model_id": policy_profile.get("model_id"),
         "model_tool_schema_hash": policy_profile.get(
@@ -678,6 +696,16 @@ def validate_held_out_gate_receipts(
             "evidence_role": CAPABILITY_ROLE,
             "evidence_scope": "real_llm_capability_control",
             "fixture_variant": FixtureVariant.LEGACY_OVERRIDE.value,
+            "attack_spec_schema_version": ATTACK_SPEC_SCHEMA_VERSION,
+            "attack_spec_id": attack_spec_for_fixture_variant(
+                FixtureVariant.LEGACY_OVERRIDE
+            ).spec_id,
+            "attack_spec_sha256": attack_spec_for_fixture_variant(
+                FixtureVariant.LEGACY_OVERRIDE
+            ).sha256,
+            "attack_spec": attack_spec_for_fixture_variant(
+                FixtureVariant.LEGACY_OVERRIDE
+            ).to_mapping(),
             **FROZEN_HELD_OUT_GATE_REQUIREMENTS[
                 CAPABILITY_RECEIPT_KEY
             ]["prompt_profile"],
@@ -698,6 +726,10 @@ def validate_held_out_gate_receipts(
             "evidence_role": CALIBRATION_ROLE,
             "evidence_scope": "real_llm_attack_calibration",
             "fixture_variant": FixtureVariant.EXACT_FUNCTION_CALL.value,
+            "attack_spec_schema_version": ATTACK_SPEC_SCHEMA_VERSION,
+            "attack_spec_id": FROZEN_HELD_OUT_ATTACK_SPEC.spec_id,
+            "attack_spec_sha256": FROZEN_HELD_OUT_ATTACK_SPEC.sha256,
+            "attack_spec": FROZEN_HELD_OUT_ATTACK_SPEC.to_mapping(),
             **FROZEN_HELD_OUT_GATE_REQUIREMENTS[
                 ATTACK_CALIBRATION_RECEIPT_KEY
             ]["prompt_profile"],
@@ -742,7 +774,7 @@ def validate_held_out_gate_receipts(
             raise ValueError(
                 f"Held-out {receipt_key} receipt must be a JSON object"
             )
-        if receipt.get("schema_version") != "experiment-summary-v3":
+        if receipt.get("schema_version") != "experiment-summary-v4":
             raise ValueError(
                 f"Held-out {receipt_key} receipt has an unsupported schema"
             )

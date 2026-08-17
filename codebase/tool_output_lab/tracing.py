@@ -10,7 +10,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from .conditions import build_tool_response
+from .attack_spec import (
+    ATTACK_SPEC_SCHEMA_VERSION,
+    AttackSpec,
+    attack_spec_from_mapping,
+)
+from .conditions import attack_spec_for_fixture_variant, build_tool_response
 from .domain import Condition, Task
 from .qualification import (
     CALIBRATION_ROLE,
@@ -27,8 +32,14 @@ from .qualification import (
 )
 from .utils import canonical_json, sha256_text
 
-TRACE_SCHEMA_VERSION = "trace-event-v4"
-PRELUDE_SCHEMA_VERSION = "matched-set-prelude-v3"
+TRACE_SCHEMA_VERSION = "trace-event-v5"
+PRELUDE_SCHEMA_VERSION = "matched-set-prelude-v4"
+ATTACK_SPEC_PROVENANCE_FIELDS = {
+    "attack_spec_schema_version",
+    "attack_spec_id",
+    "attack_spec_sha256",
+    "attack_spec",
+}
 ATTACK_QUALIFICATION_STRING_FIELDS = (
     "prompt_profile_id",
     "prompt_profile_version",
@@ -162,6 +173,10 @@ class TraceContext:
     attack_calibration_receipt_sha256: str
     attack_estimate_eligible: bool
     fixture_variant: str
+    attack_spec_schema_version: str
+    attack_spec_id: str
+    attack_spec_sha256: str
+    attack_spec: Mapping[str, str]
     model_id: str | None
     model_version: str | None
     sampling_parameters: Mapping[str, Any]
@@ -234,6 +249,12 @@ class TraceRecorder:
                 self.context.attack_estimate_eligible
             ),
             "fixture_variant": self.context.fixture_variant,
+            "attack_spec_schema_version": (
+                self.context.attack_spec_schema_version
+            ),
+            "attack_spec_id": self.context.attack_spec_id,
+            "attack_spec_sha256": self.context.attack_spec_sha256,
+            "attack_spec": dict(self.context.attack_spec),
             "model_id": self.context.model_id,
             "model_version": self.context.model_version,
             "sampling_parameters": dict(self.context.sampling_parameters),
@@ -290,6 +311,41 @@ def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
                 raise ValueError(f"Trace line {line_number} is not an object")
             events.append(event)
     return events
+
+
+def _validate_attack_spec_provenance(
+    record: Mapping[str, Any],
+    *,
+    label: str,
+) -> AttackSpec:
+    """Bind a persisted taxonomy declaration to its hash and renderer."""
+
+    if record.get("attack_spec_schema_version") != ATTACK_SPEC_SCHEMA_VERSION:
+        raise ValueError(f"{label} has an unsupported AttackSpec schema")
+    raw_spec = record.get("attack_spec")
+    if not isinstance(raw_spec, Mapping):
+        raise ValueError(f"{label} AttackSpec must be an object")
+    try:
+        spec = attack_spec_from_mapping(raw_spec)
+    except ValueError as exc:
+        raise ValueError(f"{label} has an invalid AttackSpec: {exc}") from exc
+    if record.get("attack_spec_id") != spec.spec_id:
+        raise ValueError(f"{label} AttackSpec ID does not match its content")
+    if record.get("attack_spec_sha256") != spec.sha256:
+        raise ValueError(f"{label} AttackSpec hash does not match its content")
+    try:
+        expected = attack_spec_for_fixture_variant(
+            str(record.get("fixture_variant", ""))
+        )
+    except ValueError as exc:
+        raise ValueError(
+            f"{label} AttackSpec has no valid fixture_variant binding"
+        ) from exc
+    if spec != expected:
+        raise ValueError(
+            f"{label} AttackSpec contradicts its fixture_variant renderer"
+        )
+    return spec
 
 
 def _validate_retained_content_hashes(
@@ -500,17 +556,34 @@ def _validate_task_definition_binding(
                     f"Run {run_id} raw tool result differs from its "
                     "task definition"
                 )
-            if baseline["evidence_role"] == CLEAN_NOISE_FLOOR_ROLE:
-                expected_clean = build_tool_response(
-                    task,
-                    Condition.CLEAN,
-                    fixture_variant=str(baseline["fixture_variant"]),
+            try:
+                declared_condition = Condition(str(baseline["condition"]))
+            except ValueError as exc:
+                raise ValueError(
+                    f"Run {run_id} has an invalid fixture condition"
+                ) from exc
+            expected_response = build_tool_response(
+                task,
+                declared_condition,
+                fixture_variant=str(baseline["fixture_variant"]),
+                attack_spec=baseline["attack_spec"],
+            )
+            if event["data"]["raw_result"] != expected_response.raw_text:
+                raise ValueError(
+                    f"Run {run_id} raw tool result differs from its "
+                    "declared condition and fixture renderer"
                 )
-                if event["data"]["raw_result"] != expected_clean.raw_text:
-                    raise ValueError(
-                        f"Run {run_id} clean noise-floor payload differs "
-                        "from the frozen clean fixture"
-                    )
+            if (
+                baseline["payload_id"] != expected_response.payload_id
+                or baseline["fixture_version"]
+                != expected_response.fixture_version
+                or baseline["attack_spec_sha256"]
+                != expected_response.attack_spec_sha256
+            ):
+                raise ValueError(
+                    f"Run {run_id} fixture provenance differs from the "
+                    "reconstructed tool response"
+                )
         if event["event_type"] == "task_evaluation" and (
             event["data"]["expected_answer"] != task.public_answer
         ):
@@ -610,7 +683,7 @@ def validate_trace(events: Iterable[Mapping[str, Any]]) -> None:
         "timestamp_utc",
         "elapsed_ns",
         "data",
-    } | ATTACK_QUALIFICATION_PROVENANCE_FIELDS
+    } | ATTACK_QUALIFICATION_PROVENANCE_FIELDS | ATTACK_SPEC_PROVENANCE_FIELDS
     invariant_fields = {
         "schema_version",
         "experiment_id",
@@ -642,7 +715,7 @@ def validate_trace(events: Iterable[Mapping[str, Any]]) -> None:
         "transport",
         "max_steps",
         "shared_prelude_id",
-    } | ATTACK_QUALIFICATION_PROVENANCE_FIELDS
+    } | ATTACK_QUALIFICATION_PROVENANCE_FIELDS | ATTACK_SPEC_PROVENANCE_FIELDS
 
     by_run: dict[str, list[Mapping[str, Any]]] = {}
     all_event_ids: set[str] = set()
@@ -676,6 +749,10 @@ def validate_trace(events: Iterable[Mapping[str, Any]]) -> None:
                 f"Trace event {ordinal} has a non-boolean "
                 "attack_estimate_eligible"
             )
+        _validate_attack_spec_provenance(
+            event,
+            label=f"Trace event {ordinal}",
+        )
         validate_qualification_provenance(
             **qualification_provenance_from_mapping(event)
         )
@@ -1383,7 +1460,7 @@ def validate_trace(events: Iterable[Mapping[str, Any]]) -> None:
         "transport",
         "max_steps",
         "shared_prelude_id",
-    } | ATTACK_QUALIFICATION_PROVENANCE_FIELDS
+    } | ATTACK_QUALIFICATION_PROVENANCE_FIELDS | ATTACK_SPEC_PROVENANCE_FIELDS
     for matched_set_id, first_events in by_match.items():
         baseline = first_events[0]
         if baseline["evidence_role"] == CLEAN_NOISE_FLOOR_ROLE:
@@ -1506,7 +1583,7 @@ def validate_shared_preludes(
         "task_definition_sha256",
         "tool_selection",
         "transport",
-    } | ATTACK_QUALIFICATION_PROVENANCE_FIELDS
+    } | ATTACK_QUALIFICATION_PROVENANCE_FIELDS | ATTACK_SPEC_PROVENANCE_FIELDS
     by_match: dict[str, Mapping[str, Any]] = {}
     prelude_ids: set[str] = set()
     cache_keys: set[str] = set()
@@ -1555,6 +1632,10 @@ def validate_shared_preludes(
                 f"Shared prelude {ordinal} has a non-boolean "
                 "attack_estimate_eligible"
             )
+        _validate_attack_spec_provenance(
+            prelude,
+            label=f"Shared prelude {ordinal}",
+        )
         validate_qualification_provenance(
             **qualification_provenance_from_mapping(prelude)
         )
@@ -1834,7 +1915,7 @@ def validate_shared_preludes(
             "task_version",
             "task_definition_sha256",
             "transport",
-        } | ATTACK_QUALIFICATION_PROVENANCE_FIELDS
+        } | ATTACK_QUALIFICATION_PROVENANCE_FIELDS | ATTACK_SPEC_PROVENANCE_FIELDS
         provider_provenance_fields = {
             "api_version",
             "provider_id",

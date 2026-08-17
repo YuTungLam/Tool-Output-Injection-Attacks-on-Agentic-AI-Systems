@@ -5,6 +5,11 @@ from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
+from tool_output_lab.attack_spec import ATTACK_SPEC_SCHEMA_VERSION
+from tool_output_lab.conditions import (
+    FixtureVariant,
+    attack_spec_for_fixture_variant,
+)
 from tool_output_lab.experiment import (
     ExperimentConfig,
     _validate_live_checkout_provenance,
@@ -286,6 +291,12 @@ class QualificationProtocolTests(unittest.TestCase):
             "evidence_role": manifest["evidence_role"],
             "experiment_id": manifest["experiment_id"],
             "fixture_variant": manifest["fixture_variant"],
+            "attack_spec_schema_version": manifest[
+                "attack_spec_schema_version"
+            ],
+            "attack_spec_id": manifest["attack_spec_id"],
+            "attack_spec_sha256": manifest["attack_spec_sha256"],
+            "attack_spec": manifest["attack_spec"],
             "max_steps": manifest["max_steps"],
             "policy_name": manifest["policy_name"],
             "protocol_manifest_hash": (
@@ -333,6 +344,13 @@ class QualificationProtocolTests(unittest.TestCase):
                 config=changed_config,
                 policy_profile=profile_fields,
             )
+        changed_spec = {**config_fields, "attack_spec_sha256": "0" * 64}
+        with self.assertRaisesRegex(ValueError, "attack_spec_sha256"):
+            validate_frozen_held_out_protocol(
+                self.tasks[2:],
+                config=changed_spec,
+                policy_profile=profile_fields,
+            )
 
     def test_held_out_requires_successful_same_protocol_receipts(self) -> None:
         frozen = FROZEN_HELD_OUT_PROTOCOL_MANIFEST
@@ -367,7 +385,7 @@ class QualificationProtocolTests(unittest.TestCase):
             "transport": frozen["transport"],
         }
         capability = {
-            "schema_version": "experiment-summary-v3",
+            "schema_version": "experiment-summary-v4",
             "experiment": {
                 **common,
                 "attack_calibration_status": "not_applicable",
@@ -376,6 +394,16 @@ class QualificationProtocolTests(unittest.TestCase):
                 "evidence_role": "capability_control",
                 "evidence_scope": "real_llm_capability_control",
                 "fixture_variant": "legacy_override",
+                "attack_spec_schema_version": ATTACK_SPEC_SCHEMA_VERSION,
+                "attack_spec_id": attack_spec_for_fixture_variant(
+                    FixtureVariant.LEGACY_OVERRIDE
+                ).spec_id,
+                "attack_spec_sha256": attack_spec_for_fixture_variant(
+                    FixtureVariant.LEGACY_OVERRIDE
+                ).sha256,
+                "attack_spec": attack_spec_for_fixture_variant(
+                    FixtureVariant.LEGACY_OVERRIDE
+                ).to_mapping(),
                 **FROZEN_GATE_PROMPT_PROFILES["capability"],
                 "sampling_parameters": {
                     **common["sampling_parameters"],
@@ -385,7 +413,7 @@ class QualificationProtocolTests(unittest.TestCase):
             },
         }
         calibration = {
-            "schema_version": "experiment-summary-v3",
+            "schema_version": "experiment-summary-v4",
             "experiment": {
                 **common,
                 "attack_calibration_status": "qualified",
@@ -394,6 +422,16 @@ class QualificationProtocolTests(unittest.TestCase):
                 "evidence_role": "attack_calibration",
                 "evidence_scope": "real_llm_attack_calibration",
                 "fixture_variant": "exact_function_call",
+                "attack_spec_schema_version": ATTACK_SPEC_SCHEMA_VERSION,
+                "attack_spec_id": attack_spec_for_fixture_variant(
+                    FixtureVariant.EXACT_FUNCTION_CALL
+                ).spec_id,
+                "attack_spec_sha256": attack_spec_for_fixture_variant(
+                    FixtureVariant.EXACT_FUNCTION_CALL
+                ).sha256,
+                "attack_spec": attack_spec_for_fixture_variant(
+                    FixtureVariant.EXACT_FUNCTION_CALL
+                ).to_mapping(),
                 **FROZEN_GATE_PROMPT_PROFILES["attack_calibration"],
                 "user_authorized_sink": False,
             },
@@ -437,6 +475,21 @@ class QualificationProtocolTests(unittest.TestCase):
             policy_profile=profile,
         )
 
+        legacy_capability = {**capability, "schema_version": "experiment-summary-v3"}
+        legacy_receipts = {**receipts, "capability": legacy_capability}
+        legacy_config = {
+            **config,
+            "capability_receipt_sha256": qualification_receipt_sha256(
+                legacy_capability
+            ),
+        }
+        with self.assertRaisesRegex(ValueError, "unsupported schema"):
+            validate_held_out_gate_receipts(
+                legacy_receipts,
+                config=legacy_config,
+                policy_profile=profile,
+            )
+
         failed_capability = {
             **capability,
             "experiment": {
@@ -465,6 +518,7 @@ class QualificationProtocolTests(unittest.TestCase):
             )
 
         for field, changed_value in (
+            ("attack_spec_sha256", "0" * 64),
             ("prompt_profile_id", NEUTRAL_PROMPT_PROFILE_ID),
             ("prompt_profile_version", "tampered"),
             ("system_prompt_hash", "0" * 64),

@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Mapping
+from typing import Any, Mapping
 
+from .attack_spec import AttackSpec
 from .conditions import (
     DEFAULT_FIXTURE_VARIANT,
     FixtureVariant,
@@ -35,16 +36,22 @@ class MockDocumentTool:
         arguments: Mapping[str, str],
         *,
         fixture_variant: str | FixtureVariant = DEFAULT_FIXTURE_VARIANT,
+        attack_spec: AttackSpec | Mapping[str, Any] | None = None,
     ) -> ToolResponse:
         if set(arguments) != {"query"}:
             raise ValueError("MockDocumentTool accepts only a query argument")
         if arguments["query"] != task.tool_query:
             raise ValueError("Tool query does not match the frozen task definition")
-        validate_matched_triplet(task, fixture_variant=fixture_variant)
+        validate_matched_triplet(
+            task,
+            fixture_variant=fixture_variant,
+            attack_spec=attack_spec,
+        )
         return build_tool_response(
             task,
             condition,
             fixture_variant=fixture_variant,
+            attack_spec=attack_spec,
         )
 
 

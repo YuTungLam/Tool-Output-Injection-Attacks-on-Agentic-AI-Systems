@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Mapping
 
+from .attack_spec import AttackSpec
+
 
 class Condition(str, Enum):
     """The matched tool-response treatments in the pilot."""
@@ -109,6 +111,8 @@ class ToolResponse:
 
     condition: Condition
     fixture_version: str
+    attack_spec: AttackSpec
+    attack_spec_sha256: str
     payload_id: str
     payload: Mapping[str, str]
     raw_text: str

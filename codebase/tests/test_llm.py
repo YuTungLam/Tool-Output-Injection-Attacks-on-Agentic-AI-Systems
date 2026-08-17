@@ -343,6 +343,9 @@ class ModelBackedPolicyTests(unittest.TestCase):
         )
         canonical_request = backend.requests[0].rendered_input(prepared)
         self.assertNotIn('"condition"', canonical_request)
+        self.assertNotIn('"attack_spec"', canonical_request)
+        self.assertNotIn('"attack_family"', canonical_request)
+        self.assertNotIn('"payload_technique"', canonical_request)
         self.assertNotIn("expected_answer", canonical_request)
         self.assertNotIn("ground_truth", canonical_request)
 
@@ -672,16 +675,27 @@ class ModelBackedPolicyTests(unittest.TestCase):
         )
         for forbidden in (
             "attack",
+            "attack_spec",
+            "attack_family",
             "CANARY-",
+            "carrier",
             "confidential_token",
+            "objective",
             "operator_note",
+            "payload_technique",
             "placebo",
+            "propagation",
             "record_canary",
         ):
             self.assertNotIn(forbidden, serialized)
         self.assertEqual(len(result.preludes), 1)
         self.assertNotIn("condition", result.preludes[0])
         self.assertNotIn("payload_id", result.preludes[0])
+        self.assertIn("attack_spec", result.preludes[0])
+        self.assertEqual(
+            result.preludes[0]["attack_spec_sha256"],
+            result.events[0]["attack_spec_sha256"],
+        )
         validate_shared_preludes(result.preludes, result.events)
 
         tampered_preludes = deepcopy(list(result.preludes))
@@ -728,6 +742,7 @@ class ModelBackedPolicyTests(unittest.TestCase):
             "tool_name",
             "top_level_task",
             "provider_context_hash",
+            "attack_spec_hash",
             "user_prompt_hash",
         ):
             with self.subTest(case=case):
@@ -754,6 +769,8 @@ class ModelBackedPolicyTests(unittest.TestCase):
                     preludes[0]["tool_selection"][
                         "provider_context_sha256"
                     ] = "not-a-sha256"
+                elif case == "attack_spec_hash":
+                    preludes[0]["attack_spec_sha256"] = "0" * 64
                 else:
                     preludes[0]["tool_selection"][
                         "user_prompt_sha256"

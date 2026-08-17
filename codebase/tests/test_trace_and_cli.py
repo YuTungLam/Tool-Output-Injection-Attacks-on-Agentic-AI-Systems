@@ -181,7 +181,7 @@ class TraceAndCliTests(unittest.TestCase):
             "prompt_profile_version": "1.0",
             "evidence_role": "instrumentation_control",
             "dataset_split": "not_applicable",
-            "protocol_version": "attack-qualification-v1",
+            "protocol_version": "attack-qualification-v2",
             "attack_estimate_eligible": False,
             "fixture_variant": "legacy_override",
         }
@@ -190,12 +190,12 @@ class TraceAndCliTests(unittest.TestCase):
             result.preludes[0]["schema_version"],
             PRELUDE_SCHEMA_VERSION,
         )
-        self.assertEqual(PRELUDE_SCHEMA_VERSION, "matched-set-prelude-v3")
+        self.assertEqual(PRELUDE_SCHEMA_VERSION, "matched-set-prelude-v4")
         for field, value in expected.items():
             self.assertEqual(result.preludes[0][field], value)
 
         self.assertTrue(result.events)
-        self.assertEqual(TRACE_SCHEMA_VERSION, "trace-event-v4")
+        self.assertEqual(TRACE_SCHEMA_VERSION, "trace-event-v5")
         for event in result.events:
             self.assertEqual(event["schema_version"], TRACE_SCHEMA_VERSION)
             for field, value in expected.items():
@@ -410,7 +410,7 @@ class TraceAndCliTests(unittest.TestCase):
         for event in changed_raw:
             if event["run_id"] == clean_run_id:
                 event["payload_id"] = f"payload-{raw_hash[:16]}"
-        with self.assertRaisesRegex(ValueError, "Defence input hash"):
+        with self.assertRaisesRegex(ValueError, "declared condition and fixture"):
             validate_trace(changed_raw)
 
         changed_exposed = deepcopy(list(result.events))

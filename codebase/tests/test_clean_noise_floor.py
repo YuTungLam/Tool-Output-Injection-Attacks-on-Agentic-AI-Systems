@@ -231,7 +231,7 @@ class CleanNoiseFloorTests(unittest.TestCase):
         self.assertTrue(result.empirical_clean_pair_evidence)
 
         summary = result.to_mapping()
-        self.assertEqual(summary["schema_version"], "clean-noise-floor-summary-v1")
+        self.assertEqual(summary["schema_version"], "clean-noise-floor-summary-v2")
         self.assertEqual(
             summary["experiment"]["matched_attack_metrics"]["status"],
             "not_applicable",
@@ -583,7 +583,7 @@ class CleanNoiseFloorTests(unittest.TestCase):
                 record["data"]["exposed_result_sha256"] = sha256_text(
                     attack_response.raw_text
                 )
-        with self.assertRaisesRegex(ValueError, "frozen clean fixture"):
+        with self.assertRaisesRegex(ValueError, "declared condition and fixture"):
             validate_trace_records(changed_payload)
 
 

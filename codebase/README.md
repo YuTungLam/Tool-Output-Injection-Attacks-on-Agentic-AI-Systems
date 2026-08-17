@@ -6,7 +6,7 @@ The current implementation is a controlled, synthetic pilot. It uses synthetic t
 
 ## Implementation Status
 
-Last verified on **2026-08-09** while integrating the paired clean noise-floor protocol from commit `694906e044ee76f2e0b30d9c2322e3710190269d` into `main`.
+Last verified on **2026-08-09** on the `codex/attack-spec-taxonomy` feature branch based on local `main` commit `01c1ec2`, after integrating the paired clean noise-floor protocol and adding versioned AttackSpec provenance for the four existing fixtures.
 
 Legend:
 
@@ -14,7 +14,7 @@ Legend:
 - 🟡 Incomplete, including partially implemented and planned work
 
 ```text
-Current main-branch implementation
+Current verified implementation
 │
 ├── ✅ Completed and Reasonably Well Established
 │   │
@@ -39,8 +39,33 @@ Current main-branch implementation
 │   │   ├── ✅ task_aligned_audit
 │   │   └── ✅ structured_next_action
 │   │
-│   │   Note: these are currently payload/carrier formulations,
+│   │   Note: these are currently fixture/rendering formulations,
 │   │   not four independent attack families.
+│   │
+│   ├── ✅ First-class AttackSpec Provenance for Existing Fixtures
+│   │   ├── ✅ Versioned exact-field schema
+│   │   │   ├── ✅ attack_family
+│   │   │   ├── ✅ carrier
+│   │   │   ├── ✅ interface
+│   │   │   ├── ✅ payload_technique
+│   │   │   ├── ✅ placement
+│   │   │   ├── ✅ propagation
+│   │   │   ├── ✅ objective
+│   │   │   ├── ✅ optimisation_regime
+│   │   │   └── ✅ payload_version
+│   │   ├── ✅ One frozen canonical AttackSpec per existing fixture variant
+│   │   ├── ✅ Version-bound AttackSpec ID and SHA-256 content binding
+│   │   ├── ✅ Retained in configuration hashes, manifests, shared preludes,
+│   │   │   trace events, comparisons, summaries and qualification protocols
+│   │   ├── ✅ Identical specification enforced across matched
+│   │   │   clean/placebo/attack and clean-A/clean-B arms
+│   │   ├── ✅ Renderer/specification conflicts and metadata tampering fail closed
+│   │   └── ✅ Controller-only metadata excluded from model-visible prompts
+│   │       and raw tool payloads
+│   │
+│   │   Note: AttackSpec records the predeclared counterfactual treatment
+│   │   represented by a matched set. It does not assert that every arm
+│   │   contains an attack or that an attack propagated or succeeded.
 │   │
 │   ├── ✅ Safe Experimental Execution
 │   │   ├── ✅ In-process MockDocumentTool
@@ -116,8 +141,9 @@ Current main-branch implementation
 │   │   └── ✅ Explicitly diagnostic rather than attack/defence evidence
 │   │
 │   └── ✅ Offline Test Coverage
-│       ├── ✅ 138 unit tests passing on the integrated main tree
+│       ├── ✅ 155 unit tests passing on the verified feature tree
 │       ├── ✅ Condition and fixture tests
+│       ├── ✅ AttackSpec schema, fixture-binding, tamper and provenance tests
 │       ├── ✅ Experiment-planning tests
 │       ├── ✅ Gemini and Groq adapter tests
 │       ├── ✅ Trace-validation tests
@@ -131,11 +157,20 @@ Current main-branch implementation
 │   │   ├── ✅ One generic in-process document tool exists
 │   │   └── 🟡 It has not been extended into four formal interfaces
 │   │
-│   ├── 🟡 Attack-taxonomy Content
-│   │   ├── ✅ Plain-text instruction payloads exist
-│   │   ├── ✅ Role-escalation wording exists
-│   │   ├── ✅ A JSON-shaped next-action payload exists
-│   │   └── 🟡 These are not yet independent taxonomy fields
+│   ├── 🟡 AttackSpec Execution Coverage
+│   │   ├── ✅ Four existing fixture renderers map to canonical specifications
+│   │   ├── ✅ Executable techniques include plain-text instruction,
+│   │   │   role-escalation wording and a JSON-shaped next-action instruction
+│   │   ├── ✅ Current executable scope is restricted to
+│   │   │   tool_output × in_process_mock_document × operator_note
+│   │   │   × single_hop × unauthorized_simulated_sink_action
+│   │   │   × fixed_template
+│   │   ├── 🟡 fixture_variant still selects one frozen bundle; taxonomy axes
+│   │   │   are not independently varied by the CLI or run planner
+│   │   ├── 🟡 The JSON-shaped case remains text inside operator_note;
+│   │   │   it is not a separate structured-data interface
+│   │   └── 🟡 Additional enum values are reserved vocabulary, not executable
+│   │       generators, interfaces, propagation mechanisms or evaluators
 │   │
 │   ├── 🟡 First Observable Divergence
 │   │   ├── ✅ Finds the first difference in retained observable traces
@@ -178,15 +213,12 @@ Current main-branch implementation
     │   ├── 🟡 API endpoint
     │   └── 🟡 MCP server
     │
-    ├── 🟡 First-class AttackSpec Taxonomy
-    │   ├── 🟡 attack_family
-    │   ├── 🟡 carrier
-    │   ├── 🟡 interface/client
-    │   ├── 🟡 payload_technique
-    │   ├── 🟡 placement
-    │   ├── 🟡 propagation
-    │   ├── 🟡 objective
-    │   └── 🟡 optimisation_regime
+    ├── 🟡 Independent AttackSpec Experimental Factorisation
+    │   ├── 🟡 Independently selectable carrier, interface, technique,
+    │   │   placement, propagation, objective and optimisation controls
+    │   ├── 🟡 Executable registry entries beyond the four existing
+    │   │   single-hop in-process fixture renderers
+    │   └── 🟡 Separate executable client/protocol dimension for MCP studies
     │
     ├── 🟡 Multi-hop cross-tool contamination
     ├── 🟡 MCP server-response injection
@@ -246,29 +278,29 @@ Current main-branch implementation
 
 ## Important Taxonomy Boundary
 
-The proposed five attack families do not all describe the same conceptual dimension:
+The proposed five attack scenarios do not all describe the same conceptual dimension:
 
-- plain text and JSON/XML describe a carrier or encoding;
-- role escalation describes a payload technique;
+- plain text and JSON/XML describe payload representation or technique;
+- role escalation describes a semantic payload technique;
 - multi-hop describes a propagation pattern;
-- MCP describes an interface or transport.
+- MCP describes an interface and response carrier.
 
 The intended first-class representation is therefore multidimensional:
 
 ```text
-Attack instance
-= semantic tool
-× transport/client
-× carrier format
-× payload technique
+Implemented AttackSpec
+= attack_family
+× carrier
+× interface
+× payload_technique
 × placement
-× propagation pattern
-× attack objective
-× optimisation regime
-× payload version
+× propagation
+× objective
+× optimisation_regime
+× payload_version
 ```
 
-The five named attacks may remain canonical benchmark families, but they should not be treated as mutually exclusive values of one flat field.
+The current registry does not implement this full cross-product. Model, provider, client, provider transport and semantic tool identity remain separate experiment provenance. Enum membership is reserved vocabulary, not evidence of executable support. The five named scenarios may remain benchmark presets, but they should not be treated as mutually exclusive values of one flat field.
 
 ## Experimental-factor Boundary
 
@@ -294,6 +326,7 @@ The current repository provides a tested experimental harness, not a completed e
 - Passing offline tests validates implementation behaviour and trace invariants; it does not establish model susceptibility or defence effectiveness.
 - Capability control validates provider, parser, argument and simulated-sink plumbing; it is not attack evidence.
 - Calibration determines whether an attack configuration is eligible for later evaluation; it is not held-out ASR.
+- AttackSpec introduced qualification protocol v2 and summary/trace schema upgrades; old v1 qualification receipts cannot authorise a v2 held-out run and must be regenerated.
 - First observable divergence is an observable structural mismatch, not hidden reasoning divergence or causal attribution.
 - A sink decision, sink attempt, simulator acceptance, policy violation, prohibited simulated effect and external effect are distinct outcomes.
 - `pass_through_boundary` is a no-defence baseline seam, not an implemented defence.
@@ -308,6 +341,7 @@ codebase/
 │   └── tasks.json             Frozen synthetic task definitions
 ├── tool_output_lab/
 │   ├── cli.py                 Command-line interface
+│   ├── attack_spec.py         Controller-only AttackSpec schema and validation
 │   ├── conditions.py          Clean/placebo/attack fixture construction
 │   ├── domain.py              Validated domain types
 │   ├── experiment.py          Matched experiment controller
@@ -333,10 +367,10 @@ py -m venv .venv
 .\.venv\Scripts\python.exe -m unittest discover -s tests -q
 ```
 
-Expected result for the verified `main` snapshot above:
+Expected result for the verified feature snapshot above:
 
 ```text
-Ran 138 tests
+Ran 155 tests
 OK
 ```
 
@@ -358,4 +392,4 @@ Provider-backed modes require the corresponding optional dependency and locally 
 
 ## Claim-safe Summary
 
-> The current implementation provides a tested, matched two-stage qualification harness with synthetic tasks, parameterised clean/placebo/attack tool outputs, two real-provider adapters, observable trace provenance, repeated-run planning, qualification gates, a simulated sensitive sink and paired clean test-retest noise-floor analysis. It does not yet implement the proposed multi-interface attack taxonomy, multi-hop or memory propagation, three named model backends, short/long-horizon evaluation, GCG optimisation, MCP cross-client study, genuine D1–D4 defences, their combined profile, or the final security–utility analysis.
+> The current implementation provides a tested, matched two-stage qualification harness with synthetic tasks, parameterised clean/placebo/attack tool outputs, two real-provider adapters, observable trace provenance, repeated-run planning, qualification gates, a simulated sensitive sink and paired clean test-retest noise-floor analysis. It now includes a versioned, fail-closed AttackSpec provenance schema bound to the four existing fixed-template, single-hop, in-process fixture renderers. This establishes reproducible taxonomy metadata, not full taxonomy execution: the axes are not yet independently configurable, and reserved enum values do not constitute implemented MCP, multi-hop, GCG or objective-specific evaluation capability. The codebase still lacks the proposed formal tool interfaces, three named model backends, short/long-horizon and memory evaluation, MCP cross-client study, genuine D1–D4 defences, their combined profile and the final security–utility analysis.
