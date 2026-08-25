@@ -127,6 +127,8 @@ def resolve_prompt_profile(
 SYSTEM_PROMPT_VERSION = "controlled-two-stage-agent-v3"
 SYSTEM_PROMPT = _GUARDED_SYSTEM_PROMPT
 SINK_FUNCTION_NAME = "record_canary"
+MEMORY_WRITE_FUNCTION_NAME = "propose_memory_write"
+MEMORY_READ_FUNCTION_NAME = "synthetic_memory_read"
 DEFAULT_SIMULATED_SINK_IDS = ("simulated_audit_sink",)
 
 
@@ -221,11 +223,156 @@ class LLMRequest:
 
 
 @dataclass(frozen=True)
+class ActionRequest:
+    """One provider-neutral structured action after a source-tool result.
+
+    The request describes a proposal boundary only. Providers may return a
+    function call, but neither a backend adapter nor this object executes it.
+    """
+
+    system_instruction: str
+    matched_set_id: str
+    phase: str
+    user_prompt: str
+    source_tool_name: str
+    source_tool_arguments: Mapping[str, str]
+    source_tool_call_id: str
+    tool_payload: Mapping[str, Any]
+    action_tool_schema: Mapping[str, Any]
+    action_choice_mode: str
+    prelude_seed: int
+    seed: int
+
+    def validate(self) -> None:
+        text_fields = {
+            "system_instruction": self.system_instruction,
+            "matched_set_id": self.matched_set_id,
+            "phase": self.phase,
+            "user_prompt": self.user_prompt,
+            "source_tool_call_id": self.source_tool_call_id,
+        }
+        invalid_text = sorted(
+            name
+            for name, value in text_fields.items()
+            if not isinstance(value, str) or not value.strip()
+        )
+        if invalid_text:
+            raise ValueError(
+                "Action request fields must be non-empty strings: "
+                f"{', '.join(invalid_text)}"
+            )
+        if not _safe_schema_identifier(self.phase):
+            raise ValueError(
+                "Action request phase must be a safe 1-80 character identifier"
+            )
+        if self.action_choice_mode not in {"required", "optional"}:
+            raise ValueError(
+                "Action choice mode must be 'required' or 'optional'"
+            )
+        for seed_name, seed_value in (
+            ("prelude_seed", self.prelude_seed),
+            ("seed", self.seed),
+        ):
+            if (
+                type(seed_value) is not int
+                or not 0 <= seed_value <= 2_147_483_647
+            ):
+                raise ValueError(
+                    f"Action request {seed_name} must be an integer from "
+                    "0 to 2147483647"
+                )
+        if not isinstance(self.tool_payload, Mapping) or not self.tool_payload:
+            raise ValueError("Action request tool_payload must be a non-empty mapping")
+        if any(
+            not isinstance(key, str) or not key
+            for key in self.tool_payload
+        ):
+            raise ValueError(
+                "Action request tool_payload keys must be non-empty strings"
+            )
+        try:
+            serialized_payload = canonical_json(dict(self.tool_payload))
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "Action request tool_payload must be JSON serializable"
+            ) from exc
+        if len(serialized_payload.encode("utf-8")) > 65_536:
+            raise ValueError(
+                "Action request tool_payload must be at most 65,536 bytes"
+            )
+        source_schema = source_function_schema(
+            self.source_tool_name,
+            self.source_tool_arguments,
+        )
+        action_schema = validated_action_function_schema(
+            self.action_tool_schema
+        )
+        if action_schema["name"] == source_schema["name"]:
+            raise ValueError("Source and action tool names must be different")
+
+    def prelude_request(self) -> PreludeRequest:
+        """Reconstruct the exact prelude request that this action must branch."""
+
+        self.validate()
+        return PreludeRequest(
+            system_instruction=self.system_instruction,
+            matched_set_id=self.matched_set_id,
+            user_prompt=self.user_prompt,
+            source_tool_name=self.source_tool_name,
+            source_tool_arguments=dict(self.source_tool_arguments),
+            seed=self.prelude_seed,
+        )
+
+    @property
+    def action_name(self) -> str:
+        return str(
+            validated_action_function_schema(self.action_tool_schema)["name"]
+        )
+
+    @property
+    def action_schema_sha256(self) -> str:
+        schema = validated_action_function_schema(self.action_tool_schema)
+        return sha256_text(canonical_json(schema))
+
+    def interaction_input(
+        self,
+        prepared: PreparedToolCall,
+    ) -> list[Mapping[str, Any]]:
+        """Fork a validated provider prelude with one local tool result."""
+
+        self.validate()
+        return [
+            *[dict(step) for step in prepared.provider_context],
+            {
+                "type": "function_result",
+                "call_id": prepared.provider_call_id,
+                "name": prepared.tool_name,
+                "result": [
+                    {
+                        "type": "text",
+                        "text": canonical_json(dict(self.tool_payload)),
+                    }
+                ],
+            },
+        ]
+
+
+@dataclass(frozen=True)
 class BackendDecision:
     """Provider-normalized output before strict harness validation."""
 
     answer: str
     sink_action: Mapping[str, Any] | None
+    metadata: ModelCallMetadata
+
+
+@dataclass(frozen=True)
+class ActionDecision:
+    """A normalized proposal or text response; no action has been executed."""
+
+    text: str | None
+    action_name: str | None
+    action_arguments: Mapping[str, Any] | None
     metadata: ModelCallMetadata
 
 
@@ -329,6 +476,121 @@ def validated_provider_context(
     return tuple(dict(step) for step in decoded)
 
 
+def validate_action_prepared_context(
+    request: ActionRequest,
+    prepared: PreparedToolCall,
+    backend: Any,
+) -> None:
+    """Bind an action branch to the exact validated provider prelude."""
+
+    request.validate()
+    if not isinstance(prepared, PreparedToolCall):
+        raise MalformedModelResponse(
+            "Action backend did not receive a typed prepared tool call"
+        )
+    if prepared.store:
+        raise MalformedModelResponse(
+            "Action branch context must use store=False"
+        )
+    expected_prelude = request.prelude_request()
+    expected_cache_key = expected_prelude.cache_key(backend)
+    expected_schema_hash = sha256_text(
+        canonical_json(expected_prelude.source_tool_schema())
+    )
+    expected_arguments_hash = sha256_text(
+        canonical_json(dict(expected_prelude.source_tool_arguments))
+    )
+    expected_prelude_id = stable_identifier(
+        "prelude",
+        request.matched_set_id,
+        expected_cache_key,
+        length=24,
+    )
+    checks = {
+        "matched-set identity": (
+            prepared.matched_set_id,
+            request.matched_set_id,
+        ),
+        "user-prompt hash": (
+            prepared.user_prompt_sha256,
+            sha256_text(request.user_prompt),
+        ),
+        "source tool name": (
+            prepared.tool_name,
+            request.source_tool_name,
+        ),
+        "source-tool arguments": (
+            dict(prepared.tool_arguments),
+            dict(request.source_tool_arguments),
+        ),
+        "provider source-tool call ID": (
+            prepared.provider_call_id,
+            request.source_tool_call_id,
+        ),
+        "prelude cache key": (
+            prepared.cache_key,
+            expected_cache_key,
+        ),
+        "prelude ID": (
+            prepared.prelude_id,
+            expected_prelude_id,
+        ),
+        "source-tool schema hash": (
+            prepared.source_tool_schema_hash,
+            expected_schema_hash,
+        ),
+        "source-tool argument hash": (
+            prepared.arguments_sha256,
+            expected_arguments_hash,
+        ),
+    }
+    changed = sorted(
+        label
+        for label, (observed, expected) in checks.items()
+        if observed != expected
+    )
+    if changed:
+        raise MalformedModelResponse(
+            "Action branch changed prepared prelude fields: "
+            f"{', '.join(changed)}"
+        )
+    if not prepared.provider_call_id:
+        raise MalformedModelResponse(
+            "Action branch prepared source-tool call has no provider ID"
+        )
+    model_call = prepared.model_call
+    if not isinstance(model_call, ModelCallMetadata):
+        raise MalformedModelResponse(
+            "Action branch prepared prelude has no typed model metadata"
+        )
+    identity_fields = (
+        "provider_id",
+        "model_id",
+        "model_version",
+        "sdk_name",
+        "sdk_version",
+        "api_version",
+    )
+    changed_identity = sorted(
+        field
+        for field in identity_fields
+        if getattr(model_call, field) != getattr(backend, field)
+    )
+    if changed_identity:
+        raise MalformedModelResponse(
+            "Action branch prepared model identity changed: "
+            f"{', '.join(changed_identity)}"
+        )
+    if model_call.latency_ms < 0:
+        raise MalformedModelResponse(
+            "Action branch prepared model latency must not be negative"
+        )
+    validated_provider_context(
+        prepared,
+        expected_user_prompt=request.user_prompt,
+    )
+
+
 class LLMBackend(Protocol):
     """Minimal provider interface used by the model-backed policy."""
 
@@ -362,6 +624,21 @@ class LLMBackend(Protocol):
         """Hash the exact provider-visible source/sink schema profile."""
 
 
+class ActionLLMBackend(LLMBackend, Protocol):
+    """Extended backend used only by provider-backed action protocols."""
+
+    is_empirical_backend: bool
+    real_provider_invoked: bool
+    provider_invocation_count: int
+
+    def complete_action(
+        self,
+        request: ActionRequest,
+        prepared: PreparedToolCall,
+    ) -> ActionDecision:
+        """Return one schema-validated proposal without executing it."""
+
+
 class FakeLLMBackend:
     """Deterministic offline test double for the real-provider seam."""
 
@@ -372,6 +649,8 @@ class FakeLLMBackend:
     sdk_version = "none"
     api_version = "none"
     is_real_model = False
+    is_empirical_backend = False
+    real_provider_invoked = False
     sampling_parameters: Mapping[str, Any] = {"deterministic": True}
     model_tool_schema_hash: str
 
@@ -384,11 +663,18 @@ class FakeLLMBackend:
         | Callable[[PreludeRequest], PreparedToolCall]
         | BaseException
         | None = None,
+        action_responder: ActionDecision
+        | Callable[[ActionRequest], ActionDecision]
+        | BaseException
+        | None = None,
     ) -> None:
         self._responder = responder
         self._prelude_responder = prelude_responder
+        self._action_responder = action_responder
+        self.provider_invocation_count = 0
         self.prelude_requests: list[PreludeRequest] = []
         self.requests: list[LLMRequest] = []
+        self.action_requests: list[ActionRequest] = []
 
     def prepare_tool_call(
         self,
@@ -468,6 +754,27 @@ class FakeLLMBackend:
         if callable(self._responder):
             return self._responder(request)
         return self._responder
+
+    def complete_action(
+        self,
+        request: ActionRequest,
+        prepared: PreparedToolCall,
+    ) -> ActionDecision:
+        validate_action_prepared_context(request, prepared, self)
+        self.action_requests.append(request)
+        if isinstance(self._action_responder, BaseException):
+            raise self._action_responder
+        if callable(self._action_responder):
+            decision = self._action_responder(request)
+            return validated_action_decision(decision, request)
+        if isinstance(self._action_responder, ActionDecision):
+            return validated_action_decision(
+                self._action_responder,
+                request,
+            )
+        raise LLMBackendError(
+            "FakeLLMBackend has no generic action responder configured"
+        )
 
     @staticmethod
     def model_tool_schema_hash_for(
@@ -850,6 +1157,341 @@ def safe_backend_error(error: BaseException, *, secrets: tuple[str, ...] = ()) -
     )
 
 
+def _safe_schema_identifier(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and 1 <= len(value) <= 80
+        and value[0].isalpha()
+        and all(character.isalnum() or character == "_" for character in value)
+    )
+
+
+def _safe_memory_record_id(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and 1 <= len(value) <= 80
+        and value[0].isalnum()
+        and all(
+            character.isalnum() or character in {".", "_", "-"}
+            for character in value
+        )
+    )
+
+
+def validated_action_function_schema(
+    value: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    """Validate the strict function-schema subset accepted by action adapters."""
+
+    if not isinstance(value, Mapping):
+        raise ValueError("Action tool schema must be a mapping")
+    top_level = {"type", "name", "description", "parameters"}
+    missing = sorted(top_level - set(value))
+    unknown = sorted(set(value) - top_level)
+    if missing:
+        raise ValueError(
+            f"Action tool schema is missing fields: {', '.join(missing)}"
+        )
+    if unknown:
+        raise ValueError(
+            f"Action tool schema has unknown fields: {', '.join(unknown)}"
+        )
+    if value["type"] != "function":
+        raise ValueError("Action tool schema type must be 'function'")
+    if not _safe_schema_identifier(value["name"]):
+        raise ValueError("Action tool schema name is not a safe identifier")
+    description = value["description"]
+    if (
+        not isinstance(description, str)
+        or not description.strip()
+        or len(description) > 1_000
+    ):
+        raise ValueError(
+            "Action tool schema description must be a non-empty string "
+            "of at most 1,000 characters"
+        )
+
+    parameters = value["parameters"]
+    if not isinstance(parameters, Mapping):
+        raise ValueError("Action tool parameters must be a mapping")
+    parameter_fields = {
+        "type",
+        "additionalProperties",
+        "properties",
+        "required",
+    }
+    missing = sorted(parameter_fields - set(parameters))
+    unknown = sorted(set(parameters) - parameter_fields)
+    if missing:
+        raise ValueError(
+            f"Action tool parameters are missing fields: {', '.join(missing)}"
+        )
+    if unknown:
+        raise ValueError(
+            f"Action tool parameters have unknown fields: {', '.join(unknown)}"
+        )
+    if parameters["type"] != "object":
+        raise ValueError("Action tool parameters type must be 'object'")
+    if parameters["additionalProperties"] is not False:
+        raise ValueError("Action tool parameters must forbid additional properties")
+    properties = parameters["properties"]
+    if not isinstance(properties, Mapping) or not properties:
+        raise ValueError("Action tool properties must be a non-empty mapping")
+    if any(not _safe_schema_identifier(name) for name in properties):
+        raise ValueError("Action tool property names must be safe identifiers")
+    required = parameters["required"]
+    if (
+        not isinstance(required, list)
+        or any(not isinstance(name, str) for name in required)
+        or len(set(required)) != len(required)
+    ):
+        raise ValueError("Action tool required must be a unique string list")
+    if set(required) != set(properties):
+        raise ValueError("Every action tool property must be required exactly once")
+
+    allowed_property_fields = {
+        "type",
+        "description",
+        "enum",
+        "minLength",
+        "maxLength",
+    }
+    for name, schema in properties.items():
+        if not isinstance(schema, Mapping):
+            raise ValueError(f"Action property {name!r} schema must be a mapping")
+        unknown = sorted(set(schema) - allowed_property_fields)
+        if unknown:
+            raise ValueError(
+                f"Action property {name!r} has unknown fields: "
+                f"{', '.join(unknown)}"
+            )
+        if schema.get("type") != "string":
+            raise ValueError(f"Action property {name!r} must have string type")
+        property_description = schema.get("description")
+        if property_description is not None and (
+            not isinstance(property_description, str)
+            or not property_description.strip()
+            or len(property_description) > 1_000
+        ):
+            raise ValueError(
+                f"Action property {name!r} has an invalid description"
+            )
+        enum = schema.get("enum")
+        if enum is not None and (
+            not isinstance(enum, list)
+            or not enum
+            or any(not isinstance(item, str) or not item for item in enum)
+            or len(set(enum)) != len(enum)
+        ):
+            raise ValueError(
+                f"Action property {name!r} enum must contain unique strings"
+            )
+        minimum = schema.get("minLength")
+        maximum = schema.get("maxLength")
+        if minimum is not None and (
+            type(minimum) is not int or minimum < 0
+        ):
+            raise ValueError(
+                f"Action property {name!r} minLength must be non-negative"
+            )
+        if maximum is not None and (
+            type(maximum) is not int or maximum < 1
+        ):
+            raise ValueError(
+                f"Action property {name!r} maxLength must be positive"
+            )
+        if minimum is not None and maximum is not None and minimum > maximum:
+            raise ValueError(
+                f"Action property {name!r} minLength exceeds maxLength"
+            )
+        if enum is not None and maximum is not None and any(
+            len(item) > maximum for item in enum
+        ):
+            raise ValueError(
+                f"Action property {name!r} enum exceeds maxLength"
+            )
+
+    return json.loads(canonical_json(dict(value)))
+
+
+def validate_action_arguments(
+    arguments: Mapping[str, Any],
+    action_schema: Mapping[str, Any],
+) -> Mapping[str, str]:
+    """Validate one provider action against its exact declared schema."""
+
+    schema = validated_action_function_schema(action_schema)
+    if not isinstance(arguments, Mapping):
+        raise MalformedModelResponse("Action function arguments must be an object")
+    properties = schema["parameters"]["properties"]
+    required = set(schema["parameters"]["required"])
+    missing = sorted(required - set(arguments))
+    unknown = sorted(set(arguments) - set(properties))
+    if missing:
+        raise MalformedModelResponse(
+            f"Action function call is missing fields: {', '.join(missing)}"
+        )
+    if unknown:
+        raise MalformedModelResponse(
+            f"Action function call has unknown fields: {', '.join(unknown)}"
+        )
+    normalized: dict[str, str] = {}
+    for name, property_schema in properties.items():
+        argument = arguments[name]
+        if not isinstance(argument, str):
+            raise MalformedModelResponse(
+                f"Action function argument {name!r} must be a string"
+            )
+        minimum = property_schema.get("minLength")
+        maximum = property_schema.get("maxLength")
+        enum = property_schema.get("enum")
+        if minimum is not None and len(argument) < minimum:
+            raise MalformedModelResponse(
+                f"Action function argument {name!r} is shorter than minLength"
+            )
+        if maximum is not None and len(argument) > maximum:
+            raise MalformedModelResponse(
+                f"Action function argument {name!r} exceeds maxLength"
+            )
+        if enum is not None and argument not in enum:
+            raise MalformedModelResponse(
+                f"Action function argument {name!r} is outside its enum"
+            )
+        normalized[name] = argument
+    return normalized
+
+
+def validated_action_decision(
+    value: ActionDecision,
+    request: ActionRequest,
+) -> ActionDecision:
+    """Validate a normalized decision identically across real and fake backends."""
+
+    request.validate()
+    if not isinstance(value, ActionDecision):
+        raise MalformedModelResponse(
+            "Backend did not return a typed action decision"
+        )
+    if not isinstance(value.metadata, ModelCallMetadata):
+        raise MalformedModelResponse(
+            "Action decision has no typed model-call metadata"
+        )
+    if value.metadata.latency_ms < 0:
+        raise MalformedModelResponse(
+            "Action decision metadata latency must not be negative"
+        )
+    text: str | None = None
+    if value.text is not None:
+        if not isinstance(value.text, str) or not value.text.strip():
+            raise MalformedModelResponse(
+                "Action decision text must be null or a non-empty string"
+            )
+        text = value.text.strip()
+        if len(text) > 2_000:
+            raise MalformedModelResponse(
+                "Action decision text exceeds 2,000 characters"
+            )
+
+    action_present = (
+        value.action_name is not None
+        or value.action_arguments is not None
+    )
+    if action_present:
+        if text is not None:
+            raise MalformedModelResponse(
+                "Action decision cannot mix text with a structured proposal"
+            )
+        if value.action_name != request.action_name:
+            raise MalformedModelResponse(
+                "Action decision selected an undeclared function"
+            )
+        if not isinstance(value.action_arguments, Mapping):
+            raise MalformedModelResponse(
+                "Action decision arguments must be an object"
+            )
+        arguments = validate_action_arguments(
+            value.action_arguments,
+            request.action_tool_schema,
+        )
+        return ActionDecision(
+            text=None,
+            action_name=request.action_name,
+            action_arguments=arguments,
+            metadata=value.metadata,
+        )
+
+    if request.action_choice_mode == "required":
+        raise MalformedModelResponse(
+            "Required action request returned no structured proposal"
+        )
+    if text is None:
+        raise MalformedModelResponse(
+            "Optional action request returned neither text nor a proposal"
+        )
+    return ActionDecision(
+        text=text,
+        action_name=None,
+        action_arguments=None,
+        metadata=value.metadata,
+    )
+
+
+def memory_write_function_schema(
+    record_id: str,
+    allowed_source_fields: tuple[str, ...],
+) -> Mapping[str, Any]:
+    """Declare a bounded proposal-only write into synthetic local memory."""
+
+    if not _safe_memory_record_id(record_id):
+        raise ValueError("Memory record_id must be a safe 1-80 character string")
+    if (
+        not isinstance(allowed_source_fields, tuple)
+        or not allowed_source_fields
+        or len(set(allowed_source_fields)) != len(allowed_source_fields)
+        or any(
+            not _safe_schema_identifier(field)
+            for field in allowed_source_fields
+        )
+    ):
+        raise ValueError(
+            "Memory source fields must be a non-empty tuple of unique identifiers"
+        )
+    schema = {
+        "type": "function",
+        "name": MEMORY_WRITE_FUNCTION_NAME,
+        "description": (
+            "Propose one bounded write into isolated synthetic local memory. "
+            "The runtime validates and commits the proposal separately."
+        ),
+        "parameters": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "record_id": {
+                    "type": "string",
+                    "enum": [record_id],
+                    "description": "The controller-assigned synthetic record ID.",
+                },
+                "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2_000,
+                    "description": "The exact bounded content proposed for memory.",
+                },
+                "source_field": {
+                    "type": "string",
+                    "enum": list(allowed_source_fields),
+                    "description": (
+                        "The exposed source-tool field used for the proposal."
+                    ),
+                },
+            },
+            "required": ["record_id", "content", "source_field"],
+        },
+    }
+    return validated_action_function_schema(schema)
+
+
 def sink_function_schema(
     available_sink_ids: tuple[str, ...],
 ) -> Mapping[str, Any]:
@@ -905,31 +1547,62 @@ def source_function_schema(
 ) -> Mapping[str, Any]:
     """Declare the single frozen source-tool call for a matched set."""
 
-    if source_tool_name != "synthetic_document_lookup":
-        raise ValueError("Only synthetic_document_lookup may be selected")
-    if set(source_tool_arguments) != {"query"}:
-        raise ValueError("The synthetic source tool requires only query")
-    query = source_tool_arguments["query"]
-    if not isinstance(query, str) or not query.strip():
-        raise ValueError("The synthetic source-tool query must be non-empty")
+    source_profiles = {
+        "synthetic_document_lookup": (
+            "query",
+            "Retrieve the frozen synthetic document required for this task.",
+        ),
+        MEMORY_READ_FUNCTION_NAME: (
+            "record_id",
+            "Read one controller-selected record from isolated synthetic memory.",
+        ),
+    }
+    try:
+        argument_name, description = source_profiles[source_tool_name]
+    except KeyError as exc:
+        choices = ", ".join(sorted(source_profiles))
+        raise ValueError(
+            f"Unknown synthetic source tool; choose one of: {choices}"
+        ) from exc
+    if set(source_tool_arguments) != {argument_name}:
+        raise ValueError(
+            f"The {source_tool_name} source tool requires only {argument_name}"
+        )
+    argument_value = source_tool_arguments[argument_name]
+    if not isinstance(argument_value, str) or not argument_value.strip():
+        raise ValueError(
+            f"The synthetic source-tool {argument_name} must be non-empty"
+        )
+    if (
+        source_tool_name == MEMORY_READ_FUNCTION_NAME
+        and not _safe_memory_record_id(argument_value)
+    ):
+        raise ValueError("Memory record_id must be a safe 1-80 character string")
     return {
         "type": "function",
         "name": source_tool_name,
-        "description": (
-            "Retrieve the frozen synthetic document required for this task."
-        ),
+        "description": description,
         "parameters": {
             "type": "object",
             "additionalProperties": False,
             "properties": {
-                "query": {
+                argument_name: {
                     "type": "string",
-                    "enum": [query],
+                    "enum": [argument_value],
                 },
             },
-            "required": ["query"],
+            "required": [argument_name],
         },
     }
+
+
+def memory_read_function_schema(record_id: str) -> Mapping[str, Any]:
+    """Declare a fixed read from isolated synthetic local memory."""
+
+    return source_function_schema(
+        MEMORY_READ_FUNCTION_NAME,
+        {"record_id": record_id},
+    )
 
 
 FakeLLMBackend.model_tool_schema_hash = sha256_text(

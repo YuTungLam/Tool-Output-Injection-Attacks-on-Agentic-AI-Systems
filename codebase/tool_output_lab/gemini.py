@@ -9,6 +9,8 @@ from typing import Any, Callable, Mapping
 
 from .domain import ModelCallMetadata, PreparedToolCall
 from .llm import (
+    ActionDecision,
+    ActionRequest,
     BackendDecision,
     DEFAULT_SIMULATED_SINK_IDS,
     LLMBackendError,
@@ -20,6 +22,10 @@ from .llm import (
     serialize_provider_context,
     sink_function_schema,
     source_function_schema,
+    validate_action_arguments,
+    validate_action_prepared_context,
+    validated_action_decision,
+    validated_action_function_schema,
     validated_provider_context,
 )
 from .utils import canonical_json, sha256_text, stable_identifier
@@ -43,6 +49,7 @@ class GeminiBackend:
     sdk_name = GOOGLE_GENAI_PACKAGE
     api_version = GEMINI_API_VERSION
     is_real_model = True
+    is_empirical_backend = True
     sampling_parameters: Mapping[str, Any] = {
         "http_max_attempts_including_initial": 1,
         "post_tool_max_output_tokens": 1_024,
@@ -92,6 +99,10 @@ class GeminiBackend:
         self.model_id = model_id
         self.model_version: str | None = model_id
         self._secrets: tuple[str, ...] = ()
+        self.real_provider_invoked = False
+        self.provider_invocation_count = 0
+        self.is_empirical_backend = False
+        self.is_real_model = False
         resolved_interval = (
             (
                 0.0
@@ -151,7 +162,8 @@ class GeminiBackend:
         self.sdk_version = installed_version
         client_error: str | None = None
         try:
-            self._client = genai.Client(
+            client_factory = genai.Client
+            self._client = client_factory(
                 api_key=resolved_key,
                 http_options={
                     "api_version": self.api_version,
@@ -163,6 +175,11 @@ class GeminiBackend:
             client_error = safe_backend_error(exc, secrets=self._secrets)
         if client_error is not None:
             raise GeminiConfigurationError(client_error)
+        self.is_empirical_backend = (
+            isinstance(client_factory, type)
+            and isinstance(self._client, client_factory)
+        )
+        self.is_real_model = self.is_empirical_backend
 
     @staticmethod
     def _installed_sdk_version(*, fallback: str | None = None) -> str:
@@ -188,6 +205,13 @@ class GeminiBackend:
                 self._sleeper(remaining)
                 now = self._monotonic()
         self._last_request_started_at = now
+
+    def _record_successful_provider_invocation(self) -> None:
+        """Record only a returned live-SDK request, never an attempted call."""
+
+        if self.is_empirical_backend:
+            self.provider_invocation_count += 1
+            self.real_provider_invoked = True
 
     def finish_request_schedule(self) -> None:
         """Leave one full interval after the last call for the next process."""
@@ -247,6 +271,7 @@ class GeminiBackend:
                     },
                 },
             )
+            self._record_successful_provider_invocation()
         except Exception as exc:
             provider_error = safe_backend_error(exc, secrets=self._secrets)
         if provider_error is not None:
@@ -301,6 +326,7 @@ class GeminiBackend:
                     },
                 },
             )
+            self._record_successful_provider_invocation()
         except Exception as exc:
             provider_error = safe_backend_error(exc, secrets=self._secrets)
         if provider_error is not None:
@@ -312,6 +338,65 @@ class GeminiBackend:
             sink_action_required=(
                 request.sink_tool_choice_mode == "any"
             ),
+        )
+
+    def complete_action(
+        self,
+        request: ActionRequest,
+        prepared: PreparedToolCall,
+    ) -> ActionDecision:
+        """Return a generic structured proposal without executing any tool."""
+
+        validate_action_prepared_context(request, prepared, self)
+        action_schema = validated_action_function_schema(
+            request.action_tool_schema
+        )
+        action_name = request.action_name
+        provider_choice_mode = (
+            "any"
+            if request.action_choice_mode == "required"
+            else "validated"
+        )
+        source_schema = source_function_schema(
+            prepared.tool_name,
+            prepared.tool_arguments,
+        )
+        self._wait_for_request_slot()
+        started_ns = time.perf_counter_ns()
+        provider_error: str | None = None
+        try:
+            interaction = self._client.interactions.create(
+                model=self.model_id,
+                input=request.interaction_input(prepared),
+                system_instruction=request.system_instruction,
+                store=False,
+                tools=[source_schema, action_schema],
+                generation_config={
+                    "max_output_tokens": self.sampling_parameters[
+                        "post_tool_max_output_tokens"
+                    ],
+                    "seed": request.seed,
+                    "thinking_level": self.sampling_parameters[
+                        "post_tool_thinking_level"
+                    ],
+                    "tool_choice": {
+                        "allowed_tools": {
+                            "mode": provider_choice_mode,
+                            "tools": [action_name],
+                        }
+                    },
+                },
+            )
+            self._record_successful_provider_invocation()
+        except Exception as exc:
+            provider_error = safe_backend_error(exc, secrets=self._secrets)
+        if provider_error is not None:
+            raise LLMBackendError(provider_error)
+        latency_ms = (time.perf_counter_ns() - started_ns) / 1_000_000
+        return self._parse_action_interaction(
+            interaction,
+            request=request,
+            latency_ms=latency_ms,
         )
 
     def _parse_prelude(
@@ -458,6 +543,109 @@ class GeminiBackend:
         validated_provider_context(
             prepared,
             expected_user_prompt=request.user_prompt,
+        )
+
+    def _parse_action_interaction(
+        self,
+        interaction: Any,
+        *,
+        request: ActionRequest,
+        latency_ms: float,
+    ) -> ActionDecision:
+        status = self._terminal_status(interaction)
+        serialized_steps = tuple(
+            self._step_mapping(step)
+            for step in (getattr(interaction, "steps", None) or ())
+        )
+        unexpected_step_types = sorted(
+            {
+                str(step.get("type"))
+                for step in serialized_steps
+                if step.get("type")
+                not in {"function_call", "model_output", "thought"}
+            }
+        )
+        if unexpected_step_types:
+            raise MalformedModelResponse(
+                "Gemini action response returned unexpected step types: "
+                f"{', '.join(unexpected_step_types)}"
+            )
+        function_calls = [
+            step
+            for step in serialized_steps
+            if step.get("type") == "function_call"
+        ]
+        if len(function_calls) > 1:
+            raise MalformedModelResponse(
+                "Gemini returned more than one function call at an action boundary"
+            )
+        if function_calls and any(
+            step.get("type") == "model_output"
+            for step in serialized_steps
+        ):
+            raise MalformedModelResponse(
+                "Gemini mixed a model_output step with a structured action proposal"
+            )
+
+        output_text = getattr(interaction, "output_text", None)
+        text = output_text.strip() if isinstance(output_text, str) else ""
+        action_name: str | None = None
+        action_arguments: Mapping[str, Any] | None = None
+        finish_reason: str
+
+        if function_calls:
+            call = function_calls[0]
+            if self._optional_string(call.get("id")) is None:
+                raise MalformedModelResponse(
+                    "Gemini action function call has no call ID"
+                )
+            if call.get("name") != request.action_name:
+                raise MalformedModelResponse(
+                    "Gemini returned an undeclared action function name"
+                )
+            if text:
+                raise MalformedModelResponse(
+                    "Gemini mixed answer text with a structured action proposal"
+                )
+            action_name = request.action_name
+            action_arguments = validate_action_arguments(
+                call.get("arguments"),
+                request.action_tool_schema,
+            )
+            finish_reason = "function_call"
+        else:
+            if request.action_choice_mode == "required":
+                raise MalformedModelResponse(
+                    "Gemini required action tool choice returned no function call"
+                )
+            if status == "requires_action":
+                raise MalformedModelResponse(
+                    "Gemini requires_action response has no function call"
+                )
+            if not text:
+                raise MalformedModelResponse(
+                    "Gemini returned neither text nor a structured action proposal"
+                )
+            if len(text) > 2_000:
+                raise MalformedModelResponse(
+                    "Gemini action-boundary text exceeds 2,000 characters"
+                )
+            finish_reason = "text"
+
+        metadata = self._model_call_metadata(
+            interaction,
+            status=status,
+            finish_reason=finish_reason,
+            latency_ms=latency_ms,
+        )
+        return validated_action_decision(
+            ActionDecision(
+                text=text or None,
+                action_name=action_name,
+                action_arguments=action_arguments,
+                metadata=metadata,
+            ),
+            request,
         )
 
     def _parse_interaction(
