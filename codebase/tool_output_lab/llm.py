@@ -136,6 +136,26 @@ class LLMBackendError(RuntimeError):
     """A provider failure whose message is safe to write to a local trace."""
 
 
+class ProviderRequestError(LLMBackendError):
+    """One provider request failed and the bounded run must not continue.
+
+    This is intentionally distinct from ``MalformedModelResponse``.  The
+    latter is a returned response that failed protocol validation; this error
+    means the provider request itself did not return normally.  Callers can
+    therefore abort a quota-bounded matched set without parsing provider error
+    strings or retrying the failed request.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
+
 class MalformedModelResponse(LLMBackendError):
     """The model response cannot be interpreted as an evaluable decision."""
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import json
 import sqlite3
 import tempfile
 import unittest
@@ -18,6 +19,7 @@ from tool_output_lab.llm import (
     ActionRequest,
     BackendDecision,
     FakeLLMBackend,
+    ProviderRequestError,
     fake_call_metadata,
 )
 from tool_output_lab.provider_memory import SQLiteRunMemoryStore
@@ -36,8 +38,15 @@ from tool_output_lab.provider_propagation import (
     PROVIDER_PROPAGATION_FREEZE_SOURCE_COMMIT,
     PROVIDER_PROPAGATION_MODEL_ID,
     PROVIDER_PROPAGATION_NOTE_WIDTH_BYTES,
+    PROVIDER_PROPAGATION_PRIOR_EXPERIMENT_ID,
+    PROVIDER_PROPAGATION_PRIOR_PROTOCOL_VERSION,
+    PROVIDER_PROPAGATION_PROTOCOL_VERSION,
+    PROVIDER_PROPAGATION_REQUEST_ATTEMPT_HARD_CAP,
+    PROVIDER_PROPAGATION_REVISION_ID,
     PROVIDER_PROPAGATION_RUNTIME_PROVIDER_ID,
     PROVIDER_PROPAGATION_SEED,
+    PROVIDER_PROPAGATION_SUMMARY_SCHEMA_VERSION,
+    PROVIDER_PROPAGATION_TRACE_SCHEMA_VERSION,
     ProviderPropagationConfig,
     build_provider_propagation_note,
     run_provider_propagation_smoke,
@@ -50,13 +59,19 @@ class ProviderPropagationSmokeTests(unittest.TestCase):
     def setUp(self) -> None:
         self.task = Task.from_mapping(FROZEN_PROVIDER_PROPAGATION_TASK)
 
-    def _backend(self, responder=None) -> FakeLLMBackend:
+    def _backend(
+        self,
+        responder=None,
+        *,
+        prelude_responder=None,
+    ) -> FakeLLMBackend:
         return FakeLLMBackend(
             BackendDecision(
                 answer="unused",
                 sink_action=None,
                 metadata=fake_call_metadata(),
             ),
+            prelude_responder=prelude_responder,
             action_responder=responder or self._successful_action_response,
         )
 
@@ -143,6 +158,27 @@ class ProviderPropagationSmokeTests(unittest.TestCase):
                 8,
             )
             self.assertEqual(
+                result.backend_accounting["model_call_records_persisted"],
+                8,
+            )
+            self.assertEqual(len(result.provider_calls), 8)
+            self.assertEqual(
+                result.provider_call_accounting["request_attempt_hard_cap"],
+                PROVIDER_PROPAGATION_REQUEST_ATTEMPT_HARD_CAP,
+            )
+            self.assertEqual(
+                result.provider_call_accounting["automatic_retries"],
+                0,
+            )
+            self.assertTrue(
+                result.provider_call_accounting["request_cap_respected"]
+            )
+            self.assertTrue(
+                result.provider_call_accounting[
+                    "metadata_complete_for_validated_calls"
+                ]
+            )
+            self.assertEqual(
                 [request.phase for request in backend.action_requests],
                 [
                     "memory_write",
@@ -154,6 +190,8 @@ class ProviderPropagationSmokeTests(unittest.TestCase):
                 ],
             )
             writer_prelude, reader_prelude = backend.prelude_requests
+            self.assertEqual(reader_prelude.user_prompt, self.task.user_prompt)
+            self.assertNotIn("record_canary", reader_prelude.user_prompt)
             self.assertNotEqual(
                 writer_prelude.matched_set_id,
                 reader_prelude.matched_set_id,
@@ -173,6 +211,8 @@ class ProviderPropagationSmokeTests(unittest.TestCase):
                     writer_prelude.system_instruction,
                 )
             for request in backend.action_requests[3:]:
+                self.assertEqual(request.user_prompt, self.task.user_prompt)
+                self.assertEqual(request.action_choice_mode, "optional")
                 self.assertEqual(request.prelude_seed, reader_prelude.seed)
                 self.assertEqual(
                     request.seed,
@@ -225,10 +265,46 @@ class ProviderPropagationSmokeTests(unittest.TestCase):
             validate_provider_propagation_trace(result.events)
 
             rendered = result.to_mapping()
+            self.assertEqual(
+                rendered["schema_version"],
+                "provider-propagation-summary-v2",
+            )
+            self.assertEqual(
+                PROVIDER_PROPAGATION_SUMMARY_SCHEMA_VERSION,
+                "provider-propagation-summary-v2",
+            )
+            self.assertTrue(
+                all(
+                    event["schema_version"]
+                    == PROVIDER_PROPAGATION_TRACE_SCHEMA_VERSION
+                    == "provider-propagation-trace-v2"
+                    for event in result.events
+                )
+            )
             experiment = rendered["experiment"]
             self.assertEqual(
                 experiment["experiment_id"],
                 PROVIDER_PROPAGATION_EXPERIMENT_ID,
+            )
+            self.assertEqual(
+                PROVIDER_PROPAGATION_PROTOCOL_VERSION,
+                "provider-propagation-smoke-v2",
+            )
+            self.assertEqual(
+                experiment["prior_protocol_version"],
+                PROVIDER_PROPAGATION_PRIOR_PROTOCOL_VERSION,
+            )
+            self.assertEqual(
+                experiment["prior_experiment_id"],
+                PROVIDER_PROPAGATION_PRIOR_EXPERIMENT_ID,
+            )
+            self.assertEqual(
+                experiment["revision_id"],
+                PROVIDER_PROPAGATION_REVISION_ID,
+            )
+            self.assertNotEqual(
+                experiment["experiment_id"],
+                experiment["prior_experiment_id"],
             )
             self.assertEqual(experiment["seed"], PROVIDER_PROPAGATION_SEED)
             self.assertEqual(experiment["guard_mode"], "allow")
@@ -269,6 +345,200 @@ class ProviderPropagationSmokeTests(unittest.TestCase):
                 experiment["frozen_model_id"],
                 PROVIDER_PROPAGATION_MODEL_ID,
             )
+
+    def test_prelude_usage_and_latency_are_persisted_with_all_call_records(
+        self,
+    ) -> None:
+        prelude_builder = self._backend()
+
+        def prepare(request):
+            prepared = prelude_builder.prepare_tool_call(request)
+            writer = request.source_tool_name == "synthetic_document_lookup"
+            return replace(
+                prepared,
+                model_call=replace(
+                    prepared.model_call,
+                    latency_ms=12.5 if writer else 20.0,
+                    input_tokens=50 if writer else 60,
+                    output_tokens=5 if writer else 6,
+                    thought_tokens=10 if writer else 12,
+                    tool_use_tokens=3 if writer else 4,
+                    cached_tokens=0,
+                    total_tokens=68 if writer else 82,
+                ),
+            )
+
+        backend = self._backend(prelude_responder=prepare)
+        with tempfile.TemporaryDirectory(
+            prefix="provider-propagation-"
+        ) as directory:
+            result = self._run(directory, backend)
+            with Path(result.summary_path).open(encoding="utf-8") as handle:
+                persisted = json.load(handle)
+
+        self.assertEqual(
+            [record["phase"] for record in result.provider_calls],
+            [
+                "writer_prelude",
+                "writer_action",
+                "writer_action",
+                "writer_action",
+                "reader_prelude",
+                "reader_action",
+                "reader_action",
+                "reader_action",
+            ],
+        )
+        prelude_calls = {
+            record["phase"]: record
+            for record in result.provider_calls
+            if record["scope"] == "matched_set"
+        }
+        self.assertEqual(
+            prelude_calls["writer_prelude"]["model_call"]["latency_ms"],
+            12.5,
+        )
+        self.assertEqual(
+            prelude_calls["reader_prelude"]["model_call"]["total_tokens"],
+            82,
+        )
+        call_accounting = result.provider_call_accounting
+        self.assertEqual(call_accounting["model_call_records_persisted"], 8)
+        self.assertEqual(call_accounting["calls_with_usage_metadata"], 2)
+        self.assertFalse(call_accounting["usage_metadata_complete"])
+        self.assertEqual(call_accounting["token_totals"]["input_tokens"], 110)
+        self.assertEqual(call_accounting["token_totals"]["total_tokens"], 150)
+        self.assertEqual(call_accounting["latency_ms_total"], 32.5)
+
+        writer_contexts = [
+            event["payload"]
+            for event in result.events
+            if event["event_type"] == "writer_context_prepared"
+        ]
+        reader_contexts = [
+            event["payload"]
+            for event in result.events
+            if event["event_type"] == "reader_context_prepared"
+        ]
+        self.assertEqual(
+            {payload["shared_prelude_model_call"]["total_tokens"] for payload in writer_contexts},
+            {68},
+        )
+        self.assertEqual(
+            {payload["shared_prelude_model_call"]["total_tokens"] for payload in reader_contexts},
+            {82},
+        )
+        self.assertEqual(len(persisted["provider_calls"]), 8)
+        self.assertEqual(
+            persisted["experiment"]["provider_call_accounting"][
+                "token_totals"
+            ]["total_tokens"],
+            150,
+        )
+        validate_provider_propagation_trace(result.events)
+
+    def test_condition_independent_sink_proposals_remain_diagnostic_only(
+        self,
+    ) -> None:
+        def respond(request: ActionRequest) -> ActionDecision:
+            if request.phase == "memory_read":
+                return ActionDecision(
+                    text=None,
+                    action_name=SINK_FUNCTION_NAME,
+                    action_arguments={
+                        "final_answer": self.task.public_answer,
+                        "sink_id": self.task.eligible_sink,
+                        "source_field": "content",
+                        "value": self.task.public_answer,
+                    },
+                    metadata=fake_call_metadata(),
+                )
+            return self._successful_action_response(request)
+
+        backend = self._backend(respond)
+        with tempfile.TemporaryDirectory(
+            prefix="provider-propagation-"
+        ) as directory:
+            result = self._run(directory, backend)
+
+        self.assertTrue(all(row.sink_proposed for row in result.summaries))
+        self.assertTrue(all(row.sink_attempted for row in result.summaries))
+        self.assertTrue(
+            all(not row.simulator_accepted for row in result.summaries)
+        )
+        self.assertTrue(
+            all(not row.controlled_route_observed for row in result.summaries)
+        )
+        self.assertTrue(
+            all(not row.prohibited_simulated_effect for row in result.summaries)
+        )
+        validate_provider_propagation_trace(result.events)
+
+    def test_provider_request_error_aborts_triplet_without_retry(self) -> None:
+        def fail_first_action(request: ActionRequest) -> ActionDecision:
+            raise ProviderRequestError(
+                "synthetic quota failure",
+                status_code=429,
+            )
+
+        backend = self._backend(fail_first_action)
+        with tempfile.TemporaryDirectory(
+            prefix="provider-propagation-"
+        ) as directory:
+            result = self._run(directory, backend)
+
+        self.assertEqual(len(backend.prelude_requests), 1)
+        self.assertEqual(len(backend.action_requests), 1)
+        self.assertEqual(
+            result.backend_accounting["total_backend_or_policy_invocations"],
+            2,
+        )
+        self.assertLessEqual(
+            result.backend_accounting["total_backend_or_policy_invocations"],
+            PROVIDER_PROPAGATION_REQUEST_ATTEMPT_HARD_CAP,
+        )
+        self.assertTrue(all(row.status == "error" for row in result.summaries))
+        self.assertTrue(
+            all(not row.outcome_evaluable for row in result.summaries)
+        )
+        self.assertTrue(
+            all(row.provider_status_code == 429 for row in result.summaries)
+        )
+        self.assertTrue(
+            all(not row.reader_model_call_attempted for row in result.summaries)
+        )
+        self.assertTrue(all(not row.sink_attempted for row in result.summaries))
+        self.assertFalse(
+            any(
+                event["event_type"] == "memory_committed"
+                for event in result.events
+            )
+        )
+        error_events = [
+            event
+            for event in result.events
+            if event["event_type"] == "run_error"
+        ]
+        self.assertEqual(len(error_events), 3)
+        self.assertTrue(
+            all(event["payload"]["global_abort"] for event in error_events)
+        )
+        self.assertTrue(
+            all(
+                event["payload"]["provider_status_code"] == 429
+                for event in error_events
+            )
+        )
+        validate_provider_propagation_trace(result.events)
+        tampered = copy.deepcopy(list(result.events))
+        next(
+            event
+            for event in tampered
+            if event["event_type"] == "run_error"
+        )["payload"]["global_abort"] = False
+        self._rehash(tampered)
+        with self.assertRaises(ValueError):
+            validate_provider_propagation_trace(tampered)
 
     def test_manifest_persists_exact_notes_hashes_and_attack_spec(self) -> None:
         backend = self._backend()
@@ -457,6 +727,54 @@ class ProviderPropagationSmokeTests(unittest.TestCase):
         self.assertFalse(attack.external_side_effect)
         self.assertEqual(result.complete_matched_sets, 0)
         validate_provider_propagation_trace(result.events)
+
+    def test_error_event_semantics_reject_tampering_after_rehash(self) -> None:
+        def respond(request: ActionRequest) -> ActionDecision:
+            if (
+                request.phase == "memory_read"
+                and "PROPAGATION_TEST_DIRECTIVE:"
+                in str(request.tool_payload["content"])
+            ):
+                return ActionDecision(
+                    text=None,
+                    action_name=None,
+                    action_arguments=None,
+                    metadata=fake_call_metadata(),
+                )
+            return self._successful_action_response(request)
+
+        backend = self._backend(respond)
+        with tempfile.TemporaryDirectory(
+            prefix="provider-propagation-"
+        ) as directory:
+            result = self._run(directory, backend)
+
+        cases = {
+            "global_abort": ("global_abort", True),
+            "error_type": ("error_type", ""),
+            "error_message": ("error_message", ""),
+            "outcome_evaluable": ("outcome_evaluable", True),
+            "fail_closed": ("fail_closed", False),
+            "sink_dispatch_suppressed": (
+                "sink_dispatch_suppressed",
+                False,
+            ),
+            "provider_status_code": ("provider_status_code", 500),
+        }
+        for label, (field, value) in cases.items():
+            with self.subTest(label=label):
+                events = copy.deepcopy(list(result.events))
+                error_event = next(
+                    event
+                    for event in events
+                    if event["event_type"] == "run_error"
+                    and event["payload"]["error_type"]
+                    == "MalformedModelResponse"
+                )
+                error_event["payload"][field] = value
+                self._rehash(events)
+                with self.assertRaises(ValueError):
+                    validate_provider_propagation_trace(events)
 
     def test_sqlite_tamper_between_contexts_fails_closed_before_reader_action(
         self,

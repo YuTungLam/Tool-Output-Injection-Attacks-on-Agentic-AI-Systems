@@ -13,10 +13,10 @@ from .llm import (
     ActionRequest,
     BackendDecision,
     DEFAULT_SIMULATED_SINK_IDS,
-    LLMBackendError,
     LLMRequest,
     MalformedModelResponse,
     PreludeRequest,
+    ProviderRequestError,
     SINK_FUNCTION_NAME,
     safe_backend_error,
     serialize_provider_context,
@@ -101,6 +101,7 @@ class GeminiBackend:
         self._secrets: tuple[str, ...] = ()
         self.real_provider_invoked = False
         self.provider_invocation_count = 0
+        self.provider_request_attempt_count = 0
         self.is_empirical_backend = False
         self.is_real_model = False
         resolved_interval = (
@@ -213,6 +214,31 @@ class GeminiBackend:
             self.provider_invocation_count += 1
             self.real_provider_invoked = True
 
+    def _record_provider_request_attempt(self) -> None:
+        """Count each SDK request once, including a failed initial attempt."""
+
+        self.provider_request_attempt_count += 1
+
+    @staticmethod
+    def _provider_status_code(error: BaseException) -> int | None:
+        """Extract a status code without retaining the provider exception."""
+
+        candidates = (
+            getattr(error, "status_code", None),
+            getattr(error, "code", None),
+            getattr(getattr(error, "response", None), "status_code", None),
+        )
+        for value in candidates:
+            if isinstance(value, bool):
+                continue
+            if isinstance(value, int) and 100 <= value <= 599:
+                return value
+            if isinstance(value, str) and value.isdigit():
+                parsed = int(value)
+                if 100 <= parsed <= 599:
+                    return parsed
+        return None
+
     def finish_request_schedule(self) -> None:
         """Leave one full interval after the last call for the next process."""
 
@@ -248,6 +274,8 @@ class GeminiBackend:
         self._wait_for_request_slot()
         started_ns = time.perf_counter_ns()
         provider_error: str | None = None
+        provider_status_code: int | None = None
+        self._record_provider_request_attempt()
         try:
             interaction = self._client.interactions.create(
                 model=self.model_id,
@@ -274,8 +302,12 @@ class GeminiBackend:
             self._record_successful_provider_invocation()
         except Exception as exc:
             provider_error = safe_backend_error(exc, secrets=self._secrets)
+            provider_status_code = self._provider_status_code(exc)
         if provider_error is not None:
-            raise LLMBackendError(provider_error)
+            raise ProviderRequestError(
+                provider_error,
+                status_code=provider_status_code,
+            )
         latency_ms = (time.perf_counter_ns() - started_ns) / 1_000_000
         return self._parse_prelude(
             interaction,
@@ -300,6 +332,8 @@ class GeminiBackend:
         self._wait_for_request_slot()
         started_ns = time.perf_counter_ns()
         provider_error: str | None = None
+        provider_status_code: int | None = None
+        self._record_provider_request_attempt()
         try:
             interaction = self._client.interactions.create(
                 model=self.model_id,
@@ -329,8 +363,12 @@ class GeminiBackend:
             self._record_successful_provider_invocation()
         except Exception as exc:
             provider_error = safe_backend_error(exc, secrets=self._secrets)
+            provider_status_code = self._provider_status_code(exc)
         if provider_error is not None:
-            raise LLMBackendError(provider_error)
+            raise ProviderRequestError(
+                provider_error,
+                status_code=provider_status_code,
+            )
         latency_ms = (time.perf_counter_ns() - started_ns) / 1_000_000
         return self._parse_interaction(
             interaction,
@@ -352,18 +390,31 @@ class GeminiBackend:
             request.action_tool_schema
         )
         action_name = request.action_name
-        provider_choice_mode = (
-            "any"
-            if request.action_choice_mode == "required"
-            else "validated"
-        )
         source_schema = source_function_schema(
             prepared.tool_name,
             prepared.tool_arguments,
         )
+        generation_config: dict[str, Any] = {
+            "max_output_tokens": self.sampling_parameters[
+                "post_tool_max_output_tokens"
+            ],
+            "seed": request.seed,
+            "thinking_level": self.sampling_parameters[
+                "post_tool_thinking_level"
+            ],
+        }
+        if request.action_choice_mode == "required":
+            generation_config["tool_choice"] = {
+                "allowed_tools": {
+                    "mode": "any",
+                    "tools": [action_name],
+                }
+            }
         self._wait_for_request_slot()
         started_ns = time.perf_counter_ns()
         provider_error: str | None = None
+        provider_status_code: int | None = None
+        self._record_provider_request_attempt()
         try:
             interaction = self._client.interactions.create(
                 model=self.model_id,
@@ -371,27 +422,17 @@ class GeminiBackend:
                 system_instruction=request.system_instruction,
                 store=False,
                 tools=[source_schema, action_schema],
-                generation_config={
-                    "max_output_tokens": self.sampling_parameters[
-                        "post_tool_max_output_tokens"
-                    ],
-                    "seed": request.seed,
-                    "thinking_level": self.sampling_parameters[
-                        "post_tool_thinking_level"
-                    ],
-                    "tool_choice": {
-                        "allowed_tools": {
-                            "mode": provider_choice_mode,
-                            "tools": [action_name],
-                        }
-                    },
-                },
+                generation_config=generation_config,
             )
             self._record_successful_provider_invocation()
         except Exception as exc:
             provider_error = safe_backend_error(exc, secrets=self._secrets)
+            provider_status_code = self._provider_status_code(exc)
         if provider_error is not None:
-            raise LLMBackendError(provider_error)
+            raise ProviderRequestError(
+                provider_error,
+                status_code=provider_status_code,
+            )
         latency_ms = (time.perf_counter_ns() - started_ns) / 1_000_000
         return self._parse_action_interaction(
             interaction,

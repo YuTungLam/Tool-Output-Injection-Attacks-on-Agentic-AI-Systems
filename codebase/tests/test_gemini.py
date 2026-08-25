@@ -27,6 +27,7 @@ from tool_output_lab.llm import (
     LLMRequest,
     MalformedModelResponse,
     PreludeRequest,
+    ProviderRequestError,
     memory_read_function_schema,
     memory_write_function_schema,
     fake_call_metadata,
@@ -467,15 +468,7 @@ class GeminiBackendTests(unittest.TestCase):
             [tool["name"] for tool in post_call["tools"]],
             ["synthetic_memory_read", "record_canary"],
         )
-        self.assertEqual(
-            post_call["generation_config"]["tool_choice"],
-            {
-                "allowed_tools": {
-                    "mode": "validated",
-                    "tools": ["record_canary"],
-                }
-            },
-        )
+        self.assertNotIn("tool_choice", post_call["generation_config"])
         exposed_payload = json.loads(
             post_call["input"][-1]["result"][0]["text"]
         )
@@ -1154,7 +1147,7 @@ class GeminiBackendTests(unittest.TestCase):
             api_key=secret,
         )
 
-        with self.assertRaises(LLMBackendError) as raised:
+        with self.assertRaises(ProviderRequestError) as raised:
             backend.prepare_tool_call(self.prelude_request())
 
         self.assertNotIn(secret, str(raised.exception))
@@ -1166,6 +1159,28 @@ class GeminiBackendTests(unittest.TestCase):
         self.assertIsNone(raised.exception.__cause__)
         self.assertIsNone(raised.exception.__context__)
         self.assertFalse(backend.real_provider_invoked)
+        self.assertEqual(backend.provider_request_attempt_count, 1)
+
+    def test_provider_status_errors_are_typed_without_retry(self) -> None:
+        class FakeProviderStatusError(RuntimeError):
+            def __init__(self, status_code: int) -> None:
+                super().__init__(f"synthetic provider status {status_code}")
+                self.status_code = status_code
+
+        for status_code in (403, 429, 500, 503):
+            with self.subTest(status_code=status_code):
+                backend, client = self.backend(
+                    error=FakeProviderStatusError(status_code)
+                )
+
+                with self.assertRaises(ProviderRequestError) as raised:
+                    backend.prepare_tool_call(self.prelude_request())
+
+                self.assertEqual(raised.exception.status_code, status_code)
+                self.assertEqual(backend.provider_request_attempt_count, 1)
+                self.assertEqual(len(client.interactions.calls), 1)
+                self.assertEqual(backend.provider_invocation_count, 0)
+                self.assertFalse(backend.real_provider_invoked)
 
     def test_real_provider_invoked_requires_a_successful_return(self) -> None:
         failed, _ = self.backend(error=RuntimeError("synthetic failure"))
