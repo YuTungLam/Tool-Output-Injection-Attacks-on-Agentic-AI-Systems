@@ -53,7 +53,37 @@ def build_graph(
                 )
 
             tool_started_at = perf_counter()
-            tool_result = selected_tool.invoke(tool_call["args"])
+
+            try:
+                tool_result = selected_tool.invoke(tool_call["args"])
+            except Exception as error:
+                if trace_callback is not None:
+                    trace_callback(
+                        "tool_call_failed",
+                        {
+                            "tool_name": tool_call["name"],
+                            "tool_call_id": tool_call["id"],
+                            "arguments": tool_call["args"],
+                            "error_type": type(error).__name__,
+                            "error_message": str(error),
+                            "duration_ms": round(
+                                (
+                                        perf_counter()
+                                        - tool_started_at
+                                )
+                                * 1000,
+                                3,
+                                ),
+                            "state_at_failure": {
+                                "messages": [
+                                    serialize_message(message)
+                                    for message in state["messages"]
+                                ]
+                            },
+                        },
+                    )
+
+                raise
 
             tool_message = ToolMessage(
                 content=str(tool_result),
