@@ -6,7 +6,7 @@ from langchain_core.messages import ToolMessage
 from langchain_core.tools import BaseTool
 from langgraph.graph import END, START, MessagesState, StateGraph
 from boundary_agent.tracing import serialize_message
-
+from time import perf_counter
 TraceCallback = Callable[[str, dict[str, Any]], None]
 
 def build_graph(
@@ -35,6 +35,7 @@ def build_graph(
 
         for tool_call in last_message.tool_calls:
             selected_tool = tools_by_name[tool_call["name"]]
+
             if trace_callback is not None:
                 trace_callback(
                     "tool_call_started",
@@ -50,15 +51,39 @@ def build_graph(
                         },
                     },
                 )
+
+            tool_started_at = perf_counter()
             tool_result = selected_tool.invoke(tool_call["args"])
 
-            tool_messages.append(
-                ToolMessage(
-                    content=str(tool_result),
-                    name=tool_call["name"],
-                    tool_call_id=tool_call["id"],
-                )
+            tool_message = ToolMessage(
+                content=str(tool_result),
+                name=tool_call["name"],
+                tool_call_id=tool_call["id"],
             )
+            tool_messages.append(tool_message)
+
+            if trace_callback is not None:
+                trace_callback(
+                    "tool_call_completed",
+                    {
+                        "tool_name": tool_call["name"],
+                        "tool_call_id": tool_call["id"],
+                        "output": str(tool_result),
+                        "duration_ms": round(
+                            (perf_counter() - tool_started_at) * 1000,
+                            3,
+                            ),
+                        "state_after": {
+                            "messages": [
+                                serialize_message(message)
+                                for message in [
+                                    *state["messages"],
+                                    *tool_messages,
+                                ]
+                            ]
+                        },
+                    },
+                )
 
         return {"messages": tool_messages}
 

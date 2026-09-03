@@ -74,7 +74,7 @@ def test_graph_executes_tool_and_returns_to_model() -> None:
         "LangGraph is a stateful agent framework."
     )
 
-def test_graph_records_tool_state_before_execution() -> None:
+def test_graph_records_tool_state_around_execution() -> None:
     captured_events: list[tuple[str, dict[str, Any]]] = []
 
     def capture_trace_event(
@@ -110,19 +110,41 @@ def test_graph_records_tool_state_before_execution() -> None:
         {"messages": [{"role": "user", "content": "Search for LangGraph"}]}
     )
 
-    assert len(captured_events) == 1
+    assert [
+               event_type
+               for event_type, _ in captured_events
+           ] == [
+               "tool_call_started",
+               "tool_call_completed",
+           ]
 
-    event_type, event_data = captured_events[0]
+    started_data = captured_events[0][1]
 
-    assert event_type == "tool_call_started"
-    assert event_data["tool_name"] == "mock_web_search"
-    assert event_data["tool_call_id"] == "call-1"
-    assert event_data["arguments"] == {"query": "LangGraph"}
+    assert started_data["tool_name"] == "mock_web_search"
+    assert started_data["tool_call_id"] == "call-1"
+    assert started_data["arguments"] == {"query": "LangGraph"}
 
-    state_messages = event_data["state_before"]["messages"]
+    state_before = started_data["state_before"]["messages"]
 
     assert [
                message["message_type"]
-               for message in state_messages
+               for message in state_before
            ] == ["human", "ai"]
-    assert state_messages[-1]["tool_calls"][0]["id"] == "call-1"
+    assert state_before[-1]["tool_calls"][0]["id"] == "call-1"
+
+    completed_data = captured_events[1][1]
+
+    assert completed_data["tool_name"] == "mock_web_search"
+    assert completed_data["tool_call_id"] == "call-1"
+    assert completed_data["output"] == (
+        "LangGraph is a framework for building stateful agent workflows."
+    )
+    assert completed_data["duration_ms"] >= 0
+
+    state_after = completed_data["state_after"]["messages"]
+
+    assert [
+               message["message_type"]
+               for message in state_after
+           ] == ["human", "ai", "tool"]
+    assert state_after[-1]["tool_call_id"] == "call-1"
