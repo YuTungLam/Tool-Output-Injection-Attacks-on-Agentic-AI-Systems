@@ -3,7 +3,7 @@ from uuid import uuid4
 from pathlib import Path
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_groq import ChatGroq
-
+from time import perf_counter
 from boundary_agent import build_graph
 from boundary_agent.tools import mock_web_search
 from boundary_agent.tracing import (
@@ -29,6 +29,7 @@ inputs = {
 run_id = str(uuid4())
 trace_path = Path("traces") / f"{run_id}.jsonl"
 sequence = 1
+started_at = perf_counter()
 
 run_started = create_trace_event(
     run_id=run_id,
@@ -58,27 +59,63 @@ print(json.dumps(input_received, ensure_ascii=False))
 append_trace_event(trace_path, input_received)
 sequence += 1
 
-for event in graph.stream(
-        inputs,
-        stream_mode="updates",
-        version="v2",
-):
-    if event["type"] != "updates":
-        continue
+try:
+    for event in graph.stream(
+            inputs,
+            stream_mode="updates",
+            version="v2",
+    ):
+        if event["type"] != "updates":
+            continue
 
-    for node_name, update in event["data"].items():
-        for message in update.get("messages", []):
-            trace_event = create_trace_event(
-                run_id=run_id,
-                sequence=sequence,
-                event_type="node_message",
-                data={
-                    "node": node_name,
-                    "message": serialize_message(message),
-                },
-            )
-            print(json.dumps(trace_event, ensure_ascii=False))
-            append_trace_event(trace_path, trace_event)
-            sequence += 1
+        for node_name, update in event["data"].items():
+            for message in update.get("messages", []):
+                trace_event = create_trace_event(
+                    run_id=run_id,
+                    sequence=sequence,
+                    event_type="node_message",
+                    data={
+                        "node": node_name,
+                        "message": serialize_message(message),
+                    },
+                )
+                print(json.dumps(trace_event, ensure_ascii=False))
+                append_trace_event(trace_path, trace_event)
+                sequence += 1
 
-print(f"Trace written to {trace_path.resolve()}")
+    run_completed = create_trace_event(
+        run_id=run_id,
+        sequence=sequence,
+        event_type="run_completed",
+        data={
+            "duration_ms": round(
+                (perf_counter() - started_at) * 1000,
+                3,
+                ),
+        },
+    )
+    print(json.dumps(run_completed, ensure_ascii=False))
+    append_trace_event(trace_path, run_completed)
+    sequence += 1
+
+except Exception as error:
+    run_failed = create_trace_event(
+        run_id=run_id,
+        sequence=sequence,
+        event_type="run_failed",
+        data={
+            "error_type": type(error).__name__,
+            "error_message": str(error),
+            "duration_ms": round(
+                (perf_counter() - started_at) * 1000,
+                3,
+                ),
+        },
+    )
+    print(json.dumps(run_failed, ensure_ascii=False))
+    append_trace_event(trace_path, run_failed)
+    sequence += 1
+    raise
+
+finally:
+    print(f"Trace written to {trace_path.resolve()}")

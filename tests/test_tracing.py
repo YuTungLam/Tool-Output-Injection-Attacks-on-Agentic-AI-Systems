@@ -99,3 +99,30 @@ def test_append_trace_event_writes_each_event_on_new_line(
     ]
 
     assert stored_events == [first_event, second_event]
+
+def test_create_lifecycle_trace_events() -> None:
+    completed_event = create_trace_event(
+        run_id="run-123",
+        sequence=6,
+        event_type="run_completed",
+        data={"duration_ms": 125.5},
+    )
+    failed_event = create_trace_event(
+        run_id="run-456",
+        sequence=4,
+        event_type="run_failed",
+        data={
+            "error_type": "RuntimeError",
+            "error_message": "Tool execution failed",
+            "duration_ms": 40.2,
+        },
+    )
+
+    assert completed_event["event_type"] == "run_completed"
+    assert completed_event["data"]["duration_ms"] == 125.5
+
+    assert failed_event["event_type"] == "run_failed"
+    assert failed_event["data"]["error_type"] == "RuntimeError"
+
+    json.dumps(completed_event)
+    json.dumps(failed_event)
