@@ -1,29 +1,18 @@
 """Minimal LangGraph runtime."""
 
+from langchain_core.language_models import BaseChatModel
 from langgraph.graph import END, START, MessagesState, StateGraph
 
 
-def mock_model_node(
-    state: MessagesState,
-) -> dict[str, list[dict[str, str]]]:
-    """Read the latest user message and append one assistant message."""
-
-    latest_message = state["messages"][-1]
-    return {
-        "messages": [
-            {
-                "role": "assistant",
-                "content": f"Received: {latest_message.content}",
-            }
-        ]
-    }
-
-
-def build_graph():
+def build_graph(model: BaseChatModel):
     """Build and compile the graph."""
+    def model_node(state: MessagesState):
+        response = model.invoke(state["messages"])
+        return {"messages": [response]}
 
     builder = StateGraph(MessagesState)
-    builder.add_node("model", mock_model_node)
+    builder.add_node("model", model_node)
     builder.add_edge(START, "model")
     builder.add_edge("model", END)
+
     return builder.compile()
