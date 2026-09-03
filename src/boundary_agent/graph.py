@@ -1,13 +1,17 @@
 """Minimal LangGraph runtime."""
 
 from langchain_core.language_models import BaseChatModel
+from langchain_core.tools import BaseTool
 from langgraph.graph import END, START, MessagesState, StateGraph
 
+def build_graph(
+    model: BaseChatModel,
+    tools: list[BaseTool] | None = None,
+):
+    bound_model = model.bind_tools(tools) if tools else model
 
-def build_graph(model: BaseChatModel):
-    """Build and compile the graph."""
     def model_node(state: MessagesState):
-        response = model.invoke(state["messages"])
+        response = bound_model.invoke(state["messages"])
         return {"messages": [response]}
 
     builder = StateGraph(MessagesState)

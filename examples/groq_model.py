@@ -1,4 +1,5 @@
 from boundary_agent import build_graph
+from boundary_agent.tools import mock_web_search
 from langchain_groq import ChatGroq
 
 
@@ -8,19 +9,24 @@ model = ChatGroq(
     max_retries=2,
 )
 
-graph = build_graph(model)
+graph = build_graph(
+    model,
+    tools=[mock_web_search],
+)
 
 result = graph.invoke(
     {
         "messages": [
             ("system", "You are a concise assistant."),
-            ("user", "Explain what an AI agent is in one sentence."),
+            (
+                "user",
+                "Use mock_web_search to find information about LangGraph.",
+            ),
         ]
     }
 )
 
-print(type(graph))
-print(type(result))
+last_message = result["messages"][-1]
 
-for message in result["messages"]:
-    print(f"{message.type}: {message.content}")
+print(last_message.content)
+print(last_message.tool_calls)
