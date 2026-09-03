@@ -1,14 +1,18 @@
 """Minimal LangGraph runtime."""
-
+from collections.abc import Callable
+from typing import Any
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import BaseTool
 from langgraph.graph import END, START, MessagesState, StateGraph
+from boundary_agent.tracing import serialize_message
 
+TraceCallback = Callable[[str, dict[str, Any]], None]
 
 def build_graph(
     model: BaseChatModel,
     tools: list[BaseTool] | None = None,
+    trace_callback: TraceCallback | None = None,
 ):
     resolved_tools = tools or []
     tools_by_name = {
@@ -31,6 +35,21 @@ def build_graph(
 
         for tool_call in last_message.tool_calls:
             selected_tool = tools_by_name[tool_call["name"]]
+            if trace_callback is not None:
+                trace_callback(
+                    "tool_call_started",
+                    {
+                        "tool_name": tool_call["name"],
+                        "tool_call_id": tool_call["id"],
+                        "arguments": tool_call["args"],
+                        "state_before": {
+                            "messages": [
+                                serialize_message(message)
+                                for message in state["messages"]
+                            ]
+                        },
+                    },
+                )
             tool_result = selected_tool.invoke(tool_call["args"])
 
             tool_messages.append(

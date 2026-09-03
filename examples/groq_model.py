@@ -1,4 +1,5 @@
 import json
+from typing import Any
 from uuid import uuid4
 from pathlib import Path
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -11,7 +12,6 @@ MODEL_NAME = "openai/gpt-oss-20b"
 
 model = ChatGroq(model=MODEL_NAME)
 tools = [mock_web_search]
-graph = build_graph(model, tools)
 
 inputs = {
     "messages": [
@@ -28,6 +28,23 @@ recorder = TraceRecorder(
     run_id=run_id,
     path=trace_path,
 )
+def record_graph_event(
+        event_type: str,
+        data: dict[str, Any],
+) -> None:
+    event = recorder.record(
+        event_type=event_type,
+        data=data,
+    )
+    print(json.dumps(event, ensure_ascii=False))
+
+
+graph = build_graph(
+    model,
+    tools,
+    trace_callback=record_graph_event,
+)
+
 started_at = perf_counter()
 
 run_started = recorder.record(
