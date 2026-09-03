@@ -1,13 +1,16 @@
 import json
 from uuid import uuid4
-
+from pathlib import Path
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_groq import ChatGroq
 
 from boundary_agent import build_graph
 from boundary_agent.tools import mock_web_search
-from boundary_agent.tracing import create_trace_event, serialize_message
-
+from boundary_agent.tracing import (
+    append_trace_event,
+    create_trace_event,
+    serialize_message,
+)
 MODEL_NAME = "openai/gpt-oss-20b"
 
 model = ChatGroq(model=MODEL_NAME)
@@ -24,6 +27,7 @@ inputs = {
 }
 
 run_id = str(uuid4())
+trace_path = Path("traces") / f"{run_id}.jsonl"
 sequence = 1
 
 run_started = create_trace_event(
@@ -36,6 +40,7 @@ run_started = create_trace_event(
     },
 )
 print(json.dumps(run_started, ensure_ascii=False))
+append_trace_event(trace_path, run_started)
 sequence += 1
 
 input_received = create_trace_event(
@@ -50,6 +55,7 @@ input_received = create_trace_event(
     },
 )
 print(json.dumps(input_received, ensure_ascii=False))
+append_trace_event(trace_path, input_received)
 sequence += 1
 
 for event in graph.stream(
@@ -72,4 +78,7 @@ for event in graph.stream(
                 },
             )
             print(json.dumps(trace_event, ensure_ascii=False))
+            append_trace_event(trace_path, trace_event)
             sequence += 1
+
+print(f"Trace written to {trace_path.resolve()}")

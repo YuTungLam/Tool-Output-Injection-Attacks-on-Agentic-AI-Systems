@@ -1,5 +1,6 @@
 """Trace normalization utilities."""
-
+import json
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import Any
 
@@ -43,3 +44,14 @@ def create_trace_event(
         "event_type": event_type,
         "data": data,
     }
+
+def append_trace_event(
+        path: str | Path,
+        event: dict[str, Any],
+) -> None:
+    trace_path = Path(path)
+    trace_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with trace_path.open("a", encoding="utf-8") as trace_file:
+        trace_file.write(json.dumps(event, ensure_ascii=False))
+        trace_file.write("\n")

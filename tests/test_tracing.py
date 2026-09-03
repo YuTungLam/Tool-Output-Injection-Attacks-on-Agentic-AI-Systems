@@ -1,13 +1,14 @@
 from datetime import datetime, timezone
 
 import json
-
+from pathlib import Path
 from langchain_core.messages import AIMessage, ToolMessage
 
 from boundary_agent.tracing import (
     TRACE_SCHEMA_VERSION,
     create_trace_event,
     serialize_message,
+    append_trace_event,
 )
 
 def test_serialize_ai_message_with_tool_call() -> None:
@@ -70,3 +71,31 @@ def test_create_trace_event() -> None:
     assert datetime.fromisoformat(event["timestamp_utc"]).tzinfo == timezone.utc
 
     json.dumps(event)
+
+def test_append_trace_event_writes_each_event_on_new_line(
+        tmp_path: Path,
+) -> None:
+    trace_path = tmp_path / "run.jsonl"
+
+    first_event = create_trace_event(
+        run_id="run-123",
+        sequence=1,
+        event_type="run_started",
+        data={"model": "test-model"},
+    )
+    second_event = create_trace_event(
+        run_id="run-123",
+        sequence=2,
+        event_type="input_received",
+        data={"messages": []},
+    )
+
+    append_trace_event(trace_path, first_event)
+    append_trace_event(trace_path, second_event)
+
+    stored_events = [
+        json.loads(line)
+        for line in trace_path.read_text(encoding="utf-8").splitlines()
+    ]
+
+    assert stored_events == [first_event, second_event]
