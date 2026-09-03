@@ -26,7 +26,8 @@ result = graph.invoke(
     }
 )
 
-last_message = result["messages"][-1]
+for message in result["messages"]:
+    print(f"{message.type}: {message.content}")
 
-print(last_message.content)
-print(last_message.tool_calls)
+    if getattr(message, "tool_calls", None):
+        print(f"tool_calls: {message.tool_calls}")
