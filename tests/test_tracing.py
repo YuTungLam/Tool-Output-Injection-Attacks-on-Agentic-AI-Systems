@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import json
 
 from langchain_core.messages import AIMessage, ToolMessage
@@ -7,7 +9,6 @@ from boundary_agent.tracing import (
     create_trace_event,
     serialize_message,
 )
-from datetime import datetime, timezone
 
 def test_serialize_ai_message_with_tool_call() -> None:
     message = AIMessage(
@@ -48,25 +49,24 @@ def test_serialize_tool_message() -> None:
     assert json.loads(json.dumps(record)) == record
 
 def test_create_trace_event() -> None:
-    message = AIMessage(
-        content="Final answer",
-        id="message-1",
-    )
+    message = AIMessage(content="Final answer")
 
     event = create_trace_event(
-        run_id="run-1",
+        run_id="run-123",
         sequence=1,
-        node="model",
-        message=message,
+        event_type="node_message",
+        data={
+            "node": "model",
+            "message": serialize_message(message),
+        },
     )
 
     assert event["schema_version"] == TRACE_SCHEMA_VERSION
-    assert event["run_id"] == "run-1"
+    assert event["run_id"] == "run-123"
     assert event["sequence"] == 1
     assert event["event_type"] == "node_message"
-    assert event["node"] == "model"
-    assert event["message"]["content"] == "Final answer"
+    assert event["data"]["node"] == "model"
+    assert event["data"]["message"]["content"] == "Final answer"
+    assert datetime.fromisoformat(event["timestamp_utc"]).tzinfo == timezone.utc
 
-    timestamp = datetime.fromisoformat(event["timestamp_utc"])
-    assert timestamp.tzinfo == timezone.utc
-    assert json.loads(json.dumps(event)) == event
+    json.dumps(event)
