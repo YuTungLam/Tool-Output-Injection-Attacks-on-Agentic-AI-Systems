@@ -55,3 +55,33 @@ def append_trace_event(
     with trace_path.open("a", encoding="utf-8") as trace_file:
         trace_file.write(json.dumps(event, ensure_ascii=False))
         trace_file.write("\n")
+
+class TraceRecorder:
+    def __init__(
+            self,
+            *,
+            run_id: str,
+            path: str | Path,
+    ) -> None:
+        if not run_id:
+            raise ValueError("run_id must not be empty")
+
+        self.run_id = run_id
+        self.path = Path(path)
+        self._next_sequence = 1
+
+    def record(
+            self,
+            *,
+            event_type: str,
+            data: dict[str, Any],
+    ) -> dict[str, Any]:
+        event = create_trace_event(
+            run_id=self.run_id,
+            sequence=self._next_sequence,
+            event_type=event_type,
+            data=data,
+        )
+        append_trace_event(self.path, event)
+        self._next_sequence += 1
+        return event

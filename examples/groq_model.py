@@ -6,11 +6,7 @@ from langchain_groq import ChatGroq
 from time import perf_counter
 from boundary_agent import build_graph
 from boundary_agent.tools import mock_web_search
-from boundary_agent.tracing import (
-    append_trace_event,
-    create_trace_event,
-    serialize_message,
-)
+from boundary_agent.tracing import TraceRecorder, serialize_message
 MODEL_NAME = "openai/gpt-oss-20b"
 
 model = ChatGroq(model=MODEL_NAME)
@@ -28,12 +24,13 @@ inputs = {
 
 run_id = str(uuid4())
 trace_path = Path("traces") / f"{run_id}.jsonl"
-sequence = 1
+recorder = TraceRecorder(
+    run_id=run_id,
+    path=trace_path,
+)
 started_at = perf_counter()
 
-run_started = create_trace_event(
-    run_id=run_id,
-    sequence=sequence,
+run_started = recorder.record(
     event_type="run_started",
     data={
         "model": MODEL_NAME,
@@ -41,12 +38,8 @@ run_started = create_trace_event(
     },
 )
 print(json.dumps(run_started, ensure_ascii=False))
-append_trace_event(trace_path, run_started)
-sequence += 1
 
-input_received = create_trace_event(
-    run_id=run_id,
-    sequence=sequence,
+input_received = recorder.record(
     event_type="input_received",
     data={
         "messages": [
@@ -56,8 +49,6 @@ input_received = create_trace_event(
     },
 )
 print(json.dumps(input_received, ensure_ascii=False))
-append_trace_event(trace_path, input_received)
-sequence += 1
 
 try:
     for event in graph.stream(
@@ -70,9 +61,7 @@ try:
 
         for node_name, update in event["data"].items():
             for message in update.get("messages", []):
-                trace_event = create_trace_event(
-                    run_id=run_id,
-                    sequence=sequence,
+                trace_event = recorder.record(
                     event_type="node_message",
                     data={
                         "node": node_name,
@@ -80,12 +69,8 @@ try:
                     },
                 )
                 print(json.dumps(trace_event, ensure_ascii=False))
-                append_trace_event(trace_path, trace_event)
-                sequence += 1
 
-    run_completed = create_trace_event(
-        run_id=run_id,
-        sequence=sequence,
+    run_completed = recorder.record(
         event_type="run_completed",
         data={
             "duration_ms": round(
@@ -95,13 +80,9 @@ try:
         },
     )
     print(json.dumps(run_completed, ensure_ascii=False))
-    append_trace_event(trace_path, run_completed)
-    sequence += 1
 
 except Exception as error:
-    run_failed = create_trace_event(
-        run_id=run_id,
-        sequence=sequence,
+    run_failed = recorder.record(
         event_type="run_failed",
         data={
             "error_type": type(error).__name__,
@@ -113,8 +94,6 @@ except Exception as error:
         },
     )
     print(json.dumps(run_failed, ensure_ascii=False))
-    append_trace_event(trace_path, run_failed)
-    sequence += 1
     raise
 
 finally:

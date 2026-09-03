@@ -6,9 +6,10 @@ from langchain_core.messages import AIMessage, ToolMessage
 
 from boundary_agent.tracing import (
     TRACE_SCHEMA_VERSION,
+    TraceRecorder,
+    append_trace_event,
     create_trace_event,
     serialize_message,
-    append_trace_event,
 )
 
 def test_serialize_ai_message_with_tool_call() -> None:
@@ -126,3 +127,31 @@ def test_create_lifecycle_trace_events() -> None:
 
     json.dumps(completed_event)
     json.dumps(failed_event)
+
+def test_trace_recorder_assigns_sequences_and_writes_jsonl(
+        tmp_path: Path,
+) -> None:
+    trace_path = tmp_path / "run.jsonl"
+    recorder = TraceRecorder(
+        run_id="run-123",
+        path=trace_path,
+    )
+
+    first_event = recorder.record(
+        event_type="run_started",
+        data={"model": "test-model"},
+    )
+    second_event = recorder.record(
+        event_type="run_completed",
+        data={"duration_ms": 10.0},
+    )
+
+    assert first_event["sequence"] == 1
+    assert second_event["sequence"] == 2
+
+    stored_events = [
+        json.loads(line)
+        for line in trace_path.read_text(encoding="utf-8").splitlines()
+    ]
+
+    assert stored_events == [first_event, second_event]
