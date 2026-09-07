@@ -27,6 +27,9 @@ def main(argv: list[str] | None = None) -> int:
     report = commands.add_parser("report", help="Export paper-style tables and a trace from saved clean runs")
     report.add_argument("--runs", type=Path, default=ROOT / "runs")
     report.add_argument("--output", type=Path, help="New directory for CSV, LaTeX, PNG, SVG and PDF exports")
+    html = commands.add_parser("html", help="Rebuild a self-contained interactive HTML record from one run")
+    html.add_argument("--run", type=Path, required=True)
+    html.add_argument("--output", type=Path, help="HTML path; defaults to RUN/report.html")
     live = commands.add_parser("run", help="Run selected clean tasks against Groq")
     live.add_argument("--config", type=Path, default=ROOT / "configs" / "groq.toml")
     live.add_argument("--model", help="Override the Groq model ID")
@@ -45,6 +48,10 @@ def main(argv: list[str] | None = None) -> int:
             from agentdojo_lab.reporting import export_report
 
             result = export_report(args.runs, args.output)
+        elif args.command == "html":
+            from agentdojo_lab.html_report import export_run_html
+
+            result = export_run_html(args.run, output=args.output)
         elif args.command == "tasks":
             suites = get_suites(args.benchmark_version)
             if args.suite not in suites:
@@ -68,6 +75,18 @@ def main(argv: list[str] | None = None) -> int:
             if args.no_record:
                 data["record_events"] = False
             result = run_clean(RunConfig.model_validate(data), output=args.output)
+        if args.command in {"run", "smoke"} and result.get("run_dir"):
+            report_status = Path(result["run_dir"]) / "html-report-status.json"
+            try:
+                if report_status.is_file():
+                    status_data = json.loads(report_status.read_text())
+                    if not isinstance(status_data, dict):
+                        raise ValueError("Invalid report status")
+                else:
+                    status_data = {"status": "unavailable"}
+            except (OSError, ValueError) as exc:
+                status_data = {"status": "unavailable", "error_type": type(exc).__name__}
+            result = {**result, "html_report": status_data}
     except Exception as exc:
         # Don't echo SDK request bodies or credentials to the terminal.
         if isinstance(exc, (ValueError, FileNotFoundError, FileExistsError, RunExecutionError)):

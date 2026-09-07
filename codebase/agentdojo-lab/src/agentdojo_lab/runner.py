@@ -24,6 +24,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from agentdojo_lab.groq_adapter import GroqLLM
+from agentdojo_lab.html_report import export_run_html
 from agentdojo_lab.inspection import inspect_events
 from agentdojo_lab.observation import ObservationSession, observe_pipeline
 from agentdojo_lab.offline import make_offline_client
@@ -312,4 +313,14 @@ def run_clean(config: RunConfig, *, offline: bool = False, output: Path | None =
         else:
             summary["recording"] = {"enabled": False}
         write_json(run_dir / "summary.json", summary)
+        # Reporting happens after execution and recording are complete. Its
+        # failures must not replace an agent error or change evaluator results.
+        try:
+            report_status = export_run_html(run_dir, redactions=(key,))
+        except Exception as exc:
+            report_status = {"status": "failed", "error_type": type(exc).__name__}
+        try:
+            write_json(run_dir / "html-report-status.json", report_status)
+        except OSError:
+            pass  # A full disk must not replace the original execution outcome.
     return summary

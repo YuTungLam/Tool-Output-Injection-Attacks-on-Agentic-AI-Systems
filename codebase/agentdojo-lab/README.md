@@ -102,7 +102,7 @@ Groq 会将 `temperature=0` 转换为 `1e-8`；不能据此承诺每次运行完
 .venv/bin/dojo-lab run --config configs/groq.toml --output runs/my-first-groq-run
 ```
 
-每次运行保存 `manifest.json`（配置和版本）、`summary.json`（结果与请求等统计）和 `native/`（AgentDojo 原生 JSON 轨迹）。默认还保存 `events.jsonl`（逐条刷新到磁盘的运行时事件）和 `events.audit.json`（事件关联与完整性检查）。分析任务成败时，同时看原生 `utility`、工具返回和最终回答；fixture 与真实模型运行应分别统计。
+每次运行保存 `manifest.json`（配置和版本）、`summary.json`（结果与请求等统计）和 `native/`（AgentDojo 原生 JSON 轨迹）。默认还保存 `events.jsonl`（逐条刷新到磁盘的运行时事件）和 `events.audit.json`（事件关联与完整性检查）。运行结束后自动生成可交互的 `report.html`，导出状态记录在 `html-report-status.json`。分析任务成败时，同时看原生 `utility`、工具返回和最终回答；fixture 与真实模型运行应分别统计。
 
 `task_success_rate` 保留上游对全部任务的统计；`evaluable_success_rate` 排除运行错误和未完成任务。`tasks[].status` 区分 `evaluated`、`error`、`incomplete`，工具返回错误另计为 `tool_errors`：模型可能读取错误后自行修正。API 异常会保存失败摘要，终端直接给出实际摘要路径。退出码 `0` 表示全部任务成功且启用的记录完整，`1` 表示有已评估任务失败，`2` 表示配置、运行或记录完整性异常。
 
@@ -138,6 +138,28 @@ Groq 会将 `temperature=0` 转换为 `1e-8`；不能据此承诺每次运行完
 - `runtime_input_args` 位于 `FunctionsRuntime.run_function` 入口，早于其内部校验、默认值补全及依赖注入；暂不采集工具内部的嵌套 runtime 调用。
 - 此版本使用顺序执行；每个并发 pipeline 需要独立 session。非干预测试比较请求、工具执行、环境及历史；记录仍会产生 I/O、存储和运行时间开销。
 - 事件之间的引用表示运行顺序和对象关联，尚不构成参数来源结论或因果边。
+
+## 每次实验的可交互 HTML
+
+运行 `run` 或 `smoke --offline` 后，打开本次运行目录中的 `report.html` 即可查看详细过程。页面与数据保存在同一个 HTML 文件中，可复制到其他位置并离线打开，无需 Web 服务或绘图依赖。
+
+- **执行过程**：按任务、episode、事件类别及内容搜索；选中事件后展开模型请求、工具参数、原始返回值及环境快照。
+- **记录关联**：点击前序事件、同次工具调用、原工具结果或模型请求，在实际记录之间跳转。
+- **工具结果去向**：逐 episode 查看某条工具结果进入了哪一轮请求，点击单元格定位实际曝光事件。只对通过结构审计的记录构造矩阵。
+- **原生对话**：展开各任务的用户、assistant 和 tool 消息，单独保留原生评估及错误信息。
+- **配置与完整性**：查看模型设置、版本、采集器状态、重新执行的事件检查及源文件哈希；可导出整份记录 JSON。
+
+给旧实验补生成，或重新生成页面：
+
+```bash
+.venv/bin/dojo-lab html --run runs/20260907T004112Z-live-groq-ff17faba
+```
+
+也可使用 `--output /path/to/report.html` 保存到其他位置。此命令只读取已保存的数据，不加载 API key、不请求模型、不改写原始实验文件；同名 HTML 作为派生报告可被重新生成。没有在线事件的旧实验保留原生对话，不补造时间线；部分损坏的日志明确显示记录缺口。
+
+HTML 生成在 agent 执行、原生评估及事件记录结束后进行。导出失败独立写入 `html-report-status.json`，不会替换原来的 agent 异常或修改 utility。报告内的模型和工具文本按纯文本呈现，脚本、样式与数据均内嵌，页面不请求外部资源。未来将模型或工具接入真实数据时，这份本地报告也会包含对应实验记录。
+
+接入 HTML 后共 143 项本地测试通过，Ruff 通过；验证覆盖报告自动生成、原始数据哈希不变、缺失与损坏记录、纯文本嵌入、导出故障隔离，以及 JavaScript 语法和数据处理函数。Wheel 构建已确认包含页面模板。
 
 ## 从日志生成论文式图表
 
