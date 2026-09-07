@@ -1,0 +1,246 @@
+# Handoff：AgentDojo Recorder → 参数来源归因
+
+更新时间：2026-09-07（Pacific/Auckland）。用于今晚恢复工作；这是状态与下一步说明，不是新的实验结果。
+
+## 先读这一段
+
+AgentDojo + Groq 已搭好，运行时 recorder、每次实验的独立交互 HTML、时间线与 diagram 联动、多任务批次和论文式导出均已实现。首轮 10 个不同正常任务已完成，全部通过原生效用评估，10 份记录完整且通过审计。
+
+**当前只有可核查的运行记录与工具输出曝光关联，尚未实现参数来源匹配，也未验证恶意传播。** 下一阶段的优先事项是来源标注、参数级匹配和 NeuroTaint-style baseline，再根据错误分析确定改进机制。后两轮 20 次 clean 重复已预定但尚未运行，不是来源归因实验的替代品。
+
+本次 handoff 仅整理已有工作与讨论，不启动额外模型调用、实验或定时任务。
+
+## Material Passport
+
+- Origin Skill: academic-research-suite
+- Origin Mode: experiment handoff / planning
+- Origin Date: 2026-09-07
+- Verification Status: MIXED — 已完成工程状态与首轮结果已核对；算法方案为待实现、待验证建议
+- Version Label: recorder-to-provenance-handoff-v1
+
+## 1. 工作区、分支与环境
+
+- 仓库：`/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity`
+- 实验目录：`codebase/agentdojo-lab/`
+- 当前分支：`codex/agentdojo-lab`
+- 本 handoff 创建前的最新提交：`5c7939d`，首轮结果说明。
+- 实验实现提交：`226d7bd`，冻结 clean pilot、配额控制与离线回放对照。
+- HTML 流程图联动提交：`0a97260`。
+- Python：3.12.14；本机 `.venv` 已安装。
+- AgentDojo：0.1.35，benchmark `v1.2.2`，上游 commit `089ed468cf3ed0322acc66b0211f26d9d90dbf60`，上游未修改。
+- 模型：Groq `openai/gpt-oss-120b`；temperature 0、reasoning effort low、completion 上限 4096、工具循环上限 8、SDK timeout 60 秒、SDK 不重试。
+- `.env` 已有用户填写的 `GROQ_API_KEY`。不要读出、打印、提交或让用户贴到聊天。`doctor` 可只检查设置状态。
+- 仓库根目录的 `deliverables/` 是已有未跟踪内容，保持原状，不混入本任务提交。
+
+当前目标：单 agent、单会话、AgentDojo 本地模拟环境内的被动记录与来源分析。暂不做 CTTA/TTA、参数更新、自动阻断、输入净化、跨会话记忆或真实账户操作。
+
+## 2. 已完成与尚未完成
+
+| 项目 | 状态 |
+| --- | --- |
+| AgentDojo 原生 pipeline 与 Groq 接入 | 已完成，真实模型已运行 |
+| 运行时事件采集、ID 关联、完整性检查 | 已完成当前观测范围内的实现与验证 |
+| 每次实验独立 HTML、时间线、diagram 联动 | 已完成 |
+| 批次冻结、独立进程、恢复、HTML/CSV 总览 | 已完成 |
+| 正常任务首轮 | 10 个不同任务，各 1 次，已完成 |
+| 正常任务第 2、3 轮 | 20 个槽位尚未开始 |
+| 固定响应下采集开/关对照 | 两条正常轨迹已完成；有严格解释边界 |
+| 来源字段/片段注册与参数匹配 | 未实现 |
+| 独立来源标签、歧义与未知标签 | 未建立 |
+| NeuroTaint-style baseline | 只做了论文与公开材料核查，尚未实现或复现 |
+| 恶意内容传播、控制影响、越权判定评测 | 尚未完成 |
+| 在线归因准确率、执行前及时性、归因成本 | 尚无结果 |
+
+上一轮代码验证为 **164 项本地测试通过，Ruff 通过，wheel 构建与打包内容核对通过**。本次只新增文档，无须重复全部测试。HTML 已做结构、脚本语法与筛选函数验证；没有执行浏览器视觉验收，不要写成已做。
+
+## 3. 当前 recorder 到底记录什么
+
+| 事件/材料 | 内容与边界 |
+| --- | --- |
+| manifest / 原生记录 | 用户任务、配置、上游版本、最终回答与原生效用结果 |
+| `EPISODE_STARTED` / `EPISODE_ENDED` | pipeline 调用起止、初始环境 |
+| `MODEL_REQUEST` | HTTP 客户端实际出站 JSON，包括 messages、工具定义与生成参数 |
+| `MODEL_RESPONSE` / `MODEL_PARSED` / `MODEL_ERROR` | API 响应正文、原始调用、解析计数和异常类型 |
+| `TOOL_CALL_PROPOSED` | 模型提议的函数和参数 |
+| `TOOL_RUNTIME_STARTED` / `TOOL_RUNTIME_RETURNED` | 顶层 runtime 入口参数、返回对象即时 JSON 快照、错误 |
+| `TOOL_RESULT` | 原生 executor 形成的 tool 消息，包括最终格式化文本 |
+| `TOOL_OUTPUT_EXPOSED` | 某条工具结果进入了哪次出站请求，保存来源事件 ID 和消息位置 |
+| `ENVIRONMENT_CHANGE` | 单次顶层调用前后的环境快照；只表示前后净变化 |
+| `RUN_END` / 批次 execution | 正常结束或异常状态；进程超时/中断另有批次级记录 |
+
+每条事件有 run/task/episode/request/call 身份、事件顺序、UTC/单调时钟与父事件引用；已知 API 密钥被脱敏，HTTP 鉴权头不入日志。
+
+必须保持的解释边界：
+
+- 出站请求包含某内容，不证明服务端已收到或模型关注了它。
+- runtime 参数是在内部校验、默认值补全之前捕获；不称为工具内部所有最终参数。
+- 当前不观察嵌套 runtime 内部调用、所有中间状态或模型内部真实推理。
+- `call_ref` 和父事件引用表示执行关系，不能直接当作字段级来源或因果边。
+- `recording.complete` 与 audit 有效是记录质量指标，不是来源归因准确率。
+- 来源不可信不等于内容恶意；正常 agent 本来就需要使用外部信息。
+
+## 4. 已完成实验与入口
+
+主批次：`runs/20260907T025045Z-clean-pilot-b93eae95/`。
+
+固定任务顺序为 workspace `0, 7, 9, 14, 18, 20, 28, 29, 32, 33`。按覆盖目的选择，涉及日历、邮件、联系人和云盘；并非随机 benchmark 样本。
+
+| 首轮指标 | 数值 |
+| --- | ---: |
+| 已完成 / 原生效用通过 / 记录完整且审计有效 | 10 / 10 / 10 |
+| 预定总 trial / 待运行 | 30 / 20 |
+| SDK 请求 | 31 |
+| API 报告输入 / 输出 tokens | 65,277 / 2,896 |
+| 事件 / 工具调用 / 工具种类 | 260 / 21 / 12 |
+| 工具输出曝光 / 环境变化事件 | 35 / 8 |
+| 已有工具输出且又提出新调用的请求 | 11 |
+| 工具错误 / HTTP 错误 | 2 / 0 |
+| 单响应包含多个工具调用 | 0（真实覆盖缺口，离线测试有覆盖） |
+
+task 0 和 task 33 各出现一次工具错误，模型随后修正，最终效用通过。11 个请求仅提供来源分析机会，尚无来源标签。10/10 不能推广为整个 benchmark 的成功率或防御效果。
+
+首次未节流的诊断批次 `runs/20260907T024217Z-clean-pilot-3d075ef1/` 共完成 8 次，其中 2 次通过，6 次因 HTTP 429 无法评估。其日志保留，**不与主批次合并**。当前主批次采用 7,000 tokens / 65 秒窗口等待；超时上限 600 秒。配额等待单独统计，不能当成 tracer 开销。
+
+两条固定正常响应的离线对照位于 `reports/pilot-replay-cost-clock-controlled/`：task 0、7 各 5 个测量配对，另各 1 对预热；请求与 episode 终态一致，开启采集的记录均通过审计。配对耗时差中位数为 4.408 ms、6.971 ms；存在约 −31.13 ms 的原始差值。时钟受控、样本少且有调度噪声，不能推广成真实线上开销或普遍非干扰结论。
+
+入口（路径相对本文件）：
+
+- [完整首轮实验说明](pilot-results.md)
+- [交互批次总览](runs/20260907T025045Z-clean-pilot-b93eae95/index.html)
+- [逐 trial CSV](runs/20260907T025045Z-clean-pilot-b93eae95/trials.csv)
+- [论文式表格 PDF](reports/clean-pilot-v1-round1/table_runs.pdf)
+- [示例轨迹 PDF](reports/clean-pilot-v1-round1/figure_trace.pdf)
+- [离线回放对照 HTML](reports/pilot-replay-cost-clock-controlled/report.html)
+
+示例轨迹是 `r01-user_task_9 / episode:00000002`，由目录名逆序选取，不是按真实执行时间选择的“最新”任务。派生图注已补正；通用导出器的 caption 仍有这一措辞限制。
+
+## 5. 刚讨论的技术路线：待实现建议
+
+### 5.1 最小目标
+
+给定一个真实 `TOOL_CALL_PROPOSED`，只用当时已发生的事件，定位其参数的候选来源片段，并输出证据类型、歧义与未知。先追踪来源，再单独判断授权与恶意性。
+
+第一版不承诺“完整理解所有恶意传播”。需要分开输出三种结论：
+
+1. **曝光事实**：某片段进入过对应出站请求。
+2. **内容复用证据**：后续参数与该片段存在复制或改写关系。
+3. **行为影响证据**：受控干预下工具选择或参数发生变化。
+
+这些均不自动等于越权。动作是否违背用户授权是另一项独立判断。
+
+### 5.2 来源注册与参数级匹配
+
+- 给所有工具结果建立 source 档案，保留字段位置、文本范围和原文；也检查用户请求及其他来源，避免把重复实体强行归给某个工具。
+- 根据 `TOOL_OUTPUT_EXPOSED` 确认来源与请求的可见关系；保留此前来源和中间表示的历史，不能把当前原文不再可见直接当成无影响。
+- 逐参数比较，例如 `recipient`、`subject`、`body` 各自归因；不要把整次调用或其全部返回内容自动染成恶意。
+- 先做精确实体/字符串匹配，再做片段语义候选；相似度不是因果概率。
+- 允许多个候选、歧义和未知。不能用“最高分必为真源”规避困难样本。
+- 来源标识放在 tracer 自己的状态中，不插进被测 agent 的提示。
+
+建议的独立结果字段包括：目标提议事件、目标参数路径、来源事件、来源字段/文本范围、证据类型、候选来源集合、判定状态、可用历史截止事件，以及结果产生时间。具体 schema 尚未实现。
+
+### 5.3 控制影响的后续复核
+
+字符串/语义匹配处理不了“没有复制内容但改变工具选择”的情况。后续可在隔离的上下文副本中，用同一模型预测候选指令被弱化后的动作；影子分支只预测，不执行工具，也不改主运行。
+
+必须控制删除正常任务信息造成的混淆：保留任务所需事实，加入普通内容替换对照，并重复观察。若先前摘要已携带源信息，需要说明中间表示是否也被处理；单删原文后动作不变不能证明无影响。
+
+这一环节输出干预条件下的行为变化证据。LLM judge 的自报 confidence 不是真值，也不是校准的因果概率。昂贵复核若晚于工具执行，记为 late，不算执行前归因成功。
+
+### 5.4 候选研究假设
+
+**在多来源包含相似信息的情况下，显式处理来源竞争和不确定性，并把额外推理预算分配给难例，能否减少错误归因，同时保持足够覆盖率？**
+
+这只是待验证假设。来源图、语义匹配、增量维护或反事实检查本身已有相关工作，不能直接当作创新。先固定 baseline，再通过错误分析和消融判断改动是否有价值。
+
+## 6. NeuroTaint：查到了什么，没查到什么
+
+本次已读 [Ghost in the Agent / NeuroTaint，arXiv v1](https://arxiv.org/html/2604.23374v1)。它已有运行时增量来源图、词法/语义跟踪与 sink 处分析。因此不能把“改成 online”本身作为贡献。[§4](https://arxiv.org/html/2604.23374v1#S4)
+
+其 Tier 1 向工具结果插入 UUID canary，会改变输入；若作为工程探针，需要独立报告。我们的被动主条件应明确禁用该机制，并披露与原方法的差异。[§4.2](https://arxiv.org/html/2604.23374v1#S4.SS2)
+
+目前没有从论文、arXiv 页面及作者主页核实到作者公开实现或本论文 TaintBench 发布包；这不是断言它们永远不公开。现阶段应称为 **NeuroTaint-style 论文重实现/迁移基线**，不得声称已复现官方代码或论文指标。
+
+不要把 GitHub 的同名 Android TaintBench 当作本论文数据集。换成 AgentDojo + Groq、限制单会话、禁用 canary 后，也不能直接对照论文表中的数字声称复现成功。
+
+其他一手参考：
+
+- [AttriGuard](https://arxiv.org/html/2603.10749v1#S4.SS2)：已有固定历史动作的影子预测比较；是控制影响分析的重要参考。本项目暂不采用其阻断行为。
+- [CausalArmor](https://arxiv.org/abs/2602.07918)：已有基于消融归因的选择性防御；不应宣称“按需做归因”本身全新。
+
+不需要为等到完整官方 artifact 而停止当前来源标注和简单基线开发；有缺失细节时记录假设，避免悄悄把自己的选择当作论文原方法。
+
+## 7. 今晚可以直接接着做的顺序
+
+以下为建议顺序，尚未执行。
+
+1. **恢复状态**：读本文件与 `pilot-results.md`，检查分支、doctor、主批次数据是否存在。不要从安装或 UI 重做开始。
+2. **先定义分析单位与标签**：选已有真实 clean 调用，按参数建立候选来源标注格式。区分精确复用、语义复用、歧义、未知以及是否获用户授权。控制影响暂不伪造标签。
+3. **导出供独立标注的小集合**：包含读取后回答、多步 ID/数组复用、跨工具复用、自然错误恢复。标注只根据当时可见历史；参考标签与在线算法状态分开。若由助手预标，标为预标，不能声称独立人工真值。
+4. **实现最简单匹配 baseline**：来源注册、请求可见关系、字段级精确匹配、多个候选与未知输出。先利用现有日志离线按事件顺序回放，确保不读取未来；再连接运行时同一接口。
+5. **加入 NeuroTaint-style 词法/语义 baseline**：固定实现、阈值及与论文的差异。不得在同一测试集上边调参数边报告最终成绩。
+6. **将来源证据接入 HTML**：点击参数能定位候选源片段；图上区分执行边、曝光边、复用证据和行为影响证据。未知不画成确定传播。
+7. **根据错误分析安排下一组验证**：当前只有 clean 与接入异常记录，恶意条件轨迹尚待另行建立或核实来源。后续分析使用条件固定、脱敏且来源明确的轨迹及正常对照，再考虑有限预算的影子复核。不要把“场景含恶意内容”预先标成“实际传播成功”。
+
+第一阶段验收：对一组已有真实调用，能输出可人工核查的 `source fragment → argument` 证据；来源重复时保留歧义；无证据时输出未知；在线结果不读取未来。至少覆盖正常引用，避免把所有外部信息使用都当成 malicious。
+
+后续指标：来源/参数边的 precision、recall、F1，正常引用误报率，候选覆盖与未知比例，额外模型请求/tokens，归因延迟及执行前完成比例。不同方法使用同一标注集和历史前缀；完整轨迹离线审计若另列，不能冒充在线比较。
+
+## 8. 冻结批次与代码改动的关系
+
+主批次保存 Python 实现、依赖锁、上游、配置和协议哈希。`--resume` 只执行尚未开始的槽位，失败/中断槽位不自动重跑。若修改实现或相关冻结材料，恢复会拒绝混用版本。
+
+继续开发归因时，应保留该实验快照。可用提交 `226d7bd` 的独立 checkout/worktree 加原批次目录完成旧重复，或者按新协议创建新批次；**不要修改计划哈希或覆盖旧数据来绕过检查**。已有日志可用于离线归因开发，不需要为了修改分析器重跑全部 agent。
+
+## 9. 常用命令
+
+在当前机器进入实验目录：
+
+```bash
+cd '/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab'
+.venv/bin/dojo-lab doctor
+.venv/bin/dojo-lab inspect --events runs/20260907T025045Z-clean-pilot-b93eae95/runs/r01-user_task_7/events.jsonl
+```
+
+代码改动后按范围验证；完整本地检查命令：
+
+```bash
+.venv/bin/python -m pytest
+.venv/bin/ruff check src tests scripts/replay_recording_cost.py
+```
+
+仅在批次空闲时重建派生总览，不调用模型：
+
+```bash
+.venv/bin/dojo-lab pilot-report --batch runs/20260907T025045Z-clean-pilot-b93eae95
+```
+
+以下命令会产生真实 Groq 请求，仅在决定补齐旧 clean 重复且冻结环境匹配时执行；它不是恢复工作的必做第一步：
+
+```bash
+.venv/bin/dojo-lab pilot --resume runs/20260907T025045Z-clean-pilot-b93eae95 --through-repeat 3
+```
+
+核心代码入口：
+
+- [运行时观测](src/agentdojo_lab/observation.py)、[事件写入](src/agentdojo_lab/recording.py)、[事件审计](src/agentdojo_lab/inspection.py)
+- [原生运行器](src/agentdojo_lab/runner.py)、[Groq 适配器](src/agentdojo_lab/groq_adapter.py)
+- [批次执行](src/agentdojo_lab/pilot.py)、[批次报告](src/agentdojo_lab/pilot_report.py)
+- [单次 HTML 导出](src/agentdojo_lab/html_report.py)、[HTML 模板](src/agentdojo_lab/templates/run_report.html)
+- [离线对照脚本](scripts/replay_recording_cost.py)、[实验协议](protocol.md)、[使用说明](README.md)
+
+## 10. 换电脑继续时
+
+`.env`、`.venv`、`vendor/`、`runs/`、`reports/` 被 Git 忽略。本机提交不等于已推送；本任务没有执行 push。换电脑只有仓库代码时，不会自动带上真实轨迹、HTML 或密钥。
+
+如果今晚用同一台 Mac，可直接继续。如果换机器，需要自行同步所需的完整批次目录和派生报告（批次跳转依赖目录结构），并在新机器本地配置 key。不要把 `.env` 或整份私人日志顺手加入 Git。
+
+新机器安装按 README 执行 `python3 scripts/bootstrap.py`；先确认数据可用，再开始分析。不要因为报告目录缺失就误认为实验从未运行，也不要为重建 HTML 自动重跑付费模型。
+
+## 11. 可以直接贴给下一次助手的续接提示
+
+> 请先阅读 `codebase/agentdojo-lab/HANDOFF.md` 和 `pilot-results.md`，并核对本机状态。现有 AgentDojo + Groq、recorder、交互 HTML 与首轮 clean pilot 已完成，不要重做安装或展示层。
+>
+> 接下来优先做单会话、参数级来源归因：先准备可独立核查的来源标注格式与小集合，再实现精确匹配 baseline，随后加入明确披露差异的 NeuroTaint-style 基线。所有在线判断只能使用当时历史；允许多个来源和未知；恶意性与来源关系分开。
+>
+> 保留原始记录与冻结实验快照，不覆盖旧结果，不把攻击条件或最终 evaluator 标签泄漏给 tracer。不更新模型参数、不修改主运行输入、不自动阻断动作。先完成可离线开发的部分，再根据需要安排真实模型实验。请区分已实现、建议和待验证假设。
