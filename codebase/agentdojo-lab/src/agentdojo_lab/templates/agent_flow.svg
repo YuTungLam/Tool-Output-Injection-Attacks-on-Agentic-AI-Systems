@@ -1,0 +1,113 @@
+<svg class="agent-flow" viewBox="0 0 1060 630" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="agent-flow-title agent-flow-description">
+  <title id="agent-flow-title">AgentDojo 的执行组件与循环</title>
+  <desc id="agent-flow-description">任务与环境进入 AgentPipeline；历史经适配器发送到模型接口，响应解析后进入工具执行器和 runtime，工具结果写回历史并进入下一轮请求。pipeline 返回后由原生 evaluator 评估。旁路观察器记录事件，运行后生成 HTML。高亮由当前所选时间线事件决定。</desc>
+  <defs>
+    <marker id="flow-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker>
+  </defs>
+  <g class="flow-edges" fill="none" marker-end="url(#flow-arrow)">
+    <path data-flow-edge="runner_task" class="context-edge" d="M140 76 V110"/>
+    <path data-flow-edge="task_pipeline" d="M250 152 H280"/>
+    <path data-flow-edge="pipeline_history" d="M500 152 H530"/>
+    <path data-flow-edge="history_request" d="M750 152 H780"/>
+    <path data-flow-edge="request_api" d="M890 194 V246"/>
+    <path data-flow-edge="api_parse" d="M780 288 H750"/>
+    <path data-flow-edge="parse_executor" d="M530 288 H500"/>
+    <path data-flow-edge="executor_runtime" d="M280 288 H250"/>
+    <path data-flow-edge="runtime_environment" d="M140 330 V378" marker-start="url(#flow-arrow)"/>
+    <path data-flow-edge="runtime_result" d="M220 330 V352 H390 V378"/>
+    <path data-flow-edge="executor_error_result" class="context-edge" d="M425 330 V378"/>
+    <path data-flow-edge="executor_exit" class="context-edge" d="M470 330 V352 H640 V378"/>
+    <path data-flow-edge="result_history" d="M390 462 V492 H1030 V96 H640 V110"/>
+    <path data-flow-edge="exit_evaluate" class="context-edge" d="M750 420 H780"/>
+    <path data-flow-edge="retry_pipeline" class="context-edge" d="M640 462 V508 H12 V96 H390 V110"/>
+    <path data-flow-edge="evaluate_report" class="context-edge" d="M890 462 V546"/>
+    <path data-flow-edge="recorder_report" class="context-edge" d="M500 582 H530"/>
+  </g>
+  <g class="flow-annotations">
+    <text x="904" y="226">请求</text>
+    <text x="765" y="273" text-anchor="middle">响应</text>
+    <text x="156" y="360">读 / 写</text>
+    <text x="305" y="347" text-anchor="middle">批次返回后</text>
+    <text x="434" y="369">名称错误</text>
+    <text x="568" y="347" text-anchor="middle">循环结束</text>
+    <text x="747" y="487" text-anchor="middle">工具消息写入历史，再进入请求循环</text>
+    <text x="150" y="530">缺少最终文本时可重跑，最多 3 次</text>
+    <text x="905" y="530">评估 / 摘要</text>
+  </g>
+  <g data-flow-node="runner" class="flow-node flow-runner">
+    <title>运行器负责基准运行、原生日志和结果汇总；RUN_END 的状态不是任务 utility。</title>
+    <rect x="30" y="18" width="970" height="58" rx="9"/>
+    <text x="50" y="43" class="flow-label">实验运行器</text><text x="240" y="43" class="flow-sub">benchmark · OutputLogger · 运行结果汇总</text>
+    <text x="50" y="65" class="flow-sub">RUN_STARTED / RUN_END</text>
+  </g>
+  <g data-flow-node="task" class="flow-node flow-context">
+    <title>AgentDojo 提供用户任务、初始环境、工具集合和判分规则；此初始化没有专门的在线事件。</title>
+    <rect x="30" y="110" width="220" height="84" rx="9"/>
+    <text x="45" y="143" class="flow-label">任务 / 初始环境</text><text x="45" y="172" class="flow-sub">suite · prompt · tools</text>
+  </g>
+  <g data-flow-node="pipeline" class="flow-node">
+    <title>每次完整 query 是一个 episode。EPISODE_STARTED 在系统提示和用户 query 初始化之前发生。</title>
+    <rect x="280" y="110" width="220" height="84" rx="9"/>
+    <text x="295" y="143" class="flow-label">AgentPipeline</text><text x="295" y="172" class="flow-sub">提示与 query 初始化</text>
+  </g>
+  <g data-flow-node="history" class="flow-node">
+    <title>保存 system、user、assistant 和 tool 消息；历史中的工具结果可被多轮请求重复包含。</title>
+    <rect x="530" y="110" width="220" height="84" rx="9"/>
+    <text x="545" y="143" class="flow-label">对话历史</text><text x="545" y="172" class="flow-sub">messages / context</text>
+  </g>
+  <g data-flow-node="request" class="flow-node">
+    <title>Groq 适配器转换原生消息和工具定义；观测器在 HTTP 出站边界记录实际 JSON body。</title>
+    <rect x="780" y="110" width="220" height="84" rx="9"/>
+    <text x="795" y="143" class="flow-label">请求适配 / 出站</text><text x="795" y="172" class="flow-sub">GroqLLM · HTTP body</text>
+  </g>
+  <g data-flow-node="runtime" class="flow-node">
+    <title>FunctionsRuntime 校验参数、补全默认值并注入依赖，再调用本地工具；入口参数和原始返回均有单独事件。</title>
+    <rect x="30" y="246" width="220" height="84" rx="9"/>
+    <text x="45" y="279" class="flow-label">工具 runtime</text><text x="45" y="308" class="flow-sub">FunctionsRuntime</text>
+  </g>
+  <g data-flow-node="executor" class="flow-node flow-context">
+    <title>ToolsExecutionLoop 检查是否继续；ToolsExecutor 校验工具名称、调整参数格式并按批次执行。没有独立的 executor 入口事件。</title>
+    <rect x="280" y="246" width="220" height="84" rx="9"/>
+    <text x="295" y="279" class="flow-label">工具循环 / 执行器</text><text x="295" y="308" class="flow-sub">ToolsExecutor</text>
+  </g>
+  <g data-flow-node="parse" class="flow-node">
+    <title>把 HTTP 响应转换为原生 assistant 消息，并记录工具调用提议。提议尚未执行。</title>
+    <rect x="530" y="246" width="220" height="84" rx="9"/>
+    <text x="545" y="279" class="flow-label">响应解析 / 提议</text><text x="545" y="308" class="flow-sub">assistant · tool calls</text>
+  </g>
+  <g data-flow-node="api" class="flow-node">
+    <title>只记录请求和响应边界。模型内部推理或实际关注了哪些内容，不能从这里确定。</title>
+    <rect x="780" y="246" width="220" height="84" rx="9"/>
+    <text x="795" y="279" class="flow-label" id="flow-api-label">模型 API</text><text x="795" y="308" class="flow-sub" id="flow-api-sub">仅观测 HTTP 边界</text>
+  </g>
+  <g data-flow-node="environment" class="flow-node">
+    <title>模拟邮箱、日历、云盘等环境。ENVIRONMENT_CHANGE 表示工具调用前后状态改变；环境快照不等于模型输入。</title>
+    <rect x="30" y="378" width="220" height="84" rx="9"/>
+    <text x="45" y="411" class="flow-label">模拟工具环境</text><text x="45" y="440" class="flow-sub">读取 / 修改 env</text>
+  </g>
+  <g data-flow-node="result" class="flow-node">
+    <title>执行器完成批次后，把返回值或错误格式化为工具消息加入历史。未知工具也可能直接形成错误消息，未进入 runtime。</title>
+    <rect x="280" y="378" width="220" height="84" rx="9"/>
+    <text x="295" y="411" class="flow-label">工具消息 → 历史</text><text x="295" y="440" class="flow-sub">批次格式化 · TOOL_RESULT</text>
+  </g>
+  <g data-flow-node="exit" class="flow-node">
+    <title>pipeline 返回或抛错，不代表任务完成；可能仍有待执行调用。suite 必要时重跑 pipeline，最多总计三次。</title>
+    <rect x="530" y="378" width="220" height="84" rx="9"/>
+    <text x="545" y="411" class="flow-label">Pipeline 返回</text><text x="545" y="440" class="flow-sub">文本 / 待执行调用 / 错误</text>
+  </g>
+  <g data-flow-node="evaluator" class="flow-node flow-context">
+    <title>原生 evaluator 在 pipeline 及必要重试后评估 utility。当前没有专门的 evaluator 事件，只作架构说明。</title>
+    <rect x="780" y="378" width="220" height="84" rx="9"/>
+    <text x="795" y="411" class="flow-label">原生任务评估</text><text x="795" y="440" class="flow-sub">utility · 无专用事件</text>
+  </g>
+  <g data-flow-node="recorder" class="flow-node flow-context">
+    <title>ObservationSession 与 EventRecorder 是旁路采集组件，在上述边界写入事件，不修改或拦截 agent 动作。</title>
+    <rect x="30" y="546" width="470" height="68" rx="9"/>
+    <text x="45" y="574" class="flow-label">旁路观测器 → events.jsonl</text><text x="45" y="601" class="flow-sub">观察上述执行边界；不参与动作决策</text>
+  </g>
+  <g data-flow-node="report" class="flow-node flow-context">
+    <title>运行后读取 summary、原生对话和事件，生成可离线打开的 HTML。此过程没有专门的在线事件。</title>
+    <rect x="530" y="546" width="470" height="68" rx="9"/>
+    <text x="545" y="574" class="flow-label">运行结束后 → 本地 HTML 报告</text><text x="545" y="601" class="flow-sub">原始记录 · 配置 · 审计 · 过程查看</text>
+  </g>
+</svg>

@@ -117,7 +117,14 @@ def export_run_html(
 ) -> dict:
     record = collect_run_record(run_dir, summary=summary)
     record = _redact(record, sorted({s for s in redactions if s}, key=len, reverse=True))
-    template = files("agentdojo_lab").joinpath("templates/run_report.html").read_text(encoding="utf-8")
+    templates = files("agentdojo_lab").joinpath("templates")
+    template = templates.joinpath("run_report.html").read_text(encoding="utf-8")
+    template = template.replace(
+        "@@FLOW_SVG@@", templates.joinpath("agent_flow.svg").read_text(encoding="utf-8")
+    )
+    template = template.replace(
+        "@@FLOW_SCRIPT@@", templates.joinpath("agent_flow.js").read_text(encoding="utf-8")
+    )
     nonce = secrets.token_urlsafe(24)
     html = template.replace("@@NONCE@@", nonce).replace("@@RECORD@@", _escaped_json(record))
     destination = (output or (run_dir / "report.html")).expanduser().resolve()
