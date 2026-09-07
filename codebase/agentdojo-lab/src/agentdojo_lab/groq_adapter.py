@@ -22,6 +22,7 @@ from openai._types import NOT_GIVEN
 from openai.types.chat import ChatCompletionMessageParam
 
 from agentdojo_lab.observation import ObservationSession
+from agentdojo_lab.pacing import RequestPacer
 
 ReasoningEffort = Literal["low", "medium", "high"]
 
@@ -61,6 +62,7 @@ class GroqLLM(BasePipelineElement):
         max_completion_tokens: int = 4096,
         reasoning_effort: ReasoningEffort | None = None,
         observer: ObservationSession | None = None,
+        pacer: RequestPacer | None = None,
     ) -> None:
         if not model or not model.strip():
             raise ValueError("model must be a non-empty Groq model ID")
@@ -78,8 +80,11 @@ class GroqLLM(BasePipelineElement):
         self.max_completion_tokens = max_completion_tokens
         self.reasoning_effort = reasoning_effort
         self.observer = observer
+        self.pacer = pacer
         self.name = f"groq_{model}"
         self.stats = {"request_count": 0, "prompt_tokens": 0, "completion_tokens": 0}
+        if pacer is not None:
+            self.stats["pacing_wait_seconds"] = 0.0
 
     def query(
         self,
@@ -91,6 +96,10 @@ class GroqLLM(BasePipelineElement):
     ) -> tuple[str, FunctionsRuntime, Env, Sequence[ChatMessage], dict]:
         groq_messages = [_message_to_groq(message, self.model) for message in messages]
         groq_tools = [_function_to_openai(tool) for tool in runtime.functions.values()]
+        ticket = None
+        if self.pacer is not None:
+            ticket, waited = self.pacer.before_request(groq_messages, groq_tools)
+            self.stats["pacing_wait_seconds"] += waited
         self.stats["request_count"] += 1
         if self.observer is not None:
             self.observer.begin_model_call(messages)
@@ -107,6 +116,8 @@ class GroqLLM(BasePipelineElement):
             if completion.usage is not None:
                 self.stats["prompt_tokens"] += completion.usage.prompt_tokens
                 self.stats["completion_tokens"] += completion.usage.completion_tokens
+            if self.pacer is not None:
+                self.pacer.after_response(ticket, completion.usage.total_tokens if completion.usage else None)
             if not completion.choices:
                 raise ValueError("Groq returned no completion choices")
             output = _openai_to_assistant_message(completion.choices[0].message)

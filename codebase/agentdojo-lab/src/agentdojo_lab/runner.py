@@ -28,6 +28,7 @@ from agentdojo_lab.html_report import export_run_html
 from agentdojo_lab.inspection import inspect_events
 from agentdojo_lab.observation import ObservationSession, observe_pipeline
 from agentdojo_lab.offline import make_offline_client
+from agentdojo_lab.pacing import RequestPacer
 from agentdojo_lab.recording import EventRecorder
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -56,6 +57,7 @@ class RunConfig(BaseModel):
     max_tool_rounds: int = Field(default=8, ge=1, le=100)
     request_timeout_seconds: float = Field(default=60.0, gt=0)
     record_events: bool = True
+    pacing_tokens_per_minute: int | None = Field(default=None, ge=1000, le=1000000)
 
     @field_validator("model", "suite", "benchmark_version")
     @classmethod
@@ -153,7 +155,9 @@ def build_pipeline(
     return observe_pipeline(pipeline, observer) if observer is not None else pipeline
 
 
-def run_clean(config: RunConfig, *, offline: bool = False, output: Path | None = None) -> dict:
+def run_clean(
+    config: RunConfig, *, offline: bool = False, output: Path | None = None, pacing_state: Path | None = None
+) -> dict:
     upstream = require_upstream()
     suites = get_suites(config.benchmark_version)
     if config.suite not in suites:
@@ -174,6 +178,11 @@ def run_clean(config: RunConfig, *, offline: bool = False, output: Path | None =
         raise ValueError(f"Set GROQ_API_KEY in {ROOT / '.env'} before a live run. Do not paste it in chat.")
 
     mode = "offline-fixture" if offline else "live-groq"
+    pacer = (
+        RequestPacer(config.pacing_tokens_per_minute, pacing_state)
+        if config.pacing_tokens_per_minute
+        else None
+    )
     run_dir = new_output_dir(mode, output)
     lock_hash = hashlib.sha256((ROOT / "uv.lock").read_bytes()).hexdigest()
     manifest = {
@@ -188,6 +197,11 @@ def run_clean(config: RunConfig, *, offline: bool = False, output: Path | None =
         "uv_lock_sha256": lock_hash,
         "endpoint": "in-process mock transport" if offline else GROQ_BASE_URL,
         "sdk_max_retries": 0,
+        "request_pacing": {
+            "enabled": pacer is not None,
+            "tokens_per_minute": config.pacing_tokens_per_minute,
+            "window_seconds": RequestPacer.window_seconds if pacer else None,
+        },
         "adapter": "groq-text-v1",
         "event_recording": {"enabled": config.record_events, "schema_version": 1},
         "attack": None,
@@ -232,6 +246,7 @@ def run_clean(config: RunConfig, *, offline: bool = False, output: Path | None =
                 max_completion_tokens=config.max_completion_tokens,
                 reasoning_effort=config.reasoning_effort,
                 observer=observer,
+                pacer=pacer,
             )
             if offline:
                 llm.name = "offline_fixture"

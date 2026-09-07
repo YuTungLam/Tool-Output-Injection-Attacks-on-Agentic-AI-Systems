@@ -88,7 +88,7 @@ const metrics=[
  ["模型调用（SDK）",fmt(summary.usage?.request_count),"已观察 HTTP 请求："+(events.length?count("MODEL_REQUEST"):"未采集")],
  ["工具结果（在线事件）",events.length?count("TOOL_RESULT"):"—","进入后续请求："+(events.length?count("TOOL_OUTPUT_EXPOSED"):"未采集")],
  ["输入 / 输出 tokens",fmt(summary.usage?.prompt_tokens)+" / "+fmt(summary.usage?.completion_tokens),manifest.real_llm===false?"fixture 占位用量":"仅统计 API 报告的用量"],
- ["运行时间",summary.elapsed_seconds!==undefined?fmt(summary.elapsed_seconds)+" s":"—","原始 summary 的总运行时间"],
+ ["运行时间",summary.elapsed_seconds!==undefined?fmt(summary.elapsed_seconds)+" s":"—",summary.usage?.pacing_wait_seconds!==undefined?"其中配额等待："+Number(summary.usage.pacing_wait_seconds).toFixed(2)+" s":"原始 summary 的总运行时间"],
  ["记录完整性",summary.recording?.complete===false||record.audit?.valid===false?"有缺口":record.audit?.valid===true&&summary.recording?.complete===true?"通过":"未确认",events.length+" 条事件 · "+episodeIds.length+" 次尝试"]
 ];
 metrics.forEach(([label,value,note])=>{const box=el("div",null,"metric");box.append(el("div",label,"label"),el("div",value,"value"),el("div",note,"note"));$("metrics").append(box);});

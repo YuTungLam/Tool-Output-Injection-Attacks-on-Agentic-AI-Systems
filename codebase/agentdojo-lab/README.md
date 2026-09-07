@@ -139,6 +139,62 @@ Groq 会将 `temperature=0` 转换为 `1e-8`；不能据此承诺每次运行完
 - 此版本使用顺序执行；每个并发 pipeline 需要独立 session。非干预测试比较请求、工具执行、环境及历史；记录仍会产生 I/O、存储和运行时间开销。
 - 事件之间的引用表示运行顺序和对象关联，尚不构成参数来源结论或因果边。
 
+## Clean pilot v1：多任务批次
+
+`protocol.md` 与 `configs/pilot_clean.toml` 固定了 10 个 workspace 正常任务，覆盖日历、邮件、云盘和多步工具参数复用机会。预定每任务 3 次，共 30 个 trial；先完成第 1 轮的 10 次，检查采集与运行链路后再执行后两轮。失败任务保留，不按结果更换清单。
+
+```bash
+# 可选：只冻结协议和计划、生成空批次索引，不读取密钥或调用模型
+.venv/bin/dojo-lab pilot --config configs/pilot_clean.toml --plan-only
+
+# 新建批次并执行第 1 轮，每任务独立进程、独立环境和独立 run
+.venv/bin/dojo-lab pilot --config configs/pilot_clean.toml --through-repeat 1
+
+# 使用输出中的批次路径，继续预先安排的第 2、3 轮
+.venv/bin/dojo-lab pilot --resume runs/你的批次目录 --through-repeat 3
+
+# 只重新生成批次 HTML、CSV 和摘要，不调用模型
+.venv/bin/dojo-lab pilot-report --batch runs/你的批次目录
+```
+
+`--resume` 只运行尚未开始的槽位，失败、超时、中断的 trial 不会自动重试。批次锁防止同时启动，已有未结束的子进程会阻止恢复；当前配置的单任务 600 秒硬超时会清理子进程。Python 实现源码、依赖锁、上游版本、配置或协议副本变化时禁止混入原批次，应新建批次。一个 trial 中的原生 pipeline 重试不等于新的实验重复。
+
+首个接入诊断批次观察到 Groq 每分钟 8,000 tokens 的限额。当前 pilot 配置采用 7,000 tokens / 65 秒窗口的保守节奏控制，跨 trial 共享近期用量；估算输入并预留输出余量，随后用 API 报告的实际 tokens 回填。它只等待配额，不改请求或新增重试。HTTP 401、403、429 会暂停后续派发并保存 `service-pause.json`。报告单独列出 `pacing_wait_seconds`，避免把配额等待当成模型或 tracer 耗时；详细测量边界见协议。
+
+批次目录中的 `index.html` 展示任务 × 重复轮次矩阵，点击可进入每次实验的 HTML 与流程图。索引在每个任务结束后更新，运行期间重新加载页面即可查看已完成任务；手动 `pilot-report` 重建用于批次空闲时。总览支持按结果筛选和按任务或实际工具搜索；预计工具流程与实际工具覆盖分开列出。批次保留以下文件：
+
+| 文件 | 用途 |
+| --- | --- |
+| `plan.json`、`plan.sha256` | 冻结任务、prompt、重复顺序和配置/源码哈希 |
+| `pilot-config.toml`、`run-config.toml`、`protocol.md` | 原配置、可执行配置与协议副本 |
+| `jobs/<trial>/` | 启动命令、进程身份、退出/超时状态和控制台日志 |
+| `runs/<trial>/` | 每次实验的独立原始记录与 `report.html` |
+| `batch-summary.json`、`trials.csv`、`coverage.csv` | 包含未运行、失败与未知值的逐槽位汇总及源文件哈希 |
+| `index.html` | 可离线查看的批次总览；跳转子报告需保留目录结构 |
+
+任务效用、运行错误和记录完整性分别统计。重复不增加独立任务数；API 报告用量可能不含失败请求。已有工具输出的模型请求又产生工具调用，只表示有来源分析机会，不是已识别的来源关系。日志大小和真实 API 总耗时不是受控的 recorder 开销估计。
+
+可复用已有论文式导出：`.venv/bin/dojo-lab report --runs runs/你的批次目录/runs`。该命令输出 CSV、LaTeX 表格和 PDF/SVG/PNG 图表；仅分析该批次，不混入之前的单任务 smoke。
+
+批次、配额控制与回放验收接入后共 164 项本地测试通过，Ruff 通过。新增验证覆盖冻结计划、恢复不重试、异常结果保留、超时与启动后故障的子进程清理、批次锁、坏日志降级、离线数据排除、配额状态共享与等待、请求内容一致性、真实页面筛选处理函数的单元验证，以及回放偏离原请求时拒绝产生开销结论。
+
+## 用固定响应回放检查非干扰与开销
+
+对已完成且事件完整的单任务正常轨迹，可以在没有网络和 API key 的条件下回放原响应；工具仍在新建的 AgentDojo 模拟环境中执行：
+
+```bash
+.venv/bin/python scripts/replay_recording_cost.py \
+  --run runs/你的批次目录/runs/r01-user_task_0 \
+  --run runs/你的批次目录/runs/r01-user_task_7 \
+  --output reports/你的回放对照目录 --pairs 5
+```
+
+脚本逐条核对出站 JSON 与来源记录完全一致，每个来源先做一组预热，再交替执行采集开/关条件。只有请求哈希、每个 episode 的最终环境/对话哈希及原生效用一致，且采集日志通过审计，才输出配对耗时表。所有回放明确标为 `real_llm=false`，不增加真实任务重复数。
+
+日历修改会发送模拟通知邮件，原生代码使用系统当前时间。离线两种条件都将邮件客户端的时钟固定为 2024-01-01；真实运行和性能计时器保持原状。若其他任务仍有非确定性导致回放请求偏离，脚本会停止并保留诊断文件。
+
+计时包含原生 benchmark 执行、观察器的执行期工作及两种条件共同的终态快照；排除模型网络请求、配额等待、client/pipeline 初始化、recorder 打开/关闭、审计和 HTML 导出。输出 `plan.json`、`results.json`、`pairs.csv` 及每对回放记录。它给出固定正常轨迹上的工程对照，不代表真实 Groq 端到端性能或全部任务的普遍开销。
+
 ## 每次实验的可交互 HTML
 
 运行 `run` 或 `smoke --offline` 后，打开本次运行目录中的 `report.html` 即可查看详细过程。页面与数据保存在同一个 HTML 文件中，可复制到其他位置并离线打开，无需 Web 服务或绘图依赖。

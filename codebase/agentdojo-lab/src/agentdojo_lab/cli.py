@@ -30,11 +30,24 @@ def main(argv: list[str] | None = None) -> int:
     html = commands.add_parser("html", help="Rebuild a self-contained interactive HTML record from one run")
     html.add_argument("--run", type=Path, required=True)
     html.add_argument("--output", type=Path, help="HTML path; defaults to RUN/report.html")
+    pilot = commands.add_parser("pilot", help="Run a frozen clean pilot, one task per independent run")
+    pilot.add_argument("--config", type=Path)
+    pilot.add_argument("--output", type=Path)
+    pilot.add_argument("--resume", type=Path, help="Continue only never-started trials in this frozen batch")
+    pilot.add_argument("--through-repeat", type=int, default=1, choices=(1, 2, 3))
+    pilot.add_argument(
+        "--plan-only", action="store_true", help="Freeze the plan and export its index without model calls"
+    )
+    pilot_report = commands.add_parser(
+        "pilot-report", help="Rebuild a pilot index and CSV files without model calls"
+    )
+    pilot_report.add_argument("--batch", type=Path, required=True)
     live = commands.add_parser("run", help="Run selected clean tasks against Groq")
     live.add_argument("--config", type=Path, default=ROOT / "configs" / "groq.toml")
     live.add_argument("--model", help="Override the Groq model ID")
     live.add_argument("--task", action="append", help="Replace configured tasks; repeat to select more")
     live.add_argument("--no-record", action="store_true", help="Disable event recording for a control run")
+    live.add_argument("--pacing-state", type=Path, help="Shared quota state for one sequential paced batch")
     live.add_argument(
         "--output", type=Path, help="New output directory; existing paths are never overwritten"
     )
@@ -52,6 +65,21 @@ def main(argv: list[str] | None = None) -> int:
             from agentdojo_lab.html_report import export_run_html
 
             result = export_run_html(args.run, output=args.output)
+        elif args.command == "pilot":
+            from agentdojo_lab.pilot import run_pilot
+
+            result = run_pilot(
+                config_path=args.config,
+                output=args.output,
+                resume=args.resume,
+                through_repeat=args.through_repeat,
+                plan_only=args.plan_only,
+            )
+        elif args.command == "pilot-report":
+            from agentdojo_lab.pilot_report import export_pilot_report
+
+            report_data = export_pilot_report(args.batch)
+            result = {"batch_dir": str(args.batch.resolve()), **report_data["totals"]}
         elif args.command == "tasks":
             suites = get_suites(args.benchmark_version)
             if args.suite not in suites:
@@ -74,7 +102,9 @@ def main(argv: list[str] | None = None) -> int:
                 data["user_tasks"] = args.task
             if args.no_record:
                 data["record_events"] = False
-            result = run_clean(RunConfig.model_validate(data), output=args.output)
+            result = run_clean(
+                RunConfig.model_validate(data), output=args.output, pacing_state=args.pacing_state
+            )
         if args.command in {"run", "smoke"} and result.get("run_dir"):
             report_status = Path(result["run_dir"]) / "html-report-status.json"
             try:
@@ -101,6 +131,11 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     if args.command == "inspect" and not result["valid"]:
         return 2
+    if args.command == "pilot" and not args.plan_only:
+        if result["unscorable_trials"] or result["complete_recordings"] != result["started_trials"]:
+            return 2
+        if result["failed_trials"]:
+            return 1
     if args.command in {"run", "smoke"} and result.get("recording", {}).get("complete") is False:
         return 2
     if args.command in {"run", "smoke"} and result.get("status") == "completed_with_issues":
