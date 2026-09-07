@@ -1,6 +1,18 @@
 # AgentDojo Lab
 
-建立能重复运行的 **AgentDojo 原生正常任务基线**：Groq 模型调用 → AgentDojo 工具执行 → 原生任务评估 → 轨迹与运行配置落盘。已接入 online tracer 的第一层：运行时事件采集器。它记录模型请求、工具调用及结果之间的关联；参数来源识别和因果验证尚未实现。
+建立能重复运行的 **AgentDojo 原生正常任务基线**：Groq 模型调用 → AgentDojo 工具执行 → 原生任务评估 → 轨迹与运行配置落盘。已接入 online tracer 的第一层：运行时事件采集器。现另提供按历史前缀重放的参数来源候选分析与 NeuroTaint-style LCS 组件；尚未验证来源准确率、恶意传播或因果关系。
+
+## 参数来源分析（2026-09-08）
+
+在已有日志上运行，不读取密钥、不增加模型调用：
+
+```bash
+.venv/bin/dojo-lab provenance --batch runs/20260907T025045Z-clean-pilot-b93eae95 --output reports/新的来源分析目录
+```
+
+输出逐参数精确匹配和 `nt_style_lcs_v1` 候选、独立空白核查包及可展开证据的 `index.html`。当前 10 条真实轨迹共 21 次提议、54 个叶参数；27 个单来源候选、4 个多来源候选、23 个没有精确证据。候选数不是准确率；尚未完成人工核查。
+
+方法定义、论文对应关系、假设、8 个建议核查位置及复现进度见 [PROVENANCE.md](PROVENANCE.md)。当前模式是 offline prefix replay，尚未接入 live 回调。原始 batch 保持冻结，不能用新增源码混入旧重复。
 
 ## 任务和工具来自哪里
 

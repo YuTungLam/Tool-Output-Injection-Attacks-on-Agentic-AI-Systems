@@ -42,6 +42,15 @@ def main(argv: list[str] | None = None) -> int:
         "pilot-report", help="Rebuild a pilot index and CSV files without model calls"
     )
     pilot_report.add_argument("--batch", type=Path, required=True)
+    provenance = commands.add_parser(
+        "provenance", help="Replay recorded prefixes into source candidates and blank review items"
+    )
+    inputs = provenance.add_mutually_exclusive_group(required=True)
+    inputs.add_argument("--run", type=Path, action="append", help="Source run; repeat for multiple runs")
+    inputs.add_argument("--batch", type=Path, help="Frozen batch; analyzes recorded trials only")
+    provenance.add_argument(
+        "--output", type=Path, required=True, help="New analysis directory outside source runs"
+    )
     live = commands.add_parser("run", help="Run selected clean tasks against Groq")
     live.add_argument("--config", type=Path, default=ROOT / "configs" / "groq.toml")
     live.add_argument("--model", help="Override the Groq model ID")
@@ -80,6 +89,10 @@ def main(argv: list[str] | None = None) -> int:
 
             report_data = export_pilot_report(args.batch)
             result = {"batch_dir": str(args.batch.resolve()), **report_data["totals"]}
+        elif args.command == "provenance":
+            from agentdojo_lab.provenance_report import export_provenance
+
+            result = export_provenance(run_dirs=args.run, batch=args.batch, output=args.output)
         elif args.command == "tasks":
             suites = get_suites(args.benchmark_version)
             if args.suite not in suites:
