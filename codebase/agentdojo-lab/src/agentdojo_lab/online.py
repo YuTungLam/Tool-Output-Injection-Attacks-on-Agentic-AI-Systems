@@ -33,7 +33,7 @@ class OnlineProvenance:
     computation budgets do not impose a wall-clock deadline.
     """
 
-    def __init__(self, path: Path, semantic_matcher=None, policy=None):
+    def __init__(self, path: Path, semantic_matcher=None, policy=None, lineage=None):
         self._lock = threading.RLock()
         self._file = None
         self._tracker = None
@@ -57,6 +57,9 @@ class OnlineProvenance:
         self._runtime_refs = set()
         self._run_end_seen = False
         self._policy = policy
+        self._lineage = lineage
+        self._lineage_comparison_count = 0
+        self._lineage_incomplete_count = 0
         self._cascade_status_counts = {}
         self._cascade_stage_counts = {tier: {} for tier in ("tier1", "tier2", "tier3", "tier4")}
         self._cascade_first_hit_counts = {}
@@ -76,7 +79,9 @@ class OnlineProvenance:
             "write_flush_total_ns": 0,
         }
         try:
-            self._tracker = ProvenanceTracker(semantic_matcher=semantic_matcher, policy=policy)
+            self._tracker = ProvenanceTracker(
+                semantic_matcher=semantic_matcher, policy=policy, lineage=lineage
+            )
             self._stage = "open"
             self._file = Path(path).open("x", encoding="utf-8", newline="\n")
         except Exception as error:
@@ -124,6 +129,11 @@ class OnlineProvenance:
         call_ref = event.get("call_ref")
         if not isinstance(call_ref, str) or not call_ref or call_ref in self._proposal_refs:
             raise ValueError("A proposal requires a unique call reference")
+        for pair in call.get("lineage", {}).get("comparisons", []):
+            self._lineage_comparison_count += 1
+            self._lineage_incomplete_count += not pair["complete"] and pair["status"] != "not_applicable"
+            if pair["status"] == "encoder_error":
+                raise AttributionComputeError()
         for field in call["fields"]:
             for score in field.get("nt_style_semantic", []):
                 status = score.get("status", "unknown")
@@ -328,6 +338,7 @@ class OnlineProvenance:
                         not self._disabled
                         and not self._semantic_truncated_count
                         and not self._cascade_incomplete_count
+                        and not self._lineage_incomplete_count
                         and not any(
                             count
                             for status, count in self._semantic_status_counts.items()
@@ -353,6 +364,16 @@ class OnlineProvenance:
                         else {}
                     ),
                     "availability": AVAILABILITY,
+                    **(
+                        {
+                            "lineage_enabled": True,
+                            "lineage_comparison_count": self._lineage_comparison_count,
+                            "lineage_incomplete_comparison_count": self._lineage_incomplete_count,
+                            "lineage_scoring_scope": "restored_sources_at_selected_sink_arguments; graph_edges_are_not_causal_evidence",
+                        }
+                        if self._lineage is not None
+                        else {}
+                    ),
                     "execution_mode": "synchronous_passive_consumer",
                     "hard_timeout_enforced": False,
                     "retry_count": 0,
@@ -361,6 +382,22 @@ class OnlineProvenance:
                     "flush_semantics": "Python_file_flush; not_fsync_or_power_loss_durability",
                 }
             )
+
+    def save_state(self, path: Path) -> dict:
+        """Persist complete observed lineage after closure without changing the agent."""
+        with self._lock:
+            if self._lineage is None or not self._closed or self._disabled or not self._run_end_seen:
+                return {"status": "not_saved", "reason": "lineage_absent_or_observation_incomplete"}
+            try:
+                self._lineage.save_state(path)
+                return {
+                    "status": "saved",
+                    "path": str(path),
+                    "sha256": hashlib.sha256(Path(path).read_bytes()).hexdigest(),
+                }
+            except Exception as error:
+                self._disable("lineage.save_state", error)
+                return {"status": "failed", "error_type": type(error).__name__}
 
     def close(self) -> None:
         with self._lock:

@@ -60,10 +60,21 @@
     {
       "id": "lineage_memory",
       "title": "DCPG lineage and memory restoration",
-      "status": "pending",
+      "status": "accepted",
       "acceptance": "Build information-flow lineage, persist taint state, restore it with memory, and validate source-to-sink paths across the boundary.",
-      "evidence": [],
-      "limits": "The existing architecture diagram and event links are not a DCPG implementation."
+      "evidence": [
+        "LINEAGE.md",
+        "LINEAGE-RESULTS.md",
+        "tests/test_lineage.py",
+        "tests/test_lineage_integration.py",
+        "tests/test_lineage_plumbing.py",
+        "runs/20260908-lineage-memory-control/validation.json",
+        "reports/20260908-lineage-validation/memory-session2-verification.json",
+        "reports/20260908-lineage-validation/replay-verification.json",
+        "reports/20260908-lineage-validation/live-verification.json",
+        "reports/20260908-lineage-validation/quality.json"
+      ],
+      "limits": "Candidate DCPG and exact-bound native file adapter only; two-session restoration uses fixed benign responses. Fresh Groq task 32 failed at provider schema validation after search/create, with complete recording and exact replay of its two executed proposals. No real-model cross-session efficacy, maliciousness, causality, authenticated provenance, or automatic persistence between benchmark tasks is established."
     },
     {
       "id": "canary",

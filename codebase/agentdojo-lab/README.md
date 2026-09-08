@@ -1,12 +1,49 @@
 # AgentDojo Lab
 
-Current update (2026-09-08): gate 4 source/sink policy and `ordered_cascade` validation passed on ten saved
-real traces, native controls and one fresh Groq task. Four of eight acceptance gates are completed.
-The frozen current protocol is [CASCADE.md](CASCADE.md); evidence and limits are in
-[CASCADE-RESULTS.md](CASCADE-RESULTS.md). Gate status is tracked in
+Current workflow (2026-09-08): opt-in DCPG candidate lineage and native cloud-drive memory restoration.
+The frozen protocol is [LINEAGE.md](LINEAGE.md); evidence and limits are in
+[LINEAGE-RESULTS.md](LINEAGE-RESULTS.md). Acceptance status is tracked in
 [reproduction progress](REPRODUCTION_PROGRESS.json).
+Five of eight engineering acceptance gates are complete. The retained fresh Groq trial failed its sharing
+step at provider schema validation; that failure is included in the evidence, with complete tracer records.
 
-## Ordered cascade: current validation workflow
+## DCPG: inspect a saved source path
+
+Run these commands from this directory, with a new output path on every execution.
+A fresh native Groq task creates and shares a packing-list file while the observer builds its graph:
+
+```bash
+HF_HUB_OFFLINE=1 HF_HUB_DISABLE_TELEMETRY=1 \
+  .venv/bin/dojo-lab run --config configs/groq_lineage.toml
+```
+
+The run saves `lineage-state.json` alongside its event and attribution logs. In `report.html`, select a
+tool proposal or runtime entry, open **DCPG lineage and memory**, and expand a candidate path. Node
+details expose the originating run and evidence; current-run nodes link to their timeline events.
+Scored matching edges are distinct from structural storage/retrieval edges. No path confidence or
+maliciousness verdict is assigned.
+
+For the separate two-session engineering control, no Groq call is needed:
+
+```bash
+.venv/bin/python scripts/validate_lineage_memory.py \
+  --output runs/my-memory-control
+```
+
+Open `session2-traced/report.html` under that new directory. The control uses fixed benign responses with
+real native simulated tools. It saves the current native files, starts fresh session objects, restores
+the actual files and private observer checkpoint separately, reads the saved file, and checks a later
+write. Both sessions include a tracing-disabled comparison. `validation.json` records the checks.
+
+Checkpoint loading alone does not restore the agent's storage or activate old sources. An exact matching
+file must be retrieved and exposed in the actual request. Standard benchmark tasks reset their native
+environments; the normal run command deliberately has no implicit cross-task checkpoint import.
+
+Add `--lineage-namespace my-store-v1` to the cascade replay command below to construct an independent
+graph for each recorded run. For an explicitly restored fixture, replay accepts only the initial
+checkpoint declared and hashed in that run's manifest. Always use the matching frozen policy/profile.
+
+## Preserved ordinary cascade workflow
 
 Run these commands from this directory. This starts a fresh Groq `workspace/user_task_20` trial with the
 frozen workspace policy and local pinned MiniLM:
@@ -36,8 +73,8 @@ excluded sources, unknown tools, and skipped stages remain visible. There is no 
 The earlier `independent_all_pairs` mode is preserved: use `configs/groq_online.toml` for a live trial or omit
 `--policy` from replay. [ONLINE.md](ONLINE.md), [SEMANTIC.md](SEMANTIC.md), and
 [ONLINE-RESULTS.md](ONLINE-RESULTS.md) describe that frozen earlier independent-scoring milestone; they are
-not the current cascade protocol or evidence of cascade acceptance. DCPG lineage and memory restoration
-are the next gated work. Independent source accuracy, malicious propagation, and causal validation remain
+not evidence of later gate acceptance. The ordinary mode remains separate from DCPG restoration.
+Independent source accuracy, malicious propagation, and causal validation remain
 pending; candidate and route counts do not establish them.
 
 建立能重复运行的 **AgentDojo 原生正常任务基线**：Groq 模型调用 → AgentDojo 工具执行 → 原生任务评估 → 轨迹与运行配置落盘。已接入 online tracer 的第一层：运行时事件采集器。现另提供按历史前缀重放的参数来源候选分析、NeuroTaint-style LCS 与可选的本地 MiniLM 语义/分块组件；尚未验证来源准确率、恶意传播或因果关系。

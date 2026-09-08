@@ -21,7 +21,27 @@ def _json(path: Path, value):
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
 
 
-def _read_run(run: Path, semantic_matcher=None, policy=None) -> dict:
+def _lineage_for_run(run, manifest, policy, semantic_matcher, namespace):
+    """Restore only a declared, hashed checkpoint copied inside this recorded run."""
+    from agentdojo_lab.lineage import DCPG
+
+    if policy is None:
+        raise ValueError("Lineage replay requires a frozen policy")
+    initial = manifest.get("online_provenance", {}).get("lineage", {}).get("initial_state")
+    if initial is None:
+        return DCPG(namespace, policy, semantic_matcher=semantic_matcher), {}
+    if initial.get("path") != "lineage-initial-state.json":
+        raise ValueError("Unsupported recorded lineage checkpoint path")
+    path = run / "lineage-initial-state.json"
+    if not path.resolve().is_relative_to(run):
+        raise ValueError("Lineage checkpoint resolves outside the source run")
+    raw = path.read_bytes()
+    if hashlib.sha256(raw).hexdigest() != initial.get("sha256"):
+        raise ValueError("Recorded initial lineage checkpoint changed")
+    return DCPG.load_state(path, namespace, policy, semantic_matcher=semantic_matcher), {path.name: raw}
+
+
+def _read_run(run: Path, semantic_matcher=None, policy=None, lineage_namespace=None) -> dict:
     run = run.expanduser().resolve()
     paths = {name: run / name for name in ("events.jsonl", "manifest.json", "summary.json")}
     if any(not p.is_file() or not p.resolve().is_relative_to(run) for p in paths.values()):
@@ -35,7 +55,12 @@ def _read_run(run: Path, semantic_matcher=None, policy=None) -> dict:
         raise ValueError(f"Event audit failed: {run.name}")
     if policy is not None:
         policy.validate_context(manifest["config"]["suite"], manifest["config"]["benchmark_version"])
-    tracker = ProvenanceTracker(semantic_matcher=semantic_matcher, policy=policy)
+    lineage = None
+    if lineage_namespace is not None:
+        lineage, initial = _lineage_for_run(run, manifest, policy, semantic_matcher, lineage_namespace)
+        raw.update(initial)
+        paths.update({name: run / name for name in initial})
+    tracker = ProvenanceTracker(semantic_matcher=semantic_matcher, policy=policy, lineage=lineage)
     for line in raw["events.jsonl"].decode("utf-8").splitlines():
         tracker.consume(json.loads(line))
     if any(p.read_bytes() != raw[name] for name, p in paths.items()):
@@ -53,6 +78,7 @@ def _read_run(run: Path, semantic_matcher=None, policy=None) -> dict:
         "audit_valid": audit["valid"],
         "source_hashes": {name: hashlib.sha256(data).hexdigest() for name, data in raw.items()},
         "calls": tracker.calls,
+        **({"lineage_graph": lineage.snapshot()} if lineage is not None else {}),
     }
 
 
@@ -367,6 +393,44 @@ def _cascade_view(field, sources):
     )
 
 
+def _lineage_view(call, graph):
+    if "lineage" not in call:
+        return ""
+
+    def esc(value):
+        return html.escape(str(value), quote=True)
+
+    nodes = {node["node_id"]: node for node in graph["nodes"]}
+    edges = {edge["edge_id"]: edge for edge in graph["edges"]}
+    diagrams = []
+    for path in call["lineage"]["paths"]:
+        route = [edges[key] for key in path["edge_ids"]]
+        parts = []
+        for index, edge in enumerate(route):
+            if not index:
+                source = nodes[edge["from_node"]]
+                parts.append(
+                    f"<li><details><summary>{esc(source.get('function', source['kind']))}</summary><pre>{esc(json.dumps(source, indent=2))}</pre></details></li>"
+                )
+            target = nodes[edge["to_node"]]
+            score = edge.get("evidence_score")
+            label = edge["relation"] + (
+                f" · {edge['tier']} {score:.3f}" if isinstance(score, (float, int)) else " · structural"
+            )
+            parts.append(
+                f'<li><span class="meta">→ {esc(label)}</span><details><summary>{esc(target.get("function", target["kind"]))}</summary><pre>{esc(json.dumps(target, indent=2))}</pre></details></li>'
+            )
+        diagrams.append(
+            f'<details><summary>Candidate path · {len(route)} edges</summary><ol class="lineage-path">{"".join(parts)}</ol><pre>{esc(json.dumps(path, indent=2))}</pre></details>'
+        )
+    return (
+        "<details open><summary>DCPG lineage and memory</summary>"
+        "<p>Structural continuity preserves identity; scored candidate edges remain unreviewed. Loading or retrieving memory alone emits no propagation verdict.</p>"
+        + "".join(diagrams)
+        + f"<details><summary>Restored sources, current comparisons and memory observations</summary><pre>{esc(json.dumps(call['lineage'], indent=2, ensure_ascii=False))}</pre></details></details>"
+    )
+
+
 def _viewer(report):
     def esc(value):
         return html.escape(str(value), quote=True)
@@ -436,6 +500,7 @@ def _viewer(report):
                     if "policy" in call
                     else ""
                 )
+                + _lineage_view(call, run.get("lineage_graph", {}))
                 + f"{''.join(rows) or '<p>No leaf arguments.</p>'}</article>"
             )
     counts = report["counts"]
@@ -475,6 +540,7 @@ p{{line-height:1.6}}a{{color:#006b79}}summary{{cursor:pointer;line-height:1.6;pa
 details.field{{border-top:1px solid #dce4e7;padding:4px 0}}details.source{{background:#f2f6f7;padding:0 14px;margin:10px 0;border-radius:6px}}
 pre{{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.55;padding:14px;background:#edf2f4;border-radius:6px}}
 table{{width:100%;border-collapse:collapse;table-layout:fixed}}th,td{{text-align:left;padding:8px;border-bottom:1px solid #cdd9de;overflow-wrap:anywhere}}
+.lineage-path{{list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:12px}}.lineage-path li{{flex:1 1 220px;min-width:0}}.lineage-path li>details{{border-top:2px solid #087f8c}}
 mark{{background:#ffe18b;color:#182e36}}.meta{{font-size:14px;color:#506670;overflow-wrap:anywhere}}.target{{border-left:3px solid #087f8c}}
 @media(max-width:600px){{body{{padding:18px 12px}}article{{padding:16px}}h1{{font-size:24px}}}}
 </style></head><body><header><h1>Argument provenance evidence</h1>
@@ -487,7 +553,9 @@ mark{{background:#ffe18b;color:#182e36}}.meta{{font-size:14px;color:#506670;over
 {"".join(pieces)}</body></html>"""
 
 
-def export_provenance(*, run_dirs=None, batch=None, output: Path, semantic_matcher=None, policy=None) -> dict:
+def export_provenance(
+    *, run_dirs=None, batch=None, output: Path, semantic_matcher=None, policy=None, lineage_namespace=None
+) -> dict:
     run_dirs, batch_info = _select_runs(run_dirs, batch)
     if not run_dirs:
         raise ValueError("No recorded runs to analyze")
@@ -501,7 +569,10 @@ def export_provenance(*, run_dirs=None, batch=None, output: Path, semantic_match
     if output.exists() or any(output.is_relative_to(root) for root in protected):
         raise ValueError("Use a new output directory outside source runs")
     analysis_start = time.perf_counter()
-    runs = [_read_run(run, semantic_matcher=semantic_matcher, policy=policy) for run in run_dirs]
+    runs = [
+        _read_run(run, semantic_matcher=semantic_matcher, policy=policy, lineage_namespace=lineage_namespace)
+        for run in run_dirs
+    ]
     analysis_elapsed = time.perf_counter() - analysis_start
     identities = [run["run_id"] for run in runs]
     if len(set(identities)) != len(identities):
@@ -556,6 +627,19 @@ def export_provenance(*, run_dirs=None, batch=None, output: Path, semantic_match
         report["analysis_timing_scope"] = (
             "Local reads, audit, prefix replay, exact baseline and selected cascade stages; excludes model loading/report writing; not live overhead"
         )
+    if lineage_namespace is not None:
+        report["lineage"] = {
+            "namespace": lineage_namespace,
+            "session_scope": "independent_graph_per_recorded_run; only_declared_initial_checkpoint_restored",
+        }
+        report["counts"]["lineage"] = {
+            "nodes": sum(len(run["lineage_graph"]["nodes"]) for run in runs),
+            "edges": sum(len(run["lineage_graph"]["edges"]) for run in runs),
+            "memory_bindings": sum(len(run["lineage_graph"]["memory_bindings"]) for run in runs),
+            "restored_comparisons": sum(
+                len(call["lineage"]["comparisons"]) for run in runs for call in run["calls"]
+            ),
+        }
     output.mkdir(parents=True)
     (output / "annotations").mkdir()
     _json(output / "analysis.json", report)

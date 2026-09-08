@@ -8,19 +8,36 @@
 
 随后已新增可选 MiniLM Tier 3 整段与 Tier 4 分块语义组件，固定 revision/文件哈希/分块假设/截断范围；命令与最新结果见 SEMANTIC.md。8 个教学案例已整理为助手开发标注草稿，明确非盲、非独立，仍需人工核查。
 
-Current progress (2026-09-08): gate 4 source/sink policy and `ordered_cascade` validation passed. Four of
-eight gates are accepted. Ten saved real runs produced 43 eligible pairs, all first hits at Tier 2.
-A fresh Groq task20 passed utility, with 3/3 pre-runtime analyses and exact live/replay equality for seven
-fields and ten cascade pairs. All 552 tests passed. Read [CASCADE.md](CASCADE.md) for the frozen
-current protocol and [CASCADE-RESULTS.md](CASCADE-RESULTS.md) for its validation evidence;
-[REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json) remains the gate-status record. The earlier
-`independent_all_pairs` mode is preserved. [ONLINE.md](ONLINE.md), [SEMANTIC.md](SEMANTIC.md), and
-[ONLINE-RESULTS.md](ONLINE-RESULTS.md) document that frozen earlier independent-scoring milestone and must
-not be rewritten as cascade results. DCPG lineage and memory restoration are the next gated work.
-Independent source ground truth, attribution accuracy, malicious propagation, and causal validation remain
-pending. Retain failed trials and source-policy exclusions. Continuing the older frozen clean repetitions
+Current progress (2026-09-08): gate 5 candidate DCPG and native memory restoration passed its engineering
+checks; five of eight gates are accepted. Read the frozen [LINEAGE.md](LINEAGE.md) and
+[LINEAGE-RESULTS.md](LINEAGE-RESULTS.md). The native two-session control passes 14/14 checks, recovers one
+original source through a four-edge path, and matches the sink independently before execution. Both
+tracing-disabled comparisons preserve full requests, actions, history, usage and native environment.
+Ten saved real runs produce repeatable graphs (43 nodes, 77 edges) with unchanged direct matching.
+
+The single selected fresh Groq task32 trial is a retained failure: after successful search/create,
+Groq rejected the generated `share_file` permission `read` because the schema accepts `r` or `rw`.
+The invalid generation is provider-error evidence, not a native tool proposal or execution. Do not retry
+or claim utility success. Its 25 events, 2/2 pre-runtime analyses, five-node graph, six edges and saved
+binding pass exact live/replay checks. Full test suite: 607 passed; no runtime changes after preflight.
+
+Inspect `runs/20260908-lineage-memory-control/session2-traced/report.html` for the restored path and
+`runs/20260908-lineage-groq-task32/report.html` for the retained real trial. Their JSONL and generated HTML
+are English. Current-run graph nodes link to the timeline; prior-session IDs remain qualified to avoid
+cross-session event-number collisions. Observer state is private and separate from native storage.
+Standard benchmark tasks still reset their environments; there is no automatic cross-task state import.
+
+Next is gate 6: a separately named UUID canary intervention with source-marker survival and paired input
+controls. Preserve the passive condition and freeze marker insertion before interpreting outcomes.
+Counterfactual probes and independent clean/injected evaluation follow in gates 7 and 8. No CTTA, weight
+updates, automatic blocking, or real-account tool operations are authorized in this scope.
+
+[REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json) remains the gate-status record. Earlier
+ordinary-cascade and independent-scoring modes and evidence remain preserved. Independent source ground
+truth, attribution accuracy, malicious propagation, and causal validation remain pending. Keep failures,
+unsupported operations and source-policy exclusions visible. Continuing older frozen clean repetitions
 requires their original implementation snapshot; do not bypass hash checks. `runs/`, `reports/`, and
-`.model-cache/` are ignored, so another machine needs the required logs and the pinned local model.
+`.model-cache/` are ignored: another machine needs those artifacts and the pinned local model separately.
 
 ---
 

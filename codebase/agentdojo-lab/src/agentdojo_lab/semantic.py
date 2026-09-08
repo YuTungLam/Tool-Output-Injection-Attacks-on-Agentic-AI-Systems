@@ -140,7 +140,14 @@ class SemanticMatcher:
         return copy.deepcopy(
             {
                 "method": METHOD,
-                "assumptions": ASSUMPTIONS,
+                "assumptions": {
+                    **ASSUMPTIONS,
+                    **(
+                        {"threshold_policy": "explicit_memory_profile_without_gold_label_selection"}
+                        if self.semantic_threshold == 0.85
+                        else {}
+                    ),
+                },
                 "semantic_threshold": self.semantic_threshold,
                 "coverage_threshold": self.coverage_threshold,
                 "limits": {"max_codepoints_per_input": MAX_CODEPOINTS_PER_INPUT, "max_chunks": MAX_CHUNKS},

@@ -85,6 +85,9 @@ def collect_run_record(run_dir: Path, *, summary: dict | None = None) -> dict:
             warnings.append(
                 "Online attribution is incomplete. Saved candidates are provisional; inspect timing and errors."
             )
+    lineage_state = (
+        read_json(run_dir / "lineage-state.json") if (run_dir / "lineage-state.json").exists() else None
+    )
     native = []
     for path in sorted((run_dir / "native").rglob("*.json")):
         trace = read_json(path)
@@ -102,6 +105,7 @@ def collect_run_record(run_dir: Path, *, summary: dict | None = None) -> dict:
         "summary": selected_summary,
         "events": events,
         "provenance": provenance,
+        **({"lineage_state": lineage_state} if lineage_state is not None else {}),
         "audit": audit,
         "native": native,
         "warnings": warnings,

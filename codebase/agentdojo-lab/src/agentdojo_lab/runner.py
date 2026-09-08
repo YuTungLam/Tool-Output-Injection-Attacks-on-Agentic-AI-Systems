@@ -59,12 +59,19 @@ class RunConfig(BaseModel):
     record_events: bool = True
     online_provenance: bool = False
     provenance_policy: str | None = None
+    lineage_namespace: str | None = None
     semantic_model: str | None = None
     semantic_revision: str | None = None
     pacing_tokens_per_minute: int | None = Field(default=None, ge=1000, le=1000000)
 
     @model_validator(mode="after")
     def attribution_configuration(self):
+        if self.lineage_namespace is not None and (
+            not self.lineage_namespace.strip() or not self.provenance_policy or len(self.user_tasks) != 1
+        ):
+            raise ValueError(
+                "Lineage requires a nonempty namespace, a frozen policy and one native task per run"
+            )
         if self.online_provenance and not self.record_events:
             raise ValueError("Online provenance requires event recording")
         if self.provenance_policy is not None and (
@@ -214,6 +221,12 @@ def run_clean(
             LocalMiniLMEncoder(Path(config.semantic_model).expanduser(), revision=config.semantic_revision)
         )
 
+    lineage = None
+    if config.lineage_namespace is not None:
+        from agentdojo_lab.lineage import DCPG
+
+        lineage = DCPG(config.lineage_namespace, policy, semantic_matcher=matcher)
+
     mode = "offline-fixture" if offline else "live-groq"
     pacer = (
         RequestPacer(config.pacing_tokens_per_minute, pacing_state)
@@ -276,6 +289,11 @@ def run_clean(
             "Recording observes execution; it does not establish source attribution or causality.",
         ],
     }
+    if lineage is not None:
+        manifest["online_provenance"]["lineage"] = lineage.metadata
+        manifest["online_provenance"]["implementation_sha256"]["lineage.py"] = hashlib.sha256(
+            Path(__file__).with_name("lineage.py").read_bytes()
+        ).hexdigest()
     write_json(run_dir / "manifest.json", manifest)
     started = time.monotonic()
     llm = None
@@ -289,7 +307,10 @@ def run_clean(
                 from agentdojo_lab.online import OnlineProvenance
 
                 attribution = OnlineProvenance(
-                    run_dir / "provenance.jsonl", semantic_matcher=matcher, policy=policy
+                    run_dir / "provenance.jsonl",
+                    semantic_matcher=matcher,
+                    policy=policy,
+                    **({"lineage": lineage} if lineage is not None else {}),
                 )
             recorder = EventRecorder(
                 run_dir / "events.jsonl",
@@ -402,8 +423,14 @@ def run_clean(
             summary["recording"] = {"enabled": False}
         if attribution is not None:
             attribution.close()
-            attribution_status = attribution.status()
             subscriber_status = recorder.subscriber_status() if recorder is not None else {"complete": False}
+            if lineage is not None:
+                summary["lineage_state"] = (
+                    attribution.save_state(run_dir / "lineage-state.json")
+                    if summary["recording"].get("complete", False) and subscriber_status["complete"]
+                    else {"status": "not_saved", "reason": "recording_or_subscriber_incomplete"}
+                )
+            attribution_status = attribution.status()
             summary["online_provenance"] = {
                 **attribution_status,
                 "enabled": True,

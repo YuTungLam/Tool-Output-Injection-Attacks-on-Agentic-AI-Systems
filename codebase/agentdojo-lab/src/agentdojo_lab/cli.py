@@ -58,6 +58,7 @@ def main(argv: list[str] | None = None) -> int:
         "--semantic-revision", help="Full model commit SHA; required with --semantic-model"
     )
     provenance.add_argument("--policy", type=Path, help="Select ordered cascade with a frozen tool policy")
+    provenance.add_argument("--lineage-namespace", help="Build a DCPG independently for each recorded run")
     live = commands.add_parser("run", help="Run selected clean tasks against Groq")
     live.add_argument("--config", type=Path, default=ROOT / "configs" / "groq.toml")
     live.add_argument("--model", help="Override the Groq model ID")
@@ -68,6 +69,9 @@ def main(argv: list[str] | None = None) -> int:
         "--output", type=Path, help="New output directory; existing paths are never overwritten"
     )
     for command in (smoke, live):
+        command.add_argument(
+            "--lineage-namespace", help="Observe DCPG in one native task and save a state sidecar"
+        )
         command.add_argument("--policy", type=Path, help="Frozen tool policy for ordered online cascade")
         command.add_argument(
             "--online-provenance",
@@ -130,6 +134,11 @@ def main(argv: list[str] | None = None) -> int:
                 output=args.output,
                 semantic_matcher=matcher,
                 policy=policy,
+                **(
+                    {"lineage_namespace": args.lineage_namespace}
+                    if args.lineage_namespace is not None
+                    else {}
+                ),
             )
         elif args.command == "tasks":
             suites = get_suites(args.benchmark_version)
@@ -146,6 +155,7 @@ def main(argv: list[str] | None = None) -> int:
                     record_events=not args.no_record,
                     online_provenance=args.online_provenance,
                     provenance_policy=str(args.policy) if args.policy else None,
+                    lineage_namespace=args.lineage_namespace,
                     semantic_model=str(args.semantic_model) if args.semantic_model else None,
                     semantic_revision=args.semantic_revision,
                 ),
@@ -155,6 +165,8 @@ def main(argv: list[str] | None = None) -> int:
         else:
             config = load_config(args.config)
             data = config.model_dump()
+            if args.lineage_namespace is not None:
+                data["lineage_namespace"] = args.lineage_namespace
             if args.model:
                 data["model"] = args.model
                 if not args.model.startswith("openai/gpt-oss"):

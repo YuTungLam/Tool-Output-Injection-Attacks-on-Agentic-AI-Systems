@@ -114,9 +114,14 @@ def structured_scalars(text: str) -> dict:
 class ProvenanceTracker:
     """Incremental, deterministic candidate generation over one event stream."""
 
-    def __init__(self, semantic_matcher=None, policy=None):
+    def __init__(self, semantic_matcher=None, policy=None, lineage=None):
         self.semantic_matcher = semantic_matcher
         self.policy = policy
+        self.lineage = lineage
+        if lineage is not None and policy is None:
+            raise ValueError("Lineage tracking requires a frozen source/sink policy")
+        if lineage is not None and lineage.policy_sha256 != policy.metadata["sha256"]:
+            raise ValueError("Lineage and tracker policy hashes must match")
         self.cascade_matcher = None
         if policy is not None:
             from agentdojo_lab.cascade import CascadeMatcher
@@ -260,8 +265,19 @@ class ProvenanceTracker:
                     "model_request_id": event["model_request_id"],
                 }
             call = self._analyze(event, request)
+            if self.lineage is not None:
+                call = self.lineage.consume(event, call=call)
             self.calls.append(copy.deepcopy(call))
             return copy.deepcopy(call)
+        if self.lineage is not None:
+            exposed = []
+            if kind == "TOOL_OUTPUT_EXPOSED":
+                exposed = [
+                    {**self.sources[occurrence["source_id"]], **occurrence}
+                    for occurrence in self.requests[event["model_request_id"]]["sources"]
+                    if occurrence["exposure_event_id"] == event["event_id"]
+                ]
+            self.lineage.consume(event, exposed_sources=exposed)
         return None
 
     def _analyze(self, event, request):

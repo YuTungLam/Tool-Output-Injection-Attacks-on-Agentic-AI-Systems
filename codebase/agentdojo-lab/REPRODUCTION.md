@@ -31,20 +31,23 @@ assumption as an author-specified choice.
 3. Completed for the ordinary passive condition: frozen workspace source/sink policy and ordered active
    Tier 2–4 routing. Ten saved runs and a fresh Groq task pass replay checks, with actual encoder-boundary
    controls. Tier 1 is explicitly disabled. See [CASCADE-RESULTS.md](CASCADE-RESULTS.md).
-4. Add DCPG lineage and memory restoration, a separate canary condition, and sink-driven counterfactual
-   analysis. Canary and shadow
+4. Completed for the bounded file adapter: candidate DCPG, private persistence, and actual two-session
+   native memory restoration. Ten saved traces repeat exactly; the selected fresh Groq task failed at
+   provider validation after search/create, while its two executed proposals and final graph verify.
+   See [LINEAGE-RESULTS.md](LINEAGE-RESULTS.md). This is engineering acceptance, not task efficacy.
+5. Next: a separate canary condition, followed by sink-driven counterfactual analysis. Canary and shadow
    interventions must be distinguished from passive primary runs.
-5. Evaluate clean and injected cases with independent source judgments, repeated trials, component ablations,
+6. Evaluate clean and injected cases with independent source judgments, repeated trials, component ablations,
    false attribution/unknown/ambiguity analysis, timing, and resource costs.
 
 No CTTA, model-weight updates, automatic action blocking, or real-account operations are part of this scope.
 
 ## Acceptance progress
 
-[REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json) fixes eight equal acceptance gates. Four are
+[REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json) fixes eight equal acceptance gates. Five are
 accepted as of 2026-09-08: local components, deterministic live integration, fresh real-agent timing
-validation, and source/sink policy with the ordinary passive cascade. The next gate is DCPG lineage and
-memory restoration. This count is not a work estimate,
+validation, source/sink policy with the ordinary passive cascade, and DCPG with native memory restoration.
+The next gate is the separate canary intervention condition. This count is not a work estimate,
 accuracy measurement, or claim that the original paper's tables have been reproduced. Completing an
 independent evaluation can include negative results; benchmark efficacy remains a separate measurement.
 

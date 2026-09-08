@@ -162,6 +162,13 @@ def verify(run: Path) -> dict:
     raw_rows = source_bytes["provenance.jsonl"].splitlines(keepends=True)
     rows = [json.loads(line) for line in raw_rows]
     config = manifest["config"]
+    if config.get("lineage_namespace") is not None:
+        state_path = run / "lineage-state.json"
+        if state_path.resolve().parent != run:
+            raise ValueError("Final lineage checkpoint must be inside the recorded run")
+        source_bytes[state_path.name] = state_path.read_bytes()
+        before[state_path.name] = hashlib.sha256(source_bytes[state_path.name]).hexdigest()
+        paths.append(state_path)
     policy, policy_checks = frozen_policy(manifest)
     matcher = None
     if config.get("semantic_model"):
@@ -169,7 +176,18 @@ def verify(run: Path) -> dict:
         if not model_path.is_absolute():
             model_path = Path(__file__).resolve().parents[1] / model_path
         matcher = SemanticMatcher(LocalMiniLMEncoder(model_path, revision=config["semantic_revision"]))
-    tracker = ProvenanceTracker(semantic_matcher=matcher, policy=policy)
+    lineage, lineage_checks = None, {}
+    namespace = config.get("lineage_namespace")
+    if namespace is not None:
+        from agentdojo_lab.provenance_report import _lineage_for_run
+
+        lineage, initial = _lineage_for_run(run, manifest, policy, matcher, namespace)
+        for name, raw in initial.items():
+            source_bytes[name] = raw
+            before[name] = hashlib.sha256(raw).hexdigest()
+            paths.append(run / name)
+        lineage_checks["lineage_mode_declared"] = summary["online_provenance"].get("lineage_enabled") is True
+    tracker = ProvenanceTracker(semantic_matcher=matcher, policy=policy, lineage=lineage)
     replay = [call for event in events if (call := tracker.consume(event)) is not None]
     live_rows = [row for row in rows if row["record_type"] == "call_analysis"]
     live = [copy.deepcopy(row["call"]) for row in live_rows]
@@ -183,6 +201,7 @@ def verify(run: Path) -> dict:
     starts = {event["event_id"]: event for event in events if event["event_type"] == "TOOL_RUNTIME_STARTED"}
     checks = {
         **policy_checks,
+        **lineage_checks,
         "recording_complete": summary["recording"].get("complete") is True,
         "event_audit_valid": inspect_events(paths[2])["valid"],
         "sidecar_complete": summary.get("online_provenance", {}).get("complete") is True,
@@ -290,7 +309,55 @@ def verify(run: Path) -> dict:
         checks["cascade_scoring_completeness_matches"] = checked(
             lambda: (
                 summary["online_provenance"]["scoring_complete"]
-                is (computed_cascade_counts["cascade_incomplete_pair_count"] == 0)
+                is (
+                    computed_cascade_counts["cascade_incomplete_pair_count"] == 0
+                    and not any(
+                        not pair["complete"] and pair["status"] != "not_applicable"
+                        for call in live
+                        for pair in call.get("lineage", {}).get("comparisons", [])
+                    )
+                )
+            )
+        )
+    lineage_counts = None
+    if lineage is not None:
+        state_path = run / "lineage-state.json"
+        raw = source_bytes[state_path.name]
+        envelope = json.loads(raw)
+        graph = lineage.snapshot()
+        lineage_pairs = [pair for call in live for pair in call["lineage"]["comparisons"]]
+        lineage_counts = {
+            "nodes": len(graph["nodes"]),
+            "edges": len(graph["edges"]),
+            "memory_bindings": len(graph["memory_bindings"]),
+            "restored_comparisons": len(lineage_pairs),
+        }
+        checks["lineage_graph_equals_replay"] = checked(lambda: json_equal(envelope["state"], graph))
+        checks["lineage_checkpoint_digest_matches"] = checked(
+            lambda: (
+                envelope["state_sha256"]
+                == hashlib.sha256(
+                    json.dumps(
+                        envelope["state"],
+                        sort_keys=True,
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                        allow_nan=False,
+                    ).encode()
+                ).hexdigest()
+            )
+        )
+        checks["lineage_summary_counts_match"] = checked(
+            lambda: (
+                summary["online_provenance"]["lineage_comparison_count"] == len(lineage_pairs)
+                and summary["online_provenance"]["lineage_incomplete_comparison_count"]
+                == sum(not p["complete"] and p["status"] != "not_applicable" for p in lineage_pairs)
+            )
+        )
+        checks["lineage_state_save_hash_matches"] = checked(
+            lambda: (
+                summary["lineage_state"]["status"] == "saved"
+                and summary["lineage_state"]["sha256"] == before[state_path.name]
             )
         )
     checks["source_files_unchanged"] = before == {
@@ -310,6 +377,7 @@ def verify(run: Path) -> dict:
         "semantic_comparison_scope": semantic_comparison_scope,
         "cascade_pair_count": cascade_pair_count,
         "cascade_counts": computed_cascade_counts,
+        **({"lineage_counts": lineage_counts} if lineage_counts is not None else {}),
         "policy_sha256": policy.metadata["sha256"] if policy is not None else None,
         "input_sha256": before,
         "scope": (
