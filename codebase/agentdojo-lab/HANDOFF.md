@@ -2,37 +2,52 @@
 
 ## Current handoff — 2026-09-09
 
-Gate 7 is accepted for the bounded analyzer scope: **7/8 acceptance gates, 87.5%**. See
-[COUNTERFACTUAL.md](COUNTERFACTUAL.md), [COUNTERFACTUAL-RESULTS.md](COUNTERFACTUAL-RESULTS.md), and
-[REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json). This percentage counts gates equally;
-it does not measure accuracy, work hours, security benefit, or original-table reproduction.
+Gate 8 has started with the first native clean/injected evaluation stratum. The accepted count remains
+**7/8 gates, 87.5%**. Read [EVALUATION.md](EVALUATION.md), [EVALUATION-RESULTS.md](EVALUATION-RESULTS.md),
+and [REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json). This percentage is a checklist count,
+not accuracy, work hours, security benefit, or original-table reproduction.
 
-The new `dojo-lab counterfactual` command reads a complete saved proposal sidecar and DCPG. Default
-mode writes plans without an API call. `--live` runs a separate Groq auditor after the primary episode;
-`--max-probes` bounds requests. Output must be a fresh directory outside the source run. No native
-tool interface is available to the auditor. The paper's displayed prompt is a prediction over original
-and neutralized histories; a second native agent is not executed.
+The first stratum completed all ten trials: native utility 10/10, payload exposure 5/5 injected trials,
+attack-goal success 0/5, no unknown evaluations, and no replacement runs. There were 30 primary API
+requests and zero auditor requests, using 81,170 reported tokens. All 340 prefix checks pass; frozen
+sources and old artifacts remain unchanged. The test suite passes 1,043 tests. The review packet has
+20 unannotated fields; source precision/recall/F1 remain null. These outcomes do not validate malicious
+propagation or a security benefit.
 
-Seven authored native sessions pass 37/37 controls, using actual tools, identical UUID canaries,
-unchanged thresholds, and pinned MiniLM. Direct and restored-memory cases are eligible. Explicit
-matches, absent scoring, and observed truncation skip. The full suite passes 896 tests. The two
-frozen live auditor trials each make one request and return `would_call_anyway=false`, with
-self-reported confidence 0.97 and 0.85. Source artifacts stay unchanged. These benign conditional
-tasks are not independent malicious or causal labels. Do not rerun selected trials for a preferred answer.
+The frozen batch is `runs/20260909-evaluation-pilot-v1`. It uses workspace task 29, injection task 1,
+one native direct payload, and five repetitions per condition with Canary enabled. Model, policy,
+local MiniLM, thresholds, request caps and order are fixed. Do not replace or retry any started slot.
+`dojo-lab evaluate --resume` runs only never-started slots and requires the frozen implementation/runtime.
+Each worker also records an exclusive claim before model setup. Plan hash and protected prior artifacts
+are recorded in `reports/20260909-evaluation-validation/`.
 
-Open `reports/20260909-counterfactual-memory-live/report.html` for the memory-linked A/B audit or
-`reports/20260909-counterfactual-direct-live/report.html` for the direct source. Both have an English
-timeline, linked diagram, raw contexts/exchanges, changed paths, and explicit unknown handling.
-Validation/protocol/runtime/source hashes are in `reports/20260909-counterfactual-validation/`.
+Native task utility, native attack-goal success, actual payload exposure and source-field attribution
+are different measurements. Partial/failed evaluations remain unknown. The native goal evaluator also
+runs on clean environments, but its raw value is not counted as injected ASR. Request/token accounting
+and pacing are separate from measured synchronous tracer time. Keep all adverse results visible.
 
-Next is gate 8: independent clean/injected labels and a frozen repeated evaluation protocol, including
-false attribution, abstention, ambiguous sources, ablations, costs, and negative results. The auditor
-can be wrong or influenced by its input. Its confidence is not calibrated. Neutralization preserves
-some structural and derived information; multi-origin carriers abstain. Keep these limitations visible
-when designing evaluation. No CTTA, parameter changes, or action blocking is authorized in this scope.
+Each trial retains the English event timeline and linked diagram. The aggregate report is
+`reports/20260909-evaluation-pilot-v1/index.html`. The human review packet is
+`reports/20260909-evaluation-review-v1/`; keep its private `review-key.json` out of any reviewer handout.
+The page hides model scores, conditions and outcomes, but exact text can reveal condition, so blinding
+is partial. Labels remain blank until a human completes them. Validate a downloaded label JSON with
+`dojo-lab review-labels --packet <packet-directory> --labels <downloaded-json>`.
+The validator checks provenance and attestations, not actual reviewer identity. Do not invent labels.
 
-Branch remains `codex/agentdojo-lab`; local work is committed at the end of the session, with no push.
-Ignored `runs/`, `reports/`, and `.model-cache/` require separate transfer to continue on another machine.
+Next: obtain independent source-content correspondence judgments, a second review and adjudication,
+then freeze those labels before computing attribution precision/recall/F1. Broader cases, passive/Canary
+primary comparisons, other ablations and causal validation remain open. Exact/LCS comparisons on a
+saved marked trace are computational comparisons, not a passive primary arm or measured security benefit.
+
+One disclosed boundary remains: native no-final-text query restarts retain their simulated environment,
+while the current DCPG adapter retires active memory bindings at the episode boundary. Multi-attempt
+ancestry must be marked unavailable, not negative or proof of environment reset. The general tracer was
+not silently changed during the frozen pilot. The earlier gate 7 A/B auditor remains a deferred,
+no-tools prediction; it does not execute a native counterfactual agent.
+
+No CTTA, weight updates, action blocking, or real-account operations are included. Branch remains
+`codex/agentdojo-lab`; local changes are committed at the end of the session, with no push. Ignored
+`runs/`, `reports/`, and `.model-cache/` need separate transfer to continue on another machine.
 The material below is historical and does not supersede this update.
 
 ---

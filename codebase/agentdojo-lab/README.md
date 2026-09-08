@@ -1,11 +1,40 @@
 # AgentDojo Lab
 
-Current workflow (2026-09-09): isolated counterfactual auditing of recorded proposal prefixes.
-Seven of eight engineering acceptance gates are complete. Read [COUNTERFACTUAL.md](COUNTERFACTUAL.md),
-[COUNTERFACTUAL-RESULTS.md](COUNTERFACTUAL-RESULTS.md), and [reproduction progress](REPRODUCTION_PROGRESS.json).
-Seven native controls preserve primary behavior; two preselected Groq auditor calls return valid
-judgments. These predictions do not establish maliciousness or observed causal behavior. The earlier
-real Canary pair remains a retained failure before a sink; its live sink survival is still unknown.
+Current workflow (2026-09-09): the first frozen clean/injected evaluation stratum.
+Seven of eight acceptance gates remain complete; gate 8 requires independent human review and further
+evaluation. Read [EVALUATION.md](EVALUATION.md), [EVALUATION-RESULTS.md](EVALUATION-RESULTS.md), and
+[reproduction progress](REPRODUCTION_PROGRESS.json). Native utility and attack outcomes are distinct
+from source attribution. Detector hits and auditor predictions are not independent labels.
+
+## Frozen native evaluation and human review
+
+Protocol v1 fixes workspace task 29, native delete-file-13 injection task 1, one injection vector,
+and five clean/injected repetitions with Canary enabled. It has no passive primary arm. Every slot has
+a four-request primary cap and 600-second deadline; no started slot can be retried. An eligible
+deferred auditor can make at most one separate request. Failed evaluations remain unknown.
+
+The first command below only freezes a new plan. The second consumes the configured Groq quota:
+
+```bash
+.venv/bin/dojo-lab evaluate --output runs/my-evaluation --plan-only
+.venv/bin/dojo-lab evaluate --resume runs/my-evaluation
+.venv/bin/dojo-lab evaluation-report --batch runs/my-evaluation --output reports/my-evaluation
+.venv/bin/dojo-lab review-packet --batch runs/my-evaluation --output reports/my-review
+```
+
+Open the generated review page before reading detector results if you will provide independent labels.
+It shows the recorded request prefix, selected sink field, and competing sources. Enter human judgments
+and download the label JSON; ambiguous and unjudgeable choices remain available. The private
+`review-key.json` maps blinded IDs to source artifacts and should not be included in a reviewer handout.
+The blinding is partial because the exact source text can reveal an injection.
+
+```bash
+.venv/bin/dojo-lab review-labels --packet reports/my-review --labels /path/to/downloaded-labels.json
+```
+
+This validates labels and authorship/independence attestations; it cannot verify reviewer identity.
+The blank template supplies no accuracy result. Further independent review, adjudication, source-field
+scoring, passive/Canary primary comparisons, and broader scenarios remain required.
 
 ## Audit a saved sink with isolated counterfactual contexts
 

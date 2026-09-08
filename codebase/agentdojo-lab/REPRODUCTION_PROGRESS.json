@@ -119,10 +119,24 @@
     {
       "id": "independent_evaluation",
       "title": "Independent clean/injected evaluation",
-      "status": "pending",
+      "status": "in_progress",
       "acceptance": "Freeze labels/protocol, run repeated clean and injected trials, report valid attribution metrics, abstention/ambiguity, ablations, timing, costs, and negative results.",
-      "evidence": [],
-      "limits": "Existing assistant drafts are not independent ground truth. Adverse results can complete this gate; completion does not imply security benefit."
+      "evidence": [
+        "EVALUATION.md",
+        "EVALUATION-RESULTS.md",
+        "configs/evaluation_pilot_v1.json",
+        "tests/test_evaluation_runner.py",
+        "tests/test_evaluation_batch.py",
+        "tests/test_evaluation_freeze.py",
+        "tests/test_evaluation_analysis.py",
+        "tests/test_evaluation_review.py",
+        "runs/20260909-evaluation-pilot-v1/plan.json",
+        "reports/20260909-evaluation-pilot-v1/evaluation-summary.json",
+        "reports/20260909-evaluation-review-v1/labels-template.json",
+        "reports/20260909-evaluation-validation/quality.json"
+      ],
+      "limits": "First native case only, five repetitions per clean/injected condition, both Canary-enabled. Independent human labels, second review/adjudication, broader strata, passive primary comparisons and causal validation remain pending. Observed outcomes and captured-prefix candidate counts do not establish malicious propagation or attribution accuracy. No replacement attempts.",
+      "acceptance_interpretation": "Pilot infrastructure and one frozen repeated stratum are progress within this gate; the gate is not accepted before independent evaluation is completed."
     }
   ],
   "efficacy": {

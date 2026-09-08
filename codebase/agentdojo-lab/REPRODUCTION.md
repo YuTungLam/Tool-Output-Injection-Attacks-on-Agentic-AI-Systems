@@ -42,8 +42,10 @@ assumption as an author-specified choice.
    separate no-tools A/B auditor, following the paper's displayed judge prompt. Seven native controls
    preserve primary behavior; two preselected Groq auditor calls return valid judgments. These are
    predictions, not observed counterfactual agent behavior. See [COUNTERFACTUAL-RESULTS.md](COUNTERFACTUAL-RESULTS.md).
-7. Evaluate clean and injected cases with independent source judgments, repeated trials, component ablations,
-   false attribution/unknown/ambiguity analysis, timing, and resource costs.
+7. In progress: a prospectively frozen native clean/injected pilot with five repetitions per condition,
+   bounded real requests, explicit failure/exposure accounting, captured-prefix exact/LCS comparisons,
+   and a blinded human review packet. Independent source judgments, adjudication and wider ablations
+   remain pending. See [EVALUATION.md](EVALUATION.md) and [EVALUATION-RESULTS.md](EVALUATION-RESULTS.md).
 
 No CTTA, model-weight updates, automatic action blocking, or real-account operations are part of this scope.
 

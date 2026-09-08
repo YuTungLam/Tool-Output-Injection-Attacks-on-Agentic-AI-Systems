@@ -69,6 +69,23 @@ def main(argv: list[str] | None = None) -> int:
     )
     causal.add_argument("--max-probes", type=int, default=8)
     causal.add_argument("--pacing-state", type=Path, help="Shared sequential auditor quota state")
+    evaluation = commands.add_parser("evaluate", help="Freeze or execute the native clean/injected pilot")
+    evaluation_location = evaluation.add_mutually_exclusive_group(required=True)
+    evaluation_location.add_argument("--output", type=Path, help="New immutable batch directory")
+    evaluation_location.add_argument("--resume", type=Path, help="Run only never-started frozen slots")
+    evaluation.add_argument("--config", type=Path)
+    evaluation.add_argument("--plan-only", action="store_true", help="Freeze inputs without model calls")
+    evaluation_report = commands.add_parser(
+        "evaluation-report", help="Summarize saved evaluation with explicit unknowns"
+    )
+    evaluation_report.add_argument("--batch", type=Path, required=True)
+    evaluation_report.add_argument("--output", type=Path, required=True)
+    review = commands.add_parser("review-packet", help="Export a blinded human source-correspondence review")
+    review.add_argument("--batch", type=Path, required=True)
+    review.add_argument("--output", type=Path, required=True)
+    labels = commands.add_parser("review-labels", help="Validate user-authored independent review labels")
+    labels.add_argument("--packet", type=Path, required=True)
+    labels.add_argument("--labels", type=Path, required=True)
     live = commands.add_parser("run", help="Run selected clean tasks against Groq")
     live.add_argument("--config", type=Path, default=ROOT / "configs" / "groq.toml")
     live.add_argument("--model", help="Override the Groq model ID")
@@ -101,6 +118,46 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "doctor":
             result = doctor()
+        elif args.command == "evaluate":
+            from agentdojo_lab.evaluation_batch import (
+                create_evaluation_plan,
+                execute_evaluation_batch,
+                read_evaluation_plan,
+            )
+
+            if args.resume is not None and args.config is not None:
+                raise ValueError("A resumed batch uses its frozen configuration")
+            batch = args.resume or create_evaluation_plan(args.output, args.config)
+            if args.plan_only:
+                plan = read_evaluation_plan(batch)
+                result = {
+                    "batch_dir": str(batch.resolve()),
+                    "planned": len(plan["schedule"]),
+                    "model_calls": 0,
+                }
+            else:
+                result = execute_evaluation_batch(batch)
+        elif args.command == "evaluation-report":
+            from agentdojo_lab.evaluation_analysis import analyze_batch
+            from agentdojo_lab.evaluation_batch import read_evaluation_plan
+
+            read_evaluation_plan(args.batch, check_implementation=False)
+            result = analyze_batch(args.batch, args.output)
+        elif args.command == "review-packet":
+            from agentdojo_lab.evaluation_batch import read_evaluation_plan
+            from agentdojo_lab.evaluation_review import export_review_packet
+
+            plan = read_evaluation_plan(args.batch, check_implementation=False)
+            runs = [
+                args.batch / "runs" / item["trial_id"]
+                for item in plan["schedule"]
+                if (args.batch / "runs" / item["trial_id"] / "provenance.jsonl").is_file()
+            ]
+            result = export_review_packet(runs, args.output)
+        elif args.command == "review-labels":
+            from agentdojo_lab.evaluation_review import validate_review_labels
+
+            result = validate_review_labels(args.packet, args.labels)
         elif args.command == "counterfactual":
             from agentdojo_lab.counterfactual_audit import GroqCounterfactualJudge, audit_run
             from agentdojo_lab.pacing import RequestPacer

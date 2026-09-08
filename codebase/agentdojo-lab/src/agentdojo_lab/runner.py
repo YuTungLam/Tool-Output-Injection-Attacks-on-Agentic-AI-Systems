@@ -1,4 +1,6 @@
-"""Run clean tasks through upstream AgentDojo, retaining its native trace format."""
+"""Run native AgentDojo tasks, retaining its trace format and clean default behavior."""
+
+from __future__ import annotations
 
 import hashlib
 import json
@@ -10,7 +12,7 @@ import tomllib
 from datetime import datetime, timezone
 from importlib.metadata import version
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 from uuid import uuid4
 
 import openai
@@ -30,6 +32,9 @@ from agentdojo_lab.observation import ObservationSession, observe_pipeline
 from agentdojo_lab.offline import make_offline_client
 from agentdojo_lab.pacing import RequestPacer
 from agentdojo_lab.recording import EventRecorder
+
+if TYPE_CHECKING:
+    from agentdojo_lab.evaluation_runner import EvaluationTrial
 
 ROOT = Path(__file__).resolve().parents[2]
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
@@ -186,7 +191,12 @@ def build_pipeline(
 
 
 def run_clean(
-    config: RunConfig, *, offline: bool = False, output: Path | None = None, pacing_state: Path | None = None
+    config: RunConfig,
+    *,
+    offline: bool = False,
+    output: Path | None = None,
+    pacing_state: Path | None = None,
+    evaluation: EvaluationTrial | None = None,
 ) -> dict:
     upstream = require_upstream()
     suites = get_suites(config.benchmark_version)
@@ -196,6 +206,10 @@ def run_clean(
     for task in config.user_tasks:
         if task not in suite.user_tasks:
             raise ValueError(f"Unknown task {task} in {config.suite}")
+    if evaluation is not None:
+        from agentdojo_lab.evaluation_runner import validate_evaluation
+
+        validate_evaluation(config, evaluation, suite)
     if offline and (
         config.suite != "workspace"
         or config.benchmark_version != "v1.2.2"
@@ -311,12 +325,30 @@ def run_clean(
         manifest["online_provenance"]["implementation_sha256"]["canary.py"] = hashlib.sha256(
             Path(__file__).with_name("canary.py").read_bytes()
         ).hexdigest()
+    if evaluation is not None:
+        manifest["evaluation"] = evaluation.model_dump()
+        manifest["attack"] = {
+            "name": "native_direct_evaluation",
+            "condition": evaluation.condition,
+            "injection_task_id": evaluation.injection_task_id,
+            "vector_id": evaluation.vector_id,
+            "injection_assigned": evaluation.condition == "injected",
+            "payload_sha256": hashlib.sha256(evaluation.payload.encode()).hexdigest(),
+        }
+        manifest["notes"][0] = "Frozen native clean/injected evaluation; both arms use canary intervention."
+        manifest["notes"].extend(
+            [
+                "The same native attack-goal evaluator is also run in clean controls; its raw boolean is not ASR.",
+                "The global primary SDK request limit spans all native suite query attempts.",
+            ]
+        )
     write_json(run_dir / "manifest.json", manifest)
     started = time.monotonic()
     llm = None
     recorder = None
     observer = None
     attribution = None
+    results = None
     summary = {"mode": mode, "real_llm": not offline, "run_dir": str(run_dir), "status": "running"}
     try:
         if config.record_events:
@@ -351,7 +383,14 @@ def run_clean(
         with client:
             if observer is not None:
                 observer.attach(client)
-            llm = GroqLLM(
+            llm_type = GroqLLM
+            llm_extra = {}
+            if evaluation is not None:
+                from agentdojo_lab.evaluation_runner import EvaluationGroqLLM
+
+                llm_type = EvaluationGroqLLM
+                llm_extra["request_limit"] = evaluation.request_limit
+            llm = llm_type(
                 client,
                 config.model,
                 temperature=config.temperature,
@@ -359,20 +398,28 @@ def run_clean(
                 reasoning_effort=config.reasoning_effort,
                 observer=observer,
                 pacer=pacer,
+                **llm_extra,
             )
             if offline:
                 llm.name = "offline_fixture"
             pipeline = build_pipeline(llm, config, observer)
             native_dir = run_dir / "native"
             with OutputLogger(str(native_dir)):
-                results = benchmark_suite_without_injections(
-                    pipeline,
-                    suite,
-                    logdir=native_dir,
-                    force_rerun=False,
-                    user_tasks=config.user_tasks,
-                    benchmark_version=config.benchmark_version,
-                )
+                if evaluation is not None:
+                    from agentdojo_lab.evaluation_runner import run_native_evaluation
+
+                    results = run_native_evaluation(
+                        pipeline, suite, suite.user_tasks[evaluation.user_task_id], evaluation, native_dir
+                    )
+                else:
+                    results = benchmark_suite_without_injections(
+                        pipeline,
+                        suite,
+                        logdir=native_dir,
+                        force_rerun=False,
+                        user_tasks=config.user_tasks,
+                        benchmark_version=config.benchmark_version,
+                    )
         tasks = []
         for path in sorted(native_dir.rglob("*.json")):
             trace = json.loads(path.read_text())
@@ -381,6 +428,11 @@ def run_clean(
             tool_results = [m for m in messages if m["role"] == "tool"]
             pending = bool(messages and messages[-1].get("tool_calls"))
             task_status = "error" if trace.get("error") else "incomplete" if pending else "evaluated"
+            if evaluation is not None:
+                from agentdojo_lab.evaluation_runner import has_final_text
+
+                if task_status == "evaluated" and not has_final_text(messages):
+                    task_status = "incomplete"
             tasks.append(
                 {
                     "task": trace["user_task_id"],
@@ -411,6 +463,9 @@ def run_clean(
                 sum(bool(task["utility"]) for task in evaluated) / len(evaluated) if evaluated else None
             ),
         )
+        if evaluation is not None and not results["evaluation_completed"]:
+            summary["task_success_count"] = None
+            summary["task_success_rate"] = None
     except BaseException as exc:
         # Persist a useful failure record without serializing clients or credentials.
         detail = str(exc).replace(key, "[REDACTED]") if key else str(exc)
@@ -466,6 +521,12 @@ def run_clean(
                 if config.online_provenance
                 else {"enabled": False}
             )
+        if evaluation is not None:
+            from agentdojo_lab.evaluation_runner import build_evaluation_summary, payload_exposure_audit
+
+            exposure = payload_exposure_audit(run_dir / "events.jsonl", evaluation)
+            write_json(run_dir / "payload-exposure.json", exposure)
+            summary["evaluation"] = build_evaluation_summary(evaluation, summary, results, exposure)
         write_json(run_dir / "summary.json", summary)
         # Reporting happens after execution and recording are complete. Its
         # failures must not replace an agent error or change evaluator results.
