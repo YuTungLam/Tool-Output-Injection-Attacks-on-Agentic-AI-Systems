@@ -117,7 +117,7 @@ def test_partial_events_preserve_saved_data_and_report_gaps(tmp_path):
     payload = collect_run_record(run)
     assert payload["events"] == [event]
     assert payload["audit"]["valid"] is False
-    assert any("第 2 行" in warning for warning in payload["warnings"])
+    assert any("line 2" in warning for warning in payload["warnings"])
 
 
 def test_same_provider_id_across_episodes_remains_separate(tmp_path):
@@ -231,9 +231,9 @@ def test_viewer_pure_helpers_accept_damaged_event_fields(completed_run):
 const assert = require('node:assert/strict');
 assert.deepEqual(asArray({}), []);
 assert.equal(category({event_type: 7}), 'run');
-assert.equal(eventLabel({event_type: 7}), '未知事件');
+assert.equal(eventLabel({event_type: 7}), 'Unknown event');
 assert.equal(eventLabel({event_type: '__proto__'}), '__proto__');
-assert.equal(eventLabel({event_type: 'MODEL_ERROR'}), '模型调用异常');
+assert.equal(eventLabel({event_type: 'MODEL_ERROR'}), 'Model call error');
 """
     # Only pure helper expressions execute; no browser or DOM traversal is used.
     prelude = 'const document={getElementById:()=>({textContent:"{}"})};\n'

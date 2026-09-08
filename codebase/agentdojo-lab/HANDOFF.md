@@ -2,6 +2,8 @@
 
 最新补记：2026-09-08（Pacific/Auckland）。下方 2026-09-07 的详细交接保留为历史快照，当前状态以本补记、[PROVENANCE.md](PROVENANCE.md) 和 [SEMANTIC.md](SEMANTIC.md) 为准。
 
+最新用户约定：按论文方法独立重实现，不等待作者代码，也不以逐值复制原论文表格为前提。复现失败需区分实现问题、设定差异和方法局限，再验证是否构成 gap。所有生成 HTML、diagram、JSONL 说明与助手标注使用英文，对话可继续中文。详见 [REPRODUCTION.md](REPRODUCTION.md)。
+
 已新增 `ProvenanceTracker.consume(event)`、参数级精确匹配、NeuroTaint-style Tier 2 LCS、空白来源核查包和本地 HTML 证据报告。已有 10 条真实轨迹按历史前缀重放得到 21 次提议、54 个叶参数：27 个单来源候选、4 个多来源候选、23 个没有精确证据。没有增加 Groq 调用。
 
 随后已新增可选 MiniLM Tier 3 整段与 Tier 4 分块语义组件，固定 revision/文件哈希/分块假设/截断范围；命令与最新结果见 SEMANTIC.md。8 个教学案例已整理为助手开发标注草稿，明确非盲、非独立，仍需人工核查。

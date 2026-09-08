@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import csv
 import hashlib
 import json
@@ -252,6 +253,41 @@ def collect_pilot(batch: Path) -> dict:
     }
 
 
+def english_pilot_view(data: dict) -> dict:
+    """Translate only known descriptive metadata in a copy of a frozen pilot.
+
+    Measurements, prompts, event records and source hashes remain unchanged.
+    The embedded payload explicitly identifies its translated presentation.
+    """
+    mapping = json.loads(files("agentdojo_lab").joinpath("localization/pilot_metadata_en.json").read_text())
+    view = copy.deepcopy(data)
+    translated = []
+    for prefix, rows in (
+        ("/plan/tasks", view["plan"]["tasks"]),
+        ("/rows", view["rows"]),
+        ("/coverage", view["coverage"]),
+    ):
+        for index, row in enumerate(rows):
+            for key in ("label", "area", "rationale"):
+                if isinstance(row.get(key), str) and row[key] in mapping:
+                    row[key] = mapping[row[key]]
+                    translated.append(f"{prefix}/{index}/{key}")
+    view["presentation"] = {
+        "language": "en",
+        "translated_fields": translated,
+        "source_records_changed": False,
+        "note": "English rendering of descriptive task metadata. Source hashes refer to the original files.",
+    }
+    return view
+
+
+def render_pilot_html(data: dict) -> str:
+    template = files("agentdojo_lab").joinpath("templates/pilot_report.html").read_text()
+    return template.replace("@@NONCE@@", secrets.token_urlsafe(24)).replace(
+        "@@RECORD@@", _escaped_json(english_pilot_view(data))
+    )
+
+
 def export_pilot_report(batch: Path) -> dict:
     """Overwrite derived reports only; never change plan, execution or raw runs."""
     batch = batch.expanduser().resolve()
@@ -277,8 +313,7 @@ def export_pilot_report(batch: Path) -> dict:
                     for key, value in row.items()
                 }
             )
-    template = files("agentdojo_lab").joinpath("templates/pilot_report.html").read_text()
-    html = template.replace("@@NONCE@@", secrets.token_urlsafe(24)).replace("@@RECORD@@", _escaped_json(data))
+    html = render_pilot_html(data)
     temporary = batch / "index.html.tmp"
     temporary.write_text(html, encoding="utf-8")
     temporary.replace(batch / "index.html")

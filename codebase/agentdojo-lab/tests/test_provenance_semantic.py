@@ -341,10 +341,10 @@ def test_html_discloses_target_truncation_and_highlights_canonical_text_offsets(
     page = MarkedText()
     page.feed((output / "index.html").read_text())
     text = "".join(page.text)
-    assert "参数 tokens 256/700" in text
-    assert f"参数编码范围 [{visible_start}, {visible_end}]" in text
-    assert "参数已截断，只比较高亮窗口" in text
-    assert "来源 tokens 5/5" in text
+    assert "Argument tokens 256/700" in text
+    assert f"Encoded argument span [{visible_start}, {visible_end}]" in text
+    assert "Argument truncated; only the highlighted window was compared" in text
+    assert "Source tokens 5/5" in text
     # Quotes, Unicode and a newline shift JSON-display offsets. The marked span
     # must instead index the exact string given to the semantic matcher.
     assert long_target[visible_start:visible_end] in page.marks
@@ -367,8 +367,8 @@ def test_html_surfaces_encoder_failures_in_header_instead_of_only_zero_candidate
     header = report_fixtures.PageStructure()
     header.feed(html.split("</header>", 1)[0])
     text = "".join(header.text)
-    assert "已评分 0" in text
-    assert f"编码错误 {len(matcher.calls)}" in text
-    assert "超出预算 0" in text and "不适用 0" in text
-    assert "未评分不能视为负例" in text
+    assert "scored 0" in text
+    assert f"Encoder errors {len(matcher.calls)}" in text
+    assert "Budget exceeded 0" in text and "Not applicable 0" in text
+    assert "Unscored comparisons are not negative examples" in text
     assert analysis["counts"]["accuracy"] is None

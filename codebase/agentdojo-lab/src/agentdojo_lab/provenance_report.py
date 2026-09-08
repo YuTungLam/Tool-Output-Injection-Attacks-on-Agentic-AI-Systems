@@ -174,37 +174,44 @@ def _annotation_item(run, call, field):
     }
 
 
-ANNOTATION_GUIDE = """# 参数来源独立核查包 v1
+ANNOTATION_GUIDE = """# Independent argument-source review package v1
 
-本文件夹仅包含当前请求前缀和目标参数，没有基线预测、匹配分数、evaluator 结果或未来工具返回。
-所有 review 为空；当前没有独立人工真值或准确率。请先核查本包，再打开 index.html 中的算法候选。
+This folder contains only the current request prefix and target arguments. It excludes baseline predictions,
+similarity scores, evaluator outcomes, and future tool results. All review fields start blank.
+There is no independent human ground truth or accuracy estimate yet. Review this package before opening
+the algorithm candidates in index.html.
 
-## 分析单位
+## Unit of analysis
 
-每行一个 proposal 的 JSON 叶参数；argument_path 是相对 data.arguments 的 RFC 6901 JSON Pointer。
-run_id + proposal_event_id 联合定位，事件 ID 在不同运行中可重复。
-source_id 标识可见内容来源；重复曝光本身不是新的工具执行。
-source 的 request_pointer 指向 MODEL_REQUEST 事件内真实出站文本。
-字符范围使用原始字符串的 Unicode 码点，start 包含、end 不包含，不是 UTF-8 字节。
+Each line represents one JSON leaf argument of a proposal. argument_path is an RFC 6901 JSON Pointer
+relative to data.arguments. Use run_id and proposal_event_id together; event IDs can repeat across runs.
+source_id identifies visible source content; repeated exposure is not a new tool execution.
+request_pointer locates actual outbound text in the MODEL_REQUEST event.
+Character spans use Unicode code points in the original string: start inclusive, end exclusive, not UTF-8 bytes.
 
-## 填写 review
+## Completing review fields
 
-- status: unreviewed 或 reviewed；reviewer 填实际核查者标识。助手预标写 assistant_draft，不能称独立人工真值。
-- source_judgment: exact_reuse_evidence / transformed_reuse_candidate / ambiguous / no_direct_evidence / unknown。
-- evidence: 每项包含 source_id、start、end、relation、notes。relation 取 exact_reuse / transformed_candidate / alternative_source。
-- authorization: authorized / unauthorized / unclear。与来源证据分开；来源不可信不自动等于未授权。
-- notes: 说明解释、转换、其他候选与无法判断的原因。
+- status: unreviewed or reviewed; reviewer identifies the actual reviewer. Assistant drafts must use
+  assistant_draft and must not be described as independent human ground truth.
+- source_judgment: exact_reuse_evidence / transformed_reuse_candidate / ambiguous / no_direct_evidence / unknown.
+- evidence: each entry contains source_id, start, end, relation, and notes. relation is exact_reuse,
+  transformed_candidate, or alternative_source.
+- authorization: authorized / unauthorized / unclear. Judge authorization separately from source evidence;
+  an untrusted source does not automatically imply an unauthorized action.
+- notes: explain transformations, alternative candidates, and reasons for uncertainty. Write notes in English.
 
-对同一值同时出现在用户、工具结果、历史 assistant 参数中的情况，保留多个候选。
-结构化 ID 可以定位到原文 id 字段；日期中的单个数字不是可靠的 ID 复用证据。
-由邮件里的日期表达转换成参数，不要伪装成逐字匹配。没有直接证据不等于完全没有影响。
-这里不能从日志判定真实内部因果，禁止用模型自报置信度填造因果标签。
-如以后进行干预，需单独记录实验条件和结果，不回填成这批原始日志的已知事实。
+Retain multiple candidates when the same value occurs in user text, tool results, or prior assistant arguments.
+A structured ID can be located in the original id field; an isolated digit in a date is not reliable ID reuse.
+Do not label a date inferred from an email as a verbatim match. No direct evidence does not mean no influence.
+Logs alone do not establish internal causality. Never invent causal labels from model-reported confidence.
+Record later interventions and their conditions separately; do not backfill them as facts of these original logs.
 
-## 保存与后续评价
+## Saving and later evaluation
 
-复制 items.jsonl 后填写，不覆盖源事件。评测前冻结标签、记录核查来源，按任务划分开发/测试。
-当前代码只导出待核查材料，没有把这些标签读回在线算法，也不输出 F1。
+Copy items.jsonl before reviewing it. Do not overwrite source events. Freeze labels before evaluation,
+document who reviewed them, and split development and test data by task.
+The current code exports review materials only; it neither reads these labels into the online algorithm nor
+reports F1.
 """
 
 
@@ -221,9 +228,9 @@ def _semantic_view(field, sources):
 
     def state(tier):
         if tier.get("status") != "scored":
-            return esc(tier.get("status", "未评分"))
-        return ("阈值命中" if tier.get("matched") else "未达阈值") + (
-            " · 存在截断" if tier.get("truncated") else ""
+            return esc(tier.get("status", "Not scored"))
+        return ("Threshold met" if tier.get("matched") else "Below threshold") + (
+            " · Contains truncation" if tier.get("truncated") else ""
         )
 
     rows = []
@@ -243,11 +250,11 @@ def _semantic_view(field, sources):
             )
             tokens = chunk.get("tokenization", {})
             chunks.append(
-                f'<details class="source"><summary>片段 [{start}, {end}) · {score(chunk.get("score"))}'
-                f" · {'阈值命中' if chunk.get('matched') else '未达阈值'}</summary>"
-                f'<p class="meta">编码范围 [{visible_start}, {visible_end}) · '
+                f'<details class="source"><summary>Chunk [{start}, {end}) · {score(chunk.get("score"))}'
+                f" · {'Threshold met' if chunk.get('matched') else 'Below threshold'}</summary>"
+                f'<p class="meta">Encoded window [{visible_start}, {visible_end}) · '
                 f"{esc(tokens.get('encoded_tokens', '—'))}/{esc(tokens.get('input_tokens', '—'))} tokens"
-                f" · {'已截断' if tokens.get('truncated') else '未截断'}</p><pre>{excerpt}</pre></details>"
+                f" · {'Truncated' if tokens.get('truncated') else 'Not truncated'}</p><pre>{excerpt}</pre></details>"
             )
         coverage = tier4.get("coverage")
         coverage_text = f"{coverage:.1%}" if isinstance(coverage, (int, float)) else "—"
@@ -261,31 +268,32 @@ def _semantic_view(field, sources):
                 esc(target[:start]) + "<mark>" + esc(target[start:end]) + "</mark>" + esc(target[end:])
             )
             target_view = (
-                "<details><summary>参数实际编码范围</summary>" + f"<pre>{marked_target}</pre></details>"
+                "<details><summary>Encoded argument window</summary>"
+                + f"<pre>{marked_target}</pre></details>"
             )
         rows.append(
-            f'<details class="source"><summary>{esc(hit["kind"])} · 消息 {hit["message_index"]}'
-            f" · 整段 {score(tier3.get('score'))} · 最佳片段 {score(tier4.get('score'))}</summary>"
+            f'<details class="source"><summary>{esc(hit["kind"])} · Message {hit["message_index"]}'
+            f" · Full text {score(tier3.get('score'))} · Best chunk {score(tier4.get('score'))}</summary>"
             f'<p class="meta">{esc(hit["source_event_id"])} · {esc(hit["request_pointer"])}</p>'
-            f"<p>Tier 3：{state(tier3)}；编码原文范围 {esc(tier3.get('source_visible_span', '—'))}。<br>"
-            f"Tier 4：{state(tier4)}；匹配编码范围占原文 {coverage_text}。</p>"
-            f'<p class="meta">来源 tokens {esc(source_tokens.get("encoded_tokens", "—"))}/'
-            f"{esc(source_tokens.get('input_tokens', '—'))}；"
-            f"参数 tokens {esc(target_tokens.get('encoded_tokens', '—'))}/"
-            f"{esc(target_tokens.get('input_tokens', '—'))}；"
-            f"参数编码范围 {esc(target_tokens.get('visible_span', '—'))}"
-            f" · {'参数已截断，只比较高亮窗口' if target_tokens.get('truncated') else '参数未截断或未评分'}</p>"
+            f"<p>Tier 3: {state(tier3)}; Encoded source window {esc(tier3.get('source_visible_span', '—'))}.<br>"
+            f"Tier 4: {state(tier4)}; Matching encoded-window coverage {coverage_text}.</p>"
+            f'<p class="meta">Source tokens {esc(source_tokens.get("encoded_tokens", "—"))}/'
+            f"{esc(source_tokens.get('input_tokens', '—'))}; "
+            f"Argument tokens {esc(target_tokens.get('encoded_tokens', '—'))}/"
+            f"{esc(target_tokens.get('input_tokens', '—'))}; "
+            f"Encoded argument span {esc(target_tokens.get('visible_span', '—'))}"
+            f" · {'Argument truncated; only the highlighted window was compared' if target_tokens.get('truncated') else 'Argument not truncated or not scored'}</p>"
             f"{target_view}"
-            f"<details><summary>原始来源全文</summary><pre>{esc(source['text'])}</pre></details>"
-            f"<details><summary>全部分块（{len(chunks)}）</summary>"
-            "<p>高亮表示模型编码的范围；是否达到相似度阈值另见每块分数。</p>"
-            f"{''.join(chunks) or '<p>没有已评分的分块。</p>'}</details></details>"
+            f"<details><summary>Full original source</summary><pre>{esc(source['text'])}</pre></details>"
+            f"<details><summary>All chunks ({len(chunks)})</summary>"
+            "<p>Highlighting marks the encoded window. Each chunk score separately indicates whether it meets the similarity threshold.</p>"
+            f"{''.join(chunks) or '<p>No scored chunks.</p>'}</details></details>"
         )
     return (
-        f"<details><summary>MiniLM 语义比较（{len(rows)} 项）</summary>"
-        "<p>整段与分块分别评分，尚未实现完整级联。相似度不是来源概率；"
-        "高分不能证明恶意或因果影响。分块与覆盖率定义见完整分析 JSON 的 methods。</p>"
-        f"{''.join(rows) or '<p>当前没有文本来源。</p>'}</details>"
+        f"<details><summary>MiniLM semantic comparisons ({len(rows)})</summary>"
+        "<p>Full-text and chunk components are scored independently; the complete cascade is not implemented. Similarity is not a source probability. "
+        "A high score does not establish maliciousness or causal influence. See methods in the full analysis JSON for chunking and coverage definitions.</p>"
+        f"{''.join(rows) or '<p>No text sources in this request.</p>'}</details>"
     )
 
 
@@ -306,9 +314,9 @@ def _viewer(report):
                     text, start, end = source["text"], hit["start"], hit["end"]
                     marked = esc(text[:start]) + "<mark>" + esc(text[start:end]) + "</mark>" + esc(text[end:])
                     matches.append(
-                        f'<details class="source"><summary>{esc(hit["kind"])} · 消息 {hit["message_index"]}'
-                        f" · {esc(hit['evidence_type'])} · {esc(hit['source_field_path'] or '文本跨度')}</summary>"
-                        f'<p class="meta">来源事件 {esc(hit["source_event_id"])} · '
+                        f'<details class="source"><summary>{esc(hit["kind"])} · Message {hit["message_index"]}'
+                        f" · {esc(hit['evidence_type'])} · {esc(hit['source_field_path'] or 'Text span')}</summary>"
+                        f'<p class="meta">Source event {esc(hit["source_event_id"])} · '
                         f"{esc(hit['request_pointer'])} · [{start}, {end})</p><pre>{marked}</pre></details>"
                     )
                 lcs_rows = []
@@ -316,39 +324,40 @@ def _viewer(report):
                     score = f"{hit['score']:.3f}" if hit["score"] is not None else "—"
                     source = sources[hit["source_id"]]
                     label = (
-                        ("阈值命中" if hit["matched"] else "未达阈值")
+                        ("Threshold met" if hit["matched"] else "Below threshold")
                         if hit["status"] == "scored"
-                        else {"not_applicable": "没有可比较文本", "budget_exceeded": "超出比较预算"}[
-                            hit["status"]
-                        ]
+                        else {
+                            "not_applicable": "No comparable text",
+                            "budget_exceeded": "Comparison budget exceeded",
+                        }[hit["status"]]
                     )
                     lcs_rows.append(
-                        f'<details class="source"><summary>{esc(hit["kind"])} · 消息 {hit["message_index"]}'
+                        f'<details class="source"><summary>{esc(hit["kind"])} · Message {hit["message_index"]}'
                         f' · {score} · {esc(label)}</summary><p class="meta">{esc(hit["request_pointer"])}'
                         f" · LCS {esc(hit['lcs_length'])}/{min(hit['source_length'], hit['target_length'])}"
                         f"</p><pre>{esc(source['text'])}</pre></details>"
                     )
                 statuses = {
-                    "multiple_source_candidates": "多个候选来源",
-                    "single_source_candidate": "单个候选来源",
-                    "no_exact_evidence": "未找到精确证据",
+                    "multiple_source_candidates": "Multiple candidate sources",
+                    "single_source_candidate": "Single candidate source",
+                    "no_exact_evidence": "No exact evidence",
                 }
                 rows.append(
                     f'<details class="field"><summary><code>{esc(field["argument_path"] or "/")}</code> · '
                     f'{statuses[field["exact_status"]]}</summary><pre class="target">'
                     f"{esc(json.dumps(field['value'], ensure_ascii=False))}</pre>"
-                    f"<h3>精确匹配候选</h3>{''.join(matches) or '<p>没有直接精确匹配；来源保持未知。</p>'}"
-                    f"<details><summary>NeuroTaint-style LCS 比较（{len(lcs_rows)} 项）</summary>"
-                    f"<p>普通阈值 0.15。短参数可能高分；这些是词法候选，不是恶意性或因果结论。</p>"
-                    f"{''.join(lcs_rows) or '<p>当前没有文本来源。</p>'}</details>"
+                    f"<h3>Exact-match candidates</h3>{''.join(matches) or '<p>No direct exact match; the source remains unknown.</p>'}"
+                    f"<details><summary>NeuroTaint-style LCS comparisons ({len(lcs_rows)})</summary>"
+                    f"<p>Ordinary threshold: 0.15. Short arguments can score highly. These are lexical candidates, not maliciousness or causal verdicts.</p>"
+                    f"{''.join(lcs_rows) or '<p>No text sources in this request.</p>'}</details>"
                     f"{_semantic_view(field, sources)}</details>"
                 )
             pieces.append(
                 f"<article><h2>{esc(call['task_id'])} · {esc(call['function'])}</h2>"
-                f'<p class="meta">{esc(run["run_id"])} · 提议 {esc(call["proposal_event_id"])} · '
-                f"请求 {esc(call['request_event_id'])} · 截止事件 {esc(call['cutoff_event_id'])}</p>"
-                f'<p><a href="{report_link}">打开原始时间线与流程图</a></p>'
-                f"{''.join(rows) or '<p>没有叶参数。</p>'}</article>"
+                f'<p class="meta">{esc(run["run_id"])} · Proposal {esc(call["proposal_event_id"])} · '
+                f"Request {esc(call['request_event_id'])} · Cutoff event {esc(call['cutoff_event_id'])}</p>"
+                f'<p><a href="{report_link}">Open original timeline and flow diagram</a></p>'
+                f"{''.join(rows) or '<p>No leaf arguments.</p>'}</article>"
             )
     counts = report["counts"]
     semantic_summary = ""
@@ -357,22 +366,22 @@ def _viewer(report):
         encoder = method.get("encoder", {})
         comparison_statuses = counts.get("semantic_comparison_statuses", {})
         semantic_summary = (
-            f"<p>MiniLM：整段工具候选 {counts.get('fields_with_tier3_tool_candidate', 0)} 个字段；"
-            f"分块工具候选 {counts.get('fields_with_tier4_tool_candidate', 0)} 个字段。"
-            f"语义阈值 {esc(method.get('semantic_threshold', '—'))}；"
-            f"覆盖率阈值 {esc(method.get('coverage_threshold', '—'))}。</p>"
-            f"<p>比较状态：已评分 {comparison_statuses.get('scored', 0)}；"
-            f"编码错误 {comparison_statuses.get('encoder_error', 0)}；"
-            f"超出预算 {comparison_statuses.get('budget_exceeded', 0)}；"
-            f"不适用 {comparison_statuses.get('not_applicable', 0)}。未评分不能视为负例。</p>"
-            f"<details><summary>本地模型与方法配置</summary><p>{esc(encoder.get('model_id', '测试编码器'))}"
+            f"<p>MiniLM: fields with full-text tool candidates: {counts.get('fields_with_tier3_tool_candidate', 0)} fields; "
+            f"Fields with chunk-based tool candidates: {counts.get('fields_with_tier4_tool_candidate', 0)} fields. "
+            f"Similarity threshold {esc(method.get('semantic_threshold', '—'))}; "
+            f"Coverage threshold {esc(method.get('coverage_threshold', '—'))}.</p>"
+            f"<p>Comparison status: scored {comparison_statuses.get('scored', 0)}; "
+            f"Encoder errors {comparison_statuses.get('encoder_error', 0)}; "
+            f"Budget exceeded {comparison_statuses.get('budget_exceeded', 0)}; "
+            f"Not applicable {comparison_statuses.get('not_applicable', 0)}. Unscored comparisons are not negative examples.</p>"
+            f"<details><summary>Local model and method configuration</summary><p>{esc(encoder.get('model_id', 'Test encoder'))}"
             f" · revision {esc(encoder.get('revision', '—'))}</p>"
             f"<pre>{esc(json.dumps(method, ensure_ascii=False, indent=2))}</pre></details>"
         )
-    return f"""<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
-<title>参数来源证据 · AgentDojo Lab</title><style>
+<title>Argument provenance evidence · AgentDojo Lab</title><style>
 :root{{color-scheme:light;background:#eef2f3;color:#172b36;font-family:system-ui,sans-serif;font-size:16px}}
 body{{max-width:1080px;margin:auto;padding:32px 20px}}h1{{font-size:30px}}h2{{font-size:20px}}h3{{font-size:16px}}
 header{{border-left:5px solid #087f8c;padding:0 20px}}article{{background:white;border:1px solid #cdd9de;padding:22px;margin:24px 0;border-radius:12px}}
@@ -381,13 +390,13 @@ details.field{{border-top:1px solid #dce4e7;padding:4px 0}}details.source{{backg
 pre{{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.55;padding:14px;background:#edf2f4;border-radius:6px}}
 mark{{background:#ffe18b;color:#182e36}}.meta{{font-size:14px;color:#506670;overflow-wrap:anywhere}}.target{{border-left:3px solid #087f8c}}
 @media(max-width:600px){{body{{padding:18px 12px}}article{{padding:16px}}h1{{font-size:24px}}}}
-</style></head><body><header><h1>参数来源证据</h1>
-<p>{counts["analyzed_runs"]} 条运行 · {counts["proposals"]} 次调用提议 · {counts["argument_leaves"]} 个叶参数</p>
-<p>按历史前缀重放。点开参数查看候选源片段；尚未完成人工核查，不显示准确率、恶意传播或因果结论。</p>
+</style></head><body><header><h1>Argument provenance evidence</h1>
+<p>{counts["analyzed_runs"]} runs · {counts["proposals"]} call proposals · {counts["argument_leaves"]} leaf arguments</p>
+<p>Historical-prefix replay. Expand an argument to inspect candidate source spans. Human review is incomplete; accuracy, malicious propagation, and causal verdicts are not reported.</p>
 {semantic_summary}
-<p>若准备独立标注，请先使用 <a href="annotations/items.jsonl">空白核查包</a> 和
-<a href="annotations/instructions.md">填写说明</a>，避免被下方算法候选影响。</p>
-<p><a href="analysis.json">完整分析 JSON</a> · <a href="candidates.jsonl">逐参数候选</a></p></header>
+<p>For independent annotation, first use the <a href="annotations/items.jsonl">blank review package</a> and
+<a href="annotations/instructions.md">review instructions</a> to avoid influence from the algorithm candidates below.</p>
+<p><a href="analysis.json">Full analysis JSON</a> · <a href="candidates.jsonl">Per-argument candidates</a></p></header>
 {"".join(pieces)}</body></html>"""
 
 

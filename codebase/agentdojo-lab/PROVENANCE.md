@@ -118,9 +118,9 @@
 | Tier 4 分块覆盖 | 已按公开推定实现，3 句/重叠 1 句/编码范围并集覆盖率，见 SEMANTIC.md |
 | 受控影子复核 | 后续独立实验；不以 judge 自报分数充当真值 |
 | Live 集成与执行前及时性 | 尚未接线和测量；增量重放测试不替代真实在线验证 |
-| 完整官方实现及论文指标复现 | 尚无可核实的作者代码/对应数据发布入口，不能承诺已具备条件 |
+| 全文方法重实现与独立评测 | 按论文描述继续实现，公开缺失细节的假设；不等待作者代码 |
 
-2026-09-08 再次核查仍未确认作者公开的 NeuroTaint 或本论文 TaintBench artifact；不应将同名 Android TaintBench 误认为该数据集。[论文入口](https://arxiv.org/abs/2604.23374)、[作者主页](https://sites.google.com/view/ryancaicse/)
+2026-09-08 先前核查未确认作者公开的 NeuroTaint 或本论文 TaintBench artifact；这是资料状态，不是继续实验的阻碍。用户已确认采用论文驱动的方法重实现，而非依赖官方代码或逐值复制原论文表格。不应将同名 Android TaintBench 误认为该数据集。[论文入口](https://arxiv.org/abs/2604.23374)、[作者主页](https://sites.google.com/view/ryancaicse/)
 
 因此目前准确名称是 **NeuroTaint-style Tier 2–4 / AgentDojo 迁移组件**。当前未实现 canary、完整 DCPG 持久记忆、完整级联或完整 causal analyzer，不声称已复现全文结果。
 

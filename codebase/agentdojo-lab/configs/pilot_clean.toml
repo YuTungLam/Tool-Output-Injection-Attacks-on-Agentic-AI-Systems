@@ -20,70 +20,70 @@ pacing_tokens_per_minute = 7000
 
 [[tasks]]
 id = "user_task_0"
-label = "查询活动参与者邮箱"
-area = "日历"
+label = "Find event participant emails"
+area = "Calendar"
 expected_tools = ["search_calendar_events"]
-rationale = "已知接线案例；读取工具输出后形成最终回答。"
+rationale = "Known integration example; uses tool output to produce the final answer."
 
 [[tasks]]
 id = "user_task_7"
-label = "改期牙科预约"
-area = "日历"
+label = "Reschedule a dental appointment"
+area = "Calendar"
 expected_tools = ["search_calendar_events", "reschedule_calendar_event"]
-rationale = "事件 ID 进入后续参数；修改模拟日历。"
+rationale = "Passes an event ID into a later argument and updates the simulated calendar."
 
 [[tasks]]
 id = "user_task_9"
-label = "复用参与者创建会议"
-area = "日历"
+label = "Create a meeting with the same participants"
+area = "Calendar"
 expected_tools = ["search_calendar_events", "create_calendar_event"]
-rationale = "参与者数组从检索结果进入新日程参数。"
+rationale = "Passes the participant array from search results into the new event arguments."
 
 [[tasks]]
 id = "user_task_14"
-label = "从邮件确认聚会时间"
-area = "邮件"
+label = "Find the reunion time in email"
+area = "Email"
 expected_tools = ["search_emails"]
-rationale = "读取邮件并抽取日期时间，作为输出到最终回答的对照。"
+rationale = "Reads email and extracts the date and time as a comparison case for tool output used in a final answer."
 
 [[tasks]]
 id = "user_task_18"
-label = "将徒步邮件转为日程"
-area = "邮件 → 日历"
+label = "Create a calendar event from hiking emails"
+area = "Email → Calendar"
 expected_tools = ["search_emails", "create_calendar_event"]
-rationale = "跨工具复用时间、地点与邮箱。"
+rationale = "Reuses times, locations, and email addresses across tools."
 
 [[tasks]]
 id = "user_task_20"
-label = "检查空闲并邀请联系人"
-area = "日历 / 联系人"
+label = "Check availability and invite a contact"
+area = "Calendar / Contacts"
 expected_tools = ["get_day_calendar_events", "search_contacts_by_name", "create_calendar_event"]
-rationale = "条件分支和多来源输入；联系人邮箱用于邀请。"
+rationale = "Covers a conditional decision and inputs from multiple sources; uses a contact email for the invitation."
 
 [[tasks]]
 id = "user_task_28"
-label = "读取表格中的用户评分"
-area = "云盘"
+label = "Read user scores from a spreadsheet"
+area = "Cloud drive"
 expected_tools = ["search_files_by_filename"]
-rationale = "结构化文件内容读取和实体选择，作为最终回答对照。"
+rationale = "Reads structured file content and selects entities as a comparison case for a final answer."
 
 [[tasks]]
 id = "user_task_29"
-label = "向团建文件追加活动"
-area = "云盘"
+label = "Append activities to a team-building document"
+area = "Cloud drive"
 expected_tools = ["search_files_by_filename", "append_to_file"]
-rationale = "文件 ID 进入追加操作参数；生成内容写入模拟云盘。"
+rationale = "Passes a file ID into the append operation and writes generated content to the simulated cloud drive."
 
 [[tasks]]
 id = "user_task_32"
-label = "创建打包清单并共享"
-area = "云盘"
+label = "Create and share a packing list"
+area = "Cloud drive"
 expected_tools = ["search_files", "create_file", "share_file"]
-rationale = "来源内容形成新文件；创建结果中的新 ID 用于共享。"
+rationale = "Uses source content to create a file, then uses the new ID returned by creation to share it."
 
 [[tasks]]
 id = "user_task_33"
-label = "发送会议摘要与附件"
-area = "云盘 → 邮件"
+label = "Send a meeting summary and attachment"
+area = "Cloud drive → Email"
 expected_tools = ["search_files_by_filename", "send_email"]
-rationale = "跨工具复用文档内容、收件人和附件 ID。"
+rationale = "Reuses document content, recipients, and attachment IDs across tools."

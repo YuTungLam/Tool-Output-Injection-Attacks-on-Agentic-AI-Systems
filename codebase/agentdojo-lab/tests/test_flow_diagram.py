@@ -125,7 +125,7 @@ const episodeNames=new Map();
 function jsonDetail(){}
 const active=()=>nodes.filter(n=>n.classes.has('is-active')).map(n=>n.getAttribute('data-flow-node'));
 initializeFlow(false);
-assert.equal(get('flow-api-label').textContent,'脚本模型响应');
+assert.equal(get('flow-api-label').textContent,'Scripted response');
 for(const event of [
   {event_type:'MODEL_RESPONSE',data:{status_code:503}},
   {event_type:'EPISODE_ENDED',data:{error_type:'RuntimeError'}},
@@ -142,7 +142,7 @@ assert.equal(get('event-list').childNodes[1].attributes['aria-pressed'],'true');
 get('search').value='no matching event';
 renderEvents();
 assert.deepEqual(active(),[]);
-assert.equal(get('flow-selection').textContent,'尚未选择事件');
+assert.equal(get('flow-selection').textContent,'No event selected');
 updateFlow({event_type:'MODEL_ERROR',data:{}});
 assert(nodes.filter(n=>n.classes.has('is-error')).length===3);
 updateFlow({event_type:'UNKNOWN'});

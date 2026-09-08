@@ -1,0 +1,70 @@
+# Paper-based NeuroTaint reproduction
+
+## Material Passport
+
+- Origin Skill: academic-research-suite
+- Origin Mode: implementation and experiment planning
+- Origin Date: 2026-09-08
+- Verification Status: user-approved scope; method validation is ongoing
+- Version Label: paper-based-reproduction-v1
+
+## Objective
+
+Independently implement NeuroTaint from the published method and test whether it works in the AgentDojo
+setting. Access to author code is not a prerequisite. Matching the original tables numerically is not the
+acceptance condition. The paper remains the method reference; original code or artifacts may provide
+additional checks if they become available.
+
+Implement specified components faithfully. Where the paper is incomplete, freeze and disclose the local
+choice before interpreting results. Keep separate names and configurations for the paper-based baseline
+and proposed modifications. Do not tune thresholds using evaluation labels or describe an engineering
+assumption as an author-specified choice.
+
+## Implementation sequence
+
+1. Completed: recorded request prefixes, exact baseline, Tier 2 LCS, local MiniLM Tier 3, and a disclosed
+   Tier 4 chunk/coverage implementation. Components currently run independently on saved traces.
+2. Next: attach incremental attribution to the live event boundary before tool execution. Persist a separate
+   attribution record, record completion/failure timing, and verify the agent request/action path is unchanged.
+3. Add the remaining paper method components: source/sink policy, ordered cascade, DCPG lineage and memory
+   restoration, a separate canary condition, and sink-driven counterfactual analysis. Canary and shadow
+   interventions must be distinguished from passive primary runs.
+4. Evaluate clean and injected cases with independent source judgments, repeated trials, component ablations,
+   false attribution/unknown/ambiguity analysis, timing, and resource costs.
+
+No CTTA, model-weight updates, automatic action blocking, or real-account operations are part of this scope.
+
+## How a reproduction failure becomes a research question
+
+A failure is evidence to investigate, not automatically a research gap. Preserve the exact inputs,
+configuration, source/argument identities, outputs, and repeat results. Then distinguish:
+
+- Implementation errors, including serialization, tokenization, time boundaries, and missing instrumentation.
+- Underspecified choices and sensitivity to reasonable alternate chunking, thresholds, and neutralization.
+- Setting differences, including model, tool format, task distribution, and source availability.
+- Method limitations that persist after the above checks, such as topical overlap, competing sources,
+  short identifiers, transformed facts, or decision changes without copied content.
+
+Develop a gap claim only when controlled examples and evaluation support the limitation. Keep unsuccessful
+runs and negative findings. Neither similarity nor a judge confidence score constitutes causal ground truth.
+
+## Language convention
+
+Generated HTML interfaces, diagrams, report explanations, JSONL annotations, and assistant-authored notes
+are in English. Conversation with the user may remain Chinese. Future descriptive task metadata is English.
+
+Existing observed event/native records already contain no Chinese text. The language migration changes
+presentation text and assistant annotation notes, preserving event contents, source IDs, offsets, scores,
+measurements, and frozen experiment hashes. Legacy Chinese task descriptions receive an explicitly labelled
+English rendering in derived pilot pages; the frozen source configuration is unchanged.
+
+Audit all generated HTML and decoded JSONL keys/string values with:
+
+```bash
+.venv/bin/python scripts/audit_report_language.py
+```
+
+The audit detects Chinese text after JSON decoding and in HTML entities/Unicode escapes; encoding text
+with escapes is not a translation. Raw evidence must not be silently translated or rewritten. If future
+experiments intentionally introduce non-English source data, retain the observation and distinguish an
+English presentation from original evidence explicitly.

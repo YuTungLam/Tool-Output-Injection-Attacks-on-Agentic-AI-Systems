@@ -2,6 +2,8 @@
 
 建立能重复运行的 **AgentDojo 原生正常任务基线**：Groq 模型调用 → AgentDojo 工具执行 → 原生任务评估 → 轨迹与运行配置落盘。已接入 online tracer 的第一层：运行时事件采集器。现另提供按历史前缀重放的参数来源候选分析、NeuroTaint-style LCS 与可选的本地 MiniLM 语义/分块组件；尚未验证来源准确率、恶意传播或因果关系。
 
+研究约定与下一步见 [REPRODUCTION.md](REPRODUCTION.md)：按论文描述重实现，不等待作者代码；生成 HTML/diagram/JSONL 统一英文，对话可用中文。运行 `.venv/bin/python scripts/audit_report_language.py` 可检查现有产物的中文残留。
+
 ## 参数来源分析（2026-09-08）
 
 在已有日志上运行，不读取密钥、不增加模型调用：

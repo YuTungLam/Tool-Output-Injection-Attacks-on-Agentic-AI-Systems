@@ -37,7 +37,7 @@ def collect_run_record(run_dir: Path, *, summary: dict | None = None) -> dict:
         except (OSError, ValueError, UnicodeError) as exc:
             if required:
                 raise ValueError(f"Cannot read {relative} ({type(exc).__name__}).") from exc
-            warnings.append(f"无法读取 {relative}（{type(exc).__name__}）")
+            warnings.append(f"Cannot read {relative} ({type(exc).__name__})")
             return None
 
     manifest = read_json(run_dir / "manifest.json", required=True)
@@ -49,7 +49,7 @@ def collect_run_record(run_dir: Path, *, summary: dict | None = None) -> dict:
     audit = None
     if event_path.exists():
         if not event_path.resolve().is_relative_to(run_dir):
-            warnings.append("events.jsonl 指向实验目录以外，未纳入报告")
+            warnings.append("events.jsonl resolves outside the run directory and was excluded")
         else:
             raw = event_path.read_bytes()
             hashes["events.jsonl"] = hashlib.sha256(raw).hexdigest()
@@ -60,7 +60,7 @@ def collect_run_record(run_dir: Path, *, summary: dict | None = None) -> dict:
                         raise ValueError("expected event object")
                     events.append(event)
                 except ValueError:
-                    warnings.append(f"events.jsonl 第 {index} 行无法解析，原始文件仍保留")
+                    warnings.append(f"Cannot parse events.jsonl line {index}; the original file is preserved")
             audit = inspect_events(event_path)
     native = []
     for path in sorted((run_dir / "native").rglob("*.json")):
@@ -68,7 +68,9 @@ def collect_run_record(run_dir: Path, *, summary: dict | None = None) -> dict:
         if trace is not None:
             native.append({"source": str(path.relative_to(run_dir)), "trace": trace})
     if not events:
-        warnings.append("本次实验没有可用的在线事件；原生对话历史单独显示，不推断事件时间或来源关系。")
+        warnings.append(
+            "No recorded online events are available. Native conversation history is shown separately; event timing and provenance are not inferred."
+        )
     return {
         "schema_version": 1,
         "run_id": run_dir.name,
