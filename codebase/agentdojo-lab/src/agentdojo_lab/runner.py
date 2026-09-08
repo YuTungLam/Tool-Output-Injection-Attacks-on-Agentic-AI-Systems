@@ -60,12 +60,15 @@ class RunConfig(BaseModel):
     online_provenance: bool = False
     provenance_policy: str | None = None
     lineage_namespace: str | None = None
+    canary_enabled: bool = False
     semantic_model: str | None = None
     semantic_revision: str | None = None
     pacing_tokens_per_minute: int | None = Field(default=None, ge=1000, le=1000000)
 
     @model_validator(mode="after")
     def attribution_configuration(self):
+        if self.canary_enabled and (not self.provenance_policy or len(self.user_tasks) != 1):
+            raise ValueError("Canary intervention requires a frozen policy and one native task per run")
         if self.lineage_namespace is not None and (
             not self.lineage_namespace.strip() or not self.provenance_policy or len(self.user_tasks) != 1
         ):
@@ -225,7 +228,15 @@ def run_clean(
     if config.lineage_namespace is not None:
         from agentdojo_lab.lineage import DCPG
 
-        lineage = DCPG(config.lineage_namespace, policy, semantic_matcher=matcher)
+        lineage = DCPG(
+            config.lineage_namespace, policy, semantic_matcher=matcher, canary_enabled=config.canary_enabled
+        )
+
+    canary = None
+    if config.canary_enabled:
+        from agentdojo_lab.canary import CanaryInjector
+
+        canary = CanaryInjector(policy)
 
     mode = "offline-fixture" if offline else "live-groq"
     pacer = (
@@ -254,6 +265,7 @@ def run_clean(
         },
         "adapter": "groq-text-v1",
         "event_recording": {"enabled": config.record_events, "schema_version": 1},
+        "input_condition": "canary_intervention" if canary is not None else "passive",
         "online_provenance": {
             "enabled": config.online_provenance,
             "mode": "synchronous_observation; ordered_cascade"
@@ -294,6 +306,11 @@ def run_clean(
         manifest["online_provenance"]["implementation_sha256"]["lineage.py"] = hashlib.sha256(
             Path(__file__).with_name("lineage.py").read_bytes()
         ).hexdigest()
+    if canary is not None:
+        manifest["canary"] = canary.metadata
+        manifest["online_provenance"]["implementation_sha256"]["canary.py"] = hashlib.sha256(
+            Path(__file__).with_name("canary.py").read_bytes()
+        ).hexdigest()
     write_json(run_dir / "manifest.json", manifest)
     started = time.monotonic()
     llm = None
@@ -311,6 +328,7 @@ def run_clean(
                     semantic_matcher=matcher,
                     policy=policy,
                     **({"lineage": lineage} if lineage is not None else {}),
+                    **({"canary_enabled": True} if canary is not None else {}),
                 )
             recorder = EventRecorder(
                 run_dir / "events.jsonl",
@@ -319,7 +337,7 @@ def run_clean(
                 on_event=attribution.consume if attribution is not None else None,
             )
             recorder.emit("RUN_STARTED", {"mode": mode, "config": config.model_dump()})
-            observer = ObservationSession(recorder)
+            observer = ObservationSession(recorder, **({"canary": canary} if canary is not None else {}))
         client = (
             make_offline_client(suite, suite.user_tasks["user_task_0"], config.model)
             if offline
@@ -421,6 +439,8 @@ def run_clean(
             }
         else:
             summary["recording"] = {"enabled": False}
+        if canary is not None:
+            summary["canary"] = {**canary.status(), "input_condition": "canary_intervention"}
         if attribution is not None:
             attribution.close()
             subscriber_status = recorder.subscriber_status() if recorder is not None else {"complete": False}

@@ -41,6 +41,7 @@ def test_all_event_locations_resolve_to_diagram_components():
         "TOOL_RUNTIME_STARTED": ["runtime"],
         "TOOL_RUNTIME_RETURNED": ["runtime"],
         "ENVIRONMENT_CHANGE": ["environment"],
+        "TOOL_OUTPUT_INTERVENTION": ["result"],
         "TOOL_RESULT": ["result"],
         "TOOL_OUTPUT_EXPOSED": ["history", "request"],
     }

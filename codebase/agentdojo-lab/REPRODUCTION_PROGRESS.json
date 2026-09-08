@@ -79,10 +79,22 @@
     {
       "id": "canary",
       "title": "Separate canary experiment condition",
-      "status": "pending",
+      "status": "accepted",
       "acceptance": "Implement UUID source canaries in a separately named intervention condition, track survival, and measure changes relative to passive inputs.",
-      "evidence": [],
-      "limits": "Canary insertion changes inputs and must never be merged into the passive observation condition."
+      "evidence": [
+        "CANARY.md",
+        "CANARY-RESULTS.md",
+        "configs/groq_canary.toml",
+        "tests/test_canary_plumbing.py",
+        "tests/test_canary_integration.py",
+        "reports/20260908-canary-validation/quality.json",
+        "reports/20260908-canary-validation/native-verification.json",
+        "reports/20260908-canary-validation/passive-regression.json",
+        "reports/20260908-canary-validation/passive-verification.json",
+        "reports/20260908-canary-validation/canary-verification.json",
+        "reports/20260908-canary-pair-v1/pair.json"
+      ],
+      "limits": "Separate source-text intervention; controlled native sink carryover and memory restoration pass. Both selected real task31 trials fail at provider tool-name validation before a sink: one real UUID is assigned/applied/exposed, but live sink survival and native task utility remain unknown. No efficacy, maliciousness or causal claim; no replacement trials."
     },
     {
       "id": "counterfactual",

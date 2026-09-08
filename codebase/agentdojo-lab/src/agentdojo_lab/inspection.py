@@ -174,7 +174,9 @@ def inspect_events(path: Path) -> dict:
                             "line": line_number,
                             "responses": 0,
                             "errors": 0,
-                            "tool_messages": {i: m for i, m in enumerate(messages) if m.get("role") == "tool"},
+                            "tool_messages": {
+                                i: m for i, m in enumerate(messages) if m.get("role") == "tool"
+                            },
                             "exposures": 0,
                             "exposed_indices": set(),
                         }
@@ -223,15 +225,24 @@ def inspect_events(path: Path) -> dict:
                         request = known_request(event, line_number)
                         call_ref = event.get("call_ref")
                         if not _identifier(call_ref) or call_ref not in results:
-                            fail(line_number, "TOOL_OUTPUT_EXPOSED lacks earlier TOOL_RESULT with same call_ref")
+                            fail(
+                                line_number,
+                                "TOOL_OUTPUT_EXPOSED lacks earlier TOOL_RESULT with same call_ref",
+                            )
                         elif data.get("source_result_event_id") is not None:
                             if data["source_result_event_id"] != results[call_ref].get("event_id"):
-                                fail(line_number, "TOOL_OUTPUT_EXPOSED source_result_event_id disagrees with call_ref")
+                                fail(
+                                    line_number,
+                                    "TOOL_OUTPUT_EXPOSED source_result_event_id disagrees with call_ref",
+                                )
                         if request is not None:
                             request["exposures"] += 1
                             index = data.get("message_index")
                             if type(index) is not int or index not in request["tool_messages"]:
-                                fail(line_number, "TOOL_OUTPUT_EXPOSED message_index is not a request tool message")
+                                fail(
+                                    line_number,
+                                    "TOOL_OUTPUT_EXPOSED message_index is not a request tool message",
+                                )
                             else:
                                 if index in request["exposed_indices"]:
                                     fail(line_number, "duplicate TOOL_OUTPUT_EXPOSED message_index")

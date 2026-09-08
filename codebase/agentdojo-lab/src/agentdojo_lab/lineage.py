@@ -103,12 +103,13 @@ def _records(text: str) -> list[dict]:
 
 
 class DCPG:
-    def __init__(self, namespace: str, policy, semantic_matcher=None):
+    def __init__(self, namespace: str, policy, semantic_matcher=None, *, canary_enabled=False):
         if not isinstance(namespace, str) or not namespace.strip() or len(namespace) > 256:
             raise ValueError("A nonempty bounded store namespace is required")
         self.namespace, self.policy = namespace, policy
         self.policy_sha256 = policy.metadata["sha256"]
-        self.matcher = CascadeMatcher.for_memory(semantic_matcher)
+        self.canary_enabled = canary_enabled
+        self.matcher = CascadeMatcher.for_memory(semantic_matcher, canary_enabled=canary_enabled)
         self.nodes, self.edges, self.registry, self.memory_bindings = {}, {}, {}, {}
         self.memory_events = []
         self._calls, self._results, self._direct, self._carriers = {}, {}, {}, {}
@@ -129,6 +130,11 @@ class DCPG:
                 "assumptions": ASSUMPTIONS,
                 "limits": LIMITS,
                 "memory_cascade": self.matcher.metadata,
+                **(
+                    {"canary_condition": "canary_intervention; persist_original_marker_references"}
+                    if self.canary_enabled
+                    else {}
+                ),
                 "maliciousness": "not_assessed",
                 "causal_influence": "not_assessed",
             }
@@ -217,6 +223,11 @@ class DCPG:
                     "text_sha256": _content_hash(source["text"]),
                     "policy_sha256": self.policy_sha256,
                     "path_confidence": None,
+                    **(
+                        {"canary": copy.deepcopy(source["canary"])}
+                        if self.canary_enabled and "canary" in source
+                        else {}
+                    ),
                 },
             )
             self._direct[(request_key, source["source_id"])] = label_id
@@ -253,6 +264,11 @@ class DCPG:
                         "origin_node_id": ancestor["origin_node_id"],
                         "original_text": ancestor["text"],
                         "original_text_sha256": ancestor["text_sha256"],
+                        **(
+                            {"original_canary": copy.deepcopy(ancestor["canary"])}
+                            if "canary" in ancestor
+                            else {}
+                        ),
                         "carrier_source_id": source["source_id"],
                         "carrier_event_id": source["source_event_id"],
                         "carrier_node_id": result["step_id"],
@@ -340,7 +356,11 @@ class DCPG:
                 else ""
             )
             for carrier in recovered:
-                evidence = self.matcher.compare(carrier["original_text"], target)
+                evidence = self.matcher.compare(
+                    carrier["original_text"],
+                    target,
+                    **({"canary": carrier.get("original_canary")} if self.canary_enabled else {}),
+                )
                 comparison = {
                     "argument_path": field["argument_path"],
                     "label_id": carrier["label_id"],
@@ -641,7 +661,7 @@ class DCPG:
         }
 
     @classmethod
-    def load_state(cls, path: Path, namespace: str, policy, semantic_matcher=None):
+    def load_state(cls, path: Path, namespace: str, policy, semantic_matcher=None, *, canary_enabled=False):
         with Path(path).open("rb") as stream:
             raw = stream.read(LIMITS["checkpoint_bytes"] + 1)
         if len(raw) > LIMITS["checkpoint_bytes"]:
@@ -668,7 +688,7 @@ class DCPG:
             raise ValueError("Unsupported or incomplete lineage checkpoint")
         if _digest(state) != envelope["state_sha256"]:
             raise ValueError("Lineage checkpoint digest mismatch")
-        graph = cls(namespace, policy, semantic_matcher)
+        graph = cls(namespace, policy, semantic_matcher, canary_enabled=canary_enabled)
         if state["namespace"] != namespace or state["policy_sha256"] != graph.policy_sha256:
             raise ValueError("Checkpoint namespace or policy mismatch")
         if state["metadata"] != graph.metadata:
@@ -699,6 +719,16 @@ class DCPG:
                 or label["policy_sha256"] != graph.policy_sha256
             ):
                 raise ValueError("Invalid source registry reference")
+            if "canary" in label:
+                from agentdojo_lab.canary import validate_reference
+
+                if (
+                    not graph.canary_enabled
+                    or label["canary"].get("source_result_event_id") != label["source_event_id"]
+                    or label["canary"].get("policy_sha256") != graph.policy_sha256
+                ):
+                    raise ValueError("Invalid persisted canary source binding")
+                validate_reference(label["canary"], label["text"])
         for edge in graph.edges.values():
             if (
                 edge["from_node"] not in graph.nodes

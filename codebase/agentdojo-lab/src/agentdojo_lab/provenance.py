@@ -114,19 +114,26 @@ def structured_scalars(text: str) -> dict:
 class ProvenanceTracker:
     """Incremental, deterministic candidate generation over one event stream."""
 
-    def __init__(self, semantic_matcher=None, policy=None, lineage=None):
+    def __init__(self, semantic_matcher=None, policy=None, lineage=None, *, canary_enabled=False):
         self.semantic_matcher = semantic_matcher
         self.policy = policy
         self.lineage = lineage
+        if type(canary_enabled) is not bool or (canary_enabled and policy is None):
+            raise ValueError("Canary tracking requires an explicit condition and frozen policy")
+        self.canary_enabled = canary_enabled
+        self.canary_assignments = {}
+        self.canary_runtime_returns = {}
         if lineage is not None and policy is None:
             raise ValueError("Lineage tracking requires a frozen source/sink policy")
         if lineage is not None and lineage.policy_sha256 != policy.metadata["sha256"]:
             raise ValueError("Lineage and tracker policy hashes must match")
+        if lineage is not None and lineage.canary_enabled != canary_enabled:
+            raise ValueError("Lineage and tracker canary conditions must match")
         self.cascade_matcher = None
         if policy is not None:
             from agentdojo_lab.cascade import CascadeMatcher
 
-            self.cascade_matcher = CascadeMatcher(semantic_matcher)
+            self.cascade_matcher = CascadeMatcher(semantic_matcher, canary_enabled=canary_enabled)
         self.tool_proposals = {}
         self.run_id = None
         self.sequence = 0
@@ -164,6 +171,12 @@ class ProvenanceTracker:
                         origin_tool=origin,
                         policy=self.policy.source_decision(role, origin),
                     )
+                if self.canary_enabled and source_event:
+                    reference = self.results[source_event].get("canary")
+                    if reference is not None:
+                        from agentdojo_lab.canary import validate_reference
+
+                        self.sources[source_id]["canary"] = validate_reference(reference, text)
             request["sources"].append(
                 {
                     "source_id": source_id,
@@ -172,6 +185,85 @@ class ProvenanceTracker:
                     "exposure_event_id": exposure["event_id"] if exposure else None,
                 }
             )
+
+    def _record_intervention(self, event):
+        if not self.canary_enabled:
+            raise ValueError("Intervention events require the declared canary condition")
+        audit = event["data"]
+        origin = self.tool_proposals.get(event.get("call_ref"))
+        if (
+            not origin
+            or any(audit.get(key) != event.get(key) for key in ("run_id", "episode_id", "call_ref"))
+            or origin["episode_id"] != event["episode_id"]
+            or origin["model_request_id"] != event["model_request_id"]
+            or origin["tool_call_id"] != event.get("tool_call_id")
+            or audit.get("function") != origin["function"]
+            or audit.get("policy_sha256") != self.policy.metadata["sha256"]
+            or audit.get("status") not in {"assigned", "skipped"}
+        ):
+            raise ValueError("Invalid or failed canary intervention record")
+        if any(row["audit"]["call_ref"] == event["call_ref"] for row in self.canary_assignments.values()):
+            raise ValueError("A tool result may have only one intervention audit")
+        if audit["status"] == "assigned":
+            from agentdojo_lab.canary import validate_assignment
+
+            validate_assignment(audit)
+            returned = self.canary_runtime_returns.get(event["call_ref"])
+            if (
+                not self.policy.source_decision("tool", origin["function"])["eligible"]
+                or returned is None
+                or returned["episode_id"] != event["episode_id"]
+                or returned["model_request_id"] != event["model_request_id"]
+                or returned.get("tool_call_id") != origin["tool_call_id"]
+                or returned["event_sequence"] >= event["event_sequence"]
+                or returned["data"].get("error") is not None
+                or returned["data"].get("raised_exception_type") is not None
+                or returned["event_id"] not in event["parent_event_ids"]
+            ):
+                raise ValueError("Canary assignment lacks a successful eligible source return")
+            if any(row["audit"].get("token") == audit["token"] for row in self.canary_assignments.values()):
+                raise ValueError("Canary tokens must be unique within the run")
+        self.canary_assignments[event["event_id"]] = {
+            "audit": audit,
+            "model_request_id": event["model_request_id"],
+            "tool_call_id": event.get("tool_call_id"),
+            "result_event_id": None,
+        }
+
+    def _record_canary_result(self, event):
+        reference_id = event["data"].get("intervention_event_id")
+        assignment = self.canary_assignments.get(reference_id)
+        if assignment is None or assignment["result_event_id"] is not None:
+            raise ValueError("Canary result lacks its unique prior intervention audit")
+        audit = assignment["audit"]
+        if (
+            audit["call_ref"] != event["call_ref"]
+            or audit["episode_id"] != event["episode_id"]
+            or assignment["model_request_id"] != event["model_request_id"]
+            or assignment["tool_call_id"] != event.get("tool_call_id")
+            or reference_id not in event["parent_event_ids"]
+            or event["data"]["message"].get("role") != "tool"
+            or event["data"]["message"].get("tool_call", {}).get("id") != assignment["tool_call_id"]
+            or event["data"]["message"].get("tool_call", {}).get("function") != audit["function"]
+        ):
+            raise ValueError("Canary result identity differs from the intervention")
+        assignment["result_event_id"] = event["event_id"]
+        if audit["status"] != "assigned":
+            return
+        message = event["data"]["message"]
+        if (
+            message.get("content") != audit["marked_content"]
+            or message.get("error") is not None
+            or not event["data"].get("runtime_entered")
+        ):
+            raise ValueError("Applied result differs from its recorded canary transformation")
+        from agentdojo_lab.canary import compact_reference
+
+        self.results[event["event_id"]]["canary"] = {
+            **compact_reference(audit),
+            "assignment_event_id": reference_id,
+            "source_result_event_id": event["event_id"],
+        }
 
     def consume(self, event: dict) -> dict | None:
         """Return one frozen call analysis at a proposal; never consult later events."""
@@ -189,6 +281,10 @@ class ProvenanceTracker:
         self.sequence = event["event_sequence"]
         self.seen.add(event["event_id"])
         kind, data = event["event_type"], event["data"]
+        if kind == "TOOL_OUTPUT_INTERVENTION":
+            self._record_intervention(event)
+        if self.canary_enabled and kind == "TOOL_RUNTIME_RETURNED":
+            self.canary_runtime_returns[event.get("call_ref")] = event
         if kind == "TOOL_RESULT":
             # Identity only: data.message.tool_call.args is NOT exposed content.
             self.results[event["event_id"]] = {
@@ -205,6 +301,8 @@ class ProvenanceTracker:
                     and origin["model_request_id"] == event["model_request_id"]
                 )
                 self.results[event["event_id"]]["origin_tool"] = origin["function"] if valid_origin else None
+            if self.canary_enabled:
+                self._record_canary_result(event)
         elif kind == "MODEL_REQUEST":
             request_id = event["model_request_id"]
             if request_id in self.requests:
@@ -263,6 +361,7 @@ class ProvenanceTracker:
                     "function": data["function"],
                     "episode_id": event["episode_id"],
                     "model_request_id": event["model_request_id"],
+                    **({"tool_call_id": event.get("tool_call_id")} if self.canary_enabled else {}),
                 }
             call = self._analyze(event, request)
             if self.lineage is not None:
@@ -365,7 +464,11 @@ class ProvenanceTracker:
                                 "kind": source["kind"],
                                 "source_event_id": source["source_event_id"],
                                 "origin_tool": source["origin_tool"],
-                                **self.cascade_matcher.compare(source["text"], text or ""),
+                                **self.cascade_matcher.compare(
+                                    source["text"],
+                                    text or "",
+                                    **({"canary": source.get("canary")} if self.canary_enabled else {}),
+                                ),
                             }
                         )
                 fields[-1].update(
@@ -411,6 +514,19 @@ class ProvenanceTracker:
             "fields": fields,
             "availability": "offline_prefix_replay; pre-execution latency not measured",
         }
+        if self.canary_enabled:
+            pairs = [p for field in fields for p in field.get("nt_style_cascade", [])]
+            call["canary"] = {
+                "condition": "canary_intervention",
+                "available_source_markers": [
+                    {"source_id": source["source_id"], **source["canary"]}
+                    for source in visible
+                    if "canary" in source
+                ],
+                "tier1_scored_pairs": sum(p["stages"]["tier1"]["status"] == "scored" for p in pairs),
+                "tier1_matched_pairs": sum(p["first_matched_tier"] == "tier1" for p in pairs),
+                "interpretation": "exact_registered_marker_carryover; no_maliciousness_or_causal_verdict",
+            }
         if self.policy is not None:
             pairs = [pair for field in fields for pair in field["nt_style_cascade"]]
             sink = self.policy.sink_decision(call["function"])

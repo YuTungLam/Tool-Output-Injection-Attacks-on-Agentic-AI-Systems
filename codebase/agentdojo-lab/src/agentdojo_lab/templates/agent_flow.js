@@ -13,6 +13,7 @@ const FLOW_EVENT_MAP = Object.freeze({
   TOOL_RUNTIME_STARTED: {nodes:["runtime"],edges:[],text:"Execution entered the top-level FunctionsRuntime, before internal argument validation, default filling, and dependency injection."},
   TOOL_RUNTIME_RETURNED: {nodes:["runtime"],edges:[],text:"The top-level runtime returned a raw result or error; the tool message has not necessarily been added to the history yet."},
   ENVIRONMENT_CHANGE: {nodes:["environment"],edges:[],text:"An environment-state change was observed across the tool call. This environment snapshot is not model input."},
+  TOOL_OUTPUT_INTERVENTION: {nodes:["result"],edges:[],text:"In the separate Canary condition, a UUID suffix is planned after native execution and before tool history publication. Follow the linked result and request to verify application and exposure."},
   TOOL_RESULT: {nodes:["result"],edges:["result_history"],text:"After completing the batch, the executor creates tool messages and adds them to history. An unknown tool can produce an error message without entering the runtime."},
   TOOL_OUTPUT_EXPOSED: {nodes:["history","request"],edges:["history_request"],text:"A tool message was included in this round's outbound request; this does not establish model attention or use."}
 });

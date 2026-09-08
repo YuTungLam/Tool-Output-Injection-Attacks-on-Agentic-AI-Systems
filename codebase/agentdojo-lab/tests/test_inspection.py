@@ -29,7 +29,9 @@ def event(event_type, *, request=None, call=None, data=None, **fields):
 def clean_events():
     message = {"role": "tool", "tool_call_id": "provider-id", "content": "example"}
     return [
-        event("MODEL_REQUEST", request="r1", data={"body": {"messages": [{"role": "user", "content": "hi"}]}}),
+        event(
+            "MODEL_REQUEST", request="r1", data={"body": {"messages": [{"role": "user", "content": "hi"}]}}
+        ),
         event("MODEL_RESPONSE", request="r1"),
         event("MODEL_PARSED", request="r1"),
         event("TOOL_CALL_PROPOSED", request="r1", call="c1"),
@@ -37,9 +39,17 @@ def clean_events():
         event("TOOL_RUNTIME_RETURNED", request="r1", call="c1"),
         event("TOOL_RESULT", request="r1", call="c1", data={"message": message}),
         event("MODEL_REQUEST", request="r2", data={"body": {"messages": [message]}}),
-        event("TOOL_OUTPUT_EXPOSED", request="r2", call="c1", data={
-            "message_index": 0, "message": message, "source_result_event_id": "e7",
-        }, parent_event_ids=["e7", "e8"]),
+        event(
+            "TOOL_OUTPUT_EXPOSED",
+            request="r2",
+            call="c1",
+            data={
+                "message_index": 0,
+                "message": message,
+                "source_result_event_id": "e7",
+            },
+            parent_event_ids=["e7", "e8"],
+        ),
         event("MODEL_RESPONSE", request="r2"),
     ]
 
@@ -203,7 +213,7 @@ def test_unknown_events_and_extension_fields_are_allowed(tmp_path):
     assert inspect_events(path)["valid"]
 
 
-@pytest.mark.parametrize("raw", ["", "not-json-secret", "[]\n", "{\"partial-secret\":", "\n"])
+@pytest.mark.parametrize("raw", ["", "not-json-secret", "[]\n", '{"partial-secret":', "\n"])
 def test_empty_or_malformed_log_is_invalid_without_exposing_payload(tmp_path, raw):
     path = tmp_path / "events.jsonl"
     path.write_text(raw)

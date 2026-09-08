@@ -33,7 +33,7 @@ class OnlineProvenance:
     computation budgets do not impose a wall-clock deadline.
     """
 
-    def __init__(self, path: Path, semantic_matcher=None, policy=None, lineage=None):
+    def __init__(self, path: Path, semantic_matcher=None, policy=None, lineage=None, *, canary_enabled=False):
         self._lock = threading.RLock()
         self._file = None
         self._tracker = None
@@ -58,6 +58,7 @@ class OnlineProvenance:
         self._run_end_seen = False
         self._policy = policy
         self._lineage = lineage
+        self._canary_enabled = canary_enabled
         self._lineage_comparison_count = 0
         self._lineage_incomplete_count = 0
         self._cascade_status_counts = {}
@@ -80,7 +81,10 @@ class OnlineProvenance:
         }
         try:
             self._tracker = ProvenanceTracker(
-                semantic_matcher=semantic_matcher, policy=policy, lineage=lineage
+                semantic_matcher=semantic_matcher,
+                policy=policy,
+                lineage=lineage,
+                canary_enabled=canary_enabled,
             )
             self._stage = "open"
             self._file = Path(path).open("x", encoding="utf-8", newline="\n")
@@ -375,6 +379,11 @@ class OnlineProvenance:
                         else {}
                     ),
                     "execution_mode": "synchronous_passive_consumer",
+                    **(
+                        {"canary_enabled": True, "input_condition": "canary_intervention"}
+                        if self._canary_enabled
+                        else {}
+                    ),
                     "hard_timeout_enforced": False,
                     "retry_count": 0,
                     "timing": {"clock": "time.monotonic_ns", **self._timing},

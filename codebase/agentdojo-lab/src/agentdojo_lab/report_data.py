@@ -158,6 +158,11 @@ def collect_runs(runs_dir: Path) -> dict:
             for field in ("attack", "defense"):
                 if field not in manifest or manifest[field] is not None:
                     errors.append(f"manifest.{field} must be explicitly null")
+            if (
+                _mapping(manifest.get("config")).get("canary_enabled")
+                or manifest.get("input_condition") == "canary_intervention"
+            ):
+                errors.append("canary intervention excluded from the passive clean baseline")
         included = not errors
         inventory.append(
             {

@@ -1,11 +1,42 @@
 # AgentDojo Lab
 
-Current workflow (2026-09-08): opt-in DCPG candidate lineage and native cloud-drive memory restoration.
-The frozen protocol is [LINEAGE.md](LINEAGE.md); evidence and limits are in
-[LINEAGE-RESULTS.md](LINEAGE-RESULTS.md). Acceptance status is tracked in
-[reproduction progress](REPRODUCTION_PROGRESS.json).
-Five of eight engineering acceptance gates are complete. The retained fresh Groq trial failed its sharing
-step at provider schema validation; that failure is included in the evidence, with complete tracer records.
+Current workflow (2026-09-08): a separate UUID Canary intervention condition alongside the passive tracer.
+Six of eight engineering acceptance gates are complete. Read [CANARY.md](CANARY.md),
+[CANARY-RESULTS.md](CANARY-RESULTS.md), and [reproduction progress](REPRODUCTION_PROGRESS.json).
+The two preselected real trials both failed at provider tool-name validation before a sink. The Canary
+trial verifies actual marker insertion/exposure; real sink survival and task utility remain unknown.
+
+## Inspect or run the separate Canary condition
+
+The retained [paired report](reports/20260908-canary-pair-v1/index.html) links both English interactive
+run reports. Select **Canary intervention planned** in the treated timeline: the diagram highlights the
+native-result boundary and the detail pane shows the original text, marked text, UUID and linked events.
+Follow the tool result and later request separately to distinguish assignment, application and exposure.
+At a sink proposal, **Canary evidence for this proposal** shows eligible registered markers and Tier 1
+counts. Cross-session ancestor evidence remains in the DCPG section.
+
+For a new real run, use a fresh output directory (this consumes the configured Groq quota):
+
+```bash
+HF_HUB_OFFLINE=1 HF_HUB_DISABLE_TELEMETRY=1 \
+  .venv/bin/dojo-lab run --config configs/groq_canary.toml --output runs/my-canary-trial
+```
+
+Use `configs/groq_canary_passive.toml` for the paired passive configuration. `--canary` is also available
+for an explicitly configured single-task policy run. It changes model-visible source text and is off by
+default. Replay derives the condition from the saved manifest; it cannot invent past marker assignments.
+Canary arms are excluded from the generic passive clean-baseline aggregator.
+
+For the scripted native controls, no model endpoint is needed:
+
+```bash
+.venv/bin/python scripts/validate_canary.py --output runs/my-canary-controls
+```
+
+The control includes six paired cases and two actual memory sessions. A Tier 1 hit establishes literal
+registered-marker carryover; a missing marker does not rule out influence. No maliciousness or causal
+verdict is supplied. DCPG instructions below remain available; its frozen gate 5 evidence is in
+[LINEAGE.md](LINEAGE.md) and [LINEAGE-RESULTS.md](LINEAGE-RESULTS.md).
 
 ## DCPG: inspect a saved source path
 

@@ -8,29 +8,34 @@
 
 随后已新增可选 MiniLM Tier 3 整段与 Tier 4 分块语义组件，固定 revision/文件哈希/分块假设/截断范围；命令与最新结果见 SEMANTIC.md。8 个教学案例已整理为助手开发标注草稿，明确非盲、非独立，仍需人工核查。
 
-Current progress (2026-09-08): gate 5 candidate DCPG and native memory restoration passed its engineering
-checks; five of eight gates are accepted. Read the frozen [LINEAGE.md](LINEAGE.md) and
-[LINEAGE-RESULTS.md](LINEAGE-RESULTS.md). The native two-session control passes 14/14 checks, recovers one
-original source through a four-edge path, and matches the sink independently before execution. Both
-tracing-disabled comparisons preserve full requests, actions, history, usage and native environment.
-Ten saved real runs produce repeatable graphs (43 nodes, 77 edges) with unchanged direct matching.
+Current progress (2026-09-08): gate 6 is accepted for the declared engineering scope; six of eight
+acceptance gates are complete. Read [CANARY.md](CANARY.md) and [CANARY-RESULTS.md](CANARY-RESULTS.md).
+The default remains passive. The explicit canary_enabled condition appends one unpredictable UUID to
+eligible native source results, records an intervention audit, validates publication and actual request
+exposure, and checks exact sink-argument membership before the other cascade tiers. Original native
+returns and environment snapshots are preserved. The private DCPG checkpoint retains original marker
+references only under the matching condition/profile and confirmed memory retrieval/exposure.
 
-The single selected fresh Groq task32 trial is a retained failure: after successful search/create,
-Groq rejected the generated `share_file` permission `read` because the schema accepts `r` or `rw`.
-The invalid generation is provider-error evidence, not a native tool proposal or execution. Do not retry
-or claim utility success. Its 25 events, 2/2 pre-runtime analyses, five-node graph, six edges and saved
-binding pass exact live/replay checks. Full test suite: 607 passed; no runtime changes after preflight.
+All 760 tests pass. Fourteen native control runs pass replay; scripted copy reaches Tier 1 with zero
+subsequent LCS/encoder entries, and a second native memory session distinguishes the old stored marker
+from the fresh retrieval marker. Ten earlier real traces reproduce full calls and graphs exactly.
+All frozen source and old experiment hashes remain unchanged after the recorded trials.
 
-Inspect `runs/20260908-lineage-memory-control/session2-traced/report.html` for the restored path and
-`runs/20260908-lineage-groq-task32/report.html` for the retained real trial. Their JSONL and generated HTML
-are English. Current-run graph nodes link to the timeline; prior-session IDs remain qualified to avoid
-cross-session event-number collisions. Observer state is private and separate from native storage.
-Standard benchmark tasks still reset their environments; there is no automatic cross-task state import.
+The two selected Groq task31 trials are retained failures: on request two the provider rejects
+search_files<|channel|>commentary as an unknown tool. Each has one native search proposal/execution,
+one pre-runtime receipt, complete observation, and exact replay. The Canary arm assigns, publishes and
+exposes one UUID. Neither reaches a sink or native utility evaluation: live sink survival is unavailable,
+not a negative, and utility remains unknown. Do not rerun the frozen pair to obtain a preferred result.
 
-Next is gate 6: a separately named UUID canary intervention with source-marker survival and paired input
-controls. Preserve the passive condition and freeze marker insertion before interpreting outcomes.
-Counterfactual probes and independent clean/injected evaluation follow in gates 7 and 8. No CTTA, weight
-updates, automatic blocking, or real-account tool operations are authorized in this scope.
+Open reports/20260908-canary-pair-v1/index.html for the pair, or
+runs/20260908-canary-native-control/cross-session-memory/session2/report.html for controlled restoration.
+Each report retains the timeline and diagram; the intervention event exposes original/marked text.
+HTML and decoded JSONL pass the English-only audit (64 HTML and 118 JSONL files).
+
+Next is gate 7: freeze paper-based sink-triggered source neutralization and comparison in isolated
+shadow contexts, with no native tool execution by probes and no primary action changes. Gate 8 remains
+independent clean/injected evaluation. The provider's malformed-tool-name error also limits these real
+trials; it is not yet a NeuroTaint gap. No CTTA, weight updates or action blocking is included.
 
 [REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json) remains the gate-status record. Earlier
 ordinary-cascade and independent-scoring modes and evidence remain preserved. Independent source ground

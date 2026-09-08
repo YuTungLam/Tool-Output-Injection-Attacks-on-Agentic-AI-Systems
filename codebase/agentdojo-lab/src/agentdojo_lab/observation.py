@@ -5,6 +5,7 @@ arguments are captured before the runtime's own validation/defaults/dependencies
 Nested runtime calls are outside this initial recorder's scope.
 """
 
+import copy
 import hashlib
 import json
 from functools import wraps
@@ -33,9 +34,10 @@ def observational(method):
 
 
 class ObservationSession:
-    def __init__(self, recorder: EventRecorder):
+    def __init__(self, recorder: EventRecorder, *, canary=None):
         self.recorder = recorder
         self.errors = []
+        self.canary = canary
         self.task_id = None
         self.episode_id = None
         self.episode_event = None
@@ -64,8 +66,11 @@ class ObservationSession:
         status = self.recorder.status()
         return {
             **status,
-            "complete": status["complete"] and not self.errors,
+            "complete": status["complete"]
+            and not self.errors
+            and (self.canary is None or self.canary.status()["complete"]),
             "observer_errors": list(self.errors),
+            **({"canary": self.canary.status()} if self.canary is not None else {}),
         }
 
     @observational
@@ -244,22 +249,52 @@ class ObservationSession:
             )
 
     @observational
-    def tool_result(self, message):
+    def tool_result(self, message, intervention_event_id=None):
         record = self.calls.get(id(message["tool_call"]), {})
         event_id = self.emit(
             "TOOL_RESULT",
             {
                 "message": message,
                 "runtime_entered": "runtime_return_event" in record,
+                **({"intervention_event_id": intervention_event_id} if self.canary is not None else {}),
             },
             entry=record.get("entry"),
-            parents=[record.get("proposal_event"), record.get("runtime_return_event")],
+            parents=[record.get("proposal_event"), record.get("runtime_return_event"), intervention_event_id],
         )
         self.tool_messages[id(message)] = {
             "object": message,
             "entry": record.get("entry", {}),
             "event_id": event_id,
         }
+
+    @observational
+    def prepare_tool_result(self, message):
+        """Apply an explicitly configured, audited source-text intervention once."""
+        if self.canary is None:
+            return message, None
+        call = message["tool_call"]
+        record = self.calls.get(id(call), {})
+        audit = self.canary.prepare(
+            message,
+            run_id=self.recorder.run_id,
+            episode_id=self.episode_id,
+            call_ref=record.get("entry", {}).get("call_ref"),
+            function=call.function,
+            runtime_entered="runtime_return_event" in record,
+        )
+        event_id = self.emit(
+            "TOOL_OUTPUT_INTERVENTION",
+            audit,
+            entry=record.get("entry"),
+            parents=[record.get("proposal_event"), record.get("runtime_return_event")],
+        )
+        if event_id is None:
+            self.canary.fail("audit", RuntimeError("Intervention audit was not persisted"))
+            return message, None
+        if audit["status"] == "assigned":
+            # Preserve the original call object so all runtime links retain identity.
+            message = {**message, "content": copy.deepcopy(audit["marked_content"])}
+        return message, event_id
 
 
 class _RuntimeView:
@@ -297,11 +332,19 @@ class ObservedToolsExecutor(BasePipelineElement):
         valid = [call for call in calls if call.function in names and call.function != EMPTY_FUNCTION_NAME]
         view = _RuntimeView(runtime, self.observer, valid)
         output = self.executor.query(query, view, env, messages, extra_args if extra_args is not None else {})
-        for message in output[3][len(messages) :]:
+        observed_messages = list(output[3]) if self.observer.canary is not None else output[3]
+        for index in range(len(messages), len(observed_messages)):
+            message = observed_messages[index]
             if message["role"] == "tool":
-                self.observer.tool_result(message)
+                if self.observer.canary is not None:
+                    prepared = self.observer.prepare_tool_result(message)
+                    message, intervention_id = prepared if prepared is not None else (message, None)
+                    observed_messages[index] = message
+                    self.observer.tool_result(message, intervention_id)
+                else:
+                    self.observer.tool_result(message)
         # Downstream consumers receive the original runtime object, not the proxy.
-        return output[0], runtime, output[2], output[3], output[4]
+        return output[0], runtime, output[2], observed_messages, output[4]
 
 
 class ObservedPipeline(BasePipelineElement):

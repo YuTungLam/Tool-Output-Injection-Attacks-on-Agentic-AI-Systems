@@ -70,6 +70,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     for command in (smoke, live):
         command.add_argument(
+            "--canary",
+            action="store_true",
+            help="Enable the separate UUID source-text intervention condition",
+        )
+        command.add_argument(
             "--lineage-namespace", help="Observe DCPG in one native task and save a state sidecar"
         )
         command.add_argument("--policy", type=Path, help="Frozen tool policy for ordered online cascade")
@@ -156,6 +161,7 @@ def main(argv: list[str] | None = None) -> int:
                     online_provenance=args.online_provenance,
                     provenance_policy=str(args.policy) if args.policy else None,
                     lineage_namespace=args.lineage_namespace,
+                    canary_enabled=args.canary,
                     semantic_model=str(args.semantic_model) if args.semantic_model else None,
                     semantic_revision=args.semantic_revision,
                 ),
@@ -167,6 +173,8 @@ def main(argv: list[str] | None = None) -> int:
             data = config.model_dump()
             if args.lineage_namespace is not None:
                 data["lineage_namespace"] = args.lineage_namespace
+            if args.canary:
+                data["canary_enabled"] = True
             if args.model:
                 data["model"] = args.model
                 if not args.model.startswith("openai/gpt-oss"):

@@ -187,7 +187,10 @@ def verify(run: Path) -> dict:
             before[name] = hashlib.sha256(raw).hexdigest()
             paths.append(run / name)
         lineage_checks["lineage_mode_declared"] = summary["online_provenance"].get("lineage_enabled") is True
-    tracker = ProvenanceTracker(semantic_matcher=matcher, policy=policy, lineage=lineage)
+    canary_enabled = config.get("canary_enabled", False)
+    tracker = ProvenanceTracker(
+        semantic_matcher=matcher, policy=policy, lineage=lineage, canary_enabled=canary_enabled
+    )
     replay = [call for event in events if (call := tracker.consume(event)) is not None]
     live_rows = [row for row in rows if row["record_type"] == "call_analysis"]
     live = [copy.deepcopy(row["call"]) for row in live_rows]
@@ -225,6 +228,24 @@ def verify(run: Path) -> dict:
         == Counter(row["proposal_event_id"] for row in live_rows),
         "live_equals_replay_except_availability": checked(lambda: json_equal(live, replay)),
     }
+    if canary_enabled:
+        from agentdojo_lab.canary import CanaryInjector
+
+        checks["canary_intervention_complete"] = (
+            summary.get("canary", {}).get("complete") is True
+            and summary.get("online_provenance", {}).get("canary_enabled") is True
+            and manifest.get("input_condition") == "canary_intervention"
+        )
+        audits = [event["data"] for event in events if event["event_type"] == "TOOL_OUTPUT_INTERVENTION"]
+        counts = summary.get("canary", {}).get("counts", {})
+        checks["canary_injector_metadata_matches"] = manifest.get("canary") == CanaryInjector(policy).metadata
+        checks["all_interventions_have_linked_published_results"] = all(
+            row["result_event_id"] is not None for row in tracker.canary_assignments.values()
+        ) and len(tracker.canary_assignments) == len(audits)
+        checks["canary_counts_match_events"] = counts.get("prepare_calls", 0) == len(audits) and all(
+            counts.get(status, 0) == sum(audit["status"] == status for audit in audits)
+            for status in ("assigned", "skipped")
+        )
     checks["analysis_and_receipt_identities_match"] = checked(
         lambda: (
             all(same_identity(row, proposals[row["proposal_event_id"]]) for row in live_rows)

@@ -27,9 +27,10 @@ def _lineage_for_run(run, manifest, policy, semantic_matcher, namespace):
 
     if policy is None:
         raise ValueError("Lineage replay requires a frozen policy")
+    canary_enabled = manifest.get("config", {}).get("canary_enabled", False)
     initial = manifest.get("online_provenance", {}).get("lineage", {}).get("initial_state")
     if initial is None:
-        return DCPG(namespace, policy, semantic_matcher=semantic_matcher), {}
+        return DCPG(namespace, policy, semantic_matcher=semantic_matcher, canary_enabled=canary_enabled), {}
     if initial.get("path") != "lineage-initial-state.json":
         raise ValueError("Unsupported recorded lineage checkpoint path")
     path = run / "lineage-initial-state.json"
@@ -38,7 +39,9 @@ def _lineage_for_run(run, manifest, policy, semantic_matcher, namespace):
     raw = path.read_bytes()
     if hashlib.sha256(raw).hexdigest() != initial.get("sha256"):
         raise ValueError("Recorded initial lineage checkpoint changed")
-    return DCPG.load_state(path, namespace, policy, semantic_matcher=semantic_matcher), {path.name: raw}
+    return DCPG.load_state(
+        path, namespace, policy, semantic_matcher=semantic_matcher, canary_enabled=canary_enabled
+    ), {path.name: raw}
 
 
 def _read_run(run: Path, semantic_matcher=None, policy=None, lineage_namespace=None) -> dict:
@@ -60,7 +63,10 @@ def _read_run(run: Path, semantic_matcher=None, policy=None, lineage_namespace=N
         lineage, initial = _lineage_for_run(run, manifest, policy, semantic_matcher, lineage_namespace)
         raw.update(initial)
         paths.update({name: run / name for name in initial})
-    tracker = ProvenanceTracker(semantic_matcher=semantic_matcher, policy=policy, lineage=lineage)
+    canary_enabled = manifest.get("config", {}).get("canary_enabled", False)
+    tracker = ProvenanceTracker(
+        semantic_matcher=semantic_matcher, policy=policy, lineage=lineage, canary_enabled=canary_enabled
+    )
     for line in raw["events.jsonl"].decode("utf-8").splitlines():
         tracker.consume(json.loads(line))
     if any(p.read_bytes() != raw[name] for name, p in paths.items()):
@@ -78,6 +84,7 @@ def _read_run(run: Path, semantic_matcher=None, policy=None, lineage_namespace=N
         "audit_valid": audit["valid"],
         "source_hashes": {name: hashlib.sha256(data).hexdigest() for name, data in raw.items()},
         "calls": tracker.calls,
+        **({"input_condition": "canary_intervention"} if canary_enabled else {}),
         **({"lineage_graph": lineage.snapshot()} if lineage is not None else {}),
     }
 
@@ -345,7 +352,7 @@ def _semantic_view(field, sources):
             f"Encoded argument span {esc(target_tokens.get('visible_span', '—'))}"
             f" · {'Argument truncated; only the highlighted window was compared' if target_tokens.get('truncated') else 'Argument not truncated or not scored'}</p>"
             f"{target_view}"
-            f"<details><summary>Full original source</summary><pre>{esc(source['text'])}</pre></details>"
+            f"<details><summary>Full observed source text</summary><pre>{esc(source['text'])}</pre></details>"
             f"<details><summary>All chunks ({len(chunks)})</summary>"
             "<p>Highlighting marks the encoded window. Each chunk score separately indicates whether it meets the similarity threshold.</p>"
             f"{''.join(chunks) or '<p>No scored chunks.</p>'}</details></details>"
@@ -381,13 +388,13 @@ def _cascade_view(field, sources):
             "<table><thead><tr><th>Stage</th><th>Status</th><th>Score</th><th>Reason</th></tr></thead>"
             f"<tbody>{''.join(rows)}</tbody></table>"
             f'<p class="meta">{esc(pair["source_event_id"])} · {esc(pair["request_pointer"])}</p>'
-            f"<details><summary>Full original source</summary><pre>{esc(source['text'])}</pre></details>"
+            f"<details><summary>Full observed source text</summary><pre>{esc(source['text'])}</pre></details>"
             f"<details><summary>Stage evidence, chunks and thresholds</summary><pre>{esc(json.dumps(pair, indent=2, ensure_ascii=False))}</pre></details></details>"
         )
     return (
         f"<details open><summary>Ordered cascade · {esc(field['cascade_scope']['status'])} · {len(panels)} pairs</summary>"
         "<p>Each eligible source is checked independently. Later stages are not called after that pair matches. "
-        "Canary is disabled in this passive condition. A match is a candidate, not an unsafe-action verdict.</p>"
+        "Tier 1 requires a registered marker in an explicitly declared canary condition. A match is a candidate, not an unsafe-action verdict.</p>"
         + "".join(panels)
         + f"<details><summary>Policy scope and excluded sources</summary><pre>{esc(json.dumps(field['cascade_scope'], indent=2))}</pre></details></details>"
     )
@@ -617,13 +624,25 @@ def export_provenance(
         ],
     }
     if policy is not None:
-        from agentdojo_lab.cascade import METHOD, CascadeMatcher
+        from agentdojo_lab.cascade import CANARY_METHOD, METHOD, CascadeMatcher
 
         report["policy"] = policy.metadata
         report["methods"] = {
             "exact_v1": copy.deepcopy(METHODS["exact_v1"]),
             METHOD: CascadeMatcher(semantic_matcher).metadata,
+            **(
+                {CANARY_METHOD: CascadeMatcher(semantic_matcher, canary_enabled=True).metadata}
+                if any(run.get("input_condition") == "canary_intervention" for run in runs)
+                else {}
+            ),
         }
+        if any(run.get("input_condition") == "canary_intervention" for run in runs):
+            report["canary"] = {
+                "condition": "canary_intervention",
+                "intervention_runs": sum(run.get("input_condition") == "canary_intervention" for run in runs),
+                "passive_runs": sum(run.get("input_condition") != "canary_intervention" for run in runs),
+                "scope": "Record-level conditions remain separate; no pooled efficacy or causal estimate",
+            }
         report["analysis_timing_scope"] = (
             "Local reads, audit, prefix replay, exact baseline and selected cascade stages; excludes model loading/report writing; not live overhead"
         )
