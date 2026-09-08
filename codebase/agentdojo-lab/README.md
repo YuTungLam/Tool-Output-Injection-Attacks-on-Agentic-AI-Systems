@@ -1,6 +1,6 @@
 # AgentDojo Lab
 
-建立能重复运行的 **AgentDojo 原生正常任务基线**：Groq 模型调用 → AgentDojo 工具执行 → 原生任务评估 → 轨迹与运行配置落盘。已接入 online tracer 的第一层：运行时事件采集器。现另提供按历史前缀重放的参数来源候选分析与 NeuroTaint-style LCS 组件；尚未验证来源准确率、恶意传播或因果关系。
+建立能重复运行的 **AgentDojo 原生正常任务基线**：Groq 模型调用 → AgentDojo 工具执行 → 原生任务评估 → 轨迹与运行配置落盘。已接入 online tracer 的第一层：运行时事件采集器。现另提供按历史前缀重放的参数来源候选分析、NeuroTaint-style LCS 与可选的本地 MiniLM 语义/分块组件；尚未验证来源准确率、恶意传播或因果关系。
 
 ## 参数来源分析（2026-09-08）
 
@@ -285,6 +285,8 @@ HTML 生成在 agent 执行、原生评估及事件记录结束后进行。导�
 
 适配器不增加重试，OpenAI SDK 使用 `max_retries=0`。但 AgentDojo 的 `run_task_with_pipeline` 在缺少最终模型文本时，会最多执行 pipeline **3 次（总计）**。因此 `max_tool_rounds` 是单次工具循环的上限，不是整个任务模型请求数的硬上限；应以 `summary.json` 中记录的实际请求数和 token usage 评估开销。
 
-本阶段使用原生正常任务，未添加 CTTA、模型参数更新或动作拦截。正常任务日志中的 `security` 是上游无注入路径的固定返回值，不代表测得了安全能力。下一步在更多正常任务上检查采集覆盖率，再实现带未知来源标记的参数来源匹配。
+本阶段使用原生正常任务，未添加 CTTA、模型参数更新或动作拦截。正常任务日志中的 `security` 是上游无注入路径的固定返回值，不代表测得了安全能力。已实现带未知/多来源标记的参数候选；下一步接入实时归因、补足其余方法并建立独立来源评测。
+
+可选 MiniLM 组件的安装、固定模型下载、运行命令、分块与截断规则见 [SEMANTIC.md](SEMANTIC.md)。语义计算只读取本地模型和原有日志，不需要 Groq API，也不读取开发标注。默认 `provenance` 仍只做 exact/LCS。
 
 AgentDojo 的任务定义、环境和 evaluator 以 [固定上游源码](https://github.com/ethz-spylab/agentdojo/tree/089ed468cf3ed0322acc66b0211f26d9d90dbf60) 为准；使用说明见 [AgentDojo 官方文档](https://agentdojo.spylab.ai/)。

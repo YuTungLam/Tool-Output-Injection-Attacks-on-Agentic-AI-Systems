@@ -1,10 +1,12 @@
 # Handoff：AgentDojo Recorder → 参数来源归因
 
-最新补记：2026-09-08（Pacific/Auckland）。下方 2026-09-07 的详细交接保留为历史快照，当前状态以本补记和 [PROVENANCE.md](PROVENANCE.md) 为准。
+最新补记：2026-09-08（Pacific/Auckland）。下方 2026-09-07 的详细交接保留为历史快照，当前状态以本补记、[PROVENANCE.md](PROVENANCE.md) 和 [SEMANTIC.md](SEMANTIC.md) 为准。
 
 已新增 `ProvenanceTracker.consume(event)`、参数级精确匹配、NeuroTaint-style Tier 2 LCS、空白来源核查包和本地 HTML 证据报告。已有 10 条真实轨迹按历史前缀重放得到 21 次提议、54 个叶参数：27 个单来源候选、4 个多来源候选、23 个没有精确证据。没有增加 Groq 调用。
 
-下一步优先独立核查字段并固定开发标签，再实现 MiniLM 语义基线。当前没有人工真值、归因准确率、恶意传播或因果验证；live 归因回调尚未接入，不能把增量离线重放称为已完成线上归因。新增源码/依赖声明与旧 batch 的冻结哈希不同，继续旧 20 次 clean 重复须使用旧实现快照。
+随后已新增可选 MiniLM Tier 3 整段与 Tier 4 分块语义组件，固定 revision/文件哈希/分块假设/截断范围；命令与最新结果见 SEMANTIC.md。8 个教学案例已整理为助手开发标注草稿，明确非盲、非独立，仍需人工核查。
+
+下一步接入实时归因，补足其余 NeuroTaint 方法并建立独立评测。当前没有人工真值、归因准确率、恶意传播或因果验证；live 归因回调尚未接入，不能把增量离线重放称为已完成线上归因。新增源码/依赖声明与旧 batch 的冻结哈希不同，继续旧 20 次 clean 重复须使用旧实现快照。`runs/`、`reports/`、`.model-cache/` 被忽略，换电脑需要同步日志并重新下载固定模型。
 
 ---
 

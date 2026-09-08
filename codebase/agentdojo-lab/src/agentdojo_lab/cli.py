@@ -51,6 +51,12 @@ def main(argv: list[str] | None = None) -> int:
     provenance.add_argument(
         "--output", type=Path, required=True, help="New analysis directory outside source runs"
     )
+    provenance.add_argument(
+        "--semantic-model", type=Path, help="Enable Tier 3/4 using a local pinned MiniLM snapshot"
+    )
+    provenance.add_argument(
+        "--semantic-revision", help="Full model commit SHA; required with --semantic-model"
+    )
     live = commands.add_parser("run", help="Run selected clean tasks against Groq")
     live.add_argument("--config", type=Path, default=ROOT / "configs" / "groq.toml")
     live.add_argument("--model", help="Override the Groq model ID")
@@ -92,7 +98,18 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "provenance":
             from agentdojo_lab.provenance_report import export_provenance
 
-            result = export_provenance(run_dirs=args.run, batch=args.batch, output=args.output)
+            if bool(args.semantic_model) != bool(args.semantic_revision):
+                raise ValueError("Use --semantic-model and --semantic-revision together")
+            matcher = None
+            if args.semantic_model:
+                from agentdojo_lab.semantic import LocalMiniLMEncoder, SemanticMatcher
+
+                matcher = SemanticMatcher(
+                    LocalMiniLMEncoder(args.semantic_model, revision=args.semantic_revision)
+                )
+            result = export_provenance(
+                run_dirs=args.run, batch=args.batch, output=args.output, semantic_matcher=matcher
+            )
         elif args.command == "tasks":
             suites = get_suites(args.benchmark_version)
             if args.suite not in suites:

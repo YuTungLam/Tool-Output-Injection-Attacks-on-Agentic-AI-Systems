@@ -113,7 +113,8 @@ def structured_scalars(text: str) -> dict:
 class ProvenanceTracker:
     """Incremental, deterministic candidate generation over one event stream."""
 
-    def __init__(self):
+    def __init__(self, semantic_matcher=None):
+        self.semantic_matcher = semantic_matcher
         self.run_id = None
         self.sequence = 0
         self.seen = set()
@@ -240,7 +241,7 @@ class ProvenanceTracker:
             if path == "" and value == {}:
                 continue
             text = _text(value)
-            exact, lexical = [], []
+            exact, lexical, semantic = [], [], []
             for occurrence in request["sources"]:
                 source = self.sources[occurrence["source_id"]]
                 base = {**occurrence, "kind": source["kind"], "source_event_id": source["source_event_id"]}
@@ -270,6 +271,11 @@ class ProvenanceTracker:
                             )
                 score = lcs_evidence(source["text"], text or "")
                 lexical.append({**base, **score})
+                if self.semantic_matcher is not None:
+                    # The scorer sees only this request's visible source and current argument.
+                    semantic.append(
+                        {**base, **copy.deepcopy(self.semantic_matcher.compare(source["text"], text or ""))}
+                    )
             distinct = {x["source_id"] for x in exact}
             fields.append(
                 {
@@ -285,6 +291,7 @@ class ProvenanceTracker:
                     ),
                     "exact_candidates": exact,
                     "nt_style_lcs": lexical,
+                    **({"nt_style_semantic": semantic} if self.semantic_matcher is not None else {}),
                     "provenance_verdict": "unreviewed",
                     "maliciousness": "not_assessed",
                     "causal_influence": "not_assessed",

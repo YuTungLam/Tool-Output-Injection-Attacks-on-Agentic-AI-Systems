@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import html
 import json
 import os
 import re
+import time
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,7 +21,7 @@ def _json(path: Path, value):
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
 
 
-def _read_run(run: Path) -> dict:
+def _read_run(run: Path, semantic_matcher=None) -> dict:
     run = run.expanduser().resolve()
     paths = {name: run / name for name in ("events.jsonl", "manifest.json", "summary.json")}
     if any(not p.is_file() or not p.resolve().is_relative_to(run) for p in paths.values()):
@@ -31,7 +33,7 @@ def _read_run(run: Path) -> dict:
     audit = inspect_events(paths["events.jsonl"])
     if not audit["valid"]:
         raise ValueError(f"Event audit failed: {run.name}")
-    tracker = ProvenanceTracker()
+    tracker = ProvenanceTracker(semantic_matcher=semantic_matcher)
     for line in raw["events.jsonl"].decode("utf-8").splitlines():
         tracker.consume(json.loads(line))
     if any(p.read_bytes() != raw[name] for name, p in paths.items()):
@@ -94,7 +96,7 @@ def _counts(runs):
     fields = [field for run in runs for call in run["calls"] for field in call["fields"]]
     exact = Counter(field["exact_status"] for field in fields)
     scored = Counter(hit["status"] for field in fields for hit in field["nt_style_lcs"])
-    return {
+    counts = {
         "analyzed_runs": len(runs),
         "proposals": sum(len(run["calls"]) for run in runs),
         "argument_leaves": len(fields),
@@ -111,6 +113,21 @@ def _counts(runs):
         "accuracy": None,
         "causal_or_malicious_verdicts": 0,
     }
+    if any("nt_style_semantic" in field for field in fields):
+        comparisons = [hit for field in fields for hit in field.get("nt_style_semantic", [])]
+        counts["semantic_comparison_statuses"] = dict(Counter(h.get("status") for h in comparisons))
+        for tier in ("tier3", "tier4"):
+            counts[f"fields_with_{tier}_tool_candidate"] = sum(
+                any(
+                    h["kind"] == "tool" and h.get(tier, {}).get("matched") is True
+                    for h in field.get("nt_style_semantic", [])
+                )
+                for field in fields
+            )
+            counts[f"{tier}_truncated_comparisons"] = sum(
+                h.get(tier, {}).get("truncated") is True for h in comparisons
+            )
+    return counts
 
 
 def _annotation_item(run, call, field):
@@ -191,6 +208,87 @@ source 的 request_pointer 指向 MODEL_REQUEST 事件内真实出站文本。
 """
 
 
+def _semantic_view(field, sources):
+    """Show independent semantic scores and the actual encoded chunk windows."""
+    if "nt_style_semantic" not in field:
+        return ""
+
+    def esc(value):
+        return html.escape(str(value), quote=True)
+
+    def score(value):
+        return f"{value:.3f}" if isinstance(value, (float, int)) else "—"
+
+    def state(tier):
+        if tier.get("status") != "scored":
+            return esc(tier.get("status", "未评分"))
+        return ("阈值命中" if tier.get("matched") else "未达阈值") + (
+            " · 存在截断" if tier.get("truncated") else ""
+        )
+
+    rows = []
+    for hit in field["nt_style_semantic"]:
+        source = sources[hit["source_id"]]
+        tier3, tier4 = hit.get("tier3", {}), hit.get("tier4", {})
+        chunks = []
+        for chunk in tier4.get("chunks", []):
+            start, end = chunk["span"]
+            visible_start, visible_end = chunk["visible_span"]
+            excerpt = (
+                esc(source["text"][start:visible_start])
+                + "<mark>"
+                + esc(source["text"][visible_start:visible_end])
+                + "</mark>"
+                + esc(source["text"][visible_end:end])
+            )
+            tokens = chunk.get("tokenization", {})
+            chunks.append(
+                f'<details class="source"><summary>片段 [{start}, {end}) · {score(chunk.get("score"))}'
+                f" · {'阈值命中' if chunk.get('matched') else '未达阈值'}</summary>"
+                f'<p class="meta">编码范围 [{visible_start}, {visible_end}) · '
+                f"{esc(tokens.get('encoded_tokens', '—'))}/{esc(tokens.get('input_tokens', '—'))} tokens"
+                f" · {'已截断' if tokens.get('truncated') else '未截断'}</p><pre>{excerpt}</pre></details>"
+            )
+        coverage = tier4.get("coverage")
+        coverage_text = f"{coverage:.1%}" if isinstance(coverage, (int, float)) else "—"
+        source_tokens = tier3.get("source_tokenization", {})
+        target_tokens = tier3.get("target_tokenization", {})
+        target_view = ""
+        if target_tokens.get("visible_span"):
+            start, end = target_tokens["visible_span"]
+            target = field["value"] if isinstance(field["value"], str) else json.dumps(field["value"])
+            marked_target = (
+                esc(target[:start]) + "<mark>" + esc(target[start:end]) + "</mark>" + esc(target[end:])
+            )
+            target_view = (
+                "<details><summary>参数实际编码范围</summary>" + f"<pre>{marked_target}</pre></details>"
+            )
+        rows.append(
+            f'<details class="source"><summary>{esc(hit["kind"])} · 消息 {hit["message_index"]}'
+            f" · 整段 {score(tier3.get('score'))} · 最佳片段 {score(tier4.get('score'))}</summary>"
+            f'<p class="meta">{esc(hit["source_event_id"])} · {esc(hit["request_pointer"])}</p>'
+            f"<p>Tier 3：{state(tier3)}；编码原文范围 {esc(tier3.get('source_visible_span', '—'))}。<br>"
+            f"Tier 4：{state(tier4)}；匹配编码范围占原文 {coverage_text}。</p>"
+            f'<p class="meta">来源 tokens {esc(source_tokens.get("encoded_tokens", "—"))}/'
+            f"{esc(source_tokens.get('input_tokens', '—'))}；"
+            f"参数 tokens {esc(target_tokens.get('encoded_tokens', '—'))}/"
+            f"{esc(target_tokens.get('input_tokens', '—'))}；"
+            f"参数编码范围 {esc(target_tokens.get('visible_span', '—'))}"
+            f" · {'参数已截断，只比较高亮窗口' if target_tokens.get('truncated') else '参数未截断或未评分'}</p>"
+            f"{target_view}"
+            f"<details><summary>原始来源全文</summary><pre>{esc(source['text'])}</pre></details>"
+            f"<details><summary>全部分块（{len(chunks)}）</summary>"
+            "<p>高亮表示模型编码的范围；是否达到相似度阈值另见每块分数。</p>"
+            f"{''.join(chunks) or '<p>没有已评分的分块。</p>'}</details></details>"
+        )
+    return (
+        f"<details><summary>MiniLM 语义比较（{len(rows)} 项）</summary>"
+        "<p>整段与分块分别评分，尚未实现完整级联。相似度不是来源概率；"
+        "高分不能证明恶意或因果影响。分块与覆盖率定义见完整分析 JSON 的 methods。</p>"
+        f"{''.join(rows) or '<p>当前没有文本来源。</p>'}</details>"
+    )
+
+
 def _viewer(report):
     def esc(value):
         return html.escape(str(value), quote=True)
@@ -242,7 +340,8 @@ def _viewer(report):
                     f"<h3>精确匹配候选</h3>{''.join(matches) or '<p>没有直接精确匹配；来源保持未知。</p>'}"
                     f"<details><summary>NeuroTaint-style LCS 比较（{len(lcs_rows)} 项）</summary>"
                     f"<p>普通阈值 0.15。短参数可能高分；这些是词法候选，不是恶意性或因果结论。</p>"
-                    f"{''.join(lcs_rows) or '<p>当前没有文本来源。</p>'}</details></details>"
+                    f"{''.join(lcs_rows) or '<p>当前没有文本来源。</p>'}</details>"
+                    f"{_semantic_view(field, sources)}</details>"
                 )
             pieces.append(
                 f"<article><h2>{esc(call['task_id'])} · {esc(call['function'])}</h2>"
@@ -252,6 +351,24 @@ def _viewer(report):
                 f"{''.join(rows) or '<p>没有叶参数。</p>'}</article>"
             )
     counts = report["counts"]
+    semantic_summary = ""
+    if "nt_style_semantic_v1" in report["methods"]:
+        method = report["methods"]["nt_style_semantic_v1"]
+        encoder = method.get("encoder", {})
+        comparison_statuses = counts.get("semantic_comparison_statuses", {})
+        semantic_summary = (
+            f"<p>MiniLM：整段工具候选 {counts.get('fields_with_tier3_tool_candidate', 0)} 个字段；"
+            f"分块工具候选 {counts.get('fields_with_tier4_tool_candidate', 0)} 个字段。"
+            f"语义阈值 {esc(method.get('semantic_threshold', '—'))}；"
+            f"覆盖率阈值 {esc(method.get('coverage_threshold', '—'))}。</p>"
+            f"<p>比较状态：已评分 {comparison_statuses.get('scored', 0)}；"
+            f"编码错误 {comparison_statuses.get('encoder_error', 0)}；"
+            f"超出预算 {comparison_statuses.get('budget_exceeded', 0)}；"
+            f"不适用 {comparison_statuses.get('not_applicable', 0)}。未评分不能视为负例。</p>"
+            f"<details><summary>本地模型与方法配置</summary><p>{esc(encoder.get('model_id', '测试编码器'))}"
+            f" · revision {esc(encoder.get('revision', '—'))}</p>"
+            f"<pre>{esc(json.dumps(method, ensure_ascii=False, indent=2))}</pre></details>"
+        )
     return f"""<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
@@ -267,13 +384,14 @@ mark{{background:#ffe18b;color:#182e36}}.meta{{font-size:14px;color:#506670;over
 </style></head><body><header><h1>参数来源证据</h1>
 <p>{counts["analyzed_runs"]} 条运行 · {counts["proposals"]} 次调用提议 · {counts["argument_leaves"]} 个叶参数</p>
 <p>按历史前缀重放。点开参数查看候选源片段；尚未完成人工核查，不显示准确率、恶意传播或因果结论。</p>
+{semantic_summary}
 <p>若准备独立标注，请先使用 <a href="annotations/items.jsonl">空白核查包</a> 和
 <a href="annotations/instructions.md">填写说明</a>，避免被下方算法候选影响。</p>
 <p><a href="analysis.json">完整分析 JSON</a> · <a href="candidates.jsonl">逐参数候选</a></p></header>
 {"".join(pieces)}</body></html>"""
 
 
-def export_provenance(*, run_dirs=None, batch=None, output: Path) -> dict:
+def export_provenance(*, run_dirs=None, batch=None, output: Path, semantic_matcher=None) -> dict:
     run_dirs, batch_info = _select_runs(run_dirs, batch)
     if not run_dirs:
         raise ValueError("No recorded runs to analyze")
@@ -286,7 +404,9 @@ def export_provenance(*, run_dirs=None, batch=None, output: Path) -> dict:
             protected.append(run.parent.parent)
     if output.exists() or any(output.is_relative_to(root) for root in protected):
         raise ValueError("Use a new output directory outside source runs")
-    runs = [_read_run(run) for run in run_dirs]
+    analysis_start = time.perf_counter()
+    runs = [_read_run(run, semantic_matcher=semantic_matcher) for run in run_dirs]
+    analysis_elapsed = time.perf_counter() - analysis_start
     identities = [run["run_id"] for run in runs]
     if len(set(identities)) != len(identities):
         raise ValueError("Duplicate run IDs would collide in annotation identity")
@@ -297,7 +417,20 @@ def export_provenance(*, run_dirs=None, batch=None, output: Path) -> dict:
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "mode": "offline_prefix_replay",
         "real_llm_calls_added": 0,
-        "methods": METHODS,
+        "methods": {
+            **copy.deepcopy(METHODS),
+            **(
+                {"nt_style_semantic_v1": copy.deepcopy(semantic_matcher.metadata)}
+                if semantic_matcher is not None
+                else {}
+            ),
+        },
+        "component_mode": "independent_all_pairs",
+        "analysis_wall_seconds": analysis_elapsed,
+        "analysis_timing_scope": (
+            "Local recording reads, audit, prefix replay and all enabled independent comparisons; "
+            "excludes model construction, report writing and agent execution; not live overhead or cascade cost"
+        ),
         "batch": batch_info,
         "counts": _counts(runs),
         "runs": runs,
