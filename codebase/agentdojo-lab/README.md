@@ -1,10 +1,29 @@
 # AgentDojo Lab
 
-Current workflow (2026-09-08): a separate UUID Canary intervention condition alongside the passive tracer.
-Six of eight engineering acceptance gates are complete. Read [CANARY.md](CANARY.md),
-[CANARY-RESULTS.md](CANARY-RESULTS.md), and [reproduction progress](REPRODUCTION_PROGRESS.json).
-The two preselected real trials both failed at provider tool-name validation before a sink. The Canary
-trial verifies actual marker insertion/exposure; real sink survival and task utility remain unknown.
+Current workflow (2026-09-09): isolated counterfactual auditing of recorded proposal prefixes.
+Seven of eight engineering acceptance gates are complete. Read [COUNTERFACTUAL.md](COUNTERFACTUAL.md),
+[COUNTERFACTUAL-RESULTS.md](COUNTERFACTUAL-RESULTS.md), and [reproduction progress](REPRODUCTION_PROGRESS.json).
+Seven native controls preserve primary behavior; two preselected Groq auditor calls return valid
+judgments. These predictions do not establish maliciousness or observed causal behavior. The earlier
+real Canary pair remains a retained failure before a sink; its live sink survival is still unknown.
+
+## Audit a saved sink with isolated counterfactual contexts
+
+The [counterfactual protocol](COUNTERFACTUAL.md) implements the paper's A/B auditor prediction.
+It reads proposal-time evidence after the primary run ends. It does not execute a shadow agent or tools.
+First inspect eligibility without calling a model:
+
+```bash
+.venv/bin/dojo-lab counterfactual --run runs/my-canary-trial --output reports/my-audit-plan
+```
+
+Use `--live --max-probes 1` with another fresh output path to make at most one Groq auditor request.
+The strict trigger requires all four tiers to have complete negative evidence and a verified DCPG path;
+passive, explicitly matched, incomplete, and unsupported inputs can therefore produce only skips.
+Do not change thresholds to force activation. New audits write `manifest.json`, `counterfactual.jsonl`,
+`summary.json`, and an English standalone `report.html` outside the source run. The timeline highlights
+the isolated auditor diagram and links the original/neutralized contexts, changed paths, and judgments.
+Confidence is self-reported. An alert is a candidate influence judgment, not evidence of maliciousness.
 
 ## Inspect or run the separate Canary condition
 
@@ -397,9 +416,9 @@ HTML 生成在 agent 执行、原生评估及事件记录结束后进行。导�
 
 本阶段使用原生正常任务，未添加 CTTA、模型参数更新或动作拦截。正常任务日志中的 `security` 是上游无注入路径的固定返回值，不代表测得了安全能力。
 
-The live hook is available. Validation of source/sink policy and ordered cascade is now in progress under
-[CASCADE.md](CASCADE.md); the next gated work is DCPG lineage and memory restoration, followed by the
-remaining method components and independent source evaluation.
+The live hook, policy cascade, DCPG and separate Canary condition have bounded engineering validation.
+Current component status is in [REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json); the isolated
+auditor protocol is in [COUNTERFACTUAL.md](COUNTERFACTUAL.md). Independent source evaluation remains pending.
 
 可选 MiniLM 组件的安装、固定模型下载、运行命令、分块与截断规则见 [SEMANTIC.md](SEMANTIC.md)。语义计算只读取本地模型和原有日志，不需要 Groq API，也不读取开发标注。默认 `provenance` 仍只做 exact/LCS。
 

@@ -38,18 +38,22 @@ assumption as an author-specified choice.
 5. Completed for the declared engineering scope: a separate UUID Canary condition, native positive/negative
    controls and cross-session restoration. The real pair confirms marker insertion/exposure but both trials
    fail before a sink; real sink survival remains unknown. See [CANARY-RESULTS.md](CANARY-RESULTS.md).
-   Next is sink-driven counterfactual analysis, isolated from primary runs.
-6. Evaluate clean and injected cases with independent source judgments, repeated trials, component ablations,
+6. Completed for the bounded analyzer scope: source neutralization over exact proposal prefixes and a
+   separate no-tools A/B auditor, following the paper's displayed judge prompt. Seven native controls
+   preserve primary behavior; two preselected Groq auditor calls return valid judgments. These are
+   predictions, not observed counterfactual agent behavior. See [COUNTERFACTUAL-RESULTS.md](COUNTERFACTUAL-RESULTS.md).
+7. Evaluate clean and injected cases with independent source judgments, repeated trials, component ablations,
    false attribution/unknown/ambiguity analysis, timing, and resource costs.
 
 No CTTA, model-weight updates, automatic action blocking, or real-account operations are part of this scope.
 
 ## Acceptance progress
 
-[REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json) fixes eight equal acceptance gates. Six are
-accepted as of 2026-09-08: local components, deterministic live integration, fresh real-agent timing
+[REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json) fixes eight equal acceptance gates. Seven are
+accepted as of 2026-09-09: local components, deterministic live integration, fresh real-agent timing
 validation, source/sink policy with the ordinary passive cascade, DCPG with native memory restoration,
-and the separate Canary intervention condition. The next gate is the isolated counterfactual analyzer. This count is not a work estimate,
+the separate Canary intervention condition, and the isolated counterfactual auditor. The remaining
+gate is independent clean/injected evaluation. This count is not a work estimate,
 accuracy measurement, or claim that the original paper's tables have been reproduced. Completing an
 independent evaluation can include negative results; benchmark efficacy remains a separate measurement.
 

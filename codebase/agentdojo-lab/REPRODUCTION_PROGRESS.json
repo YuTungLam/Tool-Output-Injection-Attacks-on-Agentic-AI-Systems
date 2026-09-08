@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "checklist_version": "paper-method-gates-v1",
-  "as_of": "2026-09-08",
+  "as_of": "2026-09-09",
   "scope": "Independent paper-based NeuroTaint method reproduction in AgentDojo",
   "counting_rule": "Count accepted gates equally. This is neither estimated work remaining nor benchmark efficacy nor original-table reproduction.",
   "milestones": [
@@ -99,10 +99,22 @@
     {
       "id": "counterfactual",
       "title": "Isolated counterfactual analyzer",
-      "status": "pending",
+      "status": "accepted",
       "acceptance": "Implement sink-triggered source neutralization in isolated shadow contexts; record behavioral comparisons and verify primary execution is unchanged.",
-      "evidence": [],
-      "limits": "No real tool execution in shadow probes; judge confidence is not a calibrated causal probability."
+      "evidence": [
+        "COUNTERFACTUAL.md",
+        "COUNTERFACTUAL-RESULTS.md",
+        "tests/test_counterfactual.py",
+        "tests/test_counterfactual_integration.py",
+        "tests/test_counterfactual_transport.py",
+        "tests/test_counterfactual_report.py",
+        "runs/20260909-counterfactual-native-control/validation.json",
+        "reports/20260909-counterfactual-direct-live/summary.json",
+        "reports/20260909-counterfactual-memory-live/summary.json",
+        "reports/20260909-counterfactual-validation/quality.json"
+      ],
+      "limits": "Deferred no-tools auditor predictions only; seven authored benign native controls, two single-request Groq judgments, unchanged primary artifacts. Confidence is self-reported; no observed counterfactual agent behavior, maliciousness, independent causal accuracy, joint attribution, or primary-critical-path causal verdict. Strict missing/truncated/disabled evidence abstains; neutralization has disclosed structural and derived-history limitations.",
+      "acceptance_interpretation": "The displayed paper prompt specifies auditor-predicted behavioral comparison of A/B contexts, not an observed native agent rerun. Execution here is deferred using proposal-time prefixes."
     },
     {
       "id": "independent_evaluation",

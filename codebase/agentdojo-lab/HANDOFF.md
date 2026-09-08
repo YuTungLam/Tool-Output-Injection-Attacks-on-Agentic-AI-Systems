@@ -1,4 +1,41 @@
-# Handoff：AgentDojo Recorder → 参数来源归因
+# Handoff: current state and historical notes
+
+## Current handoff — 2026-09-09
+
+Gate 7 is accepted for the bounded analyzer scope: **7/8 acceptance gates, 87.5%**. See
+[COUNTERFACTUAL.md](COUNTERFACTUAL.md), [COUNTERFACTUAL-RESULTS.md](COUNTERFACTUAL-RESULTS.md), and
+[REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json). This percentage counts gates equally;
+it does not measure accuracy, work hours, security benefit, or original-table reproduction.
+
+The new `dojo-lab counterfactual` command reads a complete saved proposal sidecar and DCPG. Default
+mode writes plans without an API call. `--live` runs a separate Groq auditor after the primary episode;
+`--max-probes` bounds requests. Output must be a fresh directory outside the source run. No native
+tool interface is available to the auditor. The paper's displayed prompt is a prediction over original
+and neutralized histories; a second native agent is not executed.
+
+Seven authored native sessions pass 37/37 controls, using actual tools, identical UUID canaries,
+unchanged thresholds, and pinned MiniLM. Direct and restored-memory cases are eligible. Explicit
+matches, absent scoring, and observed truncation skip. The full suite passes 896 tests. The two
+frozen live auditor trials each make one request and return `would_call_anyway=false`, with
+self-reported confidence 0.97 and 0.85. Source artifacts stay unchanged. These benign conditional
+tasks are not independent malicious or causal labels. Do not rerun selected trials for a preferred answer.
+
+Open `reports/20260909-counterfactual-memory-live/report.html` for the memory-linked A/B audit or
+`reports/20260909-counterfactual-direct-live/report.html` for the direct source. Both have an English
+timeline, linked diagram, raw contexts/exchanges, changed paths, and explicit unknown handling.
+Validation/protocol/runtime/source hashes are in `reports/20260909-counterfactual-validation/`.
+
+Next is gate 8: independent clean/injected labels and a frozen repeated evaluation protocol, including
+false attribution, abstention, ambiguous sources, ablations, costs, and negative results. The auditor
+can be wrong or influenced by its input. Its confidence is not calibrated. Neutralization preserves
+some structural and derived information; multi-origin carriers abstain. Keep these limitations visible
+when designing evaluation. No CTTA, parameter changes, or action blocking is authorized in this scope.
+
+Branch remains `codex/agentdojo-lab`; local work is committed at the end of the session, with no push.
+Ignored `runs/`, `reports/`, and `.model-cache/` require separate transfer to continue on another machine.
+The material below is historical and does not supersede this update.
+
+---
 
 最新补记：2026-09-08（Pacific/Auckland）。下方 2026-09-07 的详细交接保留为历史快照，当前状态以本补记、[PROVENANCE.md](PROVENANCE.md) 和 [SEMANTIC.md](SEMANTIC.md) 为准。
 

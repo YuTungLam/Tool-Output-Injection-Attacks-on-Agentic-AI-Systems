@@ -59,6 +59,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     provenance.add_argument("--policy", type=Path, help="Select ordered cascade with a frozen tool policy")
     provenance.add_argument("--lineage-namespace", help="Build a DCPG independently for each recorded run")
+    causal = commands.add_parser(
+        "counterfactual", help="Audit saved proposal prefixes with an isolated, no-tools A/B judge"
+    )
+    causal.add_argument("--run", type=Path, required=True)
+    causal.add_argument("--output", type=Path, required=True, help="New directory outside the source run")
+    causal.add_argument(
+        "--live", action="store_true", help="Call Groq; default is plan-only with no API calls"
+    )
+    causal.add_argument("--max-probes", type=int, default=8)
+    causal.add_argument("--pacing-state", type=Path, help="Shared sequential auditor quota state")
     live = commands.add_parser("run", help="Run selected clean tasks against Groq")
     live.add_argument("--config", type=Path, default=ROOT / "configs" / "groq.toml")
     live.add_argument("--model", help="Override the Groq model ID")
@@ -91,6 +101,14 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "doctor":
             result = doctor()
+        elif args.command == "counterfactual":
+            from agentdojo_lab.counterfactual_audit import GroqCounterfactualJudge, audit_run
+            from agentdojo_lab.pacing import RequestPacer
+
+            judge = (
+                GroqCounterfactualJudge(pacer=RequestPacer(7000, args.pacing_state)) if args.live else None
+            )
+            result = audit_run(args.run, args.output, judge=judge, max_probes=args.max_probes)
         elif args.command == "inspect":
             result = inspect_events(args.events)
         elif args.command == "report":
