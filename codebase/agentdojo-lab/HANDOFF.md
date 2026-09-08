@@ -8,7 +8,19 @@
 
 随后已新增可选 MiniLM Tier 3 整段与 Tier 4 分块语义组件，固定 revision/文件哈希/分块假设/截断范围；命令与最新结果见 SEMANTIC.md。8 个教学案例已整理为助手开发标注草稿，明确非盲、非独立，仍需人工核查。
 
-最新进展：live 归因已接入，新的 Groq task20 完成 3/3 次执行前归因，7 个字段、36 组语义比较与离线重放一致；证据与边界见 [ONLINE-RESULTS.md](ONLINE-RESULTS.md)。按 [REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json) 的 8 项验收关卡，当前完成 3 项，下一项是 source/sink policy 和 ordered cascade。仍没有人工真值、归因准确率、恶意传播或因果验证。新增源码/依赖声明与旧 batch 的冻结哈希不同，继续旧 20 次 clean 重复须使用旧实现快照。`runs/`、`reports/`、`.model-cache/` 被忽略，换电脑需要同步日志并重新下载固定模型。
+Current progress (2026-09-08): gate 4 source/sink policy and `ordered_cascade` validation passed. Four of
+eight gates are accepted. Ten saved real runs produced 43 eligible pairs, all first hits at Tier 2.
+A fresh Groq task20 passed utility, with 3/3 pre-runtime analyses and exact live/replay equality for seven
+fields and ten cascade pairs. All 552 tests passed. Read [CASCADE.md](CASCADE.md) for the frozen
+current protocol and [CASCADE-RESULTS.md](CASCADE-RESULTS.md) for its validation evidence;
+[REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json) remains the gate-status record. The earlier
+`independent_all_pairs` mode is preserved. [ONLINE.md](ONLINE.md), [SEMANTIC.md](SEMANTIC.md), and
+[ONLINE-RESULTS.md](ONLINE-RESULTS.md) document that frozen earlier independent-scoring milestone and must
+not be rewritten as cascade results. DCPG lineage and memory restoration are the next gated work.
+Independent source ground truth, attribution accuracy, malicious propagation, and causal validation remain
+pending. Retain failed trials and source-policy exclusions. Continuing the older frozen clean repetitions
+requires their original implementation snapshot; do not bypass hash checks. `runs/`, `reports/`, and
+`.model-cache/` are ignored, so another machine needs the required logs and the pinned local model.
 
 ---
 

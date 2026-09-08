@@ -58,6 +58,7 @@ class RunConfig(BaseModel):
     request_timeout_seconds: float = Field(default=60.0, gt=0)
     record_events: bool = True
     online_provenance: bool = False
+    provenance_policy: str | None = None
     semantic_model: str | None = None
     semantic_revision: str | None = None
     pacing_tokens_per_minute: int | None = Field(default=None, ge=1000, le=1000000)
@@ -66,6 +67,10 @@ class RunConfig(BaseModel):
     def attribution_configuration(self):
         if self.online_provenance and not self.record_events:
             raise ValueError("Online provenance requires event recording")
+        if self.provenance_policy is not None and (
+            not self.online_provenance or not self.provenance_policy.strip()
+        ):
+            raise ValueError("A provenance policy requires online_provenance and a nonempty path")
         if bool(self.semantic_model) != bool(self.semantic_revision):
             raise ValueError("Use semantic_model and semantic_revision together")
         if (self.semantic_model is not None or self.semantic_revision is not None) and (
@@ -192,6 +197,13 @@ def run_clean(
     if not offline and not key:
         raise ValueError(f"Set GROQ_API_KEY in {ROOT / '.env'} before a live run. Do not paste it in chat.")
 
+    policy = None
+    if config.provenance_policy is not None:
+        from agentdojo_lab.policy import load_policy
+
+        policy = load_policy(Path(config.provenance_policy))
+        policy.validate_context(config.suite, config.benchmark_version, [tool.name for tool in suite.tools])
+
     # Load and verify optional local weights before executing any agent request.
     # Runtime attribution errors are fail-open; invalid setup fails preflight.
     matcher = None
@@ -231,8 +243,11 @@ def run_clean(
         "event_recording": {"enabled": config.record_events, "schema_version": 1},
         "online_provenance": {
             "enabled": config.online_provenance,
-            "mode": "synchronous_observation; independent_all_pairs",
+            "mode": "synchronous_observation; ordered_cascade"
+            if policy
+            else "synchronous_observation; independent_all_pairs",
             "semantic": matcher.metadata if matcher is not None else None,
+            "policy": policy.metadata if policy is not None else None,
             "implementation_sha256": {
                 name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
                 for name in (
@@ -242,6 +257,8 @@ def run_clean(
                     "provenance.py",
                     "lexical.py",
                     "semantic.py",
+                    "cascade.py",
+                    "policy.py",
                 )
             }
             if config.online_provenance
@@ -271,7 +288,9 @@ def run_clean(
             if config.online_provenance:
                 from agentdojo_lab.online import OnlineProvenance
 
-                attribution = OnlineProvenance(run_dir / "provenance.jsonl", semantic_matcher=matcher)
+                attribution = OnlineProvenance(
+                    run_dir / "provenance.jsonl", semantic_matcher=matcher, policy=policy
+                )
             recorder = EventRecorder(
                 run_dir / "events.jsonl",
                 run_dir.name,

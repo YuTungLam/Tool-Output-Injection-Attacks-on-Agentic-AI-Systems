@@ -148,6 +148,133 @@ class SemanticMatcher:
             }
         )
 
+    def _stage_result(self, source: str, target: str, stage: str) -> dict:
+        if not isinstance(source, str) or not isinstance(target, str):
+            raise TypeError("source and target must be strings")
+        metadata = self.metadata
+        metadata["assumptions"]["evaluation"] = f"compute_{stage}_only_when_explicitly_called"
+        result = {
+            "method": METHOD,
+            "stage": stage,
+            "status": "not_applicable",
+            "score": None,
+            "matched": None,
+            "complete": False,
+            "truncated": False,
+            "source_length": len(source),
+            "target_length": len(target),
+            "semantic_threshold": self.semantic_threshold,
+            "metadata": metadata,
+        }
+        if stage == "tier4":
+            result.update(
+                coverage=None,
+                coverage_threshold=self.coverage_threshold,
+                chunks=[],
+                matched_visible_spans=[],
+            )
+        return result
+
+    @staticmethod
+    def _stage_unscored(result: dict, status: str, reason: str) -> dict:
+        result["status"] = status
+        result["metadata"]["unscored_reason"] = reason
+        return copy.deepcopy(result)
+
+    def compare_tier3(self, source: str, target: str) -> dict:
+        """Encode only the source and target; never construct or budget chunks."""
+        result = self._stage_result(source, target, "tier3")
+        if not source or not target:
+            return result
+        if max(len(source), len(target)) > MAX_CODEPOINTS_PER_INPUT:
+            return self._stage_unscored(result, "budget_exceeded", "max_codepoints_per_input")
+        if not source.strip() or not target.strip():
+            return result
+        try:
+            texts = [source, target]
+            encodings = self.encoder.encode(texts)
+            if len(encodings) != len(texts):
+                raise ValueError("Encoder returned the wrong number of results")
+            for encoded, text in zip(encodings, texts, strict=True):
+                _validate_encoding(encoded, text)
+            source_encoded, target_encoded = encodings
+            score = _cosine(source_encoded.embedding, target_encoded.embedding)
+            truncated = any(encoded.tokenization["truncated"] for encoded in encodings)
+            result.update(
+                status="scored",
+                score=score,
+                matched=score >= self.semantic_threshold,
+                complete=not truncated,
+                truncated=truncated,
+                source_tokenization=source_encoded.tokenization,
+                target_tokenization=target_encoded.tokenization,
+                source_visible_span=source_encoded.tokenization["visible_span"],
+            )
+            result["metadata"]["scoring_scope"] = (
+                "encoded_views_only" if truncated else "full_tokenized_inputs"
+            )
+        except Exception as error:
+            return self._stage_unscored(
+                self._stage_result(source, target, "tier3"), "encoder_error", type(error).__name__
+            )
+        return copy.deepcopy(result)
+
+    def compare_tier4(self, source: str, target: str) -> dict:
+        """Encode only the target and source chunks, preserving visible-span coverage."""
+        result = self._stage_result(source, target, "tier4")
+        if not source or not target:
+            return result
+        if max(len(source), len(target)) > MAX_CODEPOINTS_PER_INPUT:
+            return self._stage_unscored(result, "budget_exceeded", "max_codepoints_per_input")
+        if not source.strip() or not target.strip():
+            return result
+        chunks = chunk_spans(source)
+        if len(chunks) > MAX_CHUNKS:
+            return self._stage_unscored(result, "budget_exceeded", "max_chunks")
+        texts = [target, *[source[start:end] for start, end in (chunk["span"] for chunk in chunks)]]
+        try:
+            encodings = self.encoder.encode(texts)
+            if len(encodings) != len(texts):
+                raise ValueError("Encoder returned the wrong number of results")
+            for encoded, text in zip(encodings, texts, strict=True):
+                _validate_encoding(encoded, text)
+            target_encoded, *chunk_encodings = encodings
+            matched_spans = []
+            for chunk, encoded in zip(chunks, chunk_encodings, strict=True):
+                score = _cosine(encoded.embedding, target_encoded.embedding)
+                visible = [chunk["span"][0] + offset for offset in encoded.tokenization["visible_span"]]
+                chunk.update(
+                    score=score,
+                    matched=score >= self.semantic_threshold,
+                    tokenization=encoded.tokenization,
+                    visible_span=visible,
+                )
+                if chunk["matched"]:
+                    matched_spans.append(visible)
+            merged = _union_spans(matched_spans)
+            coverage = sum(end - start for start, end in merged) / len(source)
+            best_score = max(chunk["score"] for chunk in chunks)
+            truncated = any(encoded.tokenization["truncated"] for encoded in encodings)
+            result.update(
+                status="scored",
+                score=best_score,
+                coverage=coverage,
+                matched=best_score >= self.semantic_threshold and coverage >= self.coverage_threshold,
+                complete=not truncated,
+                truncated=truncated,
+                chunks=chunks,
+                matched_visible_spans=merged,
+                target_tokenization=target_encoded.tokenization,
+            )
+            result["metadata"]["scoring_scope"] = (
+                "encoded_views_only" if truncated else "full_tokenized_inputs"
+            )
+        except Exception as error:
+            return self._stage_unscored(
+                self._stage_result(source, target, "tier4"), "encoder_error", type(error).__name__
+            )
+        return copy.deepcopy(result)
+
     def compare(self, source: str, target: str) -> dict:
         if not isinstance(source, str) or not isinstance(target, str):
             raise TypeError("source and target must be strings")

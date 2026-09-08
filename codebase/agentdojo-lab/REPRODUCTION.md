@@ -23,24 +23,28 @@ assumption as an author-specified choice.
 ## Implementation sequence
 
 1. Completed: recorded request prefixes, exact baseline, Tier 2 LCS, local MiniLM Tier 3, and a disclosed
-   Tier 4 chunk/coverage implementation. Components currently run independently on saved traces.
+   Tier 4 chunk/coverage implementation. The original independent mode remains available.
 2. Completed for the tested integration scope: opt-in live attribution writes a separate JSONL sidecar and
    flush receipts before tool runtime entry. Deterministic native controls preserve requests/actions/history/
    environment. One fresh Groq task has 3/3 pre-runtime analyses, 7 fields and 36 semantic comparisons,
    with exact live/replay agreement. See [ONLINE-RESULTS.md](ONLINE-RESULTS.md).
-3. Add the remaining paper method components: source/sink policy, ordered cascade, DCPG lineage and memory
-   restoration, a separate canary condition, and sink-driven counterfactual analysis. Canary and shadow
+3. Completed for the ordinary passive condition: frozen workspace source/sink policy and ordered active
+   Tier 2–4 routing. Ten saved runs and a fresh Groq task pass replay checks, with actual encoder-boundary
+   controls. Tier 1 is explicitly disabled. See [CASCADE-RESULTS.md](CASCADE-RESULTS.md).
+4. Add DCPG lineage and memory restoration, a separate canary condition, and sink-driven counterfactual
+   analysis. Canary and shadow
    interventions must be distinguished from passive primary runs.
-4. Evaluate clean and injected cases with independent source judgments, repeated trials, component ablations,
+5. Evaluate clean and injected cases with independent source judgments, repeated trials, component ablations,
    false attribution/unknown/ambiguity analysis, timing, and resource costs.
 
 No CTTA, model-weight updates, automatic action blocking, or real-account operations are part of this scope.
 
 ## Acceptance progress
 
-[REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json) fixes eight equal acceptance gates. Three are
-accepted as of 2026-09-08: local components, deterministic live integration, and one fresh real-agent timing
-validation. The next gate is source/sink policy and an ordered cascade. This count is not a work estimate,
+[REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json) fixes eight equal acceptance gates. Four are
+accepted as of 2026-09-08: local components, deterministic live integration, fresh real-agent timing
+validation, and source/sink policy with the ordinary passive cascade. The next gate is DCPG lineage and
+memory restoration. This count is not a work estimate,
 accuracy measurement, or claim that the original paper's tables have been reproduced. Completing an
 independent evaluation can include negative results; benchmark efficacy remains a separate measurement.
 

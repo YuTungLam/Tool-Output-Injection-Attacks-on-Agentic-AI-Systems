@@ -1,9 +1,44 @@
 # AgentDojo Lab
 
-Current update (2026-09-08): opt-in live source attribution is implemented and validated on one fresh Groq
-task. See [ONLINE-RESULTS.md](ONLINE-RESULTS.md), [ONLINE.md](ONLINE.md), and the eight-gate
-[reproduction progress](REPRODUCTION_PROGRESS.json). Three gates are accepted; independent malicious-flow
-and causal evaluation remain pending. `dojo-lab run --config configs/groq_online.toml` starts a new live trial.
+Current update (2026-09-08): gate 4 source/sink policy and `ordered_cascade` validation passed on ten saved
+real traces, native controls and one fresh Groq task. Four of eight acceptance gates are completed.
+The frozen current protocol is [CASCADE.md](CASCADE.md); evidence and limits are in
+[CASCADE-RESULTS.md](CASCADE-RESULTS.md). Gate status is tracked in
+[reproduction progress](REPRODUCTION_PROGRESS.json).
+
+## Ordered cascade: current validation workflow
+
+Run these commands from this directory. This starts a fresh Groq `workspace/user_task_20` trial with the
+frozen workspace policy and local pinned MiniLM:
+
+```bash
+HF_HUB_OFFLINE=1 HF_HUB_DISABLE_TELEMETRY=1 \
+  .venv/bin/dojo-lab run --config configs/groq_cascade.toml
+```
+
+To analyze the existing ten clean traces without new Groq calls, use a new report directory:
+
+```bash
+HF_HUB_OFFLINE=1 HF_HUB_DISABLE_TELEMETRY=1 \
+  .venv/bin/dojo-lab provenance \
+  --batch runs/20260907T025045Z-clean-pilot-b93eae95 \
+  --policy configs/workspace_policy_v1.yaml \
+  --semantic-model .model-cache/all-MiniLM-L6-v2-1110a243 \
+  --semantic-revision 1110a243fdf4706b3f48f1d95db1a4f5529b4d41 \
+  --output reports/my-cascade-replay
+```
+
+The live configuration uses the same local model path and immutable revision shown in the replay command.
+Both commands require the verified local snapshot. The cascade short-circuits each source/argument pair
+independently; the passive canary tier is disabled and the exact baseline remains separate. Policy scope,
+excluded sources, unknown tools, and skipped stages remain visible. There is no hard analysis deadline.
+
+The earlier `independent_all_pairs` mode is preserved: use `configs/groq_online.toml` for a live trial or omit
+`--policy` from replay. [ONLINE.md](ONLINE.md), [SEMANTIC.md](SEMANTIC.md), and
+[ONLINE-RESULTS.md](ONLINE-RESULTS.md) describe that frozen earlier independent-scoring milestone; they are
+not the current cascade protocol or evidence of cascade acceptance. DCPG lineage and memory restoration
+are the next gated work. Independent source accuracy, malicious propagation, and causal validation remain
+pending; candidate and route counts do not establish them.
 
 建立能重复运行的 **AgentDojo 原生正常任务基线**：Groq 模型调用 → AgentDojo 工具执行 → 原生任务评估 → 轨迹与运行配置落盘。已接入 online tracer 的第一层：运行时事件采集器。现另提供按历史前缀重放的参数来源候选分析、NeuroTaint-style LCS 与可选的本地 MiniLM 语义/分块组件；尚未验证来源准确率、恶意传播或因果关系。
 
@@ -292,7 +327,11 @@ HTML 生成在 agent 执行、原生评估及事件记录结束后进行。导�
 
 适配器不增加重试，OpenAI SDK 使用 `max_retries=0`。但 AgentDojo 的 `run_task_with_pipeline` 在缺少最终模型文本时，会最多执行 pipeline **3 次（总计）**。因此 `max_tool_rounds` 是单次工具循环的上限，不是整个任务模型请求数的硬上限；应以 `summary.json` 中记录的实际请求数和 token usage 评估开销。
 
-本阶段使用原生正常任务，未添加 CTTA、模型参数更新或动作拦截。正常任务日志中的 `security` 是上游无注入路径的固定返回值，不代表测得了安全能力。已实现带未知/多来源标记的参数候选；下一步接入实时归因、补足其余方法并建立独立来源评测。
+本阶段使用原生正常任务，未添加 CTTA、模型参数更新或动作拦截。正常任务日志中的 `security` 是上游无注入路径的固定返回值，不代表测得了安全能力。
+
+The live hook is available. Validation of source/sink policy and ordered cascade is now in progress under
+[CASCADE.md](CASCADE.md); the next gated work is DCPG lineage and memory restoration, followed by the
+remaining method components and independent source evaluation.
 
 可选 MiniLM 组件的安装、固定模型下载、运行命令、分块与截断规则见 [SEMANTIC.md](SEMANTIC.md)。语义计算只读取本地模型和原有日志，不需要 Groq API，也不读取开发标注。默认 `provenance` 仍只做 exact/LCS。
 

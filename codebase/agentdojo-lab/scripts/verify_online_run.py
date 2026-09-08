@@ -9,6 +9,7 @@ from pathlib import Path
 
 from agentdojo_lab.inspection import inspect_events
 from agentdojo_lab.online import AVAILABILITY
+from agentdojo_lab.policy import ToolPolicy
 from agentdojo_lab.provenance import ProvenanceTracker
 from agentdojo_lab.semantic import LocalMiniLMEncoder, SemanticMatcher
 
@@ -30,6 +31,60 @@ def same_identity(row: dict, event: dict) -> bool:
 
 def nonnegative_ints(*values) -> bool:
     return all(type(value) is int and value >= 0 for value in values)
+
+
+def json_equal(left, right) -> bool:
+    return json.dumps(left, sort_keys=True, allow_nan=False) == json.dumps(
+        right, sort_keys=True, allow_nan=False
+    )
+
+
+def frozen_policy(manifest: dict) -> tuple[ToolPolicy | None, dict]:
+    """Restore the recorded policy document, never its mutable original pathname."""
+    config = manifest["config"]
+    snapshot = manifest.get("online_provenance", {}).get("policy")
+    configured = config.get("provenance_policy") is not None
+    checks = {"policy_snapshot_presence_consistent": configured == (snapshot is not None)}
+    if snapshot is None:
+        return None, checks
+    checks.update(
+        policy_snapshot_valid=False, policy_snapshot_hash_matches=False, policy_context_matches=False
+    )
+    try:
+        policy = ToolPolicy.from_dict(snapshot["document"])
+        checks["policy_snapshot_valid"] = True
+        checks["policy_snapshot_hash_matches"] = (
+            snapshot["sha256"] == policy.metadata["sha256"]
+            and snapshot["policy_id"] == policy.metadata["policy_id"]
+        )
+        policy.validate_context(config["suite"], config["benchmark_version"])
+        checks["policy_context_matches"] = True
+        return policy, checks
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return None, checks
+
+
+def cascade_counts(calls: list[dict]) -> tuple[int, dict]:
+    """Recompute counters from persisted pair evidence, independently of summary claims."""
+    pairs = [pair for call in calls for field in call["fields"] for pair in field.get("nt_style_cascade", [])]
+    stages = {tier: Counter() for tier in ("tier1", "tier2", "tier3", "tier4")}
+    for pair in pairs:
+        for tier in stages:
+            stages[tier][pair["stages"][tier]["status"]] += 1
+    return len(pairs), {
+        "cascade_status_counts": dict(Counter(pair["status"] for pair in pairs)),
+        "cascade_stage_counts": {tier: dict(counts) for tier, counts in stages.items()},
+        "cascade_first_hit_counts": dict(
+            Counter(pair["first_matched_tier"] for pair in pairs if pair["first_matched_tier"] is not None)
+        ),
+        "cascade_incomplete_pair_count": sum(
+            not pair["complete"] and pair["status"] != "not_applicable" for pair in pairs
+        ),
+        "policy_sink_count": sum(call["policy"]["sink"]["selected"] is True for call in calls),
+        "unclassified_proposal_count": sum(
+            call["policy"]["sink"]["classification"] == "unclassified_tool" for call in calls
+        ),
+    }
 
 
 def proposal_timing_valid(analysis: dict, receipt: dict, proposal: dict) -> bool:
@@ -107,13 +162,14 @@ def verify(run: Path) -> dict:
     raw_rows = source_bytes["provenance.jsonl"].splitlines(keepends=True)
     rows = [json.loads(line) for line in raw_rows]
     config = manifest["config"]
+    policy, policy_checks = frozen_policy(manifest)
     matcher = None
     if config.get("semantic_model"):
         model_path = Path(config["semantic_model"]).expanduser()
         if not model_path.is_absolute():
             model_path = Path(__file__).resolve().parents[1] / model_path
         matcher = SemanticMatcher(LocalMiniLMEncoder(model_path, revision=config["semantic_revision"]))
-    tracker = ProvenanceTracker(semantic_matcher=matcher)
+    tracker = ProvenanceTracker(semantic_matcher=matcher, policy=policy)
     replay = [call for event in events if (call := tracker.consume(event)) is not None]
     live_rows = [row for row in rows if row["record_type"] == "call_analysis"]
     live = [copy.deepcopy(row["call"]) for row in live_rows]
@@ -126,6 +182,7 @@ def verify(run: Path) -> dict:
     proposals = {event["event_id"]: event for event in events if event["event_type"] == "TOOL_CALL_PROPOSED"}
     starts = {event["event_id"]: event for event in events if event["event_type"] == "TOOL_RUNTIME_STARTED"}
     checks = {
+        **policy_checks,
         "recording_complete": summary["recording"].get("complete") is True,
         "event_audit_valid": inspect_events(paths[2])["valid"],
         "sidecar_complete": summary.get("online_provenance", {}).get("complete") is True,
@@ -147,12 +204,7 @@ def verify(run: Path) -> dict:
             row["proposal_event_id"] for row in rows if row["record_type"] == "analysis_flush"
         )
         == Counter(row["proposal_event_id"] for row in live_rows),
-        "live_equals_replay_except_availability": checked(
-            lambda: (
-                json.dumps(live, sort_keys=True, allow_nan=False)
-                == json.dumps(replay, sort_keys=True, allow_nan=False)
-            )
-        ),
+        "live_equals_replay_except_availability": checked(lambda: json_equal(live, replay)),
     }
     checks["analysis_and_receipt_identities_match"] = checked(
         lambda: (
@@ -211,6 +263,36 @@ def verify(run: Path) -> dict:
             for name, count in expected_counts.items()
         )
     )
+    cascade_pair_count, computed_cascade_counts = 0, None
+    semantic_comparison_scope = "independent_comparisons"
+    if policy is not None:
+        semantic_comparison_scope = (
+            "independent_comparisons; ordered_semantic_stages_are_reported_in_cascade_stage_counts"
+        )
+        cascade_pair_count, computed_cascade_counts = cascade_counts(live)
+        checks["semantic_comparison_scope_matches"] = checked(
+            lambda: summary["online_provenance"]["semantic_comparison_scope"] == semantic_comparison_scope
+        )
+        checks["policy_mode_and_summary_identity_match"] = checked(
+            lambda: (
+                manifest["online_provenance"]["mode"] == "synchronous_observation; ordered_cascade"
+                and summary["online_provenance"]["component_mode"] == "ordered_cascade"
+                and summary["online_provenance"]["policy_id"] == policy.metadata["policy_id"]
+                and summary["online_provenance"]["policy_sha256"] == policy.metadata["sha256"]
+            )
+        )
+        checks["cascade_summary_counts_match"] = checked(
+            lambda: all(
+                json_equal(summary["online_provenance"][key], value)
+                for key, value in computed_cascade_counts.items()
+            )
+        )
+        checks["cascade_scoring_completeness_matches"] = checked(
+            lambda: (
+                summary["online_provenance"]["scoring_complete"]
+                is (computed_cascade_counts["cascade_incomplete_pair_count"] == 0)
+            )
+        )
     checks["source_files_unchanged"] = before == {
         path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in paths
     }
@@ -225,9 +307,14 @@ def verify(run: Path) -> dict:
         "semantic_comparison_count": sum(
             len(field.get("nt_style_semantic", [])) for call in live for field in call["fields"]
         ),
+        "semantic_comparison_scope": semantic_comparison_scope,
+        "cascade_pair_count": cascade_pair_count,
+        "cascade_counts": computed_cascade_counts,
+        "policy_sha256": policy.metadata["sha256"] if policy is not None else None,
         "input_sha256": before,
         "scope": (
             "Consistency of saved timing receipts and local prefix replay equality; "
+            "policy replay uses the manifest snapshot, not the current policy pathname. "
             "not authenticated evidence against coordinated rewriting. "
             "No API calls, accuracy, causality, or deadline guarantee."
         ),

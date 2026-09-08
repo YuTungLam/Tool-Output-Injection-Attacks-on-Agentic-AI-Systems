@@ -33,7 +33,7 @@ class OnlineProvenance:
     computation budgets do not impose a wall-clock deadline.
     """
 
-    def __init__(self, path: Path, semantic_matcher=None):
+    def __init__(self, path: Path, semantic_matcher=None, policy=None):
         self._lock = threading.RLock()
         self._file = None
         self._tracker = None
@@ -56,6 +56,13 @@ class OnlineProvenance:
         self._proposal_refs = set()
         self._runtime_refs = set()
         self._run_end_seen = False
+        self._policy = policy
+        self._cascade_status_counts = {}
+        self._cascade_stage_counts = {tier: {} for tier in ("tier1", "tier2", "tier3", "tier4")}
+        self._cascade_first_hit_counts = {}
+        self._cascade_incomplete_count = 0
+        self._policy_sink_count = 0
+        self._policy_unclassified_sink_count = 0
         self._semantic_enabled = semantic_matcher is not None
         self._semantic_status_counts = {}
         self._semantic_truncated_count = 0
@@ -69,7 +76,7 @@ class OnlineProvenance:
             "write_flush_total_ns": 0,
         }
         try:
-            self._tracker = ProvenanceTracker(semantic_matcher=semantic_matcher)
+            self._tracker = ProvenanceTracker(semantic_matcher=semantic_matcher, policy=policy)
             self._stage = "open"
             self._file = Path(path).open("x", encoding="utf-8", newline="\n")
         except Exception as error:
@@ -124,8 +131,25 @@ class OnlineProvenance:
                 self._semantic_truncated_count += bool(score.get("truncated"))
                 for tier in ("tier3", "tier4"):
                     self._semantic_tier_truncated_counts[tier] += bool(score.get(tier, {}).get("truncated"))
-        if self._semantic_status_counts.get("encoder_error", 0):
+            for pair in field.get("nt_style_cascade", []):
+                status = pair["status"]
+                self._cascade_status_counts[status] = self._cascade_status_counts.get(status, 0) + 1
+                self._cascade_incomplete_count += not pair["complete"] and status != "not_applicable"
+                hit = pair["first_matched_tier"]
+                if hit:
+                    self._cascade_first_hit_counts[hit] = self._cascade_first_hit_counts.get(hit, 0) + 1
+                for tier, evidence in pair["stages"].items():
+                    counts = self._cascade_stage_counts[tier]
+                    counts[evidence["status"]] = counts.get(evidence["status"], 0) + 1
+        if self._semantic_status_counts.get("encoder_error", 0) or self._cascade_status_counts.get(
+            "encoder_error", 0
+        ):
             raise AttributionComputeError()
+        if self._policy is not None:
+            self._policy_sink_count += call["policy"]["sink"]["selected"]
+            self._policy_unclassified_sink_count += (
+                call["policy"]["sink"]["classification"] == "unclassified_tool"
+            )
         frozen = copy.deepcopy(call)
         frozen["availability"] = AVAILABILITY
         identity = {**self._identity(event), "proposal_event_id": event["event_id"]}
@@ -303,6 +327,7 @@ class OnlineProvenance:
                     "scoring_complete": (
                         not self._disabled
                         and not self._semantic_truncated_count
+                        and not self._cascade_incomplete_count
                         and not any(
                             count
                             for status, count in self._semantic_status_counts.items()
@@ -310,6 +335,23 @@ class OnlineProvenance:
                         )
                     ),
                     "scoring_completeness_scope": "applicable_semantic_comparisons; scored_without_truncation",
+                    **(
+                        {
+                            "component_mode": "ordered_cascade",
+                            "semantic_comparison_scope": "independent_comparisons; ordered_semantic_stages_are_reported_in_cascade_stage_counts",
+                            "policy_id": self._policy.metadata["policy_id"],
+                            "policy_sha256": self._policy.metadata["sha256"],
+                            "policy_sink_count": self._policy_sink_count,
+                            "unclassified_proposal_count": self._policy_unclassified_sink_count,
+                            "cascade_status_counts": self._cascade_status_counts,
+                            "cascade_stage_counts": self._cascade_stage_counts,
+                            "cascade_first_hit_counts": self._cascade_first_hit_counts,
+                            "cascade_incomplete_pair_count": self._cascade_incomplete_count,
+                            "scoring_completeness_scope": "eligible_cascade_pairs; reached_stages_scored_without_truncation",
+                        }
+                        if self._policy is not None
+                        else {}
+                    ),
                     "availability": AVAILABILITY,
                     "execution_mode": "synchronous_passive_consumer",
                     "hard_timeout_enforced": False,

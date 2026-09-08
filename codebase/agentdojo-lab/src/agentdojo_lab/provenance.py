@@ -114,8 +114,15 @@ def structured_scalars(text: str) -> dict:
 class ProvenanceTracker:
     """Incremental, deterministic candidate generation over one event stream."""
 
-    def __init__(self, semantic_matcher=None):
+    def __init__(self, semantic_matcher=None, policy=None):
         self.semantic_matcher = semantic_matcher
+        self.policy = policy
+        self.cascade_matcher = None
+        if policy is not None:
+            from agentdojo_lab.cascade import CascadeMatcher
+
+            self.cascade_matcher = CascadeMatcher(semantic_matcher)
+        self.tool_proposals = {}
         self.run_id = None
         self.sequence = 0
         self.seen = set()
@@ -146,6 +153,12 @@ class ProvenanceTracker:
                     "text_sha256": hashlib.sha256(text.encode()).hexdigest(),
                     "structure": structured_scalars(text),
                 }
+                if self.policy is not None:
+                    origin = self.results[source_event].get("origin_tool") if source_event else None
+                    self.sources[source_id].update(
+                        origin_tool=origin,
+                        policy=self.policy.source_decision(role, origin),
+                    )
             request["sources"].append(
                 {
                     "source_id": source_id,
@@ -179,6 +192,14 @@ class ProvenanceTracker:
                 "sequence": self.sequence,
                 "tool_call_id": event.get("tool_call_id"),
             }
+            if self.policy is not None:
+                origin = self.tool_proposals.get(event.get("call_ref"))
+                valid_origin = (
+                    origin
+                    and origin["episode_id"] == event["episode_id"]
+                    and origin["model_request_id"] == event["model_request_id"]
+                )
+                self.results[event["event_id"]]["origin_tool"] = origin["function"] if valid_origin else None
         elif kind == "MODEL_REQUEST":
             request_id = event["model_request_id"]
             if request_id in self.requests:
@@ -230,6 +251,14 @@ class ProvenanceTracker:
             if expected != request["exposed_indices"] or request["episode_id"] != event["episode_id"]:
                 raise ValueError("Proposal lacks its complete request exposure mapping")
             request["proposed"] = True
+            if self.policy is not None:
+                if not event.get("call_ref") or event["call_ref"] in self.tool_proposals:
+                    raise ValueError("Policy attribution requires a unique proposal call reference")
+                self.tool_proposals[event["call_ref"]] = {
+                    "function": data["function"],
+                    "episode_id": event["episode_id"],
+                    "model_request_id": event["model_request_id"],
+                }
             call = self._analyze(event, request)
             self.calls.append(copy.deepcopy(call))
             return copy.deepcopy(call)
@@ -270,9 +299,10 @@ class ProvenanceTracker:
                                     "end": end,
                                 }
                             )
-                score = lcs_evidence(source["text"], text or "")
-                lexical.append({**base, **score})
-                if self.semantic_matcher is not None:
+                if self.policy is None:
+                    score = lcs_evidence(source["text"], text or "")
+                    lexical.append({**base, **score})
+                if self.semantic_matcher is not None and self.policy is None:
                     # The scorer sees only this request's visible source and current argument.
                     semantic.append(
                         {**base, **copy.deepcopy(self.semantic_matcher.compare(source["text"], text or ""))}
@@ -292,17 +322,63 @@ class ProvenanceTracker:
                     ),
                     "exact_candidates": exact,
                     "nt_style_lcs": lexical,
-                    **({"nt_style_semantic": semantic} if self.semantic_matcher is not None else {}),
+                    **(
+                        {"nt_style_semantic": semantic}
+                        if self.semantic_matcher is not None and self.policy is None
+                        else {}
+                    ),
                     "provenance_verdict": "unreviewed",
                     "maliciousness": "not_assessed",
                     "causal_influence": "not_assessed",
                 }
             )
+            if self.policy is not None:
+                sink = self.policy.sink_decision(event["data"]["function"], path)
+                eligible = [
+                    occurrence
+                    for occurrence in request["sources"]
+                    if self.sources[occurrence["source_id"]]["policy"]["eligible"]
+                ]
+                comparisons = []
+                if sink["selected"]:
+                    for occurrence in eligible:
+                        source = self.sources[occurrence["source_id"]]
+                        comparisons.append(
+                            {
+                                **occurrence,
+                                "kind": source["kind"],
+                                "source_event_id": source["source_event_id"],
+                                "origin_tool": source["origin_tool"],
+                                **self.cascade_matcher.compare(source["text"], text or ""),
+                            }
+                        )
+                fields[-1].update(
+                    nt_style_cascade=comparisons,
+                    cascade_scope={
+                        "status": "analyzed"
+                        if sink["selected"] and eligible
+                        else "no_eligible_source"
+                        if sink["selected"]
+                        else sink["reason"],
+                        "sink": sink,
+                        "eligible_source_count": len(eligible),
+                        "comparison_count": len(comparisons),
+                        "excluded_sources": [
+                            {
+                                "source_id": occurrence["source_id"],
+                                "request_pointer": occurrence["request_pointer"],
+                                "reason": self.sources[occurrence["source_id"]]["policy"]["reason"],
+                            }
+                            for occurrence in request["sources"]
+                            if not self.sources[occurrence["source_id"]]["policy"]["eligible"]
+                        ],
+                    },
+                )
         visible = []
         for occurrence in request["sources"]:
             source = self.sources[occurrence["source_id"]]
             visible.append({**source, **occurrence})
-        return {
+        call = {
             "run_id": self.run_id,
             "task_id": event.get("task_id"),
             "episode_id": event["episode_id"],
@@ -319,6 +395,54 @@ class ProvenanceTracker:
             "fields": fields,
             "availability": "offline_prefix_replay; pre-execution latency not measured",
         }
+        if self.policy is not None:
+            pairs = [pair for field in fields for pair in field["nt_style_cascade"]]
+            sink = self.policy.sink_decision(call["function"])
+            explicit = any(pair["matched"] is True for pair in pairs)
+            eligible_count = sum(source["policy"]["eligible"] for source in visible)
+            selected_fields = sum(field["cascade_scope"]["sink"]["selected"] for field in fields)
+            applicable_pairs = sum(pair["status"] != "not_applicable" for pair in pairs)
+            call.update(
+                component_mode="ordered_cascade",
+                policy={
+                    "policy_id": self.policy.metadata["policy_id"],
+                    "sha256": self.policy.metadata["sha256"],
+                    "sink": sink,
+                    "eligible_source_count": eligible_count,
+                    "unclassified_source_count": sum(
+                        source["policy"].get("reason") == "unclassified_tool" for source in visible
+                    ),
+                    "scope": "direct_visible_sources; proposed_sink_arguments; no_DCPG_inheritance",
+                },
+                cascade_summary={
+                    "pair_count": len(pairs),
+                    "matched_pair_count": sum(pair["matched"] is True for pair in pairs),
+                    "selected_field_count": selected_fields,
+                    "applicable_pair_count": applicable_pairs,
+                    "status": sink["reason"]
+                    if not sink["selected"]
+                    else "explicit_candidates"
+                    if explicit
+                    else "incomplete_explicit_analysis"
+                    if any(pair["status"] in {"indeterminate", "encoder_error"} for pair in pairs)
+                    else "no_argument_targets"
+                    if not fields
+                    else "no_selected_argument_targets"
+                    if not selected_fields
+                    else "no_eligible_source"
+                    if not eligible_count
+                    else "not_applicable_comparisons"
+                    if not applicable_pairs
+                    else "no_explicit_candidate",
+                    "causal_analysis": "not_implemented"
+                    if sink["selected"] and eligible_count and not explicit
+                    else "not_requested",
+                    "causal_scope": "future_component; no_probes_executed",
+                    "maliciousness": "not_assessed",
+                    "authorization": "not_assessed",
+                },
+            )
+        return call
 
 
 METHODS = {

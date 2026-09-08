@@ -104,7 +104,22 @@ function showOnlineAttribution(event,panel){
  if(!rows.length){if(summary.online_provenance?.enabled)panel.append(el("p","No saved online attribution for this call. This is missing evidence, not a clean verdict.","source-note"));return;}
  panel.append(el("h3","Online source candidates"),el("p","Computed from the visible request prefix. Similarity is a candidate signal; maliciousness and causal influence remain unassessed.","source-note"));
  const call=rows.find(row=>row.record_type==="call_analysis")?.call;
- if(call){for(const field of asArray(call.fields)){const box=el("details");box.append(el("summary",(field.argument_path||"(root)")+" · Exact: "+field.exact_status));jsonDetail(box,"Argument value",field.value,true);jsonDetail(box,"Source candidates and component scores",field);panel.append(box);}jsonDetail(panel,"Visible sources and complete call analysis",call);}
+ if(call){
+  if(call.policy){panel.append(el("p","Policy: "+call.policy.sink.classification+" · Cascade: "+call.cascade_summary.status,"source-note"));jsonDetail(panel,"Frozen policy scope and cascade outcome",{policy:call.policy,summary:call.cascade_summary});}
+  for(const field of asArray(call.fields)){
+   const box=el("details");box.append(el("summary",(field.argument_path||"(root)")+" · Exact: "+field.exact_status));jsonDetail(box,"Argument value",field.value,true);
+   if(field.cascade_scope){box.open=true;box.append(el("p","Cascade scope: "+field.cascade_scope.status,"source-note"));
+    for(const pair of asArray(field.nt_style_cascade)){
+     const source=el("details");source.open=true;source.append(el("summary",pair.origin_tool+" · First match: "+(pair.first_matched_tier||"None")+" · "+pair.status));
+     const table=el("table"),head=el("thead"),hr=el("tr");for(const label of ["Stage","Status","Score","Reason"])hr.append(el("th",label));head.append(hr);table.append(head);const body=el("tbody");
+     for(const [tier,stage] of Object.entries(pair.stages||{})){const tr=el("tr");tr.append(el("th",tier),el("td",stage.status),el("td",stage.score===null||stage.score===undefined?"Not measured":Number(stage.score).toFixed(4)),el("td",String(stage.reason||"").replaceAll("_"," ")));body.append(tr);}
+     table.append(body);const wrap=el("div",null,"table-wrap");wrap.append(table);source.append(wrap);const refs=el("div",null,"links");refButton(refs,pair.source_event_id,"Open source tool result");source.append(refs);jsonDetail(source,"Full stage evidence and thresholds",pair);box.append(source);
+    }
+   }
+   jsonDetail(box,"Source candidates and component scores",field);panel.append(box);
+  }
+  jsonDetail(panel,"Visible sources and complete call analysis",call);
+ }
  rows.filter(row=>row.record_type!=="call_analysis").forEach(row=>jsonDetail(panel,row.record_type==="runtime_timing"?"Measured availability at runtime entry":"Attribution flush receipt",row,row.record_type==="runtime_timing"));
 }
 function showDetail(event){selected=event;updateFlow(event);$("detail-title").textContent=eventLabel(event);$("detail-meta").replaceChildren(pill(event.event_type),pill(offset(event)));for(const value of [event.task_id,episodeNames.get(event.episode_id),event.model_request_id,event.call_ref])if(value)$("detail-meta").append(pill(value));const panel=$("detail");panel.replaceChildren();panel.append(el("p",event.event_id||"Event ID missing","mono small muted"));const links=el("div",null,"links");for(const id of asArray(event.parent_event_ids))refButton(links,id,"Preceding: "+eventLabel(byId.get(id)||{}));if(event.data?.source_result_event_id)refButton(links,event.data.source_result_event_id,"Locate the source tool result");if(event.call_ref){for(const other of events.filter(e=>e.call_ref===event.call_ref&&e.event_id!==event.event_id&&e.event_type!=="TOOL_OUTPUT_EXPOSED"))refButton(links,other.event_id,eventLabel(other));}if(event.model_request_id&&event.event_type!=="MODEL_REQUEST"){const request=events.find(e=>e.event_type==="MODEL_REQUEST"&&e.model_request_id===event.model_request_id);if(request)refButton(links,request.event_id,"View the actual request for this round");}if(links.childNodes.length)panel.append(links);

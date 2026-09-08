@@ -21,7 +21,7 @@ def _json(path: Path, value):
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
 
 
-def _read_run(run: Path, semantic_matcher=None) -> dict:
+def _read_run(run: Path, semantic_matcher=None, policy=None) -> dict:
     run = run.expanduser().resolve()
     paths = {name: run / name for name in ("events.jsonl", "manifest.json", "summary.json")}
     if any(not p.is_file() or not p.resolve().is_relative_to(run) for p in paths.values()):
@@ -33,7 +33,9 @@ def _read_run(run: Path, semantic_matcher=None) -> dict:
     audit = inspect_events(paths["events.jsonl"])
     if not audit["valid"]:
         raise ValueError(f"Event audit failed: {run.name}")
-    tracker = ProvenanceTracker(semantic_matcher=semantic_matcher)
+    if policy is not None:
+        policy.validate_context(manifest["config"]["suite"], manifest["config"]["benchmark_version"])
+    tracker = ProvenanceTracker(semantic_matcher=semantic_matcher, policy=policy)
     for line in raw["events.jsonl"].decode("utf-8").splitlines():
         tracker.consume(json.loads(line))
     if any(p.read_bytes() != raw[name] for name, p in paths.items()):
@@ -127,6 +129,39 @@ def _counts(runs):
             counts[f"{tier}_truncated_comparisons"] = sum(
                 h.get(tier, {}).get("truncated") is True for h in comparisons
             )
+    calls = [call for run in runs for call in run["calls"]]
+    if any(call.get("component_mode") == "ordered_cascade" for call in calls):
+        pairs = [pair for field in fields for pair in field.get("nt_style_cascade", [])]
+        counts["fields_with_lcs_tool_candidate"] = None
+        counts["independent_lcs_scored"] = False
+        counts["cascade"] = {
+            "policy_sink_proposals": sum(call["policy"]["sink"]["selected"] for call in calls),
+            "unclassified_proposals": sum(
+                call["policy"]["sink"]["classification"] == "unclassified_tool" for call in calls
+            ),
+            "selected_argument_fields": sum(field["cascade_scope"]["sink"]["selected"] for field in fields),
+            "pair_count": len(pairs),
+            "pair_statuses": dict(Counter(pair["status"] for pair in pairs)),
+            "first_matched_tiers": dict(
+                Counter(pair["first_matched_tier"] for pair in pairs if pair["first_matched_tier"])
+            ),
+            "matched_pair_count": sum(pair["matched"] is True for pair in pairs),
+            "incomplete_pair_count": sum(
+                not pair["complete"] and pair["status"] != "not_applicable" for pair in pairs
+            ),
+            "stage_statuses": {
+                tier: dict(Counter(pair["stages"][tier]["status"] for pair in pairs))
+                for tier in ("tier1", "tier2", "tier3", "tier4")
+            },
+            "source_occurrences_excluded": sum(
+                not source["policy"]["eligible"] for call in calls for source in call["visible_sources"]
+            ),
+            "unclassified_source_occurrences": sum(
+                source["policy"].get("reason") == "unclassified_tool"
+                for call in calls
+                for source in call["visible_sources"]
+            ),
+        }
     return counts
 
 
@@ -297,6 +332,41 @@ def _semantic_view(field, sources):
     )
 
 
+def _cascade_view(field, sources):
+    if "nt_style_cascade" not in field:
+        return ""
+
+    def esc(value):
+        return html.escape(str(value), quote=True)
+
+    panels = []
+    for pair in field["nt_style_cascade"]:
+        rows = []
+        for tier, stage in pair["stages"].items():
+            score = stage.get("score")
+            score_text = f"{score:.4f}" if isinstance(score, (float, int)) else "Not measured"
+            rows.append(
+                f"<tr><th>{esc(tier)}</th><td>{esc(stage['status'])}</td><td>{score_text}</td><td>{esc(stage.get('reason', ''))}</td></tr>"
+            )
+        source = sources[pair["source_id"]]
+        panels.append(
+            f'<details class="source"><summary>{esc(pair["origin_tool"])} · Message {pair["message_index"]}'
+            f" · First match: {esc(pair['first_matched_tier'] or 'None')} · {esc(pair['status'])}</summary>"
+            "<table><thead><tr><th>Stage</th><th>Status</th><th>Score</th><th>Reason</th></tr></thead>"
+            f"<tbody>{''.join(rows)}</tbody></table>"
+            f'<p class="meta">{esc(pair["source_event_id"])} · {esc(pair["request_pointer"])}</p>'
+            f"<details><summary>Full original source</summary><pre>{esc(source['text'])}</pre></details>"
+            f"<details><summary>Stage evidence, chunks and thresholds</summary><pre>{esc(json.dumps(pair, indent=2, ensure_ascii=False))}</pre></details></details>"
+        )
+    return (
+        f"<details open><summary>Ordered cascade · {esc(field['cascade_scope']['status'])} · {len(panels)} pairs</summary>"
+        "<p>Each eligible source is checked independently. Later stages are not called after that pair matches. "
+        "Canary is disabled in this passive condition. A match is a candidate, not an unsafe-action verdict.</p>"
+        + "".join(panels)
+        + f"<details><summary>Policy scope and excluded sources</summary><pre>{esc(json.dumps(field['cascade_scope'], indent=2))}</pre></details></details>"
+    )
+
+
 def _viewer(report):
     def esc(value):
         return html.escape(str(value), quote=True)
@@ -347,20 +417,36 @@ def _viewer(report):
                     f'{statuses[field["exact_status"]]}</summary><pre class="target">'
                     f"{esc(json.dumps(field['value'], ensure_ascii=False))}</pre>"
                     f"<h3>Exact-match candidates</h3>{''.join(matches) or '<p>No direct exact match; the source remains unknown.</p>'}"
-                    f"<details><summary>NeuroTaint-style LCS comparisons ({len(lcs_rows)})</summary>"
-                    f"<p>Ordinary threshold: 0.15. Short arguments can score highly. These are lexical candidates, not maliciousness or causal verdicts.</p>"
-                    f"{''.join(lcs_rows) or '<p>No text sources in this request.</p>'}</details>"
-                    f"{_semantic_view(field, sources)}</details>"
+                    + (
+                        f"<details><summary>NeuroTaint-style LCS comparisons ({len(lcs_rows)})</summary>"
+                        f"<p>Ordinary threshold: 0.15. Short arguments can score highly. These are lexical candidates, not maliciousness or causal verdicts.</p>"
+                        f"{''.join(lcs_rows) or '<p>No text sources in this request.</p>'}</details>"
+                        if "nt_style_cascade" not in field
+                        else ""
+                    )
+                    + f"{_semantic_view(field, sources)}{_cascade_view(field, sources)}</details>"
                 )
             pieces.append(
                 f"<article><h2>{esc(call['task_id'])} · {esc(call['function'])}</h2>"
                 f'<p class="meta">{esc(run["run_id"])} · Proposal {esc(call["proposal_event_id"])} · '
                 f"Request {esc(call['request_event_id'])} · Cutoff event {esc(call['cutoff_event_id'])}</p>"
                 f'<p><a href="{report_link}">Open original timeline and flow diagram</a></p>'
-                f"{''.join(rows) or '<p>No leaf arguments.</p>'}</article>"
+                + (
+                    f"<details><summary>Sink policy and cascade outcome</summary><pre>{esc(json.dumps({'policy': call['policy'], 'cascade_summary': call['cascade_summary']}, indent=2))}</pre></details>"
+                    if "policy" in call
+                    else ""
+                )
+                + f"{''.join(rows) or '<p>No leaf arguments.</p>'}</article>"
             )
     counts = report["counts"]
     semantic_summary = ""
+    if "cascade" in counts:
+        semantic_summary = (
+            f"<p>Ordered cascade: {counts['cascade']['policy_sink_proposals']} policy sink proposals; "
+            f"{counts['cascade']['pair_count']} source–argument pairs. Skipped stages have no measured score.</p>"
+            f"<details open><summary>Route counts and coverage</summary><pre>{esc(json.dumps(counts['cascade'], indent=2))}</pre></details>"
+            f"<details><summary>Frozen policy and method</summary><pre>{esc(json.dumps({'policy': report['policy'], 'methods': report['methods']}, indent=2))}</pre></details>"
+        )
     if "nt_style_semantic_v1" in report["methods"]:
         method = report["methods"]["nt_style_semantic_v1"]
         encoder = method.get("encoder", {})
@@ -388,6 +474,7 @@ header{{border-left:5px solid #087f8c;padding:0 20px}}article{{background:white;
 p{{line-height:1.6}}a{{color:#006b79}}summary{{cursor:pointer;line-height:1.6;padding:10px 0}}
 details.field{{border-top:1px solid #dce4e7;padding:4px 0}}details.source{{background:#f2f6f7;padding:0 14px;margin:10px 0;border-radius:6px}}
 pre{{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.55;padding:14px;background:#edf2f4;border-radius:6px}}
+table{{width:100%;border-collapse:collapse;table-layout:fixed}}th,td{{text-align:left;padding:8px;border-bottom:1px solid #cdd9de;overflow-wrap:anywhere}}
 mark{{background:#ffe18b;color:#182e36}}.meta{{font-size:14px;color:#506670;overflow-wrap:anywhere}}.target{{border-left:3px solid #087f8c}}
 @media(max-width:600px){{body{{padding:18px 12px}}article{{padding:16px}}h1{{font-size:24px}}}}
 </style></head><body><header><h1>Argument provenance evidence</h1>
@@ -400,7 +487,7 @@ mark{{background:#ffe18b;color:#182e36}}.meta{{font-size:14px;color:#506670;over
 {"".join(pieces)}</body></html>"""
 
 
-def export_provenance(*, run_dirs=None, batch=None, output: Path, semantic_matcher=None) -> dict:
+def export_provenance(*, run_dirs=None, batch=None, output: Path, semantic_matcher=None, policy=None) -> dict:
     run_dirs, batch_info = _select_runs(run_dirs, batch)
     if not run_dirs:
         raise ValueError("No recorded runs to analyze")
@@ -414,7 +501,7 @@ def export_provenance(*, run_dirs=None, batch=None, output: Path, semantic_match
     if output.exists() or any(output.is_relative_to(root) for root in protected):
         raise ValueError("Use a new output directory outside source runs")
     analysis_start = time.perf_counter()
-    runs = [_read_run(run, semantic_matcher=semantic_matcher) for run in run_dirs]
+    runs = [_read_run(run, semantic_matcher=semantic_matcher, policy=policy) for run in run_dirs]
     analysis_elapsed = time.perf_counter() - analysis_start
     identities = [run["run_id"] for run in runs]
     if len(set(identities)) != len(identities):
@@ -434,7 +521,7 @@ def export_provenance(*, run_dirs=None, batch=None, output: Path, semantic_match
                 else {}
             ),
         },
-        "component_mode": "independent_all_pairs",
+        "component_mode": "ordered_cascade" if policy is not None else "independent_all_pairs",
         "analysis_wall_seconds": analysis_elapsed,
         "analysis_timing_scope": (
             "Local recording reads, audit, prefix replay and all enabled independent comparisons; "
@@ -458,6 +545,17 @@ def export_provenance(*, run_dirs=None, batch=None, output: Path, semantic_match
             "No live hookup or pre-execution attribution timing is claimed",
         ],
     }
+    if policy is not None:
+        from agentdojo_lab.cascade import METHOD, CascadeMatcher
+
+        report["policy"] = policy.metadata
+        report["methods"] = {
+            "exact_v1": copy.deepcopy(METHODS["exact_v1"]),
+            METHOD: CascadeMatcher(semantic_matcher).metadata,
+        }
+        report["analysis_timing_scope"] = (
+            "Local reads, audit, prefix replay, exact baseline and selected cascade stages; excludes model loading/report writing; not live overhead"
+        )
     output.mkdir(parents=True)
     (output / "annotations").mkdir()
     _json(output / "analysis.json", report)

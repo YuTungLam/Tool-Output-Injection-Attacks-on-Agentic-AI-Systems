@@ -130,6 +130,13 @@
 
 语义组件加入前的版本全部 **254 项本地测试通过，Ruff 检查通过**。其中新增 90 项：43 项词法组件测试、27 项历史前缀/来源边界测试、20 项报告与标注包测试。语义组件加入后的验证结果见 SEMANTIC.md。
 
-已有 8 条明确标为非盲、非独立的助手开发草稿，仍需人工核查；不能用作独立测试真值。实时归因接线已经过本地对照与一次真实运行验证，下一步是 source/sink policy 与 ordered cascade，并为新的 held-out 任务保留独立测试标签。之后比较来源定位、歧义/未知、误报与成本，再决定如何实现有限预算的复核；不把多个已有方法组合起来就预先宣称创新。
+已有 8 条明确标为非盲、非独立的助手开发草稿，仍需人工核查；不能用作独立测试真值。
+
+The live hook is validated; gate 4 source/sink policy and ordered cascade are now implemented with
+validation still in progress, not yet accepted. See [CASCADE.md](CASCADE.md) and the forthcoming
+[CASCADE-RESULTS.md](CASCADE-RESULTS.md); DCPG lineage and memory restoration are the next gated work,
+with independent labels reserved for held-out evaluation.
+
+之后比较来源定位、歧义/未知、误报与成本，再决定如何实现有限预算的复核；不把多个已有方法组合起来就预先宣称创新。
 
 本次增加源码和依赖声明后，旧 clean batch 的源码哈希不再匹配当前分支。若要补旧 20 次重复，使用保存的旧实现快照；不要改计划哈希绕过校验。`provenance` 可继续读取旧日志，不要求重跑模型。

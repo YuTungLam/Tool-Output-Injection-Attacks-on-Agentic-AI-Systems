@@ -57,6 +57,7 @@ def main(argv: list[str] | None = None) -> int:
     provenance.add_argument(
         "--semantic-revision", help="Full model commit SHA; required with --semantic-model"
     )
+    provenance.add_argument("--policy", type=Path, help="Select ordered cascade with a frozen tool policy")
     live = commands.add_parser("run", help="Run selected clean tasks against Groq")
     live.add_argument("--config", type=Path, default=ROOT / "configs" / "groq.toml")
     live.add_argument("--model", help="Override the Groq model ID")
@@ -67,6 +68,7 @@ def main(argv: list[str] | None = None) -> int:
         "--output", type=Path, help="New output directory; existing paths are never overwritten"
     )
     for command in (smoke, live):
+        command.add_argument("--policy", type=Path, help="Frozen tool policy for ordered online cascade")
         command.add_argument(
             "--online-provenance",
             action="store_true",
@@ -117,8 +119,17 @@ def main(argv: list[str] | None = None) -> int:
                 matcher = SemanticMatcher(
                     LocalMiniLMEncoder(args.semantic_model, revision=args.semantic_revision)
                 )
+            policy = None
+            if args.policy:
+                from agentdojo_lab.policy import load_policy
+
+                policy = load_policy(args.policy)
             result = export_provenance(
-                run_dirs=args.run, batch=args.batch, output=args.output, semantic_matcher=matcher
+                run_dirs=args.run,
+                batch=args.batch,
+                output=args.output,
+                semantic_matcher=matcher,
+                policy=policy,
             )
         elif args.command == "tasks":
             suites = get_suites(args.benchmark_version)
@@ -134,6 +145,7 @@ def main(argv: list[str] | None = None) -> int:
                 RunConfig(
                     record_events=not args.no_record,
                     online_provenance=args.online_provenance,
+                    provenance_policy=str(args.policy) if args.policy else None,
                     semantic_model=str(args.semantic_model) if args.semantic_model else None,
                     semantic_revision=args.semantic_revision,
                 ),
@@ -153,6 +165,8 @@ def main(argv: list[str] | None = None) -> int:
                 data["record_events"] = False
             if args.online_provenance:
                 data["online_provenance"] = True
+            if args.policy is not None:
+                data["provenance_policy"] = str(args.policy)
             if args.semantic_model is not None:
                 data["semantic_model"] = str(args.semantic_model)
             if args.semantic_revision is not None:

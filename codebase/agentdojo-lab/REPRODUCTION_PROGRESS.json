@@ -45,10 +45,17 @@
     {
       "id": "policy_cascade",
       "title": "Source/sink policy and ordered cascade",
-      "status": "pending",
+      "status": "accepted",
       "acceptance": "Freeze source/sink rules and route tiers in paper order, with explicit branch decisions and no use of evaluation labels for threshold selection.",
-      "evidence": [],
-      "limits": "Current component scores run independently; their existence does not satisfy this gate."
+      "evidence": [
+        "CASCADE.md",
+        "CASCADE-RESULTS.md",
+        "configs/workspace_policy_v1.yaml",
+        "tests/test_policy_cascade_integration.py",
+        "reports/20260908-cascade-validation/replay-verification.json",
+        "reports/20260908-cascade-validation/live-verification.json"
+      ],
+      "limits": "Ordinary direct-visible policy and active Tier 2-4 only; Tier 1 explicitly disabled. All 43 saved-trace pairs first hit LCS; no accuracy or latency-benefit claim. DCPG and causal components remain separate."
     },
     {
       "id": "lineage_memory",
