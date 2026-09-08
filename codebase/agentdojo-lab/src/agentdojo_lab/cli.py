@@ -66,6 +66,16 @@ def main(argv: list[str] | None = None) -> int:
     live.add_argument(
         "--output", type=Path, help="New output directory; existing paths are never overwritten"
     )
+    for command in (smoke, live):
+        command.add_argument(
+            "--online-provenance",
+            action="store_true",
+            help="Persist source candidates before tool runtime entry",
+        )
+        command.add_argument(
+            "--semantic-model", type=Path, help="Local pinned MiniLM snapshot for online Tier 3/4"
+        )
+        command.add_argument("--semantic-revision", help="Full model commit SHA; use with --semantic-model")
     args = parser.parse_args(argv)
     try:
         if args.command == "doctor":
@@ -120,7 +130,16 @@ def main(argv: list[str] | None = None) -> int:
                 "tasks": [{"id": t.ID, "prompt": t.PROMPT} for t in suites[args.suite].user_tasks.values()],
             }
         elif args.command == "smoke":
-            result = run_clean(RunConfig(record_events=not args.no_record), offline=True, output=args.output)
+            result = run_clean(
+                RunConfig(
+                    record_events=not args.no_record,
+                    online_provenance=args.online_provenance,
+                    semantic_model=str(args.semantic_model) if args.semantic_model else None,
+                    semantic_revision=args.semantic_revision,
+                ),
+                offline=True,
+                output=args.output,
+            )
         else:
             config = load_config(args.config)
             data = config.model_dump()
@@ -132,6 +151,12 @@ def main(argv: list[str] | None = None) -> int:
                 data["user_tasks"] = args.task
             if args.no_record:
                 data["record_events"] = False
+            if args.online_provenance:
+                data["online_provenance"] = True
+            if args.semantic_model is not None:
+                data["semantic_model"] = str(args.semantic_model)
+            if args.semantic_revision is not None:
+                data["semantic_revision"] = args.semantic_revision
             result = run_clean(
                 RunConfig.model_validate(data), output=args.output, pacing_state=args.pacing_state
             )
@@ -167,6 +192,8 @@ def main(argv: list[str] | None = None) -> int:
         if result["failed_trials"]:
             return 1
     if args.command in {"run", "smoke"} and result.get("recording", {}).get("complete") is False:
+        return 2
+    if args.command in {"run", "smoke"} and result.get("online_provenance", {}).get("complete") is False:
         return 2
     if args.command in {"run", "smoke"} and result.get("status") == "completed_with_issues":
         return 2

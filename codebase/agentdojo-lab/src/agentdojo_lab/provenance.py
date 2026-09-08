@@ -2,8 +2,9 @@
 
 The engine consumes saved v1 events in order. Its inputs are the actual outbound
 messages plus verified exposure references, not runtime metadata or evaluator
-results. The same consume API can be connected to a future live observer; this
-release exports offline prefix replays and makes no pre-execution timing claim.
+results. The consume API supports both saved-prefix replay and a separate live
+observer. Only that observer measures availability before runtime entry; replay
+outputs retain their explicit offline availability label.
 """
 
 from __future__ import annotations

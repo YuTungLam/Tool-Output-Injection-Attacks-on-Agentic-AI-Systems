@@ -145,8 +145,53 @@ def test_cli_model_and_tasks_override_config(monkeypatch, capsys):
         {"user_tasks": ["user_task_0", "user_task_0"]},
         {"attack": "unsupported"},
         {"max_completion_tokens": 0},
+        {"online_provenance": True, "record_events": False},
+        {"semantic_model": "local-model"},
+        {"semantic_model": "local-model", "semantic_revision": "revision"},
+        {"online_provenance": True, "semantic_model": "", "semantic_revision": ""},
     ],
 )
 def test_config_rejects_invalid_or_unknown_options(data):
     with pytest.raises(ValueError):
         RunConfig.model_validate(data)
+
+
+def test_cli_online_flag_and_semantic_pair_are_passed_to_runner(monkeypatch):
+    captured = []
+
+    def run(config, **kwargs):
+        captured.append(config)
+        return {"task_count": 1, "task_success_count": 1}
+
+    monkeypatch.setattr(cli, "run_clean", run)
+    assert (
+        cli.main(
+            [
+                "smoke",
+                "--offline",
+                "--online-provenance",
+                "--semantic-model",
+                "local-model",
+                "--semantic-revision",
+                "full-revision",
+            ]
+        )
+        == 0
+    )
+    assert captured[0].online_provenance
+    assert captured[0].semantic_model == "local-model"
+    assert captured[0].semantic_revision == "full-revision"
+
+
+def test_cli_reports_incomplete_attribution_even_when_agent_succeeds(monkeypatch):
+    monkeypatch.setattr(
+        cli,
+        "run_clean",
+        lambda *args, **kwargs: {
+            "task_count": 1,
+            "task_success_count": 1,
+            "recording": {"complete": True},
+            "online_provenance": {"enabled": True, "complete": False},
+        },
+    )
+    assert cli.main(["smoke", "--offline", "--online-provenance"]) == 2

@@ -48,6 +48,31 @@ def minimal_run(path, *, marker="example"):
     return path
 
 
+def test_online_sidecar_is_embedded_inertly_and_preserved(tmp_path):
+    run = minimal_run(tmp_path / "online")
+    row = {"record_type": "call_analysis", "call": {"arguments": {"text": "</script><b>payload</b>"}}}
+    path = run / "provenance.jsonl"
+    path.write_text(json.dumps(row) + "\n")
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    export_run_html(run)
+    parser = ReportParser((run / "report.html").read_text())
+    assert parser.record["provenance"] == [row]
+    assert parser.record["source_hashes"]["provenance.jsonl"] == digest
+    assert len(parser.scripts) == 2
+    assert hashlib.sha256(path.read_bytes()).hexdigest() == digest
+
+
+def test_online_sidecar_outside_run_is_excluded(tmp_path):
+    run = minimal_run(tmp_path / "online")
+    external = tmp_path / "external.jsonl"
+    external.write_text('{"value":"private"}\n')
+    (run / "provenance.jsonl").symlink_to(external)
+    record = collect_run_record(run)
+    assert not record["provenance"]
+    assert "provenance.jsonl" not in record["source_hashes"]
+    assert any("provenance.jsonl resolves outside" in warning for warning in record["warnings"])
+
+
 @pytest.fixture(scope="module")
 def completed_run(tmp_path_factory):
     path = tmp_path_factory.mktemp("html-fixture") / "run"

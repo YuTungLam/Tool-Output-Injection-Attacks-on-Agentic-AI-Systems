@@ -97,7 +97,9 @@ def test_timeline_selection_updates_and_clears_diagram(tmp_path):
     assert 'data-flow-node="runtime"' in html
     script = re.search(r'<script nonce="[^"]+">(.*?)</script>', html, flags=re.S).group(1)
     helpers = script.split("const taskIds=")[0]
-    handlers = script[script.index("function showDetail") : script.index('$("task-filter").addEventListener')]
+    handlers = script[
+        script.index("function showOnlineAttribution") : script.index('$("task-filter").addEventListener')
+    ]
     # Exercise the real timeline click callback and highlight renderer against
     # minimal element adapters. This is a unit test, not browser visual QA.
     adapters = """

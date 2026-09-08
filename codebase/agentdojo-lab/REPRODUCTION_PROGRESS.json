@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "checklist_version": "paper-method-gates-v1",
+  "as_of": "2026-09-08",
+  "scope": "Independent paper-based NeuroTaint method reproduction in AgentDojo",
+  "counting_rule": "Count accepted gates equally. This is neither estimated work remaining nor benchmark efficacy nor original-table reproduction.",
+  "milestones": [
+    {
+      "id": "prefix_components",
+      "title": "Prefix evidence and Tier 2-4 components",
+      "status": "accepted",
+      "acceptance": "Prefix-only sources, exact baseline, LCS, pinned MiniLM and disclosed chunk coverage pass local checks and repeat scoring on saved real traces.",
+      "evidence": [
+        "PROVENANCE.md",
+        "SEMANTIC.md",
+        "reports/20260908-semantic-pilot-v1/reproducibility.json"
+      ],
+      "limits": "Independent all-pairs scoring; no cascade, causal interpretation, or independent accuracy labels."
+    },
+    {
+      "id": "live_contract",
+      "title": "Live sidecar and deterministic controls",
+      "status": "accepted",
+      "acceptance": "Persist detached source candidates before native runtime entry; demonstrate equal outbound requests, actions, final history and environment under fixed responses, with failure and prefix isolation.",
+      "evidence": [
+        "tests/test_live_attribution_integration.py",
+        "tests/test_recording.py",
+        "ONLINE.md"
+      ],
+      "limits": "Local deterministic validation; synchronous computation adds latency and has no hard deadline."
+    },
+    {
+      "id": "real_agent_validation",
+      "title": "Fresh real-agent timing validation",
+      "status": "accepted",
+      "acceptance": "A fresh Groq task emits a receipt for every executed proposal before runtime entry; real live fields equal offline replay of the same recorded prefixes.",
+      "evidence": [
+        "configs/groq_online.toml",
+        "ONLINE.md",
+        "runs/20260908-online-groq-task20/report.html",
+        "reports/20260908-online-validation/live-verification.json"
+      ],
+      "limits": "A clean integration run cannot establish attack detection or propagation accuracy."
+    },
+    {
+      "id": "policy_cascade",
+      "title": "Source/sink policy and ordered cascade",
+      "status": "pending",
+      "acceptance": "Freeze source/sink rules and route tiers in paper order, with explicit branch decisions and no use of evaluation labels for threshold selection.",
+      "evidence": [],
+      "limits": "Current component scores run independently; their existence does not satisfy this gate."
+    },
+    {
+      "id": "lineage_memory",
+      "title": "DCPG lineage and memory restoration",
+      "status": "pending",
+      "acceptance": "Build information-flow lineage, persist taint state, restore it with memory, and validate source-to-sink paths across the boundary.",
+      "evidence": [],
+      "limits": "The existing architecture diagram and event links are not a DCPG implementation."
+    },
+    {
+      "id": "canary",
+      "title": "Separate canary experiment condition",
+      "status": "pending",
+      "acceptance": "Implement UUID source canaries in a separately named intervention condition, track survival, and measure changes relative to passive inputs.",
+      "evidence": [],
+      "limits": "Canary insertion changes inputs and must never be merged into the passive observation condition."
+    },
+    {
+      "id": "counterfactual",
+      "title": "Isolated counterfactual analyzer",
+      "status": "pending",
+      "acceptance": "Implement sink-triggered source neutralization in isolated shadow contexts; record behavioral comparisons and verify primary execution is unchanged.",
+      "evidence": [],
+      "limits": "No real tool execution in shadow probes; judge confidence is not a calibrated causal probability."
+    },
+    {
+      "id": "independent_evaluation",
+      "title": "Independent clean/injected evaluation",
+      "status": "pending",
+      "acceptance": "Freeze labels/protocol, run repeated clean and injected trials, report valid attribution metrics, abstention/ambiguity, ablations, timing, costs, and negative results.",
+      "evidence": [],
+      "limits": "Existing assistant drafts are not independent ground truth. Adverse results can complete this gate; completion does not imply security benefit."
+    }
+  ],
+  "efficacy": {
+    "independent_attribution_accuracy": null,
+    "malicious_propagation_validated": false,
+    "causal_influence_validated": false,
+    "original_tables_reproduced": false
+  }
+}

@@ -24,8 +24,10 @@ assumption as an author-specified choice.
 
 1. Completed: recorded request prefixes, exact baseline, Tier 2 LCS, local MiniLM Tier 3, and a disclosed
    Tier 4 chunk/coverage implementation. Components currently run independently on saved traces.
-2. Next: attach incremental attribution to the live event boundary before tool execution. Persist a separate
-   attribution record, record completion/failure timing, and verify the agent request/action path is unchanged.
+2. Completed for the tested integration scope: opt-in live attribution writes a separate JSONL sidecar and
+   flush receipts before tool runtime entry. Deterministic native controls preserve requests/actions/history/
+   environment. One fresh Groq task has 3/3 pre-runtime analyses, 7 fields and 36 semantic comparisons,
+   with exact live/replay agreement. See [ONLINE-RESULTS.md](ONLINE-RESULTS.md).
 3. Add the remaining paper method components: source/sink policy, ordered cascade, DCPG lineage and memory
    restoration, a separate canary condition, and sink-driven counterfactual analysis. Canary and shadow
    interventions must be distinguished from passive primary runs.
@@ -33,6 +35,14 @@ assumption as an author-specified choice.
    false attribution/unknown/ambiguity analysis, timing, and resource costs.
 
 No CTTA, model-weight updates, automatic action blocking, or real-account operations are part of this scope.
+
+## Acceptance progress
+
+[REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json) fixes eight equal acceptance gates. Three are
+accepted as of 2026-09-08: local components, deterministic live integration, and one fresh real-agent timing
+validation. The next gate is source/sink policy and an ordered cascade. This count is not a work estimate,
+accuracy measurement, or claim that the original paper's tables have been reproduced. Completing an
+independent evaluation can include negative results; benchmark efficacy remains a separate measurement.
 
 ## How a reproduction failure becomes a research question
 

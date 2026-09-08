@@ -8,7 +8,7 @@
 
 随后已新增可选 MiniLM Tier 3 整段与 Tier 4 分块语义组件，固定 revision/文件哈希/分块假设/截断范围；命令与最新结果见 SEMANTIC.md。8 个教学案例已整理为助手开发标注草稿，明确非盲、非独立，仍需人工核查。
 
-下一步接入实时归因，补足其余 NeuroTaint 方法并建立独立评测。当前没有人工真值、归因准确率、恶意传播或因果验证；live 归因回调尚未接入，不能把增量离线重放称为已完成线上归因。新增源码/依赖声明与旧 batch 的冻结哈希不同，继续旧 20 次 clean 重复须使用旧实现快照。`runs/`、`reports/`、`.model-cache/` 被忽略，换电脑需要同步日志并重新下载固定模型。
+最新进展：live 归因已接入，新的 Groq task20 完成 3/3 次执行前归因，7 个字段、36 组语义比较与离线重放一致；证据与边界见 [ONLINE-RESULTS.md](ONLINE-RESULTS.md)。按 [REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json) 的 8 项验收关卡，当前完成 3 项，下一项是 source/sink policy 和 ordered cascade。仍没有人工真值、归因准确率、恶意传播或因果验证。新增源码/依赖声明与旧 batch 的冻结哈希不同，继续旧 20 次 clean 重复须使用旧实现快照。`runs/`、`reports/`、`.model-cache/` 被忽略，换电脑需要同步日志并重新下载固定模型。
 
 ---
 

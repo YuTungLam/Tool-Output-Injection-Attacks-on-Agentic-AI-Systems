@@ -21,7 +21,7 @@ from agentdojo.benchmark import benchmark_suite_without_injections
 from agentdojo.logging import OutputLogger
 from agentdojo.task_suite.load_suites import get_suite, get_suites
 from dotenv import load_dotenv
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from agentdojo_lab.groq_adapter import GroqLLM
 from agentdojo_lab.html_report import export_run_html
@@ -57,7 +57,22 @@ class RunConfig(BaseModel):
     max_tool_rounds: int = Field(default=8, ge=1, le=100)
     request_timeout_seconds: float = Field(default=60.0, gt=0)
     record_events: bool = True
+    online_provenance: bool = False
+    semantic_model: str | None = None
+    semantic_revision: str | None = None
     pacing_tokens_per_minute: int | None = Field(default=None, ge=1000, le=1000000)
+
+    @model_validator(mode="after")
+    def attribution_configuration(self):
+        if self.online_provenance and not self.record_events:
+            raise ValueError("Online provenance requires event recording")
+        if bool(self.semantic_model) != bool(self.semantic_revision):
+            raise ValueError("Use semantic_model and semantic_revision together")
+        if (self.semantic_model is not None or self.semantic_revision is not None) and (
+            not self.online_provenance or not self.semantic_model or not self.semantic_revision
+        ):
+            raise ValueError("Semantic model settings require online_provenance and nonempty values")
+        return self
 
     @field_validator("model", "suite", "benchmark_version")
     @classmethod
@@ -177,6 +192,16 @@ def run_clean(
     if not offline and not key:
         raise ValueError(f"Set GROQ_API_KEY in {ROOT / '.env'} before a live run. Do not paste it in chat.")
 
+    # Load and verify optional local weights before executing any agent request.
+    # Runtime attribution errors are fail-open; invalid setup fails preflight.
+    matcher = None
+    if config.semantic_model:
+        from agentdojo_lab.semantic import LocalMiniLMEncoder, SemanticMatcher
+
+        matcher = SemanticMatcher(
+            LocalMiniLMEncoder(Path(config.semantic_model).expanduser(), revision=config.semantic_revision)
+        )
+
     mode = "offline-fixture" if offline else "live-groq"
     pacer = (
         RequestPacer(config.pacing_tokens_per_minute, pacing_state)
@@ -204,6 +229,25 @@ def run_clean(
         },
         "adapter": "groq-text-v1",
         "event_recording": {"enabled": config.record_events, "schema_version": 1},
+        "online_provenance": {
+            "enabled": config.online_provenance,
+            "mode": "synchronous_observation; independent_all_pairs",
+            "semantic": matcher.metadata if matcher is not None else None,
+            "implementation_sha256": {
+                name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
+                for name in (
+                    "recording.py",
+                    "observation.py",
+                    "online.py",
+                    "provenance.py",
+                    "lexical.py",
+                    "semantic.py",
+                )
+            }
+            if config.online_provenance
+            else {},
+            "timing_scope": "Model loading excluded; callback compute and flush add latency; no hard deadline",
+        },
         "attack": None,
         "defense": None,
         "notes": [
@@ -220,10 +264,20 @@ def run_clean(
     llm = None
     recorder = None
     observer = None
+    attribution = None
     summary = {"mode": mode, "real_llm": not offline, "run_dir": str(run_dir), "status": "running"}
     try:
         if config.record_events:
-            recorder = EventRecorder(run_dir / "events.jsonl", run_dir.name, redactions=(key,))
+            if config.online_provenance:
+                from agentdojo_lab.online import OnlineProvenance
+
+                attribution = OnlineProvenance(run_dir / "provenance.jsonl", semantic_matcher=matcher)
+            recorder = EventRecorder(
+                run_dir / "events.jsonl",
+                run_dir.name,
+                redactions=(key,),
+                on_event=attribution.consume if attribution is not None else None,
+            )
             recorder.emit("RUN_STARTED", {"mode": mode, "config": config.model_dump()})
             observer = ObservationSession(recorder)
         client = (
@@ -327,6 +381,25 @@ def run_clean(
             }
         else:
             summary["recording"] = {"enabled": False}
+        if attribution is not None:
+            attribution.close()
+            attribution_status = attribution.status()
+            subscriber_status = recorder.subscriber_status() if recorder is not None else {"complete": False}
+            summary["online_provenance"] = {
+                **attribution_status,
+                "enabled": True,
+                "complete": attribution_status["complete"]
+                and subscriber_status["complete"]
+                and summary["recording"].get("complete", False),
+                "subscriber": subscriber_status,
+                "path": str(run_dir / "provenance.jsonl"),
+            }
+        else:
+            summary["online_provenance"] = (
+                {"enabled": config.online_provenance, "complete": False}
+                if config.online_provenance
+                else {"enabled": False}
+            )
         write_json(run_dir / "summary.json", summary)
         # Reporting happens after execution and recording are complete. Its
         # failures must not replace an agent error or change evaluator results.

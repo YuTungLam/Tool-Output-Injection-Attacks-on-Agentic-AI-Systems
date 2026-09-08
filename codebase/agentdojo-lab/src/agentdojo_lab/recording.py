@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import threading
 import time
+from collections.abc import Callable
 from datetime import date, datetime, timezone
 from enum import Enum
 from pathlib import Path
@@ -43,7 +44,14 @@ class EventRecorder:
     Callers must omit request headers and other credentials from event payloads.
     """
 
-    def __init__(self, path: Path, run_id: str, *, redactions: tuple[str, ...] = ()):
+    def __init__(
+        self,
+        path: Path,
+        run_id: str,
+        *,
+        redactions: tuple[str, ...] = (),
+        on_event: Callable[[dict], None] | None = None,
+    ):
         self.run_id = run_id
         self._redactions = tuple(sorted({value for value in redactions if value}, key=lambda s: (-len(s), s)))
         self._lock = threading.RLock()
@@ -55,6 +63,8 @@ class EventRecorder:
         self._closed = False
         self._last_good_offset = 0
         self._needs_repair = False
+        self._on_event = on_event
+        self._subscriber_errors: list[str] = []
         # Exclusivity is checked before the agent starts; never overwrite a run.
         self._file = Path(path).open("x", encoding="utf-8", newline="\n")
 
@@ -142,6 +152,17 @@ class EventRecorder:
                 self._last_good_offset = self._file.tell()
                 self._needs_repair = False
                 self._event_count += 1
+                # The subscriber sees only a detached copy of the successfully
+                # persisted, redacted observation. Its failure must not turn a
+                # good event into a recording gap or interrupt tool execution.
+                if self._on_event is not None:
+                    try:
+                        self._on_event(json.loads(line))
+                    except Exception as error:
+                        self._subscriber_errors.append(
+                            f"on_event: {type(error).__name__} (event_sequence={sequence})"
+                        )
+                        self._on_event = None
                 return event_id
             except Exception as error:
                 self._failed_event_sequences.append(sequence)
@@ -152,6 +173,10 @@ class EventRecorder:
                     except Exception as repair_error:
                         self._error("emit.repair", repair_error, sequence)
                 return None
+
+    def subscriber_status(self) -> dict:
+        with self._lock:
+            return {"complete": not self._subscriber_errors, "errors": list(self._subscriber_errors)}
 
     def status(self) -> dict:
         with self._lock:

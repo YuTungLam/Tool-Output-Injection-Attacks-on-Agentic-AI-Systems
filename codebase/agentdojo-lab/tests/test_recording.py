@@ -13,6 +13,52 @@ def read_events(path):
     return [json.loads(line) for line in path.read_text().splitlines()]
 
 
+def test_subscriber_sees_only_flushed_redacted_detached_events(tmp_path):
+    path = tmp_path / "events.jsonl"
+    seen = []
+
+    def consume(event):
+        assert read_events(path)[-1] == event
+        seen.append(event)
+        event["data"]["values"].append("subscriber modification")
+
+    recorder = EventRecorder(path, "run", redactions=("fixture-secret",), on_event=consume)
+    payload = {"values": ["fixture-secret"]}
+    recorder.emit("RUN_STARTED", payload)
+    recorder.close()
+    assert payload == {"values": ["fixture-secret"]}
+    assert read_events(path)[0]["data"] == {"values": ["[REDACTED]"]}
+    assert seen[0]["data"]["values"] == ["[REDACTED]", "subscriber modification"]
+    assert recorder.status()["complete"]
+    assert recorder.subscriber_status()["complete"]
+
+
+def test_subscriber_failure_disables_only_subscriber_and_hides_error_payload(tmp_path):
+    seen = []
+
+    def fail(event):
+        seen.append(event)
+        raise RuntimeError("fixture-sensitive-error-message")
+
+    recorder = EventRecorder(tmp_path / "events.jsonl", "run", on_event=fail)
+    assert recorder.emit("RUN_STARTED", {}) is not None
+    assert recorder.emit("RUN_END", {}) is not None
+    recorder.close()
+    assert len(seen) == 1
+    assert recorder.status()["complete"]
+    assert recorder.status()["event_count"] == 2
+    assert not recorder.subscriber_status()["complete"]
+    assert "fixture-sensitive" not in json.dumps(recorder.subscriber_status())
+
+
+def test_failed_event_is_never_sent_to_subscriber(tmp_path):
+    seen = []
+    recorder = EventRecorder(tmp_path / "events.jsonl", "run", on_event=seen.append)
+    assert recorder.emit("RUN_STARTED", {"bad": object()}) is None
+    assert seen == []
+    recorder.close()
+
+
 class ToolState(str, Enum):
     COMPLETE = "complete"
 

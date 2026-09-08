@@ -62,6 +62,29 @@ def collect_run_record(run_dir: Path, *, summary: dict | None = None) -> dict:
                 except ValueError:
                     warnings.append(f"Cannot parse events.jsonl line {index}; the original file is preserved")
             audit = inspect_events(event_path)
+    provenance = []
+    provenance_path = run_dir / "provenance.jsonl"
+    if provenance_path.exists():
+        if not provenance_path.resolve().is_relative_to(run_dir):
+            warnings.append("provenance.jsonl resolves outside the run directory and was excluded")
+        else:
+            raw = provenance_path.read_bytes()
+            hashes["provenance.jsonl"] = hashlib.sha256(raw).hexdigest()
+            for index, line in enumerate(raw.decode("utf-8", errors="replace").splitlines(), 1):
+                try:
+                    row = json.loads(line)
+                    if not isinstance(row, dict):
+                        raise ValueError("expected attribution object")
+                    provenance.append(row)
+                except ValueError:
+                    warnings.append(
+                        f"Cannot parse provenance.jsonl line {index}; the original file is preserved"
+                    )
+    if selected_summary.get("online_provenance", {}).get("enabled"):
+        if not provenance or selected_summary["online_provenance"].get("complete") is not True:
+            warnings.append(
+                "Online attribution is incomplete. Saved candidates are provisional; inspect timing and errors."
+            )
     native = []
     for path in sorted((run_dir / "native").rglob("*.json")):
         trace = read_json(path)
@@ -78,6 +101,7 @@ def collect_run_record(run_dir: Path, *, summary: dict | None = None) -> dict:
         "manifest": manifest,
         "summary": selected_summary,
         "events": events,
+        "provenance": provenance,
         "audit": audit,
         "native": native,
         "warnings": warnings,

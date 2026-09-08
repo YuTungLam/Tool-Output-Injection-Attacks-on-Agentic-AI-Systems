@@ -1,5 +1,10 @@
 # AgentDojo Lab
 
+Current update (2026-09-08): opt-in live source attribution is implemented and validated on one fresh Groq
+task. See [ONLINE-RESULTS.md](ONLINE-RESULTS.md), [ONLINE.md](ONLINE.md), and the eight-gate
+[reproduction progress](REPRODUCTION_PROGRESS.json). Three gates are accepted; independent malicious-flow
+and causal evaluation remain pending. `dojo-lab run --config configs/groq_online.toml` starts a new live trial.
+
 建立能重复运行的 **AgentDojo 原生正常任务基线**：Groq 模型调用 → AgentDojo 工具执行 → 原生任务评估 → 轨迹与运行配置落盘。已接入 online tracer 的第一层：运行时事件采集器。现另提供按历史前缀重放的参数来源候选分析、NeuroTaint-style LCS 与可选的本地 MiniLM 语义/分块组件；尚未验证来源准确率、恶意传播或因果关系。
 
 研究约定与下一步见 [REPRODUCTION.md](REPRODUCTION.md)：按论文描述重实现，不等待作者代码；生成 HTML/diagram/JSONL 统一英文，对话可用中文。运行 `.venv/bin/python scripts/audit_report_language.py` 可检查现有产物的中文残留。
@@ -14,7 +19,7 @@
 
 输出逐参数精确匹配和 `nt_style_lcs_v1` 候选、独立空白核查包及可展开证据的 `index.html`。当前 10 条真实轨迹共 21 次提议、54 个叶参数；27 个单来源候选、4 个多来源候选、23 个没有精确证据。候选数不是准确率；尚未完成人工核查。
 
-方法定义、论文对应关系、假设、8 个建议核查位置及复现进度见 [PROVENANCE.md](PROVENANCE.md)。当前模式是 offline prefix replay，尚未接入 live 回调。原始 batch 保持冻结，不能用新增源码混入旧重复。
+方法定义、论文对应关系、假设及 8 个建议核查位置见 [PROVENANCE.md](PROVENANCE.md)。`provenance` 命令仍是 offline prefix replay；新 live 回调通过 `--online-provenance` 显式启用。原始 batch 保持冻结，不能用新增源码混入旧重复。
 
 ## 任务和工具来自哪里
 
