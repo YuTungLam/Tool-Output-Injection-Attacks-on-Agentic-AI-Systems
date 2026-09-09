@@ -86,6 +86,15 @@ def main(argv: list[str] | None = None) -> int:
     labels = commands.add_parser("review-labels", help="Validate user-authored independent review labels")
     labels.add_argument("--packet", type=Path, required=True)
     labels.add_argument("--labels", type=Path, required=True)
+    assisted = commands.add_parser(
+        "assisted-review", help="Save disclosed Codex annotations as a separate report"
+    )
+    assisted.add_argument("--packet", type=Path, required=True)
+    assisted.add_argument("--answers", type=Path, required=True)
+    assisted.add_argument("--owner", required=True, help="Project owner; annotation authorship remains Codex")
+    assisted.add_argument(
+        "--output", type=Path, required=True, help="New directory outside the frozen packet"
+    )
     live = commands.add_parser("run", help="Run selected clean tasks against Groq")
     live.add_argument("--config", type=Path, default=ROOT / "configs" / "groq.toml")
     live.add_argument("--model", help="Override the Groq model ID")
@@ -158,6 +167,10 @@ def main(argv: list[str] | None = None) -> int:
             from agentdojo_lab.evaluation_review import validate_review_labels
 
             result = validate_review_labels(args.packet, args.labels)
+        elif args.command == "assisted-review":
+            from agentdojo_lab.assisted_review import export_assisted_review
+
+            result = export_assisted_review(args.packet, args.answers, args.owner, args.output)
         elif args.command == "counterfactual":
             from agentdojo_lab.counterfactual_audit import GroqCounterfactualJudge, audit_run
             from agentdojo_lab.pacing import RequestPacer

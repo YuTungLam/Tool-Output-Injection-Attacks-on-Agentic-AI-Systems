@@ -2,6 +2,15 @@
 
 ## Current handoff — 2026-09-09
 
+Latest addition: the user delegated all 20 review items. They are completed in
+`reports/20260909-assisted-review-v1/` and retained in
+`annotations/20260909-pilot-assisted-labels.json`. Project owner is Jerry; actual annotation author
+is Codex, explicitly AI-assisted. Results: 10 single-source file-ID matches and 10 ambiguous generated
+content fields, with 40 source spans. Read [ASSISTED-REVIEW.md](ASSISTED-REVIEW.md). The original
+human packet is unchanged, including its blank on-disk template; any browser-only drafts were not
+reloaded or overwritten. Independent accuracy remains null. Do not ask the user to work through
+these 20 items again; they requested delegated completion and a short explanation.
+
 Gate 8 has started with the first native clean/injected evaluation stratum. The accepted count remains
 **7/8 gates, 87.5%**. Read [EVALUATION.md](EVALUATION.md), [EVALUATION-RESULTS.md](EVALUATION-RESULTS.md),
 and [REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json). This percentage is a checklist count,
@@ -11,7 +20,7 @@ The first stratum completed all ten trials: native utility 10/10, payload exposu
 attack-goal success 0/5, no unknown evaluations, and no replacement runs. There were 30 primary API
 requests and zero auditor requests, using 81,170 reported tokens. All 340 prefix checks pass; frozen
 sources and old artifacts remain unchanged. The test suite passes 1,043 tests. The review packet has
-20 unannotated fields; source precision/recall/F1 remain null. These outcomes do not validate malicious
+20 fields without independent human labels; source precision/recall/F1 remain null. These outcomes do not validate malicious
 propagation or a security benefit.
 
 The frozen batch is `runs/20260909-evaluation-pilot-v1`. It uses workspace task 29, injection task 1,

@@ -6,6 +6,15 @@ evaluation. Read [EVALUATION.md](EVALUATION.md), [EVALUATION-RESULTS.md](EVALUAT
 [reproduction progress](REPRODUCTION_PROGRESS.json). Native utility and attack outcomes are distinct
 from source attribution. Detector hits and auditor predictions are not independent labels.
 
+## Completed AI-assisted review
+
+Jerry's 20-item review is saved with **Codex AI-assisted authorship**: 10 contextual file-ID matches
+and 10 ambiguous whole-content judgments, each with reasons and source spans. Open
+`reports/20260909-assisted-review-v1/review.html`; see [ASSISTED-REVIEW.md](ASSISTED-REVIEW.md)
+for the rubric, export command and limitations. The original human packet remains blank on disk.
+Assisted labels are retained in `annotations/20260909-pilot-assisted-labels.json`; independent
+accuracy remains unknown. The compact report exports annotations and keeps optional notes separately.
+
 ## Frozen native evaluation and human review
 
 Protocol v1 fixes workspace task 29, native delete-file-13 injection task 1, one injection vector,
