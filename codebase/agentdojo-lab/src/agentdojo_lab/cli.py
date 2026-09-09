@@ -93,6 +93,9 @@ def main(argv: list[str] | None = None) -> int:
     assisted_score.add_argument("--packet", type=Path, required=True)
     assisted_score.add_argument("--labels", type=Path, required=True)
     assisted_score.add_argument("--output", type=Path, required=True)
+    spans = commands.add_parser("span-diagnostic", help="Inspect decoded source regions in saved prefixes")
+    spans.add_argument("--run", type=Path, required=True, action="append")
+    spans.add_argument("--output", type=Path, required=True)
     review = commands.add_parser("review-packet", help="Export a blinded human source-correspondence review")
     review.add_argument("--batch", type=Path, required=True)
     review.add_argument("--output", type=Path, required=True)
@@ -177,13 +180,21 @@ def main(argv: list[str] | None = None) -> int:
             batch = args.resume or create_input_comparison_plan(args.output, args.config)
             if args.plan_only:
                 plan = read_input_comparison_plan(batch)
-                result = {"batch_dir": str(batch.resolve()), "planned": len(plan["schedule"]), "model_calls": 0}
+                result = {
+                    "batch_dir": str(batch.resolve()),
+                    "planned": len(plan["schedule"]),
+                    "model_calls": 0,
+                }
             else:
                 result = execute_input_comparison_batch(batch)
         elif args.command == "input-comparison-report":
             from agentdojo_lab.input_comparison_analysis import analyze_input_comparison
 
             result = analyze_input_comparison(args.batch, args.output)
+        elif args.command == "span-diagnostic":
+            from agentdojo_lab.span_report import export_span_diagnostic
+
+            result = export_span_diagnostic(args.run, args.output)
         elif args.command == "assisted-score":
             from agentdojo_lab.assisted_scoring import score_assisted_review
 

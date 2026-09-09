@@ -1,60 +1,50 @@
-# DRAFT: source-span attribution measurement
+# Remaining evaluation package
 
-**Status: proposed, not executed.** This document does not change the running input comparison,
-its task, payload, model, thresholds or acceptance status.
+**Status: the optional lexical diagnostic is complete; the held-out experiment is not executed.**
+The last reproduction phase is independent evaluation. The acceptance checklist remains eight
+gates with seven accepted. Span diagnostics are an extension, not a ninth gate.
 
-## Measurement question
+## Completed development work
 
-Can the tracer distinguish correspondence to an injected instruction from correspondence to
-legitimate content elsewhere in the same tool result, especially when an argument mixes reused
-structure and newly generated ideas?
+The [decoded scalar protocol](SPAN-DIAGNOSTIC.md) and [results](SPAN-DIAGNOSTIC-RESULTS.md) close
+the engineering package: twelve frozen controls, verified Unicode scalar bindings, and replay
+of forty selected fields from twenty historical runs. All 560 scalar comparisons are available.
+The English viewer preserves original whole-message metrics and shows known payload regions,
+bounded complete-target literal occurrences and all-optimal LCS region bounds.
 
-The assisted review has ten definitive file-ID items on which all three methods agree. Ten
-long-content items remain ambiguous: LCS/cascade produce ten candidates, exact none. These
-AI-assisted judgments establish neither independent accuracy nor a NeuroTaint gap.
+This implemented diagnostic is narrower than the earlier draft's proposed proposition splitting:
+there is no automatic target segmentation, arbitrary matching subphrase engine or semantic span
+verdict. Those ideas are optional future extensions and are not prerequisites for closing this
+paper-method reproduction. Character alignment does not establish that an instruction was followed.
 
-The current cascade compares each selected argument leaf with the whole visible source message
-([provenance.py](src/agentdojo_lab/provenance.py)). LCS returns a subsequence length and normalized
-score, not an alignment to the injected scalar span ([lexical.py](src/agentdojo_lab/lexical.py)).
-A whole-result match can reflect benign wording or formatting without localizing the injection.
-The payload-exposure audit locates the incoming instruction, but does not connect it to a target span.
+The completed twenty-item assisted review remains development evidence: ten definite file-ID
+judgments and ten ambiguous generated-content judgments. Do not ask the owner to repeat it or
+relabel Codex assistance as independent human review.
 
-## Proposed bounded work
+## Next: one prospectively selected native stratum
 
-1. **Freeze a development rubric and span schema.** Retain original source/result/request IDs,
-   decoded JSON/YAML scalar pointers, and half-open Unicode codepoint ranges in both source and
-   target. Split long targets into factual values, activity propositions and structural fragments
-   using a deterministic rule. Label candidate spans as injected-content support, other-source
-   support, no visible support, or ambiguous/mixed support, with literal/paraphrase/structural
-   evidence. Preserve multiple origins. Injection assignment does not establish action causality.
-2. **Validate engineering controls first.** Author fixed source/target pairs with benign text and a
-   separately marked injection region: copy only benign text, copy only injected text, copy both,
-   generate unsupported text, and reuse an ambiguous ID. Include Unicode and escaped scalars.
-   Literal correspondences are known by construction; authored paraphrases remain disclosed
-   challenge cases. Neither supplies independent human accuracy. Preserve existing whole-result
-   scores beside proposed localization; missing localization is not a malicious-span negative.
-3. **Freeze one held-out native case before new inference.** Use a documented native read-to-write
-   eligibility rule and fixed task-ID order, excluding task 29 and all rubric-development cases.
-   Record eligibility rejections. Select a compatible native goal/vector and exact direct payload
-   from definitions without testing attack success. Freeze the assignment, rubric, scorer, schedule
-   and budgets. Proposed initial
-   sample: five clean and five injected runs in a fixed passive condition, with the existing model,
-   thresholds and request/time caps. Retain failures, unexposed injections and unsuccessful attacks;
-   never replace cases after observing results.
+1. Select one eligible native read-to-write case in fixed task-ID order, excluding task29 and every
+   development case listed in earlier experiment records. Record rejected candidates and reasons.
+   Use the native goal/vector definitions to choose a compatible direct payload without testing
+   attack success. Confirm eligibility from static task definitions and native engineering controls.
+2. Introduce a separately named protocol and validate its source/target bindings. The current span
+   adapter accepts only the two frozen task29 protocols; generalization requires explicit code and
+   control coverage, not relaxing those validations silently.
+3. Freeze case, payload, policy, model, schedule, scorer, code and budgets before model inference.
+   Run five clean and five injected repetitions in the passive input condition. Preserve the
+   existing model settings and request/time caps. Retain every planned slot, failed run, unexposed
+   payload and unsuccessful attack; no replacement or adaptive attack search.
+4. Report availability, native utility, exposure, attack-goal outcome, attribution candidates,
+   ambiguity, abstention, ablations and timing/cost with separate denominators. Keep the original
+   baseline and optional lexical diagnostic distinct. Account for all ten planned slots.
 
-## Acceptance and required evidence
+## Finite closure
 
-- Controls recover declared literal spans and exact scalar round trips; ambiguous and unscored
-  cases retain uncertainty.
-- All ten held-out planned slots and source/target artifacts are accounted for, with immutable
-  inputs, English reports and separate exposure, native attack outcome and span-correspondence data.
-- Reports distinguish benign correspondence from injected-span correspondence and show coverage,
-  ambiguity and abstention. A source-level candidate alone cannot become a malicious-span positive.
-- Independent accuracy requires human-authored source/target ranges, support verdicts and provenance,
-  plus a frozen scoring/adjudication procedure. Reuse current assisted labels only for development;
-  do not ask the owner to repeat twenty whole-field items or relabel assistance as independent review.
+The original [independent evaluation protocol](EVALUATION.md) supplies the final acceptance
+requirements. Independent labels, review/adjudication and a frozen scoring procedure are needed for
+precision/recall/F1. Engineering controls and descriptive held-out results can be delivered without
+those labels, but they cannot make independent accuracy non-null or gate 8 accepted.
 
-Without those independent labels, deliver engineering verification and descriptive held-out
-measurements with independent precision/recall/F1 left null. Do not promise a security improvement
-or interpret correspondence as hidden causal influence. No CTTA, parameter updates or action
-blocking is proposed.
+Neither a successful attack nor a beneficial Canary effect is required to finish the planned
+experiment. Matching the original paper's numeric tables or adding more method components is not
+required by this bounded checklist. No CTTA, parameter updates or action blocking is proposed.

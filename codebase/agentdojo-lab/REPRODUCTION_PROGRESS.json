@@ -146,7 +146,13 @@
         "INPUT-COMPARISON-RESULTS.md",
         "reports/20260909-input-comparison-v1/input-comparison-summary.json",
         "reports/20260909-input-comparison-validation/quality.json",
-        "NEXT-STRATUM.md"
+        "NEXT-STRATUM.md",
+        "SPAN-DIAGNOSTIC.md",
+        "SPAN-DIAGNOSTIC-RESULTS.md",
+        "configs/SPAN-CONTROLS.json",
+        "configs/span_replay_v1.json",
+        "reports/20260909-span-diagnostic-v1/span-summary.json",
+        "reports/20260909-span-validation-v1/quality.json"
       ],
       "limits": "One native task/payload only. First pilot: five clean/five injected, both Canary-enabled. New comparison: five fresh passive/five fresh Canary, all injected, no historical pooling. Both new arms have utility 5/5 and attack goal 0/5; all 320 prefix checks pass. Independent human attribution evidence, broader strata and causal validation remain pending. Assisted agreement has ten definitive positive references and ten ambiguous fields, with no definitive negatives. No malicious propagation accuracy, protective benefit or replacement attempts.",
       "acceptance_interpretation": "Pilot infrastructure and one frozen repeated stratum are progress within this gate; the gate is not accepted before independent evaluation is completed.",
@@ -190,6 +196,19 @@
         "primary_requests": 30,
         "auditor_requests": 0,
         "reported_primary_tokens": 80848
+      },
+      "span_diagnostic": {
+        "status": "completed",
+        "role": "optional offline engineering extension; not a new acceptance gate",
+        "controls_passed": 12,
+        "controls_total": 12,
+        "historical_runs": 20,
+        "selected_fields": 40,
+        "decoded_comparisons": 560,
+        "unavailable_comparisons": 0,
+        "new_model_calls": 0,
+        "independent_accuracy": null,
+        "held_out_experiment": "not_executed"
       }
     }
   ],

@@ -1,6 +1,37 @@
 # Handoff: current state and historical notes
 
-## Latest completed work — 2026-09-09
+## Latest completed work: offline span diagnostic — 2026-09-09
+
+Read [SPAN-DIAGNOSTIC-RESULTS.md](SPAN-DIAGNOSTIC-RESULTS.md). The optional lexical extension passes
+12/12 frozen engineering controls and processes all twenty selected historical runs: sixty total
+argument fields, forty selected sink fields, 560 decoded scalar comparisons, no unavailable
+comparisons. There are zero full-target literal occurrences inside assigned payload regions. Fifteen
+content comparisons require some annotated characters in every optimal LCS alignment; fifteen
+file-ID comparisons preserve a zero-to-one annotated-character ambiguity. These are lexical
+properties, not confirmed malicious or causal propagation. No new model requests were made.
+
+Open `reports/20260909-span-diagnostic-v1/index.html` for one-field-at-a-time English navigation,
+decoded source highlighting, original cascade metrics and links to the original timeline/diagram.
+Plan, controls and JSONL are alongside it. Validation is in
+`reports/20260909-span-validation-v1/`: 1,290 tests, Ruff, offline wheel, English audit,
+200/200 unchanged selected-run files and 1,621/1,621 unchanged older protected artifacts.
+
+The new modules are `span_scalars.py`, `span_evidence.py`, `span_diagnostic.py` and `span_report.py`;
+the CLI command is `span-diagnostic`. Source annotation uses exact payload exposure tied to the same
+request and decoded scalar. It is not a whole-tool-result malicious label. The adapter currently
+accepts only the existing task29 pilot and input-comparison protocols. Original online modules and
+prior result artifacts remain unchanged.
+
+This closes the bounded engineering extension. No new acceptance gate was added: seven of eight
+gates remain accepted. Next, follow [NEXT-STRATUM.md](NEXT-STRATUM.md) to select and freeze one unseen
+native case with five clean/five injected passive runs. That experiment has not been executed.
+Independent accuracy remains null. The user's twenty assisted annotations are complete; do not ask
+for them again. No CTTA, weight updates, action blocking or attack-success-driven selection.
+
+Work stays on `codex/agentdojo-lab`, committed locally without push. Runtime runs/reports remain
+ignored; source, tests, frozen configurations and result notes are tracked. Never archive `.env`.
+
+## Previous completed work: input comparison — 2026-09-09
 
 The injected passive/Canary comparison is complete. Read
 [INPUT-COMPARISON-RESULTS.md](INPUT-COMPARISON-RESULTS.md). Each arm completed five fresh trials:

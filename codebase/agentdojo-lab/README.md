@@ -1,12 +1,26 @@
 # AgentDojo Lab
 
-Current workflow (2026-09-09): score the completed assisted review and run a fresh injected
-passive/Canary input comparison. The new ten-trial batch is complete; see
-[results](INPUT-COMPARISON-RESULTS.md). Seven of eight acceptance gates remain complete; gate 8 still needs
-independent attribution evidence and broader evaluation. Read [assisted agreement](ASSISTED-SCORING.md),
-the [input comparison protocol](INPUT-COMPARISON.md), and [reproduction progress](REPRODUCTION_PROGRESS.json).
+Current workflow (2026-09-09): the optional decoded-scalar diagnostic is complete, with 12/12
+engineering controls and 560 scored comparisons from 20 saved real runs. Open
+[`reports/20260909-span-diagnostic-v1/index.html`](reports/20260909-span-diagnostic-v1/index.html)
+and read [the results](SPAN-DIAGNOSTIC-RESULTS.md). This offline extension does not change the online
+baseline or add an acceptance gate. Seven of eight gates remain accepted; the remaining evaluation
+work is documented in [NEXT-STRATUM.md](NEXT-STRATUM.md).
 Native utility, attack-goal success, source correspondence and malicious-span propagation are separate
 measurements. Detector hits and auditor predictions are not independent labels.
+
+## Inspect source regions in a saved run
+
+```bash
+.venv/bin/dojo-lab span-diagnostic \
+  --run runs/20260909-input-comparison-v1/runs/r01-passive \
+  --output reports/my-span-diagnostic
+```
+
+Repeat `--run` for multiple supported recordings. The exporter freezes inputs, runs fixed controls
+and writes a new English HTML/JSONL report without API calls. Select one field and one scalar to see
+known payload regions, complete literal matches and LCS region ambiguity, with a link to the original
+timeline and diagram. See [scope and limits](SPAN-DIAGNOSTIC.md).
 
 ## Fresh passive/Canary input comparison
 
@@ -47,8 +61,8 @@ accuracy. Independent precision, recall and F1 remain null. Open
 ```
 
 The scorer verifies frozen identities and hashes, keeps unknowns separate and writes outside source
-artifacts. The user does not need to repeat the completed 20-item review. A proposed next measurement
-is documented in [NEXT-STRATUM.md](NEXT-STRATUM.md); that draft has not been executed.
+artifacts. The user does not need to repeat the completed 20-item review. The lexical development
+diagnostic is now complete; the held-out native stratum in [NEXT-STRATUM.md](NEXT-STRATUM.md) is still pending.
 
 ## Completed AI-assisted review
 
