@@ -23,7 +23,7 @@ def _write(path: Path, value) -> None:
 
 def _implementation() -> dict:
     paths = sorted((ROOT / "src/agentdojo_lab").glob("*.py"))
-    paths += [ROOT / "src/agentdojo_lab/span_report.html", ROOT / "SPAN-DIAGNOSTIC.md"]
+    paths += [ROOT / "src/agentdojo_lab/span_report.html", ROOT / "SPAN-DIAGNOSTIC.md", ROOT / "HELDOUT.md"]
     return {str(path.relative_to(ROOT)): _sha(_read(path)) for path in paths}
 
 
@@ -57,7 +57,7 @@ def render_span_report(result: dict, output: Path) -> None:
 def export_span_diagnostic(runs: list[Path], output: Path) -> dict:
     """Account for every requested run and twelve frozen engineering controls.
 
-    Runs are historical development data. No API clients, judges, or encoder
+    Input experiment protocols remain distinct. No API clients, judges, or encoder
     models are constructed. Fresh output paths and a before/after inventory keep
     prior experiment artifacts intact. The run adapter supplies prefix binding.
     """
@@ -85,7 +85,7 @@ def export_span_diagnostic(runs: list[Path], output: Path) -> dict:
         "method": "decoded_scalar_span_evidence_v1",
         "mode": "offline_prefix_diagnostic",
         "frozen_at": datetime.now(timezone.utc).isoformat(),
-        "selection": "Explicit ordered historical runs; retrospective development, not held-out data.",
+        "selection": "Explicit ordered saved runs; experimental status belongs to each original frozen batch, not this offline export.",
         "runs": [str(run) for run in runs],
         "controls_sha256": CONTROL_SHA,
         "implementation_sha256": implementation,
@@ -164,7 +164,7 @@ def export_span_diagnostic(runs: list[Path], output: Path) -> dict:
         "interpretation": "Lexical location only. Outside assigned regions does not mean benign. "
         "Full-target exact misses do not exclude copied subphrases or semantic influence. "
         "LCS region bounds describe optimal character alignments, not model reliance or maliciousness. "
-        "Engineering controls and retrospective runs do not establish independent attribution accuracy.",
+        "Engineering controls and lexical measurements do not establish independent attribution accuracy.",
         "controls": controls,
         "runs": results,
     }

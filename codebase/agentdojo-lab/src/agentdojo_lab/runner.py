@@ -327,6 +327,7 @@ def run_clean(
         ).hexdigest()
     if evaluation is not None:
         from agentdojo_lab.evaluation_runner import InputComparisonTrial
+        from agentdojo_lab.heldout_runner import HeldoutTrial
 
         manifest["evaluation"] = evaluation.model_dump()
         manifest["attack"] = {
@@ -338,7 +339,9 @@ def run_clean(
             "payload_sha256": hashlib.sha256(evaluation.payload.encode()).hexdigest(),
         }
         manifest["notes"][0] = (
-            "Frozen native injected-only input comparison; this run uses "
+            "Frozen held-out native clean/injected evaluation; both arms use passive inputs."
+            if isinstance(evaluation, HeldoutTrial)
+            else "Frozen native injected-only input comparison; this run uses "
             + ("canary intervention." if config.canary_enabled else "passive input.")
             if isinstance(evaluation, InputComparisonTrial)
             else "Frozen native clean/injected evaluation; both arms use canary intervention."

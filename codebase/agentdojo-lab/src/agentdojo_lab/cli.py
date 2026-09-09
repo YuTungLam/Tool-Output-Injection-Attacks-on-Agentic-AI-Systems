@@ -96,6 +96,16 @@ def main(argv: list[str] | None = None) -> int:
     spans = commands.add_parser("span-diagnostic", help="Inspect decoded source regions in saved prefixes")
     spans.add_argument("--run", type=Path, required=True, action="append")
     spans.add_argument("--output", type=Path, required=True)
+    heldout = commands.add_parser("heldout", help="Freeze or run the new passive clean/injected case")
+    heldout_location = heldout.add_mutually_exclusive_group(required=True)
+    heldout_location.add_argument("--output", type=Path)
+    heldout_location.add_argument("--resume", type=Path)
+    heldout.add_argument("--config", type=Path)
+    heldout.add_argument("--plan-only", action="store_true")
+    heldout_report = commands.add_parser("heldout-report", help="Summarize every slot in the held-out case")
+    heldout_report.add_argument("--batch", type=Path, required=True)
+    heldout_report.add_argument("--output", type=Path, required=True)
+    heldout_report.add_argument("--span-report", type=Path, help="Link an existing optional span report")
     review = commands.add_parser("review-packet", help="Export a blinded human source-correspondence review")
     review.add_argument("--batch", type=Path, required=True)
     review.add_argument("--output", type=Path, required=True)
@@ -191,6 +201,21 @@ def main(argv: list[str] | None = None) -> int:
             from agentdojo_lab.input_comparison_analysis import analyze_input_comparison
 
             result = analyze_input_comparison(args.batch, args.output)
+        elif args.command == "heldout":
+            from agentdojo_lab.heldout import create_heldout_plan, execute_heldout_batch, read_heldout_plan
+
+            if args.resume is not None and args.config is not None:
+                raise ValueError("A resumed held-out batch uses its frozen configuration")
+            batch = args.resume or create_heldout_plan(args.output, args.config)
+            if args.plan_only:
+                plan = read_heldout_plan(batch)
+                result = {"batch_dir": str(batch), "planned": len(plan["schedule"]), "model_calls": 0}
+            else:
+                result = execute_heldout_batch(batch)
+        elif args.command == "heldout-report":
+            from agentdojo_lab.heldout_analysis import analyze_heldout
+
+            result = analyze_heldout(args.batch, args.output, span_report=args.span_report)
         elif args.command == "span-diagnostic":
             from agentdojo_lab.span_report import export_span_diagnostic
 

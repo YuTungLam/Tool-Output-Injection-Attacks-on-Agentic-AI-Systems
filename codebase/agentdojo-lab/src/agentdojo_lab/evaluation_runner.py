@@ -76,6 +76,11 @@ class EvaluationGroqLLM(GroqLLM):
 
 def validate_evaluation(config: RunConfig, spec: EvaluationTrial, suite) -> None:
     """Resolve native objects before creating an output directory or API client."""
+    from agentdojo_lab.heldout_runner import HeldoutTrial, validate_heldout
+
+    if type(spec) is HeldoutTrial:
+        validate_heldout(config, spec, suite)
+        return
     if type(spec) not in (EvaluationTrial, InputComparisonTrial):
         raise TypeError("evaluation must be an EvaluationTrial or InputComparisonTrial")
     # Revalidate even an instance created with model_construct/model_copy.
@@ -315,6 +320,8 @@ def payload_exposure_audit(events_path: Path, spec: EvaluationTrial) -> dict:
 def build_evaluation_summary(
     spec: EvaluationTrial, summary: dict, results: dict | None, exposure: dict
 ) -> dict:
+    from agentdojo_lab.heldout_runner import HeldoutTrial
+
     complete = bool(
         results
         and results.get("evaluation_completed")
@@ -326,7 +333,7 @@ def build_evaluation_summary(
     return {
         **(
             {"protocol": spec.protocol, "input_condition": spec.input_condition}
-            if isinstance(spec, InputComparisonTrial)
+            if isinstance(spec, (InputComparisonTrial, HeldoutTrial))
             else {}
         ),
         "condition": spec.condition,

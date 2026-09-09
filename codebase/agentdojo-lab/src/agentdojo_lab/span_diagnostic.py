@@ -7,6 +7,7 @@ from pathlib import Path
 from agentdojo_lab.evaluation_analysis import _read_bytes
 from agentdojo_lab.evaluation_review import _canonical, _local, _sha, _strict
 from agentdojo_lab.evaluation_runner import EvaluationTrial, InputComparisonTrial, payload_exposure_audit
+from agentdojo_lab.heldout_runner import HeldoutTrial
 from agentdojo_lab.inspection import inspect_events
 from agentdojo_lab.policy import ToolPolicy
 from agentdojo_lab.provenance import ProvenanceTracker, _text
@@ -223,7 +224,7 @@ def _source_rows(call, field, original, occurrences, payload, budget):
 def analyze_span_run(run: Path) -> dict:
     """Return explicit unavailable evidence for unsupported/inconsistent recordings.
 
-    This version accepts only complete frozen task29 pilot/comparison recordings.
+    This version accepts complete frozen task29 and named task8 held-out recordings.
     It validates actual event prefixes, never treats native outcomes as attribution
     labels, and does not construct an SDK client, encoder, or counterfactual judge.
     """
@@ -246,11 +247,19 @@ def analyze_span_run(run: Path) -> dict:
         result["source_hashes_before"] = {name: _sha(value) for name, value in raw.items()}
         manifest, summary = _strict(raw["manifest.json"]), _strict(raw["summary.json"])
         spec_data = manifest["evaluation"]
-        spec = (InputComparisonTrial if "protocol" in spec_data else EvaluationTrial).model_validate(
-            spec_data
-        )
+        spec_type = {
+            None: EvaluationTrial,
+            "native-injected-input-comparison-v1": InputComparisonTrial,
+            "native-heldout-passive-v1": HeldoutTrial,
+        }.get(spec_data.get("protocol"))
+        _require(spec_type is not None, "Unsupported saved evaluation protocol")
+        spec = spec_type.model_validate(spec_data)
         config = RunConfig.model_validate(manifest["config"])
-        expected_canary = spec.input_condition == "canary" if isinstance(spec, InputComparisonTrial) else True
+        expected_canary = (
+            spec.input_condition == "canary"
+            if isinstance(spec, (InputComparisonTrial, HeldoutTrial))
+            else True
+        )
         _require(
             config.suite == "workspace"
             and config.benchmark_version == "v1.2.2"
