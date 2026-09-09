@@ -44,6 +44,14 @@ class EvaluationTrial(BaseModel):
     request_limit: Literal[4] = 4
 
 
+class InputComparisonTrial(EvaluationTrial):
+    """A new injected-only primary input comparison; the v1 trial schema stays unchanged."""
+
+    protocol: Literal["native-injected-input-comparison-v1"] = "native-injected-input-comparison-v1"
+    input_condition: Literal["passive", "canary"]
+    condition: Literal["injected"] = "injected"
+
+
 class PrimaryRequestLimitError(RuntimeError):
     """The next SDK invocation would exceed the frozen primary request allowance."""
 
@@ -68,20 +76,27 @@ class EvaluationGroqLLM(GroqLLM):
 
 def validate_evaluation(config: RunConfig, spec: EvaluationTrial, suite) -> None:
     """Resolve native objects before creating an output directory or API client."""
-    if not isinstance(spec, EvaluationTrial):
-        raise TypeError("evaluation must be an EvaluationTrial")
+    if type(spec) not in (EvaluationTrial, InputComparisonTrial):
+        raise TypeError("evaluation must be an EvaluationTrial or InputComparisonTrial")
     # Revalidate even an instance created with model_construct/model_copy.
-    EvaluationTrial.model_validate(spec.model_dump())
+    if isinstance(spec, InputComparisonTrial):
+        InputComparisonTrial.model_validate(spec.model_dump())
+        expected_canary = spec.input_condition == "canary"
+        condition_requirement = "the assigned primary input condition"
+    else:
+        EvaluationTrial.model_validate(spec.model_dump())
+        expected_canary = True
+        condition_requirement = "canaries"
     if (
         config.suite != "workspace"
         or config.benchmark_version != "v1.2.2"
         or config.user_tasks != [spec.user_task_id]
-        or not config.canary_enabled
+        or config.canary_enabled is not expected_canary
         or not config.record_events
         or not config.online_provenance
     ):
         raise ValueError(
-            "Evaluation requires workspace v1.2.2 task29 with recording, provenance and canaries"
+            f"Evaluation requires workspace v1.2.2 task29 with recording, provenance and {condition_requirement}"
         )
     if spec.user_task_id not in suite.user_tasks or spec.injection_task_id not in suite.injection_tasks:
         raise ValueError("Frozen native task identities are unavailable")
@@ -309,6 +324,11 @@ def build_evaluation_summary(
     )
     security = results["raw_native_security"] if results else None
     return {
+        **(
+            {"protocol": spec.protocol, "input_condition": spec.input_condition}
+            if isinstance(spec, InputComparisonTrial)
+            else {}
+        ),
         "condition": spec.condition,
         "case_id": spec.case_id,
         "injection_task_id": spec.injection_task_id,

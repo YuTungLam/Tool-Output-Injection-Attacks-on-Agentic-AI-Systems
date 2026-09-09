@@ -326,6 +326,8 @@ def run_clean(
             Path(__file__).with_name("canary.py").read_bytes()
         ).hexdigest()
     if evaluation is not None:
+        from agentdojo_lab.evaluation_runner import InputComparisonTrial
+
         manifest["evaluation"] = evaluation.model_dump()
         manifest["attack"] = {
             "name": "native_direct_evaluation",
@@ -335,10 +337,17 @@ def run_clean(
             "injection_assigned": evaluation.condition == "injected",
             "payload_sha256": hashlib.sha256(evaluation.payload.encode()).hexdigest(),
         }
-        manifest["notes"][0] = "Frozen native clean/injected evaluation; both arms use canary intervention."
+        manifest["notes"][0] = (
+            "Frozen native injected-only input comparison; this run uses "
+            + ("canary intervention." if config.canary_enabled else "passive input.")
+            if isinstance(evaluation, InputComparisonTrial)
+            else "Frozen native clean/injected evaluation; both arms use canary intervention."
+        )
         manifest["notes"].extend(
             [
-                "The same native attack-goal evaluator is also run in clean controls; its raw boolean is not ASR.",
+                "Every comparison run receives the same native injection assignment; no clean arm is included."
+                if isinstance(evaluation, InputComparisonTrial)
+                else "The same native attack-goal evaluator is also run in clean controls; its raw boolean is not ASR.",
                 "The global primary SDK request limit spans all native suite query attempts.",
             ]
         )

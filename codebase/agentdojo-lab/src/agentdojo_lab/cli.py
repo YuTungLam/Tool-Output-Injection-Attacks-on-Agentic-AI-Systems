@@ -80,6 +80,19 @@ def main(argv: list[str] | None = None) -> int:
     )
     evaluation_report.add_argument("--batch", type=Path, required=True)
     evaluation_report.add_argument("--output", type=Path, required=True)
+    comparison = commands.add_parser("input-comparison", help="Freeze or run native passive/Canary controls")
+    comparison_location = comparison.add_mutually_exclusive_group(required=True)
+    comparison_location.add_argument("--output", type=Path)
+    comparison_location.add_argument("--resume", type=Path)
+    comparison.add_argument("--config", type=Path)
+    comparison.add_argument("--plan-only", action="store_true")
+    comparison_report = commands.add_parser("input-comparison-report", help="Analyze saved input controls")
+    comparison_report.add_argument("--batch", type=Path, required=True)
+    comparison_report.add_argument("--output", type=Path, required=True)
+    assisted_score = commands.add_parser("assisted-score", help="Score exploratory AI-assisted agreement")
+    assisted_score.add_argument("--packet", type=Path, required=True)
+    assisted_score.add_argument("--labels", type=Path, required=True)
+    assisted_score.add_argument("--output", type=Path, required=True)
     review = commands.add_parser("review-packet", help="Export a blinded human source-correspondence review")
     review.add_argument("--batch", type=Path, required=True)
     review.add_argument("--output", type=Path, required=True)
@@ -152,6 +165,29 @@ def main(argv: list[str] | None = None) -> int:
 
             read_evaluation_plan(args.batch, check_implementation=False)
             result = analyze_batch(args.batch, args.output)
+        elif args.command == "input-comparison":
+            from agentdojo_lab.input_comparison import (
+                create_input_comparison_plan,
+                execute_input_comparison_batch,
+                read_input_comparison_plan,
+            )
+
+            if args.resume is not None and args.config is not None:
+                raise ValueError("A resumed batch uses its frozen configuration")
+            batch = args.resume or create_input_comparison_plan(args.output, args.config)
+            if args.plan_only:
+                plan = read_input_comparison_plan(batch)
+                result = {"batch_dir": str(batch.resolve()), "planned": len(plan["schedule"]), "model_calls": 0}
+            else:
+                result = execute_input_comparison_batch(batch)
+        elif args.command == "input-comparison-report":
+            from agentdojo_lab.input_comparison_analysis import analyze_input_comparison
+
+            result = analyze_input_comparison(args.batch, args.output)
+        elif args.command == "assisted-score":
+            from agentdojo_lab.assisted_scoring import score_assisted_review
+
+            result = score_assisted_review(args.packet, args.labels, args.output)
         elif args.command == "review-packet":
             from agentdojo_lab.evaluation_batch import read_evaluation_plan
             from agentdojo_lab.evaluation_review import export_review_packet

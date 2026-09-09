@@ -250,14 +250,20 @@ def execute_trial(batch: Path, trial_id: str) -> int:
 
 
 def execute_evaluation_batch(batch: Path) -> dict:
-    """Serial new processes, a persistent start marker, and no replacement attempts."""
+    return execute_frozen_batch(
+        batch, read_plan=read_evaluation_plan, worker_module="agentdojo_lab.evaluation_batch"
+    )
+
+
+def execute_frozen_batch(batch: Path, *, read_plan, worker_module: str) -> dict:
+    """Shared serial supervisor; claims and timeouts apply to each frozen protocol."""
     batch = Path(batch).expanduser().resolve()
     with (batch / ".lock").open("a") as lock:
         try:
             fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError as exc:
             raise ValueError("Evaluation batch is already running") from exc
-        plan = read_evaluation_plan(batch)
+        plan = read_plan(batch)
         with (batch / "execution.jsonl").open("a", encoding="utf-8") as journal:
 
             def emit(kind, **values):
@@ -267,7 +273,7 @@ def execute_evaluation_batch(batch: Path) -> dict:
                 print(json.dumps(row, ensure_ascii=False), flush=True)
 
             for item in plan["schedule"]:
-                read_evaluation_plan(batch)
+                read_plan(batch)
                 trial_id = item["trial_id"]
                 job = batch / "jobs" / trial_id
                 if job.exists():
@@ -277,7 +283,7 @@ def execute_evaluation_batch(batch: Path) -> dict:
                 command = [
                     sys.executable,
                     "-m",
-                    "agentdojo_lab.evaluation_batch",
+                    worker_module,
                     "trial",
                     "--batch",
                     str(batch),
@@ -287,7 +293,10 @@ def execute_evaluation_batch(batch: Path) -> dict:
                 _write_new(
                     job / "started.json", {"trial_id": trial_id, "started_at": _now(), "command": command}
                 )
-                emit("trial_started", trial_id=trial_id, condition=item["condition"], repeat=item["repeat"])
+                emit(
+                    "trial_started", trial_id=trial_id, condition=item["condition"], repeat=item["repeat"],
+                    **({"input_condition": item["input_condition"]} if "input_condition" in item else {}),
+                )
                 tick = time.monotonic()
                 status, returncode = "failed", None
                 with (job / "console.log").open("x") as log:
