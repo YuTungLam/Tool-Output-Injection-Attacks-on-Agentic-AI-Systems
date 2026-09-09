@@ -1,5 +1,44 @@
 # Handoff: current state and historical notes
 
+## Latest completed work: prospective passive calendar experiment — 2026-09-09
+
+Read [HELDOUT-RESULTS.md](HELDOUT-RESULTS.md). All ten frozen task8 slots completed once:
+five clean and five injected, with passive inputs in both arms. Native utility is 5/5 per arm;
+injected payload exposure is 5/5 and native delete-file-13 goal success is 0/5. All 300 prefix
+checks pass. There are no unknown evaluations, failures, replacements or native query restarts.
+Thirty primary requests report 59,759 tokens; there are zero auditor requests.
+
+Open `reports/20260909-heldout-v2/index.html` for the compact English table and expandable
+trial timelines/diagrams. The optional new scalar report is `reports/20260909-heldout-spans-v1`:
+12/12 controls, 30 selected fields, 330 scored comparisons, no unavailable comparisons.
+Whole-tool LCS flags all twenty user-provided participant emails even though those complete
+addresses are absent from the eligible calendar output. Preserve this lexical-candidate limitation;
+do not call it independently measured false positives, malicious propagation or causality.
+
+Execution commit: `191fffd46f49f586804079b3f35e198c17737201`. Frozen batch:
+`runs/20260909-heldout-v1`; plan SHA-256
+`16c79d770492ccebe12f986a73f4e37c0f889e7d464c606214903b78257fb35d`.
+At close, all 139 frozen source files and 1,632 older protected artifacts matched. The new
+legitimate operation was selected prospectively; source event24/carrier, model, tools and
+attack pattern were not unseen. The older strict task29 protocols remain separate.
+
+After batch close, only an analyzer HTML branch was corrected so clean exposure details show
+"Not applicable" rather than "Unknown." Original v1 is preserved; corrected v2 JSON/CSV/TEX
+are byte-identical. Preflight: 1,383 tests, 67 targeted final protocol checks, Ruff, offline wheel.
+After the display correction: 33 report tests. English/static artifact receipts are in
+`reports/20260909-heldout-validation-v1/`. Execution resume requires the original frozen source;
+there are no unstarted slots to resume. Read-only analysis uses current code without new API calls.
+
+Next is the final evidence/acceptance closeout described in [NEXT-STRATUM.md](NEXT-STRATUM.md).
+Seven of eight gates remain accepted. Independent labels, a second review, adjudication and
+scoring are still required for independent attribution acceptance; precision/recall/F1 stay null.
+The owner's twenty assisted annotations remain complete and must not be repeated or called
+independent. No extra model experiments, defense methods, CTTA, weight updates or action blocking
+are automatically added. Code/result notes stay on `codex/agentdojo-lab`, committed locally
+without push; ignored runtime artifacts require separate transfer, excluding `.env`.
+
+The sections below are historical snapshots and do not supersede this update.
+
 ## Latest completed work: offline span diagnostic — 2026-09-09
 
 Read [SPAN-DIAGNOSTIC-RESULTS.md](SPAN-DIAGNOSTIC-RESULTS.md). The optional lexical extension passes

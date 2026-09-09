@@ -1,50 +1,40 @@
-# Remaining evaluation package
+# Remaining evaluation closeout
 
-**Status: the optional lexical diagnostic is complete; the held-out experiment is not executed.**
-The last reproduction phase is independent evaluation. The acceptance checklist remains eight
-gates with seven accepted. Span diagnostics are an extension, not a ninth gate.
+**The planned new-case experiment is complete. One final evidence/acceptance closeout remains.**
+The checklist stays at seven of eight accepted gates. Neither the optional scalar diagnostic
+nor this prospective experiment adds a new gate.
 
-## Completed development work
+## Completed experiment
 
-The [decoded scalar protocol](SPAN-DIAGNOSTIC.md) and [results](SPAN-DIAGNOSTIC-RESULTS.md) close
-the engineering package: twelve frozen controls, verified Unicode scalar bindings, and replay
-of forty selected fields from twenty historical runs. All 560 scalar comparisons are available.
-The English viewer preserves original whole-message metrics and shows known payload regions,
-bounded complete-target literal occurrences and all-optimal LCS region bounds.
+[HELDOUT.md](HELDOUT.md) and [HELDOUT-SELECTION.md](HELDOUT-SELECTION.md) froze native task8,
+its payload, model, policy, schedule and budgets before primary inference. All five clean and
+five injected passive trials completed once: utility 5/5 per arm, exposure 5/5 injected, native
+attack goal 0/5, and 300/300 prefix checks. No failed or successful slot was replaced.
+See [the results](HELDOUT-RESULTS.md) and
+[English report](reports/20260909-heldout-v2/index.html).
 
-This implemented diagnostic is narrower than the earlier draft's proposed proposition splitting:
-there is no automatic target segmentation, arbitrary matching subphrase engine or semantic span
-verdict. Those ideas are optional future extensions and are not prerequisites for closing this
-paper-method reproduction. Character alignment does not establish that an instruction was followed.
+The new legitimate operation is held out from development. Its source event/carrier, tools,
+model and injection pattern are not unseen. The strict task8 adapter is separate from the
+older task29 protocols. The scalar diagnostic scores all 330 comparisons, retaining the
+same frozen character-region rules. No new model calls are needed for its analysis.
 
-The completed twenty-item assisted review remains development evidence: ten definite file-ID
-judgments and ten ambiguous generated-content judgments. Do not ask the owner to repeat it or
-relabel Codex assistance as independent human review.
+The earlier twenty-item assisted review remains completed development evidence. Do not ask
+the owner to repeat it or relabel Codex assistance as independent human review.
 
-## Next: one prospectively selected native stratum
+## Last closeout step
 
-1. Select one eligible native read-to-write case in fixed task-ID order, excluding task29 and every
-   development case listed in earlier experiment records. Record rejected candidates and reasons.
-   Use the native goal/vector definitions to choose a compatible direct payload without testing
-   attack success. Confirm eligibility from static task definitions and native engineering controls.
-2. Introduce a separately named protocol and validate its source/target bindings. The current span
-   adapter accepts only the two frozen task29 protocols; generalization requires explicit code and
-   control coverage, not relaxing those validations silently.
-3. Freeze case, payload, policy, model, schedule, scorer, code and budgets before model inference.
-   Run five clean and five injected repetitions in the passive input condition. Preserve the
-   existing model settings and request/time caps. Retain every planned slot, failed run, unexposed
-   payload and unsuccessful attack; no replacement or adaptive attack search.
-4. Report availability, native utility, exposure, attack-goal outcome, attribution candidates,
-   ambiguity, abstention, ablations and timing/cost with separate denominators. Keep the original
-   baseline and optional lexical diagnostic distinct. Account for all ten planned slots.
+Consolidate the paper-method evidence into a final acceptance ledger: implemented components,
+real-agent validation, deterministic controls, observed outcomes, candidate counts/ablations,
+coverage/ambiguity, timing/costs and limitations. State which claims are supported and which
+remain unknown. Include the user-provided-email/LCS example as a bounded specificity concern,
+not as an independently measured error rate or confirmed paper-level gap.
 
-## Finite closure
+[EVALUATION.md](EVALUATION.md) requires independent reference reviews, a second review and
+adjudication before gate8 attribution acceptance. Those references and independent scoring are
+not supplied by native task outcomes, AI-assisted labels or engineering controls. Independent
+precision/recall/F1 remain null. A final engineering/descriptive ledger can be completed now;
+it cannot make independent accuracy known or turn the checklist into 100% acceptance.
 
-The original [independent evaluation protocol](EVALUATION.md) supplies the final acceptance
-requirements. Independent labels, review/adjudication and a frozen scoring procedure are needed for
-precision/recall/F1. Engineering controls and descriptive held-out results can be delivered without
-those labels, but they cannot make independent accuracy non-null or gate 8 accepted.
-
-Neither a successful attack nor a beneficial Canary effect is required to finish the planned
-experiment. Matching the original paper's numeric tables or adding more method components is not
-required by this bounded checklist. No CTTA, parameter updates or action blocking is proposed.
+This finite closeout does not automatically schedule another experiment. No successful attack,
+new defense component, original-paper numeric table match, CTTA, parameter update or action
+blocking is required to report the completed bounded work honestly.

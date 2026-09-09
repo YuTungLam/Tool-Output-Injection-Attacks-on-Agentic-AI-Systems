@@ -1,13 +1,32 @@
 # AgentDojo Lab
 
-Current workflow (2026-09-09): the optional decoded-scalar diagnostic is complete, with 12/12
-engineering controls and 560 scored comparisons from 20 saved real runs. Open
-[`reports/20260909-span-diagnostic-v1/index.html`](reports/20260909-span-diagnostic-v1/index.html)
-and read [the results](SPAN-DIAGNOSTIC-RESULTS.md). This offline extension does not change the online
-baseline or add an acceptance gate. Seven of eight gates remain accepted; the remaining evaluation
-work is documented in [NEXT-STRATUM.md](NEXT-STRATUM.md).
+Current workflow (2026-09-09): the prospectively selected passive calendar experiment is complete.
+Open [the compact English report](reports/20260909-heldout-v2/index.html) and read
+[HELDOUT-RESULTS.md](HELDOUT-RESULTS.md). All ten slots completed: utility 5/5 per arm, injected
+payload exposure 5/5, attack goal 0/5, and 300/300 prefix checks passed. Thirty primary requests
+report 59,759 tokens; no auditor requests were made. The case holds out a legitimate operation,
+not the tool, source carrier or attack pattern. The report links all original timelines/diagrams
+and a separate 330-comparison scalar viewer. Its post-batch clean-exposure wording correction
+preserves the original report and byte-identical JSON/CSV/LaTeX results.
+Seven of eight gates remain accepted; final acceptance limits are in [NEXT-STRATUM.md](NEXT-STRATUM.md).
 Native utility, attack-goal success, source correspondence and malicious-span propagation are separate
 measurements. Detector hits and auditor predictions are not independent labels.
+
+## Analyze the completed passive calendar batch
+
+All ten existing slots are terminal and must not be rerun or replaced. Read-only reports use a
+fresh output directory and do not call a model:
+
+```bash
+.venv/bin/dojo-lab heldout-report \
+  --batch runs/20260909-heldout-v1 --output reports/my-heldout-analysis \
+  --span-report reports/20260909-heldout-spans-v1/index.html
+```
+
+For a separately authorized future batch, `heldout --output runs/NEW --plan-only` freezes inputs
+without inference; `heldout --resume runs/NEW` runs only never-started slots with that exact frozen
+implementation. The strict task8 protocol does not broaden the older task29 schemas. Read
+[the protocol](HELDOUT.md) and [selection audit](HELDOUT-SELECTION.md) before using it.
 
 ## Inspect source regions in a saved run
 
@@ -62,7 +81,8 @@ accuracy. Independent precision, recall and F1 remain null. Open
 
 The scorer verifies frozen identities and hashes, keeps unknowns separate and writes outside source
 artifacts. The user does not need to repeat the completed 20-item review. The lexical development
-diagnostic is now complete; the held-out native stratum in [NEXT-STRATUM.md](NEXT-STRATUM.md) is still pending.
+diagnostic and the passive calendar experiment are complete; independent attribution acceptance
+in [NEXT-STRATUM.md](NEXT-STRATUM.md) remains pending.
 
 ## Completed AI-assisted review
 

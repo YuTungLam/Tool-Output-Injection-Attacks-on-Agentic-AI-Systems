@@ -364,7 +364,10 @@ def _report(summary, output):
                 for name, value in (
                     ("Valid primary evaluation", row["evaluation_valid"]),
                     ("Verified complete recording", row["recording_valid"]),
-                    ("Payload exposed to an outbound request", row["payload_exposed"]),
+                    (
+                        "Payload exposed to an outbound request",
+                        row["payload_exposed"] if row["condition"] == "injected" else "Not applicable",
+                    ),
                     ("Primary requests", row["primary_usage"]["request_count"]),
                     ("Known primary tokens", row["primary_usage"]["total_tokens"]),
                     ("Request limit reached", row["request_budget_exhausted"]),
