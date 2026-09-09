@@ -1,13 +1,19 @@
 # Completed assisted review — 2026-09-09
 
-Project owner: **Jerry**. Annotation author: **Codex**, AI-assisted, retrospective and exploratory.
+Project owner: **Donglin Yu**. Annotation author: **Codex**, AI-assisted, retrospective and exploratory.
 All **20/20** public review items have a verdict, an explanation and located source evidence.
 The independent human packet stays unchanged. This work used no new model API calls.
 
-Open `reports/20260909-assisted-review-v1/review.html`. The page shows one item at a time,
+Open `reports/20260909-assisted-review-v2/review.html`. The page shows one item at a time,
 with detailed reasoning and sources collapsed. It exports the completed annotations and saves
 optional personal notes separately. Browser storage is best-effort; download notes for a portable copy.
 Notes do not change the frozen assistant judgments or attest to human authorship.
+
+Version 2 corrects the project owner's name to Donglin Yu. The main view uses neutral annotation
+wording; actual authorship is available under Annotation provenance and retained in exported data.
+The 20 judgments and their evidence are unchanged. Version 1 remains an archived artifact. Browser
+notes are scoped to both the packet and owner, so the corrected report cannot overwrite notes saved
+under the earlier name. The earlier report remains available to read or export those notes.
 
 | Target | Items | Assisted verdict | Evidence |
 | --- | ---: | --- | --- |
@@ -53,9 +59,9 @@ and rejects this assisted envelope as a human submission.
 ```bash
 .venv/bin/dojo-lab assisted-review \
   --packet reports/20260909-evaluation-review-v1 \
-  --answers reports/20260909-assisted-review-work/answers.json \
-  --owner Jerry \
-  --output reports/20260909-assisted-review-v1
+  --answers reports/20260909-assisted-review-v2-work/answers.json \
+  --owner "Donglin Yu" \
+  --output reports/20260909-assisted-review-v2
 ```
 
 Use a new output directory for another export. `assisted-labels.json` contains the complete declaration,

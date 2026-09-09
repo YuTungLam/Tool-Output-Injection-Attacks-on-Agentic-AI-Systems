@@ -39,10 +39,10 @@ def test_export_preserves_packet_separates_authorship_and_keeps_english(assisted
     packet, answers, items = assisted
     before = {p.name: p.read_bytes() for p in packet.iterdir()}
     output = tmp_path / "assisted"
-    result = export_assisted_review(packet, answers, "Jerry", output)
+    result = export_assisted_review(packet, answers, "Donglin Yu", output)
     labels = json.loads((output / "assisted-labels.json").read_text())
     assert result["complete"] and result["answered_count"] == 2 and result["model_calls"] == 0
-    assert result["authorship"]["project_owner"] == "Jerry"
+    assert result["authorship"]["project_owner"] == "Donglin Yu"
     assert result["authorship"]["annotation_author"] == "Codex"
     assert result["independent_reference"] is False and result["attribution_accuracy"] is None
     assert [a["item_id"] for a in labels["answers"]] == [item["item_id"] for item in items]
@@ -55,15 +55,15 @@ def test_export_preserves_packet_separates_authorship_and_keeps_english(assisted
     rows = [json.loads(line) for line in (output / "assisted-labels.jsonl").read_text().splitlines()]
     assert all(row["authorship"]["labels_human_authored"] is False for row in rows)
     with pytest.raises(FileExistsError):
-        export_assisted_review(packet, answers, "Jerry", output)
+        export_assisted_review(packet, answers, "Donglin Yu", output)
     with pytest.raises(ValueError, match="outside"):
-        export_assisted_review(packet, answers, "Jerry", packet / "nested")
+        export_assisted_review(packet, answers, "Donglin Yu", packet / "nested")
 
 
 def test_public_only_export_does_not_need_private_map(assisted, tmp_path):
     packet, answers, _ = assisted
     (packet / "review-key.json").unlink()
-    assert export_assisted_review(packet, answers, "Jerry", tmp_path / "public-only")["valid"]
+    assert export_assisted_review(packet, answers, "Donglin Yu", tmp_path / "public-only")["valid"]
 
 
 @pytest.mark.parametrize(
@@ -73,7 +73,7 @@ def test_public_only_export_does_not_need_private_map(assisted, tmp_path):
 def test_assisted_contract_rejects_false_authorship_and_bad_evidence(assisted, tmp_path, mutation):
     packet, answers, _ = assisted
     output = tmp_path / "assisted"
-    export_assisted_review(packet, answers, "Jerry", output)
+    export_assisted_review(packet, answers, "Donglin Yu", output)
     labels = json.loads((output / "assisted-labels.json").read_text())
     if mutation == "human":
         labels["authorship"]["labels_human_authored"] = True
@@ -101,5 +101,5 @@ def test_modified_packet_rejected_before_writing_output(assisted, tmp_path):
         stream.write("{}\n")
     output = tmp_path / "bad-output"
     with pytest.raises(ValueError):
-        export_assisted_review(packet, answers, "Jerry", output)
+        export_assisted_review(packet, answers, "Donglin Yu", output)
     assert not output.exists()

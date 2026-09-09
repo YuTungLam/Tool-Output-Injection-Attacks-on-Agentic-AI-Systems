@@ -3,8 +3,8 @@
 ## Current handoff — 2026-09-09
 
 Latest addition: the user delegated all 20 review items. They are completed in
-`reports/20260909-assisted-review-v1/` and retained in
-`annotations/20260909-pilot-assisted-labels.json`. Project owner is Jerry; actual annotation author
+`reports/20260909-assisted-review-v2/` and retained in
+`annotations/20260909-pilot-assisted-labels.json`. Project owner is Donglin Yu; actual annotation author
 is Codex, explicitly AI-assisted. Results: 10 single-source file-ID matches and 10 ambiguous generated
 content fields, with 40 source spans. Read [ASSISTED-REVIEW.md](ASSISTED-REVIEW.md). The original
 human packet is unchanged, including its blank on-disk template; any browser-only drafts were not

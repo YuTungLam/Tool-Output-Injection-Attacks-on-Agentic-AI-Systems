@@ -97,7 +97,7 @@ memory bindings. Multi-attempt ancestry is explicitly unavailable after that bou
 or proof of reset. This limitation is disclosed before execution; the tracer is not changed mid-pilot.
 
 An additional retrospective assisted review now covers all 20 fields: 10 single-source file-ID
-matches and 10 ambiguous whole-content judgments, with 40 located spans. Project owner is Jerry and
+matches and 10 ambiguous whole-content judgments, with 40 located spans. Project owner is Donglin Yu and
 annotation author is Codex. See [ASSISTED-REVIEW.md](ASSISTED-REVIEW.md). The original blank human
 packet and frozen measurements remain unchanged; this separate assisted artifact is not substituted
 for independent reference labels and does not produce attribution accuracy.

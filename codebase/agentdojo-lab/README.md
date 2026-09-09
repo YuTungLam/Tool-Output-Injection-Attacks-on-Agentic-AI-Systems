@@ -8,9 +8,9 @@ from source attribution. Detector hits and auditor predictions are not independe
 
 ## Completed AI-assisted review
 
-Jerry's 20-item review is saved with **Codex AI-assisted authorship**: 10 contextual file-ID matches
+Donglin Yu's 20-item review is saved with **Codex AI-assisted authorship**: 10 contextual file-ID matches
 and 10 ambiguous whole-content judgments, each with reasons and source spans. Open
-`reports/20260909-assisted-review-v1/review.html`; see [ASSISTED-REVIEW.md](ASSISTED-REVIEW.md)
+`reports/20260909-assisted-review-v2/review.html`; see [ASSISTED-REVIEW.md](ASSISTED-REVIEW.md)
 for the rubric, export command and limitations. The original human packet remains blank on disk.
 Assisted labels are retained in `annotations/20260909-pilot-assisted-labels.json`; independent
 accuracy remains unknown. The compact report exports annotations and keeps optional notes separately.

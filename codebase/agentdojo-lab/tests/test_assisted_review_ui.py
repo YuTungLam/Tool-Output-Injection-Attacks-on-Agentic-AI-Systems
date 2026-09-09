@@ -41,7 +41,7 @@ def report():
         "method": "ai_assisted_source_review_v1",
         "packet": {"packet_digest": "synthetic-packet"},
         "authorship": {
-            "project_owner": "Jerry",
+            "project_owner": "Donglin Yu",
             "annotation_author": "Codex",
             "mode": "ai_assisted",
             "labels_human_authored": False,
@@ -80,6 +80,7 @@ def test_report_keeps_untrusted_content_inert_and_reasoning_collapsed(report):
     details = [attrs for tag, attrs in page.tags if tag == "details"]
     assert details and all("open" not in attrs for attrs in details)
     assert any(attrs.get("id") == "reasoning-section" for attrs in details)
+    assert any(attrs.get("id") == "provenance-section" for attrs in details)
     code = page.scripts[1]["text"]
     assert not any(
         token in code for token in ("innerHTML", "outerHTML", "insertAdjacentHTML", "eval(", "fetch(")
@@ -105,7 +106,7 @@ def test_helpers_preserve_assisted_authorship_and_isolate_imported_notes(report)
         + """
         const original=JSON.stringify(fixture);
         const exported=AssistedReview.annotations(fixture);
-        assert.equal(exported.authorship.project_owner,'Jerry');
+        assert.equal(exported.authorship.project_owner,'Donglin Yu');
         assert.equal(exported.authorship.annotation_author,'Codex');
         assert.equal(exported.authorship.labels_human_authored,false);
         assert.equal(exported.authorship.independence_attested,false);
@@ -118,6 +119,12 @@ def test_helpers_preserve_assisted_authorship_and_isolate_imported_notes(report)
         }
         const notes=AssistedReview.notesDocument(fixture,{'synthetic-item':'A local note.'});
         assert.equal(AssistedReview.readNotes(fixture,notes)['synthetic-item'],'A local note.');
+        const key=AssistedReview.notesStorageKey(fixture);
+        const otherOwner={...fixture,authorship:{...fixture.authorship,project_owner:'Another owner'}};
+        const otherPacket={...fixture,packet:{...fixture.packet,packet_digest:'another-packet'}};
+        assert.notEqual(key,AssistedReview.notesStorageKey(otherOwner));
+        assert.notEqual(key,AssistedReview.notesStorageKey(otherPacket));
+        assert.notEqual(key,'agentdojo:ai-assisted-notes:v1:'+fixture.packet.packet_digest);
         assert.throws(()=>AssistedReview.readNotes(fixture,{...notes,packet_digest:'another-packet'}));
         assert.throws(()=>AssistedReview.readNotes(fixture,{...notes,project_owner:'Another owner'}));
         assert.throws(()=>AssistedReview.readNotes(fixture,{...notes,answers:fixture.answers}));
