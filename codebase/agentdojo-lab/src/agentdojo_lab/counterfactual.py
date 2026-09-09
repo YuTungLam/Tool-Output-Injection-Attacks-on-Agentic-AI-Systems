@@ -315,7 +315,13 @@ def _neutralize(text):
     return after, method, changes
 
 
-def plan_probe(call: dict, graph: dict) -> dict:
+def _plan_probe(
+    call: dict,
+    graph: dict,
+    *,
+    negative_check=_negative,
+    allow_no_argument_sink: bool = False,
+) -> dict:
     """Build bounded detached A/B contexts from verified prefix evidence only.
 
     The wrapper must verify consistency of saved event/provenance files. Graph hashes are
@@ -363,7 +369,8 @@ def plan_probe(call: dict, graph: dict) -> dict:
             for field in call.get("fields", [])
             if field.get("cascade_scope", {}).get("sink", {}).get("selected") is True
         ]
-        _require(bool(fields), "no_selected_argument_targets")
+        no_argument_sink = allow_no_argument_sink and call.get("arguments") == {} and call.get("fields") == []
+        _require(bool(fields) or no_argument_sink, "no_selected_argument_targets")
         expected = [
             (source["source_id"], source["request_pointer"], source["exposure_event_id"])
             for source in sources
@@ -380,7 +387,7 @@ def plan_probe(call: dict, graph: dict) -> dict:
             ]
             _require(sorted(actual) == sorted(expected), "missing_or_foreign_explicit_evidence")
             for pair in pairs:
-                _negative(pair)
+                negative_check(pair)
         lineage = call.get("lineage")
         _require(
             isinstance(lineage, dict)
@@ -410,7 +417,7 @@ def plan_probe(call: dict, graph: dict) -> dict:
             "missing_or_foreign_recovered_evidence",
         )
         for pair in recovered_pairs:
-            _negative(pair)
+            negative_check(pair)
         nodes = _index(graph, "nodes", "node_id", LIMITS["graph_nodes"])
         edges = _index(graph, "edges", "edge_id", LIMITS["graph_edges"])
         labels = _index(graph, "registry", "label_id", LIMITS["graph_labels"])
@@ -630,6 +637,11 @@ def plan_probe(call: dict, graph: dict) -> dict:
     except (KeyError, TypeError, ValueError, AttributeError, RecursionError, OverflowError):
         plan.update(status="skipped", reason="malformed_evidence", probes=[])
     return plan
+
+
+def plan_probe(call: dict, graph: dict) -> dict:
+    """Version 1 planner: require complete negative evidence from all four tiers."""
+    return _plan_probe(call, graph)
 
 
 def parse_judgment(raw: str) -> dict:

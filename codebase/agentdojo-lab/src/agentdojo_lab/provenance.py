@@ -114,7 +114,20 @@ def structured_scalars(text: str) -> dict:
 class ProvenanceTracker:
     """Incremental, deterministic candidate generation over one event stream."""
 
-    def __init__(self, semantic_matcher=None, policy=None, lineage=None, *, canary_enabled=False):
+    def __init__(
+        self,
+        semantic_matcher=None,
+        policy=None,
+        lineage=None,
+        *,
+        canary_enabled=False,
+        cascade_profile="ordinary",
+    ):
+        from agentdojo_lab.profiles import get_profile
+
+        selected_profile = get_profile(cascade_profile)
+        if selected_profile.name != "ordinary" and policy is None:
+            raise ValueError("A nonordinary cascade profile requires a frozen source/sink policy")
         self.semantic_matcher = semantic_matcher
         self.policy = policy
         self.lineage = lineage
@@ -133,7 +146,9 @@ class ProvenanceTracker:
         if policy is not None:
             from agentdojo_lab.cascade import CascadeMatcher
 
-            self.cascade_matcher = CascadeMatcher(semantic_matcher, canary_enabled=canary_enabled)
+            self.cascade_matcher = CascadeMatcher(
+                semantic_matcher, profile=selected_profile.name, canary_enabled=canary_enabled
+            )
         self.tool_proposals = {}
         self.run_id = None
         self.sequence = 0

@@ -33,7 +33,16 @@ class OnlineProvenance:
     computation budgets do not impose a wall-clock deadline.
     """
 
-    def __init__(self, path: Path, semantic_matcher=None, policy=None, lineage=None, *, canary_enabled=False):
+    def __init__(
+        self,
+        path: Path,
+        semantic_matcher=None,
+        policy=None,
+        lineage=None,
+        *,
+        canary_enabled=False,
+        cascade_profile="ordinary",
+    ):
         self._lock = threading.RLock()
         self._file = None
         self._tracker = None
@@ -85,6 +94,7 @@ class OnlineProvenance:
                 policy=policy,
                 lineage=lineage,
                 canary_enabled=canary_enabled,
+                cascade_profile=cascade_profile,
             )
             self._stage = "open"
             self._file = Path(path).open("x", encoding="utf-8", newline="\n")

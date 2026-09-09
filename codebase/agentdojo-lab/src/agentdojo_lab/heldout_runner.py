@@ -52,6 +52,8 @@ def expected_run() -> RunConfig:
 
 
 def validate_heldout(config: RunConfig, spec: HeldoutTrial, suite) -> None:
+    if config.cascade_profile != "ordinary":
+        raise ValueError("Frozen held-out protocol requires the ordinary cascade profile")
     if type(spec) is not HeldoutTrial:
         raise TypeError("Held-out evaluation requires the exact HeldoutTrial schema")
     if set(vars(spec)) != set(HeldoutTrial.model_fields) or spec.__pydantic_extra__:

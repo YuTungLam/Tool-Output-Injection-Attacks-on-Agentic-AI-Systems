@@ -64,6 +64,9 @@ class RunConfig(BaseModel):
     record_events: bool = True
     online_provenance: bool = False
     provenance_policy: str | None = None
+    cascade_profile: Literal["ordinary", "implicit_string", "safe_control"] = Field(
+        default="ordinary", exclude_if=lambda value: value == "ordinary"
+    )
     lineage_namespace: str | None = None
     canary_enabled: bool = False
     semantic_model: str | None = None
@@ -72,6 +75,8 @@ class RunConfig(BaseModel):
 
     @model_validator(mode="after")
     def attribution_configuration(self):
+        if self.cascade_profile != "ordinary" and not self.provenance_policy:
+            raise ValueError("A nonordinary cascade profile requires a frozen provenance policy")
         if self.canary_enabled and (not self.provenance_policy or len(self.user_tasks) != 1):
             raise ValueError("Canary intervention requires a frozen policy and one native task per run")
         if self.lineage_namespace is not None and (
@@ -232,10 +237,14 @@ def run_clean(
     # Runtime attribution errors are fail-open; invalid setup fails preflight.
     matcher = None
     if config.semantic_model:
+        from agentdojo_lab.profiles import get_profile
         from agentdojo_lab.semantic import LocalMiniLMEncoder, SemanticMatcher
 
+        thresholds = get_profile(config.cascade_profile)
         matcher = SemanticMatcher(
-            LocalMiniLMEncoder(Path(config.semantic_model).expanduser(), revision=config.semantic_revision)
+            LocalMiniLMEncoder(Path(config.semantic_model).expanduser(), revision=config.semantic_revision),
+            semantic_threshold=thresholds.semantic_threshold,
+            coverage_threshold=thresholds.coverage_threshold,
         )
 
     lineage = None
@@ -297,6 +306,7 @@ def run_clean(
                     "lexical.py",
                     "semantic.py",
                     "cascade.py",
+                    "profiles.py",
                     "policy.py",
                 )
             }
@@ -373,6 +383,11 @@ def run_clean(
                     policy=policy,
                     **({"lineage": lineage} if lineage is not None else {}),
                     **({"canary_enabled": True} if canary is not None else {}),
+                    **(
+                        {"cascade_profile": config.cascade_profile}
+                        if config.cascade_profile != "ordinary"
+                        else {}
+                    ),
                 )
             recorder = EventRecorder(
                 run_dir / "events.jsonl",

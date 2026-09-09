@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "phase": "method-completion-v1",
+  "as_of": "2026-09-10",
+  "status": "completed_with_evidence_limits",
+  "counting_rule": "Equally counted accepted deliverables; not time remaining, detector accuracy or full-paper reproduction percentage.",
+  "historical_checklist": "REPRODUCTION_PROGRESS.json",
+  "plan": "METHOD-COMPLETION.md",
+  "milestones": [
+    {
+      "id": "profiles",
+      "title": "Threshold profiles",
+      "status": "accepted",
+      "evidence": [
+        "src/agentdojo_lab/profiles.py",
+        "tests/test_profiles.py",
+        "tests/test_profile_plumbing.py",
+        "tests/test_profile_protocol_guards.py"
+      ]
+    },
+    {
+      "id": "causal_applicability",
+      "title": "Passive and argument-free causal applicability",
+      "status": "accepted",
+      "evidence": [
+        "src/agentdojo_lab/causal_v2.py",
+        "tests/test_causal_v2.py",
+        "reports/20260910-causal-v2-existing-prefix-v1/summary.json"
+      ]
+    },
+    {
+      "id": "reference_controls",
+      "title": "Automatic reference evaluation",
+      "status": "accepted",
+      "evidence": [
+        "reports/20260910-reference-controls-v1/index.html",
+        "reports/20260910-method-completion-validation-v1/reference-interpretation.json",
+        "tests/test_reference_controls.py"
+      ]
+    },
+    {
+      "id": "joint_sources",
+      "title": "Joint-source probe implementation",
+      "status": "accepted",
+      "evidence": [
+        "src/agentdojo_lab/causal_v2.py",
+        "src/agentdojo_lab/causal_v2_audit.py",
+        "tests/test_causal_v2.py",
+        "tests/test_causal_v2_audit.py",
+        "reports/20260910-causal-v2-auditor-plan-v1/index.html"
+      ]
+    },
+    {
+      "id": "live_memory_pair",
+      "title": "Real cross-session paired pilot",
+      "status": "accepted",
+      "evidence": [
+        "runs/20260910-memory-pair-live-v1/index.html",
+        "runs/20260910-memory-pair-live-v1/summary.json",
+        "tests/test_memory_pair.py",
+        "reports/20260910-method-completion-validation-v1/memory-interpretation.json"
+      ]
+    }
+  ],
+  "independent_human_accuracy": null,
+  "malicious_propagation_accuracy": null,
+  "real_model_joint_causal_accuracy": null,
+  "validation": "reports/20260910-method-completion-validation-v1/quality.json"
+}

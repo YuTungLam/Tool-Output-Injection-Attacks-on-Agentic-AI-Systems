@@ -1,5 +1,30 @@
 # Handoff: current state and historical notes
 
+## Method completion and automatic controls — 2026-09-10
+
+Read [METHOD-COMPLETION-RESULTS.md](METHOD-COMPLETION-RESULTS.md) and
+[METHOD_COMPLETION_PROGRESS.json](METHOD_COMPLETION_PROGRESS.json) for the new phase.
+The original September 9 progress ledger and closeout remain unchanged historical evidence.
+
+The new native cross-session pilot is terminal: four sessions, twelve real Groq requests,
+4,830 reported tokens, no replacement runs. Original and neutralized branches each perform
+an explicit copy task across separate processes. All copies, expected file reads, restored
+origin matches and pre-runtime receipts pass. This is marker-copy/lineage evidence, not an
+attack experiment or independent causal accuracy. Use its existing English timelines.
+
+The automatic reference harness completed 84 slots: 21 known-program references under four
+fixed profiles. Ordinary cascade has TP10/FP7/FN0/TN1, with three unknown references excluded;
+implicit-string has TP10/FP4/FN0/TN4. Do not pool profile repetitions, infer deployment false
+positives, or tune the frozen fixture matrix based on these results.
+
+Next research evidence should address semantic and joint-control attribution on actual
+agent trajectories, with clearly defined reference semantics and intervention controls.
+No manual relabeling of the owner's previous twenty items is required to use the new code.
+Independent human accuracy, general memory backend coverage and original numerical tables
+remain unvalidated. New APIs and commands are documented in the phase result note.
+
+The older sections below are historical snapshots and do not supersede this phase.
+
 ## Final closeout — 2026-09-09
 
 **The bounded reproduction phase is closed with evidence limits. There are no remaining

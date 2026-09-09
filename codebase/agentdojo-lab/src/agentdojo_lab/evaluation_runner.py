@@ -81,6 +81,8 @@ def validate_evaluation(config: RunConfig, spec: EvaluationTrial, suite) -> None
     if type(spec) is HeldoutTrial:
         validate_heldout(config, spec, suite)
         return
+    if config.cascade_profile != "ordinary":
+        raise ValueError("Frozen evaluation protocols require the ordinary cascade profile")
     if type(spec) not in (EvaluationTrial, InputComparisonTrial):
         raise TypeError("evaluation must be an EvaluationTrial or InputComparisonTrial")
     # Revalidate even an instance created with model_construct/model_copy.

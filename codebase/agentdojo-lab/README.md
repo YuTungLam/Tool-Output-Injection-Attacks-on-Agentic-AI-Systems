@@ -1,5 +1,12 @@
 # AgentDojo Lab
 
+**Latest phase — 2026-09-10:** see [METHOD-COMPLETION-RESULTS.md](METHOD-COMPLETION-RESULTS.md),
+[the new progress ledger](METHOD_COMPLETION_PROGRESS.json) and
+[the compact English overview](reports/20260910-method-completion-v1/index.html).
+This adds named threshold profiles, opt-in causal coverage/joint probes, automatic
+program-origin reference scoring and a real four-session Groq copy pilot.
+The earlier closeout below is historical and retains its independent-evaluation limits.
+
 **Bounded reproduction phase closed — 2026-09-09.** Open
 [the final English closeout](reports/20260909-reproduction-closeout-v1/index.html) or read
 [CLOSEOUT.md](CLOSEOUT.md). Seven local engineering gates are accepted; independent attribution
