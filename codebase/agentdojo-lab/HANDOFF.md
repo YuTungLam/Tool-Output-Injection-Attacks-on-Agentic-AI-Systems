@@ -1,5 +1,18 @@
 # Handoff: current state and historical notes
 
+## Native attack validation — 2026-09-10
+
+Read [ATTACK-VALIDATION-RESULTS.md](ATTACK-VALIDATION-RESULTS.md),
+[ATTACK-VALIDATION.md](ATTACK-VALIDATION.md) and
+[ATTACK_VALIDATION_PROGRESS.json](ATTACK_VALIDATION_PROGRESS.json) first.
+The original sixteen live primary slots are terminal and must not be rerun.
+An independently verified mirror restores quarantined metadata byte for byte;
+the original language-check failures and process statuses remain preserved.
+The new result note separates native attack success, literal correspondence,
+one-step replay observations and auditor prediction concordance.
+No owner relabeling is required for this phase. Full-paper reproduction remains
+incomplete, and the older phase ledgers below are not overall completion scores.
+
 ## Method completion and automatic controls — 2026-09-10
 
 Read [METHOD-COMPLETION-RESULTS.md](METHOD-COMPLETION-RESULTS.md) and

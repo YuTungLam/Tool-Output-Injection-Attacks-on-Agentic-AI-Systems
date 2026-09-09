@@ -1,6 +1,13 @@
 # AgentDojo Lab
 
-**Latest phase — 2026-09-10:** see [METHOD-COMPLETION-RESULTS.md](METHOD-COMPLETION-RESULTS.md),
+**Latest phase — native attack validation, 2026-09-10:** see
+[ATTACK-VALIDATION-RESULTS.md](ATTACK-VALIDATION-RESULTS.md) and
+[ATTACK_VALIDATION_PROGRESS.json](ATTACK_VALIDATION_PROGRESS.json).
+Sixteen real-agent trajectories provide positive native attack and literal
+propagation evidence under two frozen synthetic families. Full NeuroTaint
+replication and general semantic/causal accuracy remain incomplete.
+
+**Previous phase — method controls, 2026-09-10:** see [METHOD-COMPLETION-RESULTS.md](METHOD-COMPLETION-RESULTS.md),
 [the new progress ledger](METHOD_COMPLETION_PROGRESS.json) and
 [the compact English overview](reports/20260910-method-completion-v1/index.html).
 This adds named threshold profiles, opt-in causal coverage/joint probes, automatic
