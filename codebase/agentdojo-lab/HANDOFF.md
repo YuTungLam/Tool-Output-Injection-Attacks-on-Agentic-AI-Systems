@@ -1,5 +1,45 @@
 # Handoff: current state and historical notes
 
+## Latest completed work — 2026-09-09
+
+The injected passive/Canary comparison is complete. Read
+[INPUT-COMPARISON-RESULTS.md](INPUT-COMPARISON-RESULTS.md). Each arm completed five fresh trials:
+utility 5/5, native attack goal 0/5, payload exposure 5/5. There were no unknown outcomes, failures,
+replacements, budget exhaustion or native query restarts. All 320 prefix checks pass, with 100
+unchanged primary source files and 1,368 unchanged older protected files. Thirty primary requests
+used 80,848 reported tokens; no auditor requests were made. No outcome benefit or malicious
+propagation accuracy is established. Gate 8 is still open (7/8 accepted).
+
+Open `reports/20260909-input-comparison-v1/index.html` for the compact English table and expandable
+paired/trial details. CSV and LaTeX table exports are alongside it. Complete validation receipts are
+in `reports/20260909-input-comparison-validation/`. The batch is
+`runs/20260909-input-comparison-v1`; all ten slots are terminal and must not be rerun.
+
+Run code commit: `0d7ea92eddd74f359bd21edf84c0fd7ee6ca2f79`.
+Plan SHA-256: `75a166a84ffbe1f2cc25ad2845150d462346cf4df9d553af299c1df3081e59a2`.
+All 118 frozen files matched at batch close. Afterward, one analyzer HTML sentence was corrected
+because the primary timer excludes initial model loading and finalization/export. Frozen and
+corrected analyzer JSON outputs are byte-identical. Preflight: 1,164 tests; after wording fix: 40
+report tests. Ruff, offline wheel and English checks pass. Current code can analyze saved batches;
+execution resume demands the original frozen implementation and only never-started slots.
+
+The 20 assisted annotations have also been scored offline; read
+[ASSISTED-SCORING.md](ASSISTED-SCORING.md). Ten definite file-ID items agree across all three
+methods; ten ambiguous content items are excluded. No definitive negative eligible references or
+independent attribution metrics exist. Annotation author remains Codex, project owner Donglin Yu.
+Do not ask the user to repeat these twenty items or treat assisted judgments as independent labels.
+
+Next: review [NEXT-STRATUM.md](NEXT-STRATUM.md), a draft for span-level measurements separating
+benign content reuse from injected-instruction correspondence. Start with disclosed engineering
+controls before a prospectively chosen held-out native case. The draft is not executed. Preserve
+unknowns, fixed thresholds, all planned outcomes and the no-CTTA/no-weights/no-blocking scope.
+
+Code and result notes are committed locally on `codex/agentdojo-lab`; no push is performed. Ignored
+runs, reports, local model cache and credentials are not included in commits. Transfer needed
+runtime artifacts separately; never put `.env` into an experiment archive or Git.
+
+The sections below are historical and do not supersede this completed update.
+
 ## Current handoff — 2026-09-09
 
 Latest addition: the user delegated all 20 review items. They are completed in

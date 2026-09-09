@@ -92,9 +92,11 @@
         "reports/20260908-canary-validation/passive-regression.json",
         "reports/20260908-canary-validation/passive-verification.json",
         "reports/20260908-canary-validation/canary-verification.json",
-        "reports/20260908-canary-pair-v1/pair.json"
+        "reports/20260908-canary-pair-v1/pair.json",
+        "INPUT-COMPARISON-RESULTS.md",
+        "reports/20260909-input-comparison-v1/input-comparison-summary.json"
       ],
-      "limits": "Separate source-text intervention; controlled native sink carryover and memory restoration pass. Both selected real task31 trials fail at provider tool-name validation before a sink: one real UUID is assigned/applied/exposed, but live sink survival and native task utility remain unknown. No efficacy, maliciousness or causal claim; no replacement trials."
+      "limits": "Separate source-text intervention. Controlled native sink carryover and memory restoration pass. Earlier task31 pair failed before a sink. New injected task29 comparison completed five passive and five Canary trials: both utility 5/5, attack goal 0/5, and no Tier1 sink hit. No observed primary outcome difference, maliciousness or causal benefit; no replacement trials."
     },
     {
       "id": "counterfactual",
@@ -136,9 +138,17 @@
         "reports/20260909-evaluation-validation/quality.json",
         "ASSISTED-REVIEW.md",
         "annotations/20260909-pilot-assisted-labels.json",
-        "reports/20260909-assisted-review-v2/validation.json"
+        "reports/20260909-assisted-review-v2/validation.json",
+        "ASSISTED-SCORING.md",
+        "INPUT-COMPARISON.md",
+        "reports/20260909-assisted-scoring-v1/assisted-agreement.json",
+        "runs/20260909-input-comparison-v1/plan.json",
+        "INPUT-COMPARISON-RESULTS.md",
+        "reports/20260909-input-comparison-v1/input-comparison-summary.json",
+        "reports/20260909-input-comparison-validation/quality.json",
+        "NEXT-STRATUM.md"
       ],
-      "limits": "First native case only, five repetitions per clean/injected condition, both Canary-enabled. Independent human labels, second review/adjudication, broader strata, passive primary comparisons and causal validation remain pending. Observed outcomes and captured-prefix candidate counts do not establish malicious propagation or attribution accuracy. No replacement attempts.",
+      "limits": "One native task/payload only. First pilot: five clean/five injected, both Canary-enabled. New comparison: five fresh passive/five fresh Canary, all injected, no historical pooling. Both new arms have utility 5/5 and attack goal 0/5; all 320 prefix checks pass. Independent human attribution evidence, broader strata and causal validation remain pending. Assisted agreement has ten definitive positive references and ten ambiguous fields, with no definitive negatives. No malicious propagation accuracy, protective benefit or replacement attempts.",
       "acceptance_interpretation": "Pilot infrastructure and one frozen repeated stratum are progress within this gate; the gate is not accepted before independent evaluation is completed.",
       "assisted_review": {
         "status": "completed",
@@ -148,6 +158,38 @@
         "single_source": 10,
         "ambiguous": 10,
         "independent_reference": false
+      },
+      "assisted_agreement": {
+        "status": "completed",
+        "definitive_items": 10,
+        "ambiguous_items": 10,
+        "comparable_pairs": 10,
+        "agreement_pairs_per_method": {
+          "exact": 10,
+          "lcs": 10,
+          "saved_full_cascade": 10
+        },
+        "negative_reference_pairs": 0,
+        "independent_reference": false
+      },
+      "input_comparison": {
+        "protocol": "native-injected-input-comparison-v1",
+        "status": "completed",
+        "planned_trials": 10,
+        "passive": 5,
+        "canary": 5,
+        "all_trials_injected": true,
+        "historical_trials_pooled": false,
+        "valid_trials": 10,
+        "unknown_evaluations": 0,
+        "utility_per_arm": "5/5",
+        "attack_goal_per_arm": "0/5",
+        "payload_exposure_per_arm": "5/5",
+        "prefix_checks_passed": 320,
+        "prefix_checks_total": 320,
+        "primary_requests": 30,
+        "auditor_requests": 0,
+        "reported_primary_tokens": 80848
       }
     }
   ],

@@ -1,10 +1,54 @@
 # AgentDojo Lab
 
-Current workflow (2026-09-09): the first frozen clean/injected evaluation stratum.
-Seven of eight acceptance gates remain complete; gate 8 requires independent human review and further
-evaluation. Read [EVALUATION.md](EVALUATION.md), [EVALUATION-RESULTS.md](EVALUATION-RESULTS.md), and
-[reproduction progress](REPRODUCTION_PROGRESS.json). Native utility and attack outcomes are distinct
-from source attribution. Detector hits and auditor predictions are not independent labels.
+Current workflow (2026-09-09): score the completed assisted review and run a fresh injected
+passive/Canary input comparison. The new ten-trial batch is complete; see
+[results](INPUT-COMPARISON-RESULTS.md). Seven of eight acceptance gates remain complete; gate 8 still needs
+independent attribution evidence and broader evaluation. Read [assisted agreement](ASSISTED-SCORING.md),
+the [input comparison protocol](INPUT-COMPARISON.md), and [reproduction progress](REPRODUCTION_PROGRESS.json).
+Native utility, attack-goal success, source correspondence and malicious-span propagation are separate
+measurements. Detector hits and auditor predictions are not independent labels.
+
+## Fresh passive/Canary input comparison
+
+This separate frozen protocol runs five passive and five Canary trials on the same assigned native
+injection. Its paired order is P/C, C/P, P/C, C/P, P/C. Both arms use fresh primary executions;
+old all-Canary pilot runs are excluded. Only the Canary flag differs in the shared run configuration.
+Four primary SDK requests and one eligible deferred auditor request are allowed per slot, with a
+600-second worker deadline. A started slot is never retried or replaced.
+
+The first command freezes inputs without model calls; the second uses the configured Groq quota.
+Use new output directories for new batches and reports:
+
+```bash
+.venv/bin/dojo-lab input-comparison --output runs/my-input-comparison --plan-only
+.venv/bin/dojo-lab input-comparison --resume runs/my-input-comparison
+.venv/bin/dojo-lab input-comparison-report \
+  --batch runs/my-input-comparison --output reports/my-input-comparison
+```
+
+The compact English report groups outcomes by input condition and folds paired observations,
+per-trial links and interpretation details. Passive does not mean clean: every slot receives the
+same injection. Disabled Tier 1 leaves passive prefixes ineligible for the unchanged gate-7 audit.
+Primary timing and whole-worker timing have different, overlapping scopes.
+
+## Exploratory assisted scoring
+
+The retained 20-item review has 10 definitive file-ID fields and 10 ambiguous generated-content
+fields. Exact, LCS and the saved cascade each agree on all ten comparable pairs. There are no
+definitive negative eligible references, so these counts do not establish general attribution
+accuracy. Independent precision, recall and F1 remain null. Open
+`reports/20260909-assisted-scoring-v1/index.html` for compact expandable evidence.
+
+```bash
+.venv/bin/dojo-lab assisted-score \
+  --packet reports/20260909-evaluation-review-v1 \
+  --labels annotations/20260909-pilot-assisted-labels.json \
+  --output reports/my-assisted-scoring
+```
+
+The scorer verifies frozen identities and hashes, keeps unknowns separate and writes outside source
+artifacts. The user does not need to repeat the completed 20-item review. A proposed next measurement
+is documented in [NEXT-STRATUM.md](NEXT-STRATUM.md); that draft has not been executed.
 
 ## Completed AI-assisted review
 
@@ -43,7 +87,8 @@ The blinding is partial because the exact source text can reveal an injection.
 
 This validates labels and authorship/independence attestations; it cannot verify reviewer identity.
 The blank template supplies no accuracy result. Further independent review, adjudication, source-field
-scoring, passive/Canary primary comparisons, and broader scenarios remain required.
+scoring and broader scenarios remain required for independent accuracy. The separate input-comparison
+protocol above supplies fresh passive/Canary primary executions.
 
 ## Audit a saved sink with isolated counterfactual contexts
 
