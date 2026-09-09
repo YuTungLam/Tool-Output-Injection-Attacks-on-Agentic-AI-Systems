@@ -1,6 +1,15 @@
 # AgentDojo Lab
 
-**Latest phase — native attack validation, 2026-09-10:** see
+**Latest phase — controlled semantic validation, 2026-09-10:** read
+[SEMANTIC-VALIDATION-RESULTS.md](SEMANTIC-VALIDATION-RESULTS.md),
+[SEMANTIC_VALIDATION_PROGRESS.json](SEMANTIC_VALIDATION_PROGRESS.json) and the
+[interactive English overview](reports/20260910-semantic-validation-v1/index.html).
+Sixteen component references, four benign native processes and six fresh auditor
+judgments are recorded. The report separates lexical exits, direct semantic scores,
+unexposed background sources and prediction disagreements. This fixed phase is
+complete with evidence limits; no additional model requests are scheduled.
+
+**Previous phase — native attack validation, 2026-09-10:** see
 [ATTACK-VALIDATION-RESULTS.md](ATTACK-VALIDATION-RESULTS.md) and
 [ATTACK_VALIDATION_PROGRESS.json](ATTACK_VALIDATION_PROGRESS.json).
 Sixteen real-agent trajectories provide positive native attack and literal

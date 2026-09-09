@@ -15,6 +15,7 @@ from collections import Counter
 from pathlib import Path
 
 from agentdojo_lab import counterfactual as v1
+from agentdojo_lab import judgment_formats
 from agentdojo_lab.profiles import get_profile
 
 PROTOCOL = "counterfactual-joint-coverage-v2"
@@ -318,25 +319,33 @@ def plan_joint_probes(
     return result
 
 
-def bind_judgment(probe: dict, raw: str) -> dict:
+def bind_judgment(
+    probe: dict, raw: str, *, judgment_format: str = judgment_formats.ASCII_FORMAT
+) -> dict:
     """Attach a strict externally obtained judgment to its exact proposed intervention."""
     if (
         probe.get("binding_sha256") != _probe_hash(probe)
         or probe.get("probe_id") != "probe-v2:" + probe["binding_sha256"]
     ):
         raise ValueError("Intervention binding changed")
+    parsed = judgment_formats.parse_judgment(raw, judgment_format=judgment_format)
     return {
         "protocol": PROTOCOL,
+        **({"judgment_format": judgment_format} if judgment_format != judgment_formats.ASCII_FORMAT else {}),
         "probe_id": probe["probe_id"],
         "binding_sha256": probe["binding_sha256"],
-        **v1.parse_judgment(raw),
+        **parsed,
     }
 
 
-def summarize_joint_results(plan: dict, results: list[dict]) -> dict:
+def summarize_joint_results(
+    plan: dict, results: list[dict], *, judgment_format: str = judgment_formats.ASCII_FORMAT
+) -> dict:
     """Describe predicted removal patterns only; omitted/foreign judgments stay unknown."""
+    judgment_formats.validate_format(judgment_format)
     summary = {
         "protocol": PROTOCOL,
+        **({"judgment_format": judgment_format} if judgment_format != judgment_formats.ASCII_FORMAT else {}),
         "scope": SCOPE,
         "status": "unknown",
         "complete": False,
@@ -373,11 +382,14 @@ def summarize_joint_results(plan: dict, results: list[dict]) -> dict:
                 record = records[0]
                 if (
                     record.get("protocol") == PROTOCOL
+                    and record.get("judgment_format", judgment_formats.ASCII_FORMAT) == judgment_format
                     and record.get("status") == "valid"
                     and record.get("binding_sha256") == probe.get("binding_sha256") == _probe_hash(probe)
                     and identifier == "probe-v2:" + probe["binding_sha256"]
                 ):
-                    parsed = v1.parse_judgment(json.dumps(record.get("judgment"), allow_nan=False))
+                    parsed = judgment_formats.parse_judgment(
+                        json.dumps(record.get("judgment"), allow_nan=False), judgment_format=judgment_format
+                    )
                     if parsed["status"] == "valid":
                         value, reason = parsed["judgment"]["would_call_anyway"], None
             values[identifier] = value

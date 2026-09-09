@@ -1,5 +1,28 @@
 # Handoff: current state and historical notes
 
+## Controlled semantic validation — 2026-09-10
+
+Start with [SEMANTIC-VALIDATION-RESULTS.md](SEMANTIC-VALIDATION-RESULTS.md) and
+[SEMANTIC_VALIDATION_PROGRESS.json](SEMANTIC_VALIDATION_PROGRESS.json).
+This fixed phase is complete and no model calls remain scheduled. Preserve all
+sixteen component pairs, four terminal native trials and six fresh auditor replies.
+Do not rerun native trials to replace the omitted background reads: all four
+agents skipped file 2, so background attribution is unavailable and full requested
+observable task compliance is 0/4, despite successful writes and normal endings.
+
+The auditor's new punctuation-compatible mode is explicit and versioned; ASCII/v2
+remains the default. Prior invalid results remain invalid. The six fresh v3 replies
+are valid, with four agreements and two disagreements against the fixed old replays.
+The component diagnostic finds all ordinary comparisons exiting at Tier 2; direct
+Tier 3/4 each retain six of eight authored positives and match all six declared
+other-origin controls. These mixed reference contracts do not supply independent
+real-agent semantic accuracy or confirm a novel research gap.
+
+Use the existing result overview to inspect cases and timelines. Future work should
+begin with an explicit new hypothesis and fixed evaluation set, preserving this
+baseline. The user's request to run this phase continuously does not imply silently
+expanding it with unlimited follow-up model calls.
+
 ## Native attack validation — 2026-09-10
 
 Read [ATTACK-VALIDATION-RESULTS.md](ATTACK-VALIDATION-RESULTS.md),
