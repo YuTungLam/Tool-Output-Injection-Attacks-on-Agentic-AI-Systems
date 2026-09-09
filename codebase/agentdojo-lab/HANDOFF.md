@@ -1,5 +1,33 @@
 # Handoff: current state and historical notes
 
+## Final closeout — 2026-09-09
+
+**The bounded reproduction phase is closed with evidence limits. There are no remaining
+scheduled steps or model experiments.** Read [CLOSEOUT.md](CLOSEOUT.md) and open
+`reports/20260909-reproduction-closeout-v1/index.html` for the English component/claim ledger.
+It links original reports and timeline/diagram evidence, keeps native outcomes by protocol,
+and provides JSON, JSONL, Markdown, CSV, input snapshots and a hash manifest.
+
+Seven declared local engineering gates remain accepted. Gate8 has final status `not_accepted`
+because independent attribution references, second review/adjudication and scoring remain absent;
+its acceptance criterion was not relaxed. This differs from leaving the bounded project running.
+Independent accuracy, malicious propagation, causal influence, defense benefit and original-table
+reproduction remain unvalidated. The report's partial component assessments also disclose missing
+specialized thresholds, joint-cause detection and broader memory/framework coverage.
+
+The three repeated native batches have 30 distinct trials without overlap; v2 HTML and scalar
+replays are derived reports, not additional executions. Earlier provider failures remain visible.
+The twenty assisted labels remain completed Codex development evidence and are not reassigned.
+The user-provided-email/LCS observation is a candidate specificity concern, not a confirmed gap.
+
+Use `scripts/export_reproduction_closeout.py --output reports/NEW` for offline regeneration
+from present local artifacts. Do not resume or replace any terminal live slot. Source/configuration
+and result notes remain on `codex/agentdojo-lab`, committed locally without push. Runtime evidence
+and model files require separate transfer; never include `.env` or other credentials.
+Further independent evaluation or method improvement is a separately scoped research phase.
+
+All lower sections are historical snapshots; their former "next step" instructions are superseded.
+
 ## Latest completed work: prospective passive calendar experiment — 2026-09-09
 
 Read [HELDOUT-RESULTS.md](HELDOUT-RESULTS.md). All ten frozen task8 slots completed once:

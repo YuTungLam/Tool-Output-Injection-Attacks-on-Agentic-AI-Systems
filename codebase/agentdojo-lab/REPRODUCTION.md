@@ -5,10 +5,15 @@
 - Origin Skill: academic-research-suite
 - Origin Mode: implementation and experiment planning
 - Origin Date: 2026-09-08
-- Verification Status: user-approved scope; method validation is ongoing
+- Verification Status: bounded phase closed with evidence limits; independent attribution acceptance unmet
 - Version Label: paper-based-reproduction-v1
 
 ## Objective
+
+Final disposition (2026-09-09): [CLOSEOUT.md](CLOSEOUT.md) and the
+[English evidence ledger](reports/20260909-reproduction-closeout-v1/index.html) close the bounded
+AgentDojo adaptation. Seven local engineering gates are accepted; gate8 is not accepted.
+No further experiment is scheduled. This is not complete paper-method or original-result equivalence.
 
 Independently implement NeuroTaint from the published method and test whether it works in the AgentDojo
 setting. Access to author code is not a prerequisite. Matching the original tables numerically is not the
@@ -42,10 +47,11 @@ assumption as an author-specified choice.
    separate no-tools A/B auditor, following the paper's displayed judge prompt. Seven native controls
    preserve primary behavior; two preselected Groq auditor calls return valid judgments. These are
    predictions, not observed counterfactual agent behavior. See [COUNTERFACTUAL-RESULTS.md](COUNTERFACTUAL-RESULTS.md).
-7. In progress: a prospectively frozen native clean/injected pilot with five repetitions per condition,
-   bounded real requests, explicit failure/exposure accounting, captured-prefix exact/LCS comparisons,
-   and a blinded human review packet. Independent source judgments, adjudication and wider ablations
-   remain pending. See [EVALUATION.md](EVALUATION.md) and [EVALUATION-RESULTS.md](EVALUATION-RESULTS.md).
+7. Completed descriptive evaluation and closeout: three separately frozen ten-slot native batches,
+   explicit failure/exposure accounting, captured-prefix exact/LCS comparisons, assisted development
+   review and optional decoded-scalar diagnostics. Independent source judgments, second review/
+   adjudication and scoring were not completed; gate8 is therefore not accepted.
+   See [CLOSEOUT.md](CLOSEOUT.md) and [EVALUATION.md](EVALUATION.md).
 
 No CTTA, model-weight updates, automatic action blocking, or real-account operations are part of this scope.
 
@@ -55,7 +61,7 @@ No CTTA, model-weight updates, automatic action blocking, or real-account operat
 accepted as of 2026-09-09: local components, deterministic live integration, fresh real-agent timing
 validation, source/sink policy with the ordinary passive cascade, DCPG with native memory restoration,
 the separate Canary intervention condition, and the isolated counterfactual auditor. The remaining
-gate is independent clean/injected evaluation. This count is not a work estimate,
+gate is independent clean/injected evaluation, recorded as not accepted at bounded closeout. This count is not a work estimate,
 accuracy measurement, or claim that the original paper's tables have been reproduced. Completing an
 independent evaluation can include negative results; benchmark efficacy remains a separate measurement.
 

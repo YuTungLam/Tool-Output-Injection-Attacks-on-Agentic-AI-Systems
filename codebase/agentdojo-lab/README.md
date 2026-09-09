@@ -1,5 +1,22 @@
 # AgentDojo Lab
 
+**Bounded reproduction phase closed — 2026-09-09.** Open
+[the final English closeout](reports/20260909-reproduction-closeout-v1/index.html) or read
+[CLOSEOUT.md](CLOSEOUT.md). Seven local engineering gates are accepted; independent attribution
+evaluation is not accepted. No further experiment is scheduled. This is a paper-based AgentDojo
+adaptation with explicit fidelity and efficacy limits, not full original-paper equivalence.
+The ledger separates component claims, retained failures, three distinct experiment groups,
+assisted labels and candidate limitations. Prior result records remain unchanged.
+
+Regenerate the closeout from existing local evidence with a fresh output directory and no model calls:
+
+```bash
+.venv/bin/python scripts/export_reproduction_closeout.py --output reports/my-closeout
+```
+
+The workflows below document completed evidence and commands available for later, separately
+scoped work. They do not schedule another run.
+
 Current workflow (2026-09-09): the prospectively selected passive calendar experiment is complete.
 Open [the compact English report](reports/20260909-heldout-v2/index.html) and read
 [HELDOUT-RESULTS.md](HELDOUT-RESULTS.md). All ten slots completed: utility 5/5 per arm, injected
@@ -8,7 +25,7 @@ report 59,759 tokens; no auditor requests were made. The case holds out a legiti
 not the tool, source carrier or attack pattern. The report links all original timelines/diagrams
 and a separate 330-comparison scalar viewer. Its post-batch clean-exposure wording correction
 preserves the original report and byte-identical JSON/CSV/LaTeX results.
-Seven of eight gates remain accepted; final acceptance limits are in [NEXT-STRATUM.md](NEXT-STRATUM.md).
+Seven of eight gates remain accepted; the final disposition is in [CLOSEOUT.md](CLOSEOUT.md).
 Native utility, attack-goal success, source correspondence and malicious-span propagation are separate
 measurements. Detector hits and auditor predictions are not independent labels.
 
