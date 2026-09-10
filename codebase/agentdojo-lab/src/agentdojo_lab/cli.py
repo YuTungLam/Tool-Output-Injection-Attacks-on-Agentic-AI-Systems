@@ -1,6 +1,7 @@
 """Small entry point for installing and running the clean AgentDojo baseline."""
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -75,6 +76,47 @@ def main(argv: list[str] | None = None) -> int:
     evaluation_location.add_argument("--resume", type=Path, help="Run only never-started frozen slots")
     evaluation.add_argument("--config", type=Path)
     evaluation.add_argument("--plan-only", action="store_true", help="Freeze inputs without model calls")
+    neurotaint = commands.add_parser(
+        "neurotaint-eval", help="Freeze or execute the 120-slot NT-AgentDojo evaluation"
+    )
+    neurotaint_location = neurotaint.add_mutually_exclusive_group(required=True)
+    neurotaint_location.add_argument("--output", type=Path, help="New immutable batch directory")
+    neurotaint_location.add_argument("--resume", type=Path, help="Run only never-started frozen slots")
+    neurotaint.add_argument("--config", type=Path)
+    neurotaint.add_argument(
+        "--conformance-dir",
+        type=Path,
+        help="Completed current-code M1-M7 receipt to copy into a new frozen batch",
+    )
+    neurotaint.add_argument(
+        "--reference-dir",
+        type=Path,
+        help="Completed 24-pair known-origin evidence to copy into a new frozen batch",
+    )
+    neurotaint.add_argument("--plan-only", action="store_true", help="Freeze inputs without model calls")
+    neurotaint_report = commands.add_parser(
+        "neurotaint-eval-report",
+        help="Render the normalized English NT-AgentDojo evaluation dashboard",
+    )
+    neurotaint_report.add_argument("--analysis", type=Path, required=True)
+    neurotaint_report.add_argument("--plan", type=Path, required=True)
+    neurotaint_report.add_argument("--reference-summary", type=Path)
+    neurotaint_report.add_argument("--m7-aggregates", type=Path)
+    neurotaint_report.add_argument(
+        "--controlled-causal-panel",
+        "--controlled-causal-panel-dir",
+        dest="controlled_causal_panel",
+        type=Path,
+        help="Completed controlled causal-panel output directory",
+    )
+    neurotaint_report.add_argument(
+        "--native-exact-prefix-replay",
+        "--native-replay-dir",
+        dest="native_exact_prefix_replay",
+        type=Path,
+        help="Completed native exact-prefix replay output directory",
+    )
+    neurotaint_report.add_argument("--output", type=Path, required=True)
     evaluation_report = commands.add_parser(
         "evaluation-report", help="Summarize saved evaluation with explicit unknowns"
     )
@@ -188,6 +230,139 @@ def main(argv: list[str] | None = None) -> int:
 
             read_evaluation_plan(args.batch, check_implementation=False)
             result = analyze_batch(args.batch, args.output)
+        elif args.command == "neurotaint-eval":
+            from agentdojo_lab.neurotaint_eval import (
+                create_neurotaint_eval_plan,
+                execute_neurotaint_eval_batch,
+                read_neurotaint_eval_plan,
+            )
+
+            if args.resume is not None and any(
+                value is not None
+                for value in (args.config, args.conformance_dir, args.reference_dir)
+            ):
+                raise ValueError("A resumed NT-AgentDojo batch uses all frozen inputs")
+            if (
+                args.resume is None
+                and not args.plan_only
+                and (args.conformance_dir is None or args.reference_dir is None)
+            ):
+                raise ValueError(
+                    "A new live NT-AgentDojo batch requires both --conformance-dir and "
+                    "--reference-dir before its immutable plan is created"
+                )
+            batch = args.resume or create_neurotaint_eval_plan(
+                args.output,
+                args.config,
+                conformance_dir=args.conformance_dir,
+                reference_dir=args.reference_dir,
+            )
+            if args.plan_only:
+                plan = read_neurotaint_eval_plan(batch)
+                result = {
+                    "batch_dir": str(batch.resolve()),
+                    "planned": len(plan["schedule"]),
+                    "model_calls": 0,
+                }
+            else:
+                result = execute_neurotaint_eval_batch(batch)
+        elif args.command == "neurotaint-eval-report":
+            from agentdojo_lab.neurotaint_eval import read_neurotaint_eval_plan
+            from agentdojo_lab.neurotaint_eval_analysis import (
+                adapt_native_matrix_summary,
+                frozen_plan_identity,
+            )
+            from agentdojo_lab.neurotaint_eval_report import export_neurotaint_eval_report
+            from agentdojo_lab.neurotaint_native_analysis import analyze_native_matrix
+
+            if args.plan.name != "plan.json":
+                raise ValueError("NeuroTaint reports require the frozen batch plan.json path")
+            report_output = args.output.expanduser().resolve()
+            protected_inputs = [
+                args.plan.parent.expanduser().resolve(),
+                args.analysis.expanduser().resolve(),
+            ]
+            if args.reference_summary is not None:
+                protected_inputs.append(args.reference_summary.expanduser().resolve())
+            for optional in (
+                args.controlled_causal_panel,
+                args.native_exact_prefix_replay,
+            ):
+                if optional is not None:
+                    protected_inputs.append(optional.expanduser().resolve())
+            if args.m7_aggregates is not None:
+                protected_inputs.append(args.m7_aggregates.expanduser().resolve().parent)
+            if any(
+                report_output == source
+                or report_output.is_relative_to(source)
+                or source.is_relative_to(report_output)
+                for source in protected_inputs
+            ):
+                raise ValueError(
+                    "Report output must be separate from the frozen batch and optional "
+                    "experiment evidence directories"
+                )
+            read_neurotaint_eval_plan(
+                args.plan.parent,
+                check_implementation=True,
+                require_evidence=True,
+            )
+            try:
+                supplied_analysis = json.loads(args.analysis.read_text(encoding="utf-8"))
+            except (OSError, UnicodeError, ValueError) as exc:
+                raise ValueError("Cannot read the supplied native analysis summary") from exc
+            if not isinstance(supplied_analysis, dict):
+                raise ValueError("Native analysis summary must be one JSON object")
+            recomputed_analysis = analyze_native_matrix(args.plan.parent)
+            supplied_core = dict(supplied_analysis)
+            recomputed_core = dict(recomputed_analysis)
+            supplied_core.pop("normalized_adapter", None)
+            recomputed_core.pop("normalized_adapter", None)
+            if supplied_core != recomputed_core:
+                raise ValueError(
+                    "Supplied native analysis differs from a fresh read-only analysis of the "
+                    "frozen batch"
+                )
+            attribution = None
+            if args.reference_summary is not None:
+                plan = json.loads(args.plan.read_text(encoding="utf-8"))
+                reference = json.loads(args.reference_summary.read_text(encoding="utf-8"))
+                if not isinstance(reference, dict) or not isinstance(
+                    reference.get("attribution_metrics"), dict
+                ):
+                    raise ValueError(
+                        "Reference summary must contain an attribution_metrics object"
+                    )
+                binding = plan.get("reference_panel") if isinstance(plan, dict) else None
+                reference_files = binding.get("files") if isinstance(binding, dict) else None
+                summary_digest = hashlib.sha256(args.reference_summary.read_bytes()).hexdigest()
+                if (
+                    not isinstance(binding, dict)
+                    or binding.get("status") != "completed"
+                    or not isinstance(reference_files, dict)
+                    or reference_files.get("summary.json") != summary_digest
+                    or reference.get("protocol") != binding.get("protocol")
+                    or reference.get("panel_id") != binding.get("panel_id")
+                ):
+                    raise ValueError(
+                        "Reference summary is not the completed evidence bound by the frozen plan"
+                    )
+                attribution = {
+                    "status": reference.get("status", "available"),
+                    "scope": reference.get("scope"),
+                    "batch_identity": frozen_plan_identity(args.plan),
+                    **reference["attribution_metrics"],
+                }
+            normalized = adapt_native_matrix_summary(
+                recomputed_analysis,
+                args.plan,
+                attribution_summary=attribution,
+                m7_aggregates=args.m7_aggregates,
+                controlled_causal_panel=args.controlled_causal_panel,
+                native_exact_prefix_replay=args.native_exact_prefix_replay,
+                report_output=args.output,
+            )
+            result = export_neurotaint_eval_report(normalized, args.output)
         elif args.command == "input-comparison":
             from agentdojo_lab.input_comparison import (
                 create_input_comparison_plan,

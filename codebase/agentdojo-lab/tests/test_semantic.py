@@ -282,6 +282,17 @@ def test_local_loader_pins_files_and_forbids_remote_or_pickle_loading(local_fixt
     assert set(encoder.metadata["files_sha256"]) == {"model.safetensors", "config.json", "vocab.txt"}
 
 
+def test_local_identity_verifies_weights_without_loading_the_encoder(local_fixture):
+    path, _ = local_fixture
+    metadata = semantic.local_minilm_identity(path, revision="a" * 40)
+    assert metadata["model_path"] == str(path.resolve())
+    assert metadata["revision_verification"] == "pinned_manifest_verified"
+    assert metadata["files_sha256"]["model.safetensors"]
+    (path / "model.safetensors").write_bytes(b"changed but still never loaded")
+    with pytest.raises(ValueError, match="file hashes"):
+        semantic.local_minilm_identity(path, revision="a" * 40)
+
+
 def test_loader_rejects_changed_or_unpinned_input_files_and_revision(local_fixture):
     path, _ = local_fixture
     with pytest.raises(ValueError, match="revision"):

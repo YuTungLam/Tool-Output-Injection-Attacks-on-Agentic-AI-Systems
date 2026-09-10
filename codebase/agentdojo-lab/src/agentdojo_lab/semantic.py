@@ -13,6 +13,7 @@ import math
 import re
 from collections import OrderedDict
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Protocol, Sequence
 
@@ -49,6 +50,140 @@ class TextEncoder(Protocol):
     metadata: dict
 
     def encode(self, texts: Sequence[str]) -> list[EncodedText]: ...
+
+
+def _model_inventory(path: Path) -> tuple[tuple[str, int, int, int, int], ...]:
+    inventory = []
+    for file in sorted(path.rglob("*")):
+        relative = file.relative_to(path)
+        if any(part.startswith(".") for part in relative.parts):
+            continue
+        if file.is_symlink():
+            raise ValueError("Local model inputs must not contain symbolic links")
+        if file.is_file() and file.suffix in {".json", ".txt", ".safetensors"}:
+            stat = file.stat()
+            inventory.append(
+                (
+                    relative.as_posix(),
+                    stat.st_size,
+                    stat.st_mtime_ns,
+                    stat.st_ctime_ns,
+                    stat.st_ino,
+                )
+            )
+    return tuple(inventory)
+
+
+@lru_cache(maxsize=16)
+def _verified_local_minilm_identity(
+    path_text: str,
+    revision: str,
+    cache_size: int,
+    pin_path_text: str,
+    pin_sha256: str,
+    inventory: tuple[tuple[str, int, int, int, int], ...],
+    versions_items: tuple[tuple[str, str], ...],
+) -> dict:
+    path = Path(path_text)
+    pin_path = Path(pin_path_text)
+    pin_bytes = pin_path.read_bytes()
+    if hashlib.sha256(pin_bytes).hexdigest() != pin_sha256:
+        raise ValueError("Reviewed MiniLM pin changed during identity verification")
+    try:
+        pin = json.loads(pin_bytes)
+    except json.JSONDecodeError as error:
+        raise ValueError("Reviewed MiniLM pin is not valid JSON") from error
+    if (
+        not isinstance(pin, dict)
+        or pin.get("model_id") != MODEL_ID
+        or pin.get("revision") != revision
+        or not isinstance(pin.get("files_sha256"), dict)
+    ):
+        raise ValueError("Model identity or revision does not match the reviewed pin")
+    files = {}
+    for relative, size, mtime_ns, ctime_ns, inode in inventory:
+        file = path / relative
+        stat = file.stat()
+        expected_stat = (size, mtime_ns, ctime_ns, inode)
+        if (stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns, stat.st_ino) != expected_stat:
+            raise ValueError("Local model input changed during identity verification")
+        digest = hashlib.sha256()
+        with file.open("rb") as stream:
+            for block in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(block)
+        stat = file.stat()
+        if (stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns, stat.st_ino) != expected_stat:
+            raise ValueError("Local model input changed during identity verification")
+        files[relative] = digest.hexdigest()
+    if _model_inventory(path) != inventory:
+        raise ValueError("Local model inventory changed during identity verification")
+    if hashlib.sha256(pin_path.read_bytes()).hexdigest() != pin_sha256:
+        raise ValueError("Reviewed MiniLM pin changed during identity verification")
+    if not pin["files_sha256"] or files != pin["files_sha256"]:
+        raise ValueError("Local model input file hashes do not match the reviewed pin")
+    if not any(name.endswith(".safetensors") for name in files):
+        raise FileNotFoundError("Local MiniLM snapshot must include safetensors weights")
+
+    manifest = json.dumps(files, sort_keys=True, separators=(",", ":")).encode()
+    return {
+        "model_id": MODEL_ID,
+        "model_path": str(path),
+        "revision": revision,
+        "revision_verification": "pinned_manifest_verified",
+        "pin_sha256": pin_sha256,
+        "files_sha256": files,
+        "manifest_sha256": hashlib.sha256(manifest).hexdigest(),
+        "device": "cpu",
+        "dtype": "float32",
+        "max_tokens": MAX_TOKENS,
+        "trust_remote_code": False,
+        "local_files_only": True,
+        "use_safetensors": True,
+        "cache_max_entries": cache_size,
+        "cache_max_codepoints": 1_048_576,
+        "cache_key": "exact_input_text",
+        "normalize_embeddings": True,
+        "versions": dict(versions_items),
+    }
+
+
+def local_minilm_identity(
+    model_path: str | Path,
+    *,
+    revision: str,
+    cache_size: int = 1024,
+) -> dict:
+    """Verify the complete local snapshot and return its runtime metadata contract."""
+    path = Path(model_path).expanduser().resolve()
+    if not path.is_dir():
+        raise FileNotFoundError("MiniLM requires an existing local snapshot directory")
+    if not re.fullmatch(r"[0-9a-fA-F]{40}", revision):
+        raise ValueError("revision must be an immutable 40-character commit hash")
+    if (
+        isinstance(cache_size, bool)
+        or not isinstance(cache_size, int)
+        or not 0 <= cache_size <= 4096
+    ):
+        raise ValueError("cache_size must be an integer between 0 and 4096")
+    pin_path = MODEL_PIN_PATH.expanduser().resolve()
+    pin_bytes = pin_path.read_bytes()
+    versions = []
+    for package in ("sentence-transformers", "transformers", "tokenizers", "torch"):
+        try:
+            value = importlib.metadata.version(package)
+        except importlib.metadata.PackageNotFoundError:
+            value = "unavailable"
+        versions.append((package, value))
+    metadata = _verified_local_minilm_identity(
+        str(path),
+        revision,
+        cache_size,
+        str(pin_path),
+        hashlib.sha256(pin_bytes).hexdigest(),
+        _model_inventory(path),
+        tuple(versions),
+    )
+    return copy.deepcopy(metadata)
 
 
 def sentence_spans(text: str) -> list[tuple[int, int]]:
@@ -420,32 +555,8 @@ class LocalMiniLMEncoder:
     """
 
     def __init__(self, model_path: str | Path, *, revision: str, cache_size: int = 1024):
-        path = Path(model_path).expanduser().resolve()
-        if not path.is_dir():
-            raise FileNotFoundError("MiniLM requires an existing local snapshot directory")
-        if not re.fullmatch(r"[0-9a-fA-F]{40}", revision):
-            raise ValueError("revision must be an immutable 40-character commit hash")
-        if isinstance(cache_size, bool) or not isinstance(cache_size, int) or not 0 <= cache_size <= 4096:
-            raise ValueError("cache_size must be an integer between 0 and 4096")
-        pin_bytes = MODEL_PIN_PATH.read_bytes()
-        pin = json.loads(pin_bytes)
-        if pin["model_id"] != MODEL_ID or pin["revision"] != revision:
-            raise ValueError("Model identity or revision does not match the reviewed pin")
-        files = {}
-        for file in sorted(path.rglob("*")):
-            if any(part.startswith(".") for part in file.relative_to(path).parts):
-                continue
-            if file.is_file() and file.suffix in {".json", ".txt", ".safetensors"}:
-                digest = hashlib.sha256()
-                with file.open("rb") as stream:
-                    for block in iter(lambda: stream.read(1024 * 1024), b""):
-                        digest.update(block)
-                files[file.relative_to(path).as_posix()] = digest.hexdigest()
-        if not pin["files_sha256"] or files != pin["files_sha256"]:
-            raise ValueError("Local model input file hashes do not match the reviewed pin")
-        if not any(name.endswith(".safetensors") for name in files):
-            raise FileNotFoundError("Local MiniLM snapshot must include safetensors weights")
-        manifest = json.dumps(files, sort_keys=True, separators=(",", ":")).encode()
+        metadata = local_minilm_identity(model_path, revision=revision, cache_size=cache_size)
+        path = Path(metadata["model_path"])
         try:
             import torch
             from sentence_transformers import SentenceTransformer
@@ -470,32 +581,8 @@ class LocalMiniLMEncoder:
         self._cache: OrderedDict[str, EncodedText] = OrderedDict()
         self._cache_size = cache_size
         self._cache_codepoints = 0
-        self._max_cache_codepoints = 1_048_576
-        self._metadata = {
-            "model_id": MODEL_ID,
-            "model_path": str(path),
-            "revision": revision,
-            "revision_verification": "pinned_manifest_verified",
-            "pin_sha256": hashlib.sha256(pin_bytes).hexdigest(),
-            "files_sha256": files,
-            "manifest_sha256": hashlib.sha256(manifest).hexdigest(),
-            "device": "cpu",
-            "dtype": "float32",
-            "max_tokens": MAX_TOKENS,
-            "trust_remote_code": False,
-            "local_files_only": True,
-            "use_safetensors": True,
-            "cache_max_entries": cache_size,
-            "cache_max_codepoints": self._max_cache_codepoints,
-            "cache_key": "exact_input_text",
-            "normalize_embeddings": True,
-            "versions": {},
-        }
-        for package in ("sentence-transformers", "transformers", "tokenizers", "torch"):
-            try:
-                self._metadata["versions"][package] = importlib.metadata.version(package)
-            except importlib.metadata.PackageNotFoundError:
-                self._metadata["versions"][package] = "unavailable"
+        self._max_cache_codepoints = metadata["cache_max_codepoints"]
+        self._metadata = metadata
 
     @property
     def metadata(self) -> dict:

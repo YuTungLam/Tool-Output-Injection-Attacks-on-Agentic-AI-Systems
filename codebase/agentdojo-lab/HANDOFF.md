@@ -1,5 +1,32 @@
 # Handoff: current state and historical notes
 
+## Active NT-AgentDojo evaluation — 2026-09-10
+
+The current user scope excludes SafeTool and any defense. Finish and measure the
+independent NeuroTaint method implementation first. M1–M7 are implemented; do not
+reopen author-code, original TaintBench or original-table alignment. The active
+protocol is [NEUROTAINT-EVAL.md](NEUROTAINT-EVAL.md), with machine-readable status
+in [NEUROTAINT_EVAL_PROGRESS.json](NEUROTAINT_EVAL_PROGRESS.json).
+
+The planned native matrix contains 12 registered workspace scenarios across
+calendar, email and file source domains, with clean/injected conditions and five
+repetitions each (120 trajectories). Every started slot is terminal and may never
+be replaced. Primary requests are capped at four per trajectory. Clean M7 judge
+budget is zero; injected budget is three, for a total ceiling of 180. The matrix
+uses native single-vector scenarios. Memory, joint-source and matched negative
+branches remain separate controlled panels and must not be inferred from ordinary
+multi-tool trajectories.
+
+The canonical known-origin panel is
+`reports/20260910-neurotaint-reference-panel-v1`. Its 24 frozen pairs contain 12
+positives and 12 matched negatives, balanced across three domains. Integrity checks
+all pass. The ordinary ordered cascade scored TP=12, FP=12, FN=0, TN=0,
+precision=0.50, recall=1.00 and F1=0.667; all first hits were Tier 2. These are
+controlled program-origin references and cannot be called natural-agent accuracy.
+Run the post-hoc LCS sensitivity, native matrix, fixed causal panel and final
+artifact verification before classifying this as an implementation defect,
+reproducibility ambiguity or bounded candidate method limitation.
+
 ## Paper conformance and complete method target — 2026-09-10
 
 Latest user clarification: implement the published method ideas in AgentDojo and

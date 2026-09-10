@@ -82,8 +82,8 @@ The next experiment should measure **causal-fallback reachability** across nativ
 tasks and controlled source/sink lengths. Report the fraction of selected sinks
 that reach each tier, the fraction eligible for the causal judge, false-positive
 controls with unused sources, and utility/latency. This can distinguish an M7 code
-failure from a detector-gating limitation and provides a concrete candidate gap for
-the later SafeTool-TTA routing work.
+failure from a detector-gating limitation and provides a concrete candidate boundary
+for the NeuroTaint reproduction evaluation.
 
 Known operational limits remain explicit: judge outputs are predictions rather than
 observed counterfactual executions; synchronous auditing adds dispatch latency;

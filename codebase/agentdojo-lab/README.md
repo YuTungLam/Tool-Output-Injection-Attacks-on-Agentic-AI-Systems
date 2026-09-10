@@ -1,5 +1,24 @@
 # AgentDojo Lab
 
+**Active evaluation — NT-AgentDojo-Eval-v1, 2026-09-10:** SafeTool, CTTA,
+model-weight updates and action blocking are outside the current phase. M1–M7 of
+the independent NeuroTaint method implementation are complete under the declared
+AgentDojo adapter. The active work now measures that implementation with a frozen
+12-scenario workspace matrix: calendar, email and file sources; clean/injected
+conditions; five repetitions; 120 native trajectories in total. Read
+[the evaluation protocol](NEUROTAINT-EVAL.md) and
+[the live progress ledger](NEUROTAINT_EVAL_PROGRESS.json).
+
+The fresh controlled known-origin panel is complete with 24/24 definitive pairs.
+The ordered cascade returned TP=12, FP=12, FN=0 and TN=0 (precision 0.50, recall
+1.00, F1 0.667); all 24 pairs exited at Tier 2. This result is controlled
+source-field correspondence, not natural-agent attribution accuracy. It motivates
+the predeclared native reachability and same-prefix causal measurements without
+establishing a general method limitation by itself. The native matrix, causal
+panel, conformance receipts and unified English report are the remaining active
+evaluation work. Historical statements below that no further experiment was
+scheduled describe their earlier phases only.
+
 **Current target — independent paper-method implementation, 2026-09-10:** read
 [REPRODUCTION-CONTRACT.md](REPRODUCTION-CONTRACT.md). The user requests a usable
 NeuroTaint-inspired baseline in AgentDojo and controlled experiments to investigate

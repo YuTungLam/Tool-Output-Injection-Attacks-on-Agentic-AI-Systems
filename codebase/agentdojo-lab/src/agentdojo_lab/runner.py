@@ -392,7 +392,7 @@ def run_clean(
             Path(__file__).with_name("canary.py").read_bytes()
         ).hexdigest()
     if evaluation is not None:
-        from agentdojo_lab.evaluation_runner import InputComparisonTrial
+        from agentdojo_lab.evaluation_runner import InputComparisonTrial, MatrixEvaluationTrial
         from agentdojo_lab.heldout_runner import HeldoutTrial
 
         manifest["evaluation"] = evaluation.model_dump()
@@ -407,6 +407,8 @@ def run_clean(
         manifest["notes"][0] = (
             "Frozen held-out native clean/injected evaluation; both arms use passive inputs."
             if isinstance(evaluation, HeldoutTrial)
+            else "Frozen NT-AgentDojo matrix evaluation; both arms use passive inputs with online causal auditing."
+            if isinstance(evaluation, MatrixEvaluationTrial)
             else "Frozen native injected-only input comparison; this run uses "
             + ("canary intervention." if config.canary_enabled else "passive input.")
             if isinstance(evaluation, InputComparisonTrial)

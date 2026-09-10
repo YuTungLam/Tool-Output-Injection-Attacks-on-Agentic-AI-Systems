@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Literal
 
 import yaml
 from agentdojo.logging import OutputLogger, TraceLogger
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from yaml.nodes import MappingNode, ScalarNode, SequenceNode
 from yaml.tokens import AliasToken, AnchorToken, TagToken
 
@@ -52,6 +52,41 @@ class InputComparisonTrial(EvaluationTrial):
     condition: Literal["injected"] = "injected"
 
 
+class MatrixEvaluationTrial(BaseModel):
+    """One strictly bound single-vector native trial in the registered workspace suite."""
+
+    model_config = ConfigDict(extra="forbid", strict=True, frozen=True)
+
+    protocol: Literal["NT-AgentDojo-Eval-v1"] = "NT-AgentDojo-Eval-v1"
+    input_condition: Literal["passive"] = "passive"
+    trial_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$")
+    case_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$")
+    domain: Literal["calendar", "email", "file"]
+    repeat: int = Field(ge=1, le=5)
+    condition: Literal["clean", "injected"]
+    user_task_id: str = Field(pattern=r"^user_task_[0-9]+$")
+    injection_task_id: str = Field(pattern=r"^injection_task_[0-9]+$")
+    vector_id: str = Field(pattern=r"^[a-z][a-z0-9_]*$")
+    payload: str = Field(min_length=1, max_length=16384)
+    request_limit: Literal[4] = 4
+    judge_request_limit: Literal[0, 3]
+
+    @field_validator("request_limit", "judge_request_limit", mode="before")
+    @classmethod
+    def exact_request_limits(cls, value, info):
+        allowed = {4} if info.field_name == "request_limit" else {0, 3}
+        if type(value) is not int or value not in allowed:
+            raise ValueError("Matrix request limits must be exact integers")
+        return value
+
+    @model_validator(mode="after")
+    def condition_judge_budget(self):
+        expected = 3 if self.condition == "injected" else 0
+        if self.judge_request_limit != expected:
+            raise ValueError("The matrix judge budget must match the assigned condition")
+        return self
+
+
 class PrimaryRequestLimitError(RuntimeError):
     """The next SDK invocation would exceed the frozen primary request allowance."""
 
@@ -80,6 +115,9 @@ def validate_evaluation(config: RunConfig, spec: EvaluationTrial, suite) -> None
 
     if type(spec) is HeldoutTrial:
         validate_heldout(config, spec, suite)
+        return
+    if type(spec) is MatrixEvaluationTrial:
+        validate_matrix_evaluation(config, spec, suite)
         return
     if config.cascade_profile != "ordinary":
         raise ValueError("Frozen evaluation protocols require the ordinary cascade profile")
@@ -111,6 +149,48 @@ def validate_evaluation(config: RunConfig, spec: EvaluationTrial, suite) -> None
         raise ValueError("Frozen native injection vector is unavailable")
     if "TODO: " + suite.injection_tasks[spec.injection_task_id].GOAL != spec.payload:
         raise ValueError("Native direct payload no longer matches the frozen assignment")
+
+
+def validate_matrix_evaluation(config: RunConfig, spec: MatrixEvaluationTrial, suite) -> None:
+    """Bind a generic matrix row to registered native objects before any SDK or output use."""
+    from agentdojo.attacks.baseline_attacks import DirectAttack
+
+    if config.cascade_profile != "ordinary":
+        raise ValueError("Matrix evaluation requires the ordinary cascade profile")
+    if type(spec) is not MatrixEvaluationTrial:
+        raise TypeError("Matrix evaluation requires the exact MatrixEvaluationTrial schema")
+    if set(vars(spec)) != set(MatrixEvaluationTrial.model_fields) or spec.__pydantic_extra__:
+        raise ValueError("Unexpected matrix assignment fields")
+    MatrixEvaluationTrial.model_validate(spec.model_dump())
+    if (
+        config.suite != "workspace"
+        or config.benchmark_version != "v1.2.2"
+        or config.user_tasks != [spec.user_task_id]
+        or config.canary_enabled is not False
+        or not config.record_events
+        or not config.online_provenance
+        or not config.online_causal_audit
+        or config.causal_max_requests != spec.judge_request_limit
+    ):
+        raise ValueError(
+            "Matrix evaluation requires recorded passive workspace v1.2.2 input with M7 and its condition budget"
+        )
+    if spec.user_task_id not in suite.user_tasks or spec.injection_task_id not in suite.injection_tasks:
+        raise ValueError("Matrix task identities are not registered in the native suite")
+    defaults = suite.get_injection_vector_defaults()
+    if spec.vector_id not in defaults:
+        raise ValueError("Matrix injection vector is not registered in the native suite")
+    expected_prefix = {"calendar": "calendar_", "email": "email_", "file": "drive_"}[spec.domain]
+    if not spec.vector_id.startswith(expected_prefix):
+        raise ValueError("Matrix domain and native injection vector disagree")
+    candidates = DirectAttack(suite, target_pipeline=None).get_injection_candidates(
+        suite.user_tasks[spec.user_task_id]
+    )
+    if spec.vector_id not in candidates:
+        raise ValueError("Matrix injection vector is not exposed by the assigned native user task")
+    expected_payload = "TODO: " + suite.injection_tasks[spec.injection_task_id].GOAL
+    if spec.payload != expected_payload:
+        raise ValueError("Matrix payload must equal the native DirectAttack payload")
 
 
 def run_evaluation_trial(
@@ -335,7 +415,7 @@ def build_evaluation_summary(
     return {
         **(
             {"protocol": spec.protocol, "input_condition": spec.input_condition}
-            if isinstance(spec, (InputComparisonTrial, HeldoutTrial))
+            if isinstance(spec, (InputComparisonTrial, HeldoutTrial, MatrixEvaluationTrial))
             else {}
         ),
         "condition": spec.condition,
