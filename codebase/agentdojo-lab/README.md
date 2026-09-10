@@ -1,6 +1,16 @@
 # AgentDojo Lab
 
-**Latest phase — controlled semantic validation, 2026-09-10:** read
+**Current completion target — paper conformance, 2026-09-10:** read
+[REPRODUCTION-CONTRACT.md](REPRODUCTION-CONTRACT.md). It separates complete method
+implementation in AgentDojo, completed evaluation, and reproduction of the original
+result tables. Old pilot counts are not overall paper completion. The concrete
+integration is now implemented by `python -m agentdojo_lab.paper_audit` and verified
+on retained explicit, control and memory traces. Open the
+[completion report](reports/20260910-paper-conformance-v1/index.html).
+The default makes zero API requests. No human relabeling is a prerequisite for
+implementing that workflow; live-performance and original-result limits remain.
+
+**Previous phase — controlled semantic validation, 2026-09-10:** read
 [SEMANTIC-VALIDATION-RESULTS.md](SEMANTIC-VALIDATION-RESULTS.md),
 [SEMANTIC_VALIDATION_PROGRESS.json](SEMANTIC_VALIDATION_PROGRESS.json) and the
 [interactive English overview](reports/20260910-semantic-validation-v1/index.html).

@@ -63,6 +63,22 @@ def test_original_and_neutralized_branches_share_no_files_or_private_state(paire
         output / "neutralized/A/lineage-state.json").read_bytes()
 
 
+def test_new_memory_records_export_through_standard_causal_planner(paired, tmp_path):
+    from agentdojo_lab.causal_v2 import export_run
+
+    output, _ = paired
+    source = output / "original/B"
+    manifest = json.loads((source / "manifest.json").read_text())
+    assert manifest["input_condition"] == "passive"
+    assert manifest["config"]["canary_enabled"] is False
+    assert manifest["online_provenance"]["lineage"]["memory_cascade"]["canary_enabled"] is False
+    summary = export_run(source, tmp_path / "plans")
+    assert summary["canary_enabled"] is False
+    assert summary["source_files_unchanged"] is True
+    assert summary["plan_count"] == 2
+    assert summary["model_requests"] == summary["native_tool_calls"] == 0
+
+
 def test_no_credential_headers_in_request_artifacts(paired):
     output, _ = paired
     for path in output.rglob("requests.json"):

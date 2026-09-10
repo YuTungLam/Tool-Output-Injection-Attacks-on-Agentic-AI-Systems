@@ -173,8 +173,10 @@ def run_session(spec_path):
     ]), observer)
     manifest = {
         "schema_version": 1, "real_llm": spec["real_llm"], "mode": "cross-session-copy-pair-v1",
+        "input_condition": "passive",
         "config": {"model": MODEL, "suite": "workspace", "benchmark_version": "v1.2.2",
                    "user_tasks": [output.name], "online_provenance": True,
+                   "canary_enabled": False,
                    "semantic_model": str(ROOT / ".model-cache/all-MiniLM-L6-v2-1110a243") if semantic else None,
                    "semantic_revision": REVISION if semantic else None},
         "online_provenance": {"enabled": True, "policy": policy.metadata,

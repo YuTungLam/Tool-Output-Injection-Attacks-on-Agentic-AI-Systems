@@ -1,5 +1,27 @@
 # Handoff: current state and historical notes
 
+## Paper conformance and complete method target — 2026-09-10
+
+The user explicitly needs the full method working as a usable research baseline,
+not another isolated pilot closeout. Start with
+[REPRODUCTION-CONTRACT.md](REPRODUCTION-CONTRACT.md). Its M1–M6 checklist separates
+implementation requirements from stronger live coverage and original-table claims.
+Tier1–4, all four profiles, native file memory and single/pair judge planning are
+already implemented. `python -m agentdojo_lab.paper_audit` now provides a unified
+completed-trace audit with per-sink decisions and a derived graph retaining
+causal-prediction evidence. Three final zero-call integrations live under
+`reports/20260910-paper-conformance-v1/{explicit-v2,control-v2,memory-v2}`.
+Reuse preserves the old auditor's exact planning budget. A narrowly verified
+legacy memory adapter supports old explicit paths without laundering missing
+condition fields; future memory records declare the passive condition directly.
+The initial failed integrations and executed composer remain preserved.
+
+Do not call an omitted source read, unavailable branch, provider/parser error or
+execution-policy rejection a paper gap. Do not require independent human labels
+or actual agent counterfactual replays merely to declare judge-based code present.
+The earlier evidence and failed trials remain unchanged. The new conformance work
+uses retained evidence and offline tests; no new attack execution is scheduled.
+
 ## Controlled semantic validation — 2026-09-10
 
 Start with [SEMANTIC-VALIDATION-RESULTS.md](SEMANTIC-VALIDATION-RESULTS.md) and
