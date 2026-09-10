@@ -1,14 +1,19 @@
 # AgentDojo Lab
 
-**Current completion target — paper conformance, 2026-09-10:** read
-[REPRODUCTION-CONTRACT.md](REPRODUCTION-CONTRACT.md). It separates complete method
-implementation in AgentDojo, completed evaluation, and reproduction of the original
-result tables. Old pilot counts are not overall paper completion. The concrete
-integration is now implemented by `python -m agentdojo_lab.paper_audit` and verified
-on retained explicit, control and memory traces. Open the
-[completion report](reports/20260910-paper-conformance-v1/index.html).
-The default makes zero API requests. No human relabeling is a prerequisite for
-implementing that workflow; live-performance and original-result limits remain.
+**Current target — independent paper-method implementation, 2026-09-10:** read
+[REPRODUCTION-CONTRACT.md](REPRODUCTION-CONTRACT.md). The user requests a usable
+NeuroTaint-inspired baseline in AgentDojo and controlled experiments to investigate
+method limitations. Author-code, original-dataset and original-table alignment are
+outside scope. `python -m agentdojo_lab.paper_audit` implements the completed-trace
+audit, while the opt-in M7 sidecar now runs the same bounded causal composition at
+the native proposal boundary. M1–M7 are implemented under the declared adapter and
+interpretation. Read [the M7 result note](M7-RESULTS.md), inspect
+[the progress ledger](M7_PROGRESS.json), or open the
+[live interactive report](runs/20260910-online-causal-live-v1/report.html).
+The first clean live run verified runtime integration and pre-runtime receipts; its
+explicit Tier-2 hit made zero causal-judge requests, so live eligible-judge coverage
+remains a separate experiment. No human relabeling is a prerequisite for the
+implemented workflow. Older reports retain their original scope and claims.
 
 **Previous phase — controlled semantic validation, 2026-09-10:** read
 [SEMANTIC-VALIDATION-RESULTS.md](SEMANTIC-VALIDATION-RESULTS.md),
@@ -23,7 +28,7 @@ complete with evidence limits; no additional model requests are scheduled.
 [ATTACK-VALIDATION-RESULTS.md](ATTACK-VALIDATION-RESULTS.md) and
 [ATTACK_VALIDATION_PROGRESS.json](ATTACK_VALIDATION_PROGRESS.json).
 Sixteen real-agent trajectories provide positive native attack and literal
-propagation evidence under two frozen synthetic families. Full NeuroTaint
+propagation evidence under two frozen synthetic families. Original-result
 replication and general semantic/causal accuracy remain incomplete.
 
 **Previous phase — method controls, 2026-09-10:** see [METHOD-COMPLETION-RESULTS.md](METHOD-COMPLETION-RESULTS.md),
@@ -173,6 +178,33 @@ This validates labels and authorship/independence attestations; it cannot verify
 The blank template supplies no accuracy result. Further independent review, adjudication, source-field
 scoring and broader scenarios remain required for independent accuracy. The separate input-comparison
 protocol above supplies fresh passive/Canary primary executions.
+
+## Run the online causal M7 sidecar
+
+The M7 sidecar observes a native AgentDojo proposal after explicit provenance has
+updated and before tool runtime starts. It uses the exact model-request prefix,
+bounded source and pair plans, and a separate no-tools judge client. It writes
+`causal-online.jsonl` and `causal-online-graph.json`, then adds an **Online causal
+audit** view to the run report. Selecting a proposal or following its timeline link
+highlights the corresponding stage in the agent-flow diagram.
+
+The retained configuration is deliberately bounded to four causal judge requests:
+
+```bash
+.venv/bin/dojo-lab run \
+  --config configs/groq_online_causal.toml \
+  --output runs/NEW-online-causal
+
+.venv/bin/python scripts/verify_online_causal.py \
+  --run runs/NEW-online-causal \
+  --output reports/NEW-online-causal-verification.json
+```
+
+The sidecar never blocks, authorizes, replaces or retries an action and performs no
+model-weight updates. Errors and exhausted budgets become explicit unknown results.
+The retained clean run reached an explicit Tier-2 positive and therefore made zero
+judge requests; this verifies the skip path and integration, not live judge accuracy.
+See [M7-RESULTS.md](M7-RESULTS.md) for the next causal-fallback reachability experiment.
 
 ## Audit a saved sink with isolated counterfactual contexts
 
@@ -583,9 +615,12 @@ HTML 生成在 agent 执行、原生评估及事件记录结束后进行。导�
 
 本阶段使用原生正常任务，未添加 CTTA、模型参数更新或动作拦截。正常任务日志中的 `security` 是上游无注入路径的固定返回值，不代表测得了安全能力。
 
-The live hook, policy cascade, DCPG and separate Canary condition have bounded engineering validation.
-Current component status is in [REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json); the isolated
-auditor protocol is in [COUNTERFACTUAL.md](COUNTERFACTUAL.md). Independent source evaluation remains pending.
+The live hook, policy cascade, DCPG, separate Canary condition and opt-in online causal
+sidecar have bounded engineering validation. M7 status is in
+[M7_PROGRESS.json](M7_PROGRESS.json); historical component status remains in
+[REPRODUCTION_PROGRESS.json](REPRODUCTION_PROGRESS.json), and the completed-trace
+auditor protocol is in [COUNTERFACTUAL.md](COUNTERFACTUAL.md). Independent source
+evaluation and live eligible-judge coverage remain pending.
 
 可选 MiniLM 组件的安装、固定模型下载、运行命令、分块与截断规则见 [SEMANTIC.md](SEMANTIC.md)。语义计算只读取本地模型和原有日志，不需要 Groq API，也不读取开发标注。默认 `provenance` 仍只做 exact/LCS。
 

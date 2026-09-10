@@ -52,6 +52,39 @@ def test_recording_control_preserves_native_result(tmp_path):
     assert enabled["native_messages"] == disabled["native_messages"]
 
 
+def test_run_clean_wires_plan_only_m7_and_saves_separate_derived_graph(tmp_path):
+    output = tmp_path / "m7"
+    result = run_clean(
+        RunConfig(
+            online_provenance=True,
+            online_causal_audit=True,
+            provenance_policy=str(ROOT / "configs" / "workspace_policy_v1.yaml"),
+            lineage_namespace="m7-runner-fixture",
+            semantic_model=str(ROOT / ".model-cache" / "all-MiniLM-L6-v2-1110a243"),
+            semantic_revision="1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+            causal_max_requests=0,
+        ),
+        offline=True,
+        output=output,
+    )
+    assert result["task_success_count"] == 1
+    assert result["online_provenance"]["complete"] is True
+    causal = result["online_causal_audit"]
+    assert causal["complete"] is True
+    assert causal["proposal_count"] == causal["runtime_timing_count"] == 1
+    assert causal["before_runtime_verified_count"] == 1
+    assert causal["request_count"] == 0
+    assert causal["graph_saved"] is True
+    assert (output / "causal-online.jsonl").is_file()
+    graph = json.loads((output / "causal-online-graph.json").read_text())
+    assert graph["added_edges"] == []
+    manifest = json.loads((output / "manifest.json").read_text())
+    scope = manifest["online_causal_audit"]
+    assert scope["transport_isolation"] == "separate_unobserved_client; no_tools"
+    assert scope["action_enforcement"] is False
+    assert scope["model_parameter_updates"] == 0
+
+
 def test_missing_key_stops_before_output_or_network(monkeypatch, tmp_path):
     monkeypatch.setattr(runner, "configured_key", lambda: "")
     output = tmp_path / "run"
@@ -149,6 +182,18 @@ def test_cli_model_and_tasks_override_config(monkeypatch, capsys):
         {"semantic_model": "local-model"},
         {"semantic_model": "local-model", "semantic_revision": "revision"},
         {"online_provenance": True, "semantic_model": "", "semantic_revision": ""},
+        {"online_causal_audit": True},
+        {
+            "online_provenance": True,
+            "online_causal_audit": True,
+            "provenance_policy": "policy.yaml",
+            "lineage_namespace": "fixture",
+        },
+        {"causal_max_requests": 33},
+        {"causal_max_sources": 0},
+        {"causal_max_pairs": 29},
+        {"causal_request_timeout_seconds": 0},
+        {"causal_model": ""},
     ],
 )
 def test_config_rejects_invalid_or_unknown_options(data):
@@ -181,6 +226,43 @@ def test_cli_online_flag_and_semantic_pair_are_passed_to_runner(monkeypatch):
     assert captured[0].online_provenance
     assert captured[0].semantic_model == "local-model"
     assert captured[0].semantic_revision == "full-revision"
+
+
+def test_cli_online_causal_scope_is_passed_to_runner(monkeypatch):
+    captured = []
+
+    def run(config, **kwargs):
+        captured.append(config)
+        return {"task_count": 1, "task_success_count": 1}
+
+    monkeypatch.setattr(cli, "run_clean", run)
+    assert (
+        cli.main(
+            [
+                "smoke",
+                "--offline",
+                "--online-provenance",
+                "--online-causal-audit",
+                "--policy",
+                "policy.yaml",
+                "--lineage-namespace",
+                "fixture-lineage",
+                "--semantic-model",
+                "local-model",
+                "--semantic-revision",
+                "full-revision",
+                "--causal-max-requests",
+                "3",
+                "--causal-max-pairs",
+                "2",
+            ]
+        )
+        == 0
+    )
+    config = captured[0]
+    assert config.online_causal_audit is True
+    assert config.causal_max_requests == 3
+    assert config.causal_max_pairs == 2
 
 
 def test_cli_reports_incomplete_attribution_even_when_agent_succeeds(monkeypatch):

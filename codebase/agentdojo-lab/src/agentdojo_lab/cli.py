@@ -146,6 +146,16 @@ def main(argv: list[str] | None = None) -> int:
             help="Persist source candidates before tool runtime entry",
         )
         command.add_argument(
+            "--online-causal-audit",
+            action="store_true",
+            help="Run bounded isolated causal judgments before native tool runtime",
+        )
+        command.add_argument("--causal-max-requests", type=int)
+        command.add_argument("--causal-max-sources", type=int)
+        command.add_argument("--causal-max-pairs", type=int)
+        command.add_argument("--causal-model")
+        command.add_argument("--causal-request-timeout-seconds", type=float)
+        command.add_argument(
             "--semantic-model", type=Path, help="Local pinned MiniLM snapshot for online Tier 3/4"
         )
         command.add_argument("--semantic-revision", help="Full model commit SHA; use with --semantic-model")
@@ -319,11 +329,33 @@ def main(argv: list[str] | None = None) -> int:
                 RunConfig(
                     record_events=not args.no_record,
                     online_provenance=args.online_provenance,
+                    online_causal_audit=args.online_causal_audit,
                     provenance_policy=str(args.policy) if args.policy else None,
                     lineage_namespace=args.lineage_namespace,
                     canary_enabled=args.canary,
                     semantic_model=str(args.semantic_model) if args.semantic_model else None,
                     semantic_revision=args.semantic_revision,
+                    **(
+                        {"causal_max_requests": args.causal_max_requests}
+                        if args.causal_max_requests is not None
+                        else {}
+                    ),
+                    **(
+                        {"causal_max_sources": args.causal_max_sources}
+                        if args.causal_max_sources is not None
+                        else {}
+                    ),
+                    **(
+                        {"causal_max_pairs": args.causal_max_pairs}
+                        if args.causal_max_pairs is not None
+                        else {}
+                    ),
+                    **({"causal_model": args.causal_model} if args.causal_model is not None else {}),
+                    **(
+                        {"causal_request_timeout_seconds": args.causal_request_timeout_seconds}
+                        if args.causal_request_timeout_seconds is not None
+                        else {}
+                    ),
                 ),
                 offline=True,
                 output=args.output,
@@ -345,12 +377,23 @@ def main(argv: list[str] | None = None) -> int:
                 data["record_events"] = False
             if args.online_provenance:
                 data["online_provenance"] = True
+            if args.online_causal_audit:
+                data["online_causal_audit"] = True
             if args.policy is not None:
                 data["provenance_policy"] = str(args.policy)
             if args.semantic_model is not None:
                 data["semantic_model"] = str(args.semantic_model)
             if args.semantic_revision is not None:
                 data["semantic_revision"] = args.semantic_revision
+            for option in (
+                "causal_max_requests",
+                "causal_max_sources",
+                "causal_max_pairs",
+                "causal_model",
+                "causal_request_timeout_seconds",
+            ):
+                if getattr(args, option) is not None:
+                    data[option] = getattr(args, option)
             result = run_clean(
                 RunConfig.model_validate(data), output=args.output, pacing_state=args.pacing_state
             )
@@ -388,6 +431,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.command in {"run", "smoke"} and result.get("recording", {}).get("complete") is False:
         return 2
     if args.command in {"run", "smoke"} and result.get("online_provenance", {}).get("complete") is False:
+        return 2
+    if args.command in {"run", "smoke"} and result.get("online_causal_audit", {}).get("complete") is False:
         return 2
     if args.command in {"run", "smoke"} and result.get("status") == "completed_with_issues":
         return 2

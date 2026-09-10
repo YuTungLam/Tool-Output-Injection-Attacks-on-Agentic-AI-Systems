@@ -73,6 +73,127 @@ def test_online_sidecar_outside_run_is_excluded(tmp_path):
     assert any("provenance.jsonl resolves outside" in warning for warning in record["warnings"])
 
 
+def test_online_causal_records_render_inert_interactive_evidence(tmp_path):
+    run = minimal_run(tmp_path / "causal")
+    summary = {
+        "status": "completed",
+        "online_causal_audit": {
+            "enabled": True,
+            "complete": True,
+            "proposal_count": 1,
+            "request_budget": 4,
+            "request_count": 1,
+            "request_remaining": 3,
+            "valid_judgment_count": 1,
+            "unknown_judgment_count": 0,
+            "runtime_timing_count": 1,
+            "before_runtime_verified_count": 1,
+            "action_enforcement": "none",
+            "model_weight_updates": "none",
+            "timing": {"proposal_total_ns": 2_500_000},
+        },
+    }
+    (run / "summary.json").write_text(json.dumps(summary))
+    (run / "events.jsonl").write_text(
+        "\n".join(
+            json.dumps(row)
+            for row in (
+                {
+                    "event_type": "TOOL_CALL_PROPOSED",
+                    "event_id": "proposal-1",
+                    "event_sequence": 1,
+                    "run_id": "run-1",
+                    "task_id": "user_task_0",
+                    "episode_id": "episode-1",
+                    "model_request_id": "request-1",
+                    "call_ref": "call-1",
+                    "data": {"function": "fixture_tool"},
+                },
+                {
+                    "event_type": "TOOL_RUNTIME_STARTED",
+                    "event_id": "runtime-1",
+                    "event_sequence": 2,
+                    "run_id": "run-1",
+                    "task_id": "user_task_0",
+                    "episode_id": "episode-1",
+                    "model_request_id": "request-1",
+                    "call_ref": "call-1",
+                    "data": {"function": "fixture_tool"},
+                },
+            )
+        )
+    )
+    causal_rows = [
+        {
+            "record_type": "causal_analysis",
+            "proposal_event_id": "proposal-1",
+            "call_ref": "call-1",
+            "plan": {"status": "eligible", "probe_count": 1},
+            "request_accounting": {"proposal_attempted": 1},
+            "decision": {
+                "function": "fixture_tool",
+                "status": "predicted_control_positive",
+                "detector_positive": True,
+            },
+            "results": [
+                {
+                    "kind": "single_source",
+                    "source_ids": ["</script><b data-causal-probe='1'>source</b>"],
+                    "status": "valid",
+                    "judgment": {"would_call_anyway": False, "confidence": 0.75},
+                    "elapsed_ns": 1_000_000,
+                }
+            ],
+        },
+        {
+            "record_type": "causal_runtime_timing",
+            "proposal_event_id": "proposal-1",
+            "runtime_event_id": "runtime-1",
+            "call_ref": "call-1",
+            "receipt_before_runtime": True,
+        },
+    ]
+    causal_path = run / "causal-online.jsonl"
+    causal_path.write_text("\n".join(json.dumps(row) for row in causal_rows) + "\n")
+    graph = {
+        "added_nodes": [{"node_id": "source-set-1", "kind": "intervened_source_set"}],
+        "added_edges": [
+            {
+                "edge_id": "prediction-1",
+                "from_node": "source-set-1",
+                "to_node": "sink-1",
+                "relation": "predicted_control",
+                "proposal_event_id": "proposal-1",
+                "detector_positive": True,
+            }
+        ],
+    }
+    graph_path = run / "causal-online-graph.json"
+    graph_path.write_text(json.dumps(graph))
+
+    export_run_html(run)
+    content = (run / "report.html").read_text()
+    parser = ReportParser(content)
+    assert parser.record["causal_online"] == causal_rows
+    assert parser.record["causal_online_graph"] == graph
+    assert parser.record["source_hashes"]["causal-online.jsonl"] == hashlib.sha256(
+        causal_path.read_bytes()
+    ).hexdigest()
+    assert parser.record["source_hashes"]["causal-online-graph.json"] == hashlib.sha256(
+        graph_path.read_bytes()
+    ).hexdigest()
+    assert "Online causal audit" in content
+    assert "Locate proposal in timeline and diagram" in content
+    assert "Typed derived-graph edges" in content
+    assert not any("data-causal-probe" in attrs for _, attrs in parser.tags)
+    assert len(parser.scripts) == 2
+    node = shutil.which("node")
+    if node is not None:
+        script = next(s["text"] for s in parser.scripts if s["attrs"].get("type") != "application/json")
+        checked = subprocess.run([node, "--check"], input=script, text=True, capture_output=True)
+        assert checked.returncode == 0, checked.stderr
+
+
 @pytest.fixture(scope="module")
 def completed_run(tmp_path_factory):
     path = tmp_path_factory.mktemp("html-fixture") / "run"

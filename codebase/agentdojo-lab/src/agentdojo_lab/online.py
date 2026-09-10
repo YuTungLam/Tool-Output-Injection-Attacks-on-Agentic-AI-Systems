@@ -3,7 +3,8 @@
 Only the copied proposal analysis is marked live. Its successful file flush is
 acknowledged by a subsequent receipt. A later runtime event can then establish
 whether the analysis and receipt were available before that recorded boundary.
-There is no action interception, retry, asynchronous worker, or hard timeout.
+An optional isolated causal auditor may run after the explicit analysis receipt.
+Neither result can intercept or rewrite the proposed action.
 """
 
 from __future__ import annotations
@@ -42,6 +43,7 @@ class OnlineProvenance:
         *,
         canary_enabled=False,
         cascade_profile="ordinary",
+        causal_auditor=None,
     ):
         self._lock = threading.RLock()
         self._file = None
@@ -65,6 +67,8 @@ class OnlineProvenance:
         self._proposal_refs = set()
         self._runtime_refs = set()
         self._run_end_seen = False
+        self._causal_auditor = causal_auditor
+        self._causal_bridge_errors = []
         self._policy = policy
         self._lineage = lineage
         self._canary_enabled = canary_enabled
@@ -219,6 +223,24 @@ class OnlineProvenance:
             "analysis_flushed_monotonic_ns": analysis["flushed_monotonic_ns"],
             "receipt_flushed_monotonic_ns": receipt["flushed_monotonic_ns"],
         }
+        if self._causal_auditor is not None:
+            try:
+                if self._lineage is None:
+                    raise ValueError("Online causal audit requires a lineage graph")
+                causal_result = self._causal_auditor.audit_proposal(
+                    event, frozen, self._lineage.snapshot()
+                )
+                self._pending[call_ref]["causal_audit"] = copy.deepcopy(causal_result)
+            except Exception as error:
+                # Causal auditing is optional and observational. An unexpected bridge
+                # failure must not disable explicit provenance or native execution.
+                self._causal_bridge_errors.append(
+                    {
+                        "stage": "proposal",
+                        "error_type": type(error).__name__,
+                        "event_sequence": event.get("event_sequence"),
+                    }
+                )
 
     def _runtime(self, event: dict, started: int) -> None:
         self._stage = "runtime.validate"
@@ -233,6 +255,17 @@ class OnlineProvenance:
             pending[key] != event.get(key) for key in ("run_id", "episode_id", "model_request_id")
         ):
             raise ValueError("Runtime event does not match its proposal identity")
+        if self._causal_auditor is not None:
+            try:
+                self._causal_auditor.runtime(event)
+            except Exception as error:
+                self._causal_bridge_errors.append(
+                    {
+                        "stage": "runtime",
+                        "error_type": type(error).__name__,
+                        "event_sequence": event.get("event_sequence"),
+                    }
+                )
         analysis_before = pending["analysis_flushed_monotonic_ns"] <= runtime_clock if pending else None
         receipt_before = pending["receipt_flushed_monotonic_ns"] <= runtime_clock if pending else None
         self._append(
@@ -248,6 +281,7 @@ class OnlineProvenance:
                 "receipt_record_sequence": pending["receipt_record_sequence"] if pending else None,
                 "analysis_before_runtime": analysis_before,
                 "receipt_before_runtime": receipt_before,
+                "causal_audit": copy.deepcopy(pending.get("causal_audit")) if pending else None,
                 "timing": {
                     "clock": "time.monotonic_ns",
                     "consume_started_monotonic_ns": started,
@@ -343,6 +377,9 @@ class OnlineProvenance:
                     "pending_runtime_count": len(self._pending),
                     "pending_runtime_semantics": "a_proposal_need_not_enter_runtime; pending_is_not_failure",
                     "run_end_seen": self._run_end_seen,
+                    "causal_auditor_attached": self._causal_auditor is not None,
+                    "causal_bridge_error_count": len(self._causal_bridge_errors),
+                    "causal_bridge_errors": self._causal_bridge_errors,
                     "semantic_enabled": self._semantic_enabled,
                     "semantic_status_counts": self._semantic_status_counts,
                     "semantic_comparison_count": sum(self._semantic_status_counts.values()),

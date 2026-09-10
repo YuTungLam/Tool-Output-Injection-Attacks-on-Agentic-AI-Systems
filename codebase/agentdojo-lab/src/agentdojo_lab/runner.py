@@ -63,6 +63,7 @@ class RunConfig(BaseModel):
     request_timeout_seconds: float = Field(default=60.0, gt=0)
     record_events: bool = True
     online_provenance: bool = False
+    online_causal_audit: bool = Field(default=False, exclude_if=lambda value: value is False)
     provenance_policy: str | None = None
     cascade_profile: Literal["ordinary", "implicit_string", "safe_control"] = Field(
         default="ordinary", exclude_if=lambda value: value == "ordinary"
@@ -71,6 +72,15 @@ class RunConfig(BaseModel):
     canary_enabled: bool = False
     semantic_model: str | None = None
     semantic_revision: str | None = None
+    causal_model: str = Field(
+        default="openai/gpt-oss-120b", exclude_if=lambda value: value == "openai/gpt-oss-120b"
+    )
+    causal_max_requests: int = Field(default=8, ge=0, le=32, exclude_if=lambda value: value == 8)
+    causal_max_sources: int = Field(default=8, ge=1, le=8, exclude_if=lambda value: value == 8)
+    causal_max_pairs: int = Field(default=12, ge=0, le=28, exclude_if=lambda value: value == 12)
+    causal_request_timeout_seconds: float = Field(
+        default=60.0, gt=0, exclude_if=lambda value: value == 60.0
+    )
     pacing_tokens_per_minute: int | None = Field(default=None, ge=1000, le=1000000)
 
     @model_validator(mode="after")
@@ -87,6 +97,17 @@ class RunConfig(BaseModel):
             )
         if self.online_provenance and not self.record_events:
             raise ValueError("Online provenance requires event recording")
+        if self.online_causal_audit and (
+            not self.online_provenance
+            or not self.provenance_policy
+            or not self.lineage_namespace
+            or not self.semantic_model
+            or not self.semantic_revision
+        ):
+            raise ValueError(
+                "Online causal audit requires online_provenance, a frozen policy, lineage, "
+                "and a pinned semantic model"
+            )
         if self.provenance_policy is not None and (
             not self.online_provenance or not self.provenance_policy.strip()
         ):
@@ -99,7 +120,7 @@ class RunConfig(BaseModel):
             raise ValueError("Semantic model settings require online_provenance and nonempty values")
         return self
 
-    @field_validator("model", "suite", "benchmark_version")
+    @field_validator("model", "suite", "benchmark_version", "causal_model")
     @classmethod
     def nonempty(cls, value: str) -> str:
         if not value.strip():
@@ -202,6 +223,7 @@ def run_clean(
     output: Path | None = None,
     pacing_state: Path | None = None,
     evaluation: EvaluationTrial | None = None,
+    causal_client=None,
 ) -> dict:
     upstream = require_upstream()
     suites = get_suites(config.benchmark_version)
@@ -221,6 +243,8 @@ def run_clean(
         or config.user_tasks != ["user_task_0"]
     ):
         raise ValueError("Offline smoke supports only workspace v1.2.2 user_task_0.")
+    if causal_client is not None and not config.online_causal_audit:
+        raise ValueError("An injected causal client requires online_causal_audit")
 
     key = "" if offline else configured_key()
     if not offline and not key:
@@ -314,6 +338,38 @@ def run_clean(
             else {},
             "timing_scope": "Model loading excluded; callback compute and flush add latency; no hard deadline",
         },
+        "online_causal_audit": {
+            "enabled": config.online_causal_audit,
+            "mode": (
+                "injected_client"
+                if causal_client is not None
+                else "plan_only"
+                if offline or config.causal_max_requests == 0
+                else "isolated_groq"
+            ),
+            "model": config.causal_model,
+            "max_requests": config.causal_max_requests,
+            "max_sources": config.causal_max_sources,
+            "max_pairs": config.causal_max_pairs,
+            "request_timeout_seconds": config.causal_request_timeout_seconds,
+            "sdk_max_retries": 0,
+            "transport_isolation": "separate_unobserved_client; no_tools",
+            "execution": "synchronous_before_native_tool_runtime; observational_only",
+            "action_enforcement": False,
+            "model_parameter_updates": 0,
+            "implementation_sha256": {
+                name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
+                for name in (
+                    "online_causal.py",
+                    "causal_v2.py",
+                    "causal_v2_audit.py",
+                    "paper_audit.py",
+                    "judgment_formats.py",
+                )
+            }
+            if config.online_causal_audit
+            else {},
+        },
         "attack": None,
         "defense": None,
         "notes": [
@@ -370,12 +426,40 @@ def run_clean(
     recorder = None
     observer = None
     attribution = None
+    attribution_status = {}
+    causal_auditor = None
+    owned_causal_client = None
     results = None
     summary = {"mode": mode, "real_llm": not offline, "run_dir": str(run_dir), "status": "running"}
     try:
         if config.record_events:
             if config.online_provenance:
                 from agentdojo_lab.online import OnlineProvenance
+
+                if config.online_causal_audit:
+                    from agentdojo_lab import judgment_formats
+                    from agentdojo_lab.online_causal import OnlineCausalAuditor
+
+                    judge_client = causal_client
+                    if judge_client is None and not offline and config.causal_max_requests:
+                        owned_causal_client = openai.OpenAI(
+                            api_key=key,
+                            base_url=GROQ_BASE_URL,
+                            max_retries=0,
+                            timeout=config.causal_request_timeout_seconds,
+                        )
+                        judge_client = owned_causal_client
+                    causal_auditor = OnlineCausalAuditor(
+                        run_dir / "causal-online.jsonl",
+                        client=judge_client,
+                        max_requests=config.causal_max_requests,
+                        canary_enabled=config.canary_enabled,
+                        max_sources=config.causal_max_sources,
+                        max_pairs=config.causal_max_pairs,
+                        judgment_format=judgment_formats.ENGLISH_PUNCTUATION_FORMAT,
+                        request_timeout_seconds=config.causal_request_timeout_seconds,
+                        model=config.causal_model,
+                    )
 
                 attribution = OnlineProvenance(
                     run_dir / "provenance.jsonl",
@@ -388,6 +472,7 @@ def run_clean(
                         if config.cascade_profile != "ordinary"
                         else {}
                     ),
+                    **({"causal_auditor": causal_auditor} if causal_auditor is not None else {}),
                 )
             recorder = EventRecorder(
                 run_dir / "events.jsonl",
@@ -548,6 +633,32 @@ def run_clean(
                 if config.online_provenance
                 else {"enabled": False}
             )
+        if causal_auditor is not None:
+            final_graph = lineage.snapshot() if lineage is not None else None
+            causal_auditor.close(final_graph=final_graph)
+            causal_status = causal_auditor.status()
+            subscriber_status = recorder.subscriber_status() if recorder is not None else {"complete": False}
+            summary["online_causal_audit"] = {
+                **causal_status,
+                "enabled": True,
+                "complete": causal_status["complete"]
+                and not attribution_status.get("causal_bridge_error_count", 0)
+                and subscriber_status["complete"]
+                and summary["recording"].get("complete", False),
+                "path": str(run_dir / "causal-online.jsonl"),
+                "derived_graph_path": str(run_dir / "causal-online-graph.json"),
+            }
+        else:
+            summary["online_causal_audit"] = (
+                {"enabled": True, "complete": False}
+                if config.online_causal_audit
+                else {"enabled": False}
+            )
+        if owned_causal_client is not None:
+            try:
+                owned_causal_client.close()
+            except Exception:
+                pass
         if evaluation is not None:
             from agentdojo_lab.evaluation_runner import build_evaluation_summary, payload_exposure_audit
 

@@ -5,26 +5,31 @@
 - Origin Skill: academic-research-suite
 - Origin Mode: paper-to-implementation audit and integration
 - Origin Date: 2026-09-10
-- Verification Status: SOURCE-CHECKED; three retained-trace integrations verified
+- Verification Status: M1–M7 IMPLEMENTED; retained and live runtime integrations verified
 - Version Label: paper-conformance-contract-v1
 
 ## The target and the stopping rule
 
-The user's target is a complete, usable paper-method reimplementation in the
-existing AgentDojo laboratory, followed by experiments that can expose limitations.
-Author-code access is not a prerequisite. The method reference remains
+The user clarified the target on 2026-09-10: independently implement NeuroTaint's
+published method ideas in the existing AgentDojo laboratory, then use controlled
+experiments to investigate reproducible limitations. Matching the authors' code,
+original datasets, framework inventory or numerical tables is outside this task.
+Missing author artifacts do not block it. The method reference remains
 [arXiv v1, Sections 4.1–4.4](https://arxiv.org/html/2604.23374v1#S4).
-The original multi-framework result tables are a distinct replication target.
+Paper details that admit multiple implementations require disclosed choices;
+they do not justify leaving the corresponding operation unimplemented.
 
 Three outcomes must stay separate:
 
 1. **Method implementation complete within the declared adapter and choices.**
-   Every required operation exists, composes into one callable audit, and passes
-   conformance checks. Incorrect detector predictions do not make the code absent.
+   Every required operation exists, connects to the intended agent runtime and
+   passes conformance checks. The completed-trace composer and online causal
+   integration are implemented and verified. Incorrect detector predictions do
+   not make the code absent, while untriggered live branches remain coverage limits.
 2. **Evaluation completed, with supported and unsupported claims recorded.**
    Every frozen trial is accounted for. An unexercised branch is a coverage result;
    an unsuccessful trial is retained. Finishing does not require favorable metrics.
-3. **Original experimental findings reproduced.**
+3. **Optional original-results replication, outside the current task.**
    The original scenario definitions, models, labels, aggregation, baselines and
    measurement scopes must be matched closely enough to support that claim.
 
@@ -43,9 +48,11 @@ this contract. Historical progress files describe their own frozen phases.
 ## Method checklist
 
 The rows below are functional requirements, not equally weighted percentages.
-The missing implementation issue found by this audit was M5; it is now integrated.
-M6 verifies the completed composition on three retained traces. Neither requires
-running new attacks until one succeeds.
+The previous audit completed M5 and verified M6 on three retained traces. M7 now
+connects that composition to the native runtime boundary and records its outputs
+before tool execution. The seven requirements are implemented under the declared
+adapter. Completion does not require running new attacks until one succeeds, and an
+unreached live judge branch remains a coverage result rather than absent code.
 
 | ID | Requirement and completion criterion | Existing implementation | Audit disposition |
 | --- | --- | --- | --- |
@@ -55,12 +62,13 @@ running new attacks until one succeeds.
 | M4 | Eligible sinks invoke single-source planning plus an isolated judge; represent two-source cases using an explicitly declared joint-probe rule; preserve confidence and incomplete results. | `causal_v2.py`, `causal_v2_audit.py`; single/pair binding, missing evidence and request-budget tests. | Implemented under the declared judge interpretation; the two-source decision rule is a local completion of an underspecified detail. |
 | M5 | One entry point joins trace verification, explicit evidence, optional causal auditing, all-sink decisions and a derived provenance graph. Joint-removal evidence must not masquerade as two independent causes. | New `paper_audit.py`; original DCPG/checkpoints remain unchanged. | Integrated; exact source/probe/response bindings tested. |
 | M6 | Verify M5 on retained explicit, implicit and restored-memory evidence; invalid/missing judgments and unselected sinks remain accounted for; outputs and source hashes verify. | Fresh integration receipts and regression tests, with zero new primary trajectories. | Three retained-trace integrations pass; controlled negative, unknown and joint cases covered by tests. |
+| M7 | Trigger isolated causal auditing at eligible runtime sinks using bounded requests and prefix-only context; record typed graph updates, timing, overhead and unknown/error outcomes without changing agent actions or model weights. | `online_causal.py`, `online.py`, `runner.py`, `verify_online_causal.py`, interactive report and native-equivalence tests. | Implemented. A clean live run verified native integration and two pre-runtime receipts; its Tier-2 positive made the causal fallback ineligible, so live judge-request coverage remains unobserved. |
 
 The four fixed local profiles already exist in `profiles.py`. Implicit-string and
 safe-control selection is caller-declared; restored-memory routing uses bound
 ancestry. This audit does not invent an automatic classifier as an extra paper
-requirement. The passive online observer remains available, while the full audit
-is a separate completed-trace operation.
+requirement. The passive online observer remains available. The same proposal
+composer is shared by the completed-trace audit and the opt-in synchronous M7 sidecar.
 
 ## Runnable completion and verified examples
 
@@ -81,6 +89,26 @@ revalidates recorded replies; `--live --max-requests N` explicitly enables the
 existing no-tools transport with a finite budget. Primary agents and tools are
 never rerun by this command. A pending judge remains unknown in the default mode.
 
+Run the online form on a fresh output path, then verify every binding, budget,
+timing relation and derived edge without changing the source run:
+
+```bash
+.venv/bin/dojo-lab run \
+  --config configs/groq_online_causal.toml \
+  --output runs/NEW-online-causal
+
+.venv/bin/python scripts/verify_online_causal.py \
+  --run runs/NEW-online-causal \
+  --output reports/NEW-online-causal-verification.json
+```
+
+The retained clean run is
+[20260910-online-causal-live-v1](runs/20260910-online-causal-live-v1/report.html).
+It completed the native task with two proposals and two matching causal receipts
+before runtime. The first proposal was not a sink; the only selected sink had six
+Tier-2 hits and skipped all causal probes under the implemented routing rule. This
+run therefore does not claim eligible-judge behavior or judge accuracy.
+
 The initial integration attempt passed the explicit case and exposed two local
 compatibility defects. Old auditor plans used a smaller frozen source/pair budget;
 the composer now preserves it and checks an exact recomputation. Old memory files
@@ -95,12 +123,13 @@ The memory decision includes the original session's multi-edge source path.
 Three existing auditor replies are reused; there are zero new generative requests
 or native tool executions. These are integration examples, not an accuracy sample.
 
-The final regression suite passes 1,811 tests, including 29 composer tests and
-the new memory-recording compatibility check; Ruff reports no violations. See
-[the final verification receipt](reports/20260910-paper-conformance-v1/validation-final.json).
-HTML/JSONL language and local links receive static checks. Rendered browser
-interaction is not claimed because the existing local-URL policy restriction
-remains in effect.
+The current regression suite passes 1,848 tests; Ruff and `git diff --check` pass.
+M7 native-equivalence tests preserve primary requests, messages, executed calls,
+environment state, usage and errors with the sidecar enabled. The read-only live
+verifier passes all thirteen checks. The language audit finds no Chinese in 257
+HTML and 525 JSONL files. Automated tests cover the causal-view timeline and diagram
+links; separate browser visual QA is not claimed. See [M7-RESULTS.md](M7-RESULTS.md)
+and the earlier [completed-trace verification receipt](reports/20260910-paper-conformance-v1/validation-final.json).
 
 ## Evidence coverage, not absent code
 
@@ -130,7 +159,8 @@ insufficiently specified for a unique implementation. Its per-source probe rule
 also needs reconciliation with the stated per-sink call cost. Our choices remain
 explicit assumptions, not author-confirmed settings.
 
-For original results, Section 5 uses TaintBench's 400 scenarios, 20 frameworks,
+The following original-results requirements are archival context, not completion
+gates for the current task. For original results, Section 5 uses TaintBench's 400 scenarios, 20 frameworks,
 `gpt-4.1-mini`, five repetitions and majority aggregation. Groq
 `openai/gpt-oss-120b` in AgentDojo is a different setting.
 
@@ -167,8 +197,12 @@ accuracy require additional reference evidence and must retain unknowns.
 
 ## Runtime boundary
 
-The previous automatic security check rejected a new injection subtask. That
-specific execution was not retried or disguised. This conformance audit and the
+The original conversation record at 2026-09-09T23:16:27.446Z reports an errored
+Codex subagent with the message "This content was flagged for possible cybersecurity
+risk" and an OpenAI Trusted Access reference. This is a Codex/OpenAI-side rejection,
+not a recorded Groq HTTP/API rejection or an experimental agent refusal. The exact
+internal classifier is not established by that message. That specific execution
+was not retried or disguised. The completed conformance audit and the
 new integration use existing artifacts and offline tests. They do not remove that
 execution restriction or turn normal-task observations into malicious evidence.
 

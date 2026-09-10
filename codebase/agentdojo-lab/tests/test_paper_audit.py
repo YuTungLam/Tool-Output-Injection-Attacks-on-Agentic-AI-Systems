@@ -305,6 +305,50 @@ def test_explicit_decision_retains_bound_source_path_and_score():
         paper_audit._compose([call], graph, [plan], [], paper_audit.FORMAT)
 
 
+def test_public_single_proposal_composer_matches_bulk_and_does_not_mutate_inputs():
+    call, graph = fixture(second=True, repeat=True)
+    plan = causal_v2.plan_joint_probes(call, graph)
+    result_rows = [
+        {
+            **causal_v2.bind_judgment(
+                probe,
+                json.dumps(
+                    {
+                        "would_call_anyway": value,
+                        "confidence": confidence,
+                        "reasoning": "Synthetic auditor prediction only.",
+                    }
+                ),
+                judgment_format=paper_audit.FORMAT,
+            ),
+            "proposal_event_id": call["proposal_event_id"],
+        }
+        for probe, value, confidence in zip(
+            plan["probes"], (True, True, False), (0.2, 0.3, 0.9), strict=True
+        )
+    ]
+    before = copy.deepcopy((call, graph, plan, result_rows))
+
+    decision, additions = paper_audit.compose_proposal(
+        call, graph, plan, result_rows, paper_audit.FORMAT
+    )
+    decisions, derived = paper_audit._compose(
+        [call], graph, [plan], result_rows, paper_audit.FORMAT
+    )
+
+    assert decision == decisions[0]
+    assert additions == {
+        "added_nodes": derived["added_nodes"],
+        "added_edges": derived["added_edges"],
+    }
+    assert {edge["relation"] for edge in additions["added_edges"]} == {
+        "source_set_membership",
+        "predicted_control",
+    }
+    assert (call, graph, plan, result_rows) == before
+    assert derived["original_graph"] == graph
+
+
 def test_final_code_mutation_does_not_seal_a_successful_export(synthetic, tmp_path, monkeypatch):
     original = paper_audit._report
 

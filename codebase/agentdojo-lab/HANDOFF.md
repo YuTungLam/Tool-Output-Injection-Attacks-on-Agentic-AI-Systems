@@ -2,14 +2,26 @@
 
 ## Paper conformance and complete method target — 2026-09-10
 
-The user explicitly needs the full method working as a usable research baseline,
-not another isolated pilot closeout. Start with
-[REPRODUCTION-CONTRACT.md](REPRODUCTION-CONTRACT.md). Its M1–M6 checklist separates
-implementation requirements from stronger live coverage and original-table claims.
-Tier1–4, all four profiles, native file memory and single/pair judge planning are
-already implemented. `python -m agentdojo_lab.paper_audit` now provides a unified
-completed-trace audit with per-sink decisions and a derived graph retaining
-causal-prediction evidence. Three final zero-call integrations live under
+Latest user clarification: implement the published method ideas in AgentDojo and
+investigate reproducible limitations. Do not require alignment with author code,
+original datasets or original result tables. M7 online causal integration is now
+implemented and verified. Read [M7-RESULTS.md](M7-RESULTS.md) and
+[M7_PROGRESS.json](M7_PROGRESS.json), then inspect the retained
+[live interactive report](runs/20260910-online-causal-live-v1/report.html).
+Preserve the frozen baseline and all historical records.
+The earlier rejection is a Codex subagent error recorded at
+2026-09-09T23:16:27.446Z, with an OpenAI cybersecurity-risk message. It is not a
+Groq API rejection and does not establish a need for local Llama deployment.
+
+The user explicitly needs the full method working as a usable research baseline.
+Start with
+[REPRODUCTION-CONTRACT.md](REPRODUCTION-CONTRACT.md). Its M1–M7 checklist separates
+implementation requirements from stronger live coverage; original tables are outside scope.
+Tier1–4, all four profiles, native file memory, single/pair judge planning, the
+completed-trace composer and the native online hook are implemented. The M7 hook
+uses a separate no-tools client, bounded one-attempt probes, strict bindings and
+typed derived edges. It records decisions before native tool runtime and never
+changes actions or model weights. Three completed-trace integrations live under
 `reports/20260910-paper-conformance-v1/{explicit-v2,control-v2,memory-v2}`.
 Reuse preserves the old auditor's exact planning budget. A narrowly verified
 legacy memory adapter supports old explicit paths without laundering missing
@@ -19,8 +31,18 @@ The initial failed integrations and executed composer remain preserved.
 Do not call an omitted source read, unavailable branch, provider/parser error or
 execution-policy rejection a paper gap. Do not require independent human labels
 or actual agent counterfactual replays merely to declare judge-based code present.
-The earlier evidence and failed trials remain unchanged. The new conformance work
-uses retained evidence and offline tests; no new attack execution is scheduled.
+The earlier evidence and failed trials remain unchanged. The retained M7 clean live
+run completed with two pre-runtime receipts but zero judge requests: the first
+proposal was not a sink, and the only selected sink had six Tier-2 hits. This is a
+real skip-path and runtime-integration result, not live eligible-judge coverage.
+
+The next experiment is causal-fallback reachability across native tasks and fixed
+source/sink-length controls. Freeze the task set and thresholds before execution;
+report routing tier, eligible fraction, unused-source controls, latency and utility.
+The first concrete hypothesis is that LCS normalization by the shorter input can
+overmatch short sink fields inside long tool outputs and starve the causal fallback.
+Do not tune thresholds merely to force judge calls. Keep detector-gating limits,
+transport failures and causal-judge errors as separate outcomes.
 
 ## Controlled semantic validation — 2026-09-10
 

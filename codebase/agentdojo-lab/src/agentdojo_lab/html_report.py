@@ -85,6 +85,40 @@ def collect_run_record(run_dir: Path, *, summary: dict | None = None) -> dict:
             warnings.append(
                 "Online attribution is incomplete. Saved candidates are provisional; inspect timing and errors."
             )
+    causal_online = []
+    causal_online_path = run_dir / "causal-online.jsonl"
+    if causal_online_path.exists():
+        if not causal_online_path.resolve().is_relative_to(run_dir):
+            warnings.append("causal-online.jsonl resolves outside the run directory and was excluded")
+        else:
+            raw = causal_online_path.read_bytes()
+            hashes["causal-online.jsonl"] = hashlib.sha256(raw).hexdigest()
+            for index, line in enumerate(raw.decode("utf-8", errors="replace").splitlines(), 1):
+                try:
+                    row = json.loads(line)
+                    if not isinstance(row, dict):
+                        raise ValueError("expected causal audit object")
+                    causal_online.append(row)
+                except ValueError:
+                    warnings.append(
+                        f"Cannot parse causal-online.jsonl line {index}; the original file is preserved"
+                    )
+    causal_online_graph = (
+        read_json(run_dir / "causal-online-graph.json")
+        if (run_dir / "causal-online-graph.json").exists()
+        else None
+    )
+    if selected_summary.get("online_causal_audit", {}).get("enabled"):
+        if not causal_online:
+            warnings.append(
+                "Online causal audit is enabled, but no causal-online.jsonl records were embedded."
+            )
+        if selected_summary["online_causal_audit"].get("complete") is not True:
+            warnings.append(
+                "Online causal audit is incomplete. Treat unresolved predictions and timing as unknown."
+            )
+        if causal_online_graph is None:
+            warnings.append("The online causal derived graph is unavailable.")
     lineage_state = (
         read_json(run_dir / "lineage-state.json") if (run_dir / "lineage-state.json").exists() else None
     )
@@ -105,6 +139,12 @@ def collect_run_record(run_dir: Path, *, summary: dict | None = None) -> dict:
         "summary": selected_summary,
         "events": events,
         "provenance": provenance,
+        "causal_online": causal_online,
+        **(
+            {"causal_online_graph": causal_online_graph}
+            if causal_online_graph is not None
+            else {}
+        ),
         **({"lineage_state": lineage_state} if lineage_state is not None else {}),
         "audit": audit,
         "native": native,

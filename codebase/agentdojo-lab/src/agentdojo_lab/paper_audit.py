@@ -272,200 +272,214 @@ def _verified_auditor(folder, source, plans):
     return verified, format_name, before
 
 
-def _compose(calls, graph, plans, rows, format_name):
-    """Keep structural membership, explicit evidence and causal predictions distinct."""
+def compose_proposal(call, graph, plan, rows, judgment_format):
+    """Compose one proposal without mutating its recorded call, plan, rows, or graph."""
     nodes = {n["node_id"]: n for n in graph["nodes"]}
     edges = {e["edge_id"]: e for e in graph["edges"]}
     labels = {label["label_id"]: label for label in graph["registry"]}
+    identifier = call["proposal_event_id"]
+    if plan.get("proposal_event_id") != identifier:
+        raise ValueError("Proposal inventory mismatch")
+    sink_node = call["lineage"]["node_id"]
+    if sink_node not in nodes or nodes[sink_node].get("proposal_event_id") != identifier:
+        raise ValueError("Sink graph node is not bound to the proposal")
+    explicit = []
+    for path in call["lineage"].get("paths", []):
+        label_id, route = path["label_id"], path["edge_ids"]
+        if label_id not in labels or not route:
+            raise ValueError("Explicit path lacks its source label")
+        cursor = labels[label_id]["origin_node_id"]
+        for edge_id in route:
+            edge = edges.get(edge_id, {})
+            if edge.get("from_node") != cursor or label_id not in edge.get("label_ids", []):
+                raise ValueError("Explicit source path is disconnected or incorrectly labelled")
+            cursor = edge["to_node"]
+        if cursor != sink_node or edge.get("relation") != "candidate_content" or not edge.get("tier"):
+            raise ValueError("Explicit path does not terminate in scored sink evidence")
+        explicit.append(
+            {
+                "source_id": labels[label_id]["source_id"],
+                "label_id": label_id,
+                "edge_ids": route,
+                "detector_positive": True,
+                "evidence_kind": "explicit_cascade",
+                "tier": edge["tier"],
+                "evidence_score": edge["evidence_score"],
+            }
+        )
+    if not explicit and (
+        any(
+            pair.get("matched") is True
+            for field in call.get("fields", [])
+            for pair in field.get("nt_style_cascade", [])
+        )
+        or any(pair.get("matched") is True for pair in call["lineage"].get("comparisons", []))
+    ):
+        raise ValueError("Explicit detector match lacks a bound graph path")
+    bound = [r for r in rows if r["proposal_event_id"] == identifier]
+    by_probe = {r["probe_id"]: r for r in bound}
+    predictions = causal_v2.summarize_joint_results(
+        plan, bound, judgment_format=judgment_format
+    )
+    source_sets, added_nodes, added_edges = [], [], []
+    for probe in plan["probes"]:
+        row = by_probe.get(probe["probe_id"], {})
+        known = row.get("status") == "valid"
+        flag = not row["judgment"]["would_call_anyway"] if known else None
+        decision = {
+            "probe_id": probe["probe_id"],
+            "binding_sha256": probe["binding_sha256"],
+            "source_ids": probe["source_ids"],
+            "kind": probe["kind"],
+            "detector_positive": flag,
+            "evidence_kind": "auditor_prediction",
+            "confidence": row["judgment"]["confidence"] if known else None,
+            "confidence_scope": "self_reported_judge_confidence; not_calibrated_correctness",
+            "status": "predicted_control_positive"
+            if flag
+            else "predicted_no_control"
+            if flag is False
+            else "unknown",
+            "reason": row.get("reason", "missing_judgment"),
+        }
+        source_sets.append(decision)
+        if flag is not True:
+            continue
+        origin_ids = set(probe["origin_source_ids"])
+        members = [label for label in labels.values() if label["source_id"] in origin_ids]
+        if {label["source_id"] for label in members} != origin_ids:
+            raise ValueError("Predicted source set lacks its direct or restored origin labels")
+        group_id = "audit-source-set:" + _hash([identifier, probe["binding_sha256"]])
+        added_nodes.append(
+            {
+                "node_id": group_id,
+                "kind": "intervened_source_set",
+                "source_ids": probe["source_ids"],
+                "origin_source_ids": sorted(origin_ids),
+                "label_ids": sorted(label["label_id"] for label in members),
+                "lineage_refs": copy.deepcopy(probe["lineage"]),
+                "interpretation": "Joint removal or carrier ancestry does not identify each member as an independent cause",
+            }
+        )
+        for member in members:
+            if member["origin_node_id"] not in nodes:
+                raise ValueError("Restored origin graph node is missing")
+            added_edges.append(
+                {
+                    "edge_id": "audit-membership:" + _hash([group_id, member["label_id"]]),
+                    "from_node": member["origin_node_id"],
+                    "to_node": group_id,
+                    "relation": "source_set_membership",
+                    "evidence_kind": "structural_membership",
+                    "label_ids": [member["label_id"]],
+                    "detector_positive": None,
+                }
+            )
+        added_edges.append(
+            {
+                "edge_id": "audit-prediction:" + _hash([group_id, sink_node]),
+                "from_node": group_id,
+                "to_node": sink_node,
+                "relation": "predicted_control",
+                "proposal_event_id": identifier,
+                **decision,
+            }
+        )
+    selected = call["policy"]["sink"]["selected"]
+    positives = [s for s in source_sets if s["detector_positive"] is True]
+    status, flag = "unknown", None
+    if not selected:
+        status = "not_selected"
+    elif explicit:
+        status, flag = "explicit_positive", True
+    elif positives:
+        status, flag = "predicted_control_positive", True
+    elif predictions["complete"]:
+        status, flag = "negative_under_tested_interventions", False
+    elif plan["reason"] == "no_eligible_source" and not call["policy"].get(
+        "unclassified_source_count"
+    ):
+        status, flag = "negative_no_policy_source", False
+    single_positives = [s for s in positives if s["kind"] == "single_source"]
+    highest = max((s["confidence"] for s in single_positives), default=None)
+    decision = {
+        "proposal_event_id": identifier,
+        "sink_node_id": sink_node,
+        "function": call["function"],
+        "selected_sink": selected,
+        "status": status,
+        "detector_positive": flag,
+        "explicit_evidence": explicit,
+        "explicit_pair_inventory": [
+            {
+                "argument_path": field["argument_path"],
+                "origin_scope": "direct_visible",
+                **{
+                    key: pair.get(key)
+                    for key in (
+                        "source_id",
+                        "status",
+                        "matched",
+                        "complete",
+                        "truncated",
+                        "first_matched_tier",
+                    )
+                },
+            }
+            for field in call.get("fields", [])
+            for pair in field.get("nt_style_cascade", [])
+        ]
+        + [
+            {
+                "origin_scope": "restored_memory",
+                **{
+                    key: pair.get(key)
+                    for key in (
+                        "argument_path",
+                        "label_id",
+                        "carrier_source_id",
+                        "status",
+                        "matched",
+                        "complete",
+                        "truncated",
+                        "first_matched_tier",
+                    )
+                },
+            }
+            for pair in call["lineage"].get("comparisons", [])
+        ],
+        "source_set_decisions": source_sets,
+        "highest_confidence_singleton_sources": [
+            s["source_ids"][0] for s in single_positives if s["confidence"] == highest
+        ],
+        "conservatively_reported_joint_source_sets": [
+            p["source_ids"] for p in predictions["pairs"] if p["pattern"] == "predicted_AND_like"
+        ],
+        "source_selection_scope": "Highest self-reported positive singleton confidence, retaining ties; pair scores are not ranked against singletons",
+        "prediction_summary": predictions,
+        "plan_status": plan["status"],
+        "plan_reason": plan["reason"],
+        "decision_resolved": flag is not None or status == "not_selected",
+        "causal_coverage_complete": predictions["complete"],
+        "maliciousness": "not_assessed",
+        "independent_causal_accuracy": None,
+    }
+    return decision, {"added_nodes": added_nodes, "added_edges": added_edges}
+
+
+def _compose(calls, graph, plans, rows, format_name):
+    """Keep structural membership, explicit evidence and causal predictions distinct."""
     planned = {p["proposal_event_id"]: p for p in plans}
     if len(planned) != len(calls) or set(planned) != {c["proposal_event_id"] for c in calls}:
         raise ValueError("Proposal inventory mismatch")
     verdicts, added_nodes, added_edges = [], [], []
     for call in calls:
-        identifier = call["proposal_event_id"]
-        plan = planned[identifier]
-        sink_node = call["lineage"]["node_id"]
-        if sink_node not in nodes or nodes[sink_node].get("proposal_event_id") != identifier:
-            raise ValueError("Sink graph node is not bound to the proposal")
-        explicit = []
-        for path in call["lineage"].get("paths", []):
-            label_id, route = path["label_id"], path["edge_ids"]
-            if label_id not in labels or not route:
-                raise ValueError("Explicit path lacks its source label")
-            cursor = labels[label_id]["origin_node_id"]
-            for edge_id in route:
-                edge = edges.get(edge_id, {})
-                if edge.get("from_node") != cursor or label_id not in edge.get("label_ids", []):
-                    raise ValueError("Explicit source path is disconnected or incorrectly labelled")
-                cursor = edge["to_node"]
-            if cursor != sink_node or edge.get("relation") != "candidate_content" or not edge.get("tier"):
-                raise ValueError("Explicit path does not terminate in scored sink evidence")
-            explicit.append(
-                {
-                    "source_id": labels[label_id]["source_id"],
-                    "label_id": label_id,
-                    "edge_ids": route,
-                    "detector_positive": True,
-                    "evidence_kind": "explicit_cascade",
-                    "tier": edge["tier"],
-                    "evidence_score": edge["evidence_score"],
-                }
-            )
-        if not explicit and (
-            any(
-                pair.get("matched") is True
-                for field in call.get("fields", [])
-                for pair in field.get("nt_style_cascade", [])
-            )
-            or any(pair.get("matched") is True for pair in call["lineage"].get("comparisons", []))
-        ):
-            raise ValueError("Explicit detector match lacks a bound graph path")
-        bound = [r for r in rows if r["proposal_event_id"] == identifier]
-        by_probe = {r["probe_id"]: r for r in bound}
-        predictions = causal_v2.summarize_joint_results(plan, bound, judgment_format=format_name)
-        source_sets = []
-        for probe in plan["probes"]:
-            row = by_probe.get(probe["probe_id"], {})
-            known = row.get("status") == "valid"
-            flag = not row["judgment"]["would_call_anyway"] if known else None
-            decision = {
-                "probe_id": probe["probe_id"],
-                "binding_sha256": probe["binding_sha256"],
-                "source_ids": probe["source_ids"],
-                "kind": probe["kind"],
-                "detector_positive": flag,
-                "evidence_kind": "auditor_prediction",
-                "confidence": row["judgment"]["confidence"] if known else None,
-                "confidence_scope": "self_reported_judge_confidence; not_calibrated_correctness",
-                "status": "predicted_control_positive"
-                if flag
-                else "predicted_no_control"
-                if flag is False
-                else "unknown",
-                "reason": row.get("reason", "missing_judgment"),
-            }
-            source_sets.append(decision)
-            if flag is not True:
-                continue
-            origin_ids = set(probe["origin_source_ids"])
-            members = [label for label in labels.values() if label["source_id"] in origin_ids]
-            if {label["source_id"] for label in members} != origin_ids:
-                raise ValueError("Predicted source set lacks its direct or restored origin labels")
-            group_id = "audit-source-set:" + _hash([identifier, probe["binding_sha256"]])
-            added_nodes.append(
-                {
-                    "node_id": group_id,
-                    "kind": "intervened_source_set",
-                    "source_ids": probe["source_ids"],
-                    "origin_source_ids": sorted(origin_ids),
-                    "label_ids": sorted(label["label_id"] for label in members),
-                    "lineage_refs": copy.deepcopy(probe["lineage"]),
-                    "interpretation": "Joint removal or carrier ancestry does not identify each member as an independent cause",
-                }
-            )
-            for member in members:
-                if member["origin_node_id"] not in nodes:
-                    raise ValueError("Restored origin graph node is missing")
-                added_edges.append(
-                    {
-                        "edge_id": "audit-membership:" + _hash([group_id, member["label_id"]]),
-                        "from_node": member["origin_node_id"],
-                        "to_node": group_id,
-                        "relation": "source_set_membership",
-                        "evidence_kind": "structural_membership",
-                        "label_ids": [member["label_id"]],
-                        "detector_positive": None,
-                    }
-                )
-            added_edges.append(
-                {
-                    "edge_id": "audit-prediction:" + _hash([group_id, sink_node]),
-                    "from_node": group_id,
-                    "to_node": sink_node,
-                    "relation": "predicted_control",
-                    "proposal_event_id": identifier,
-                    **decision,
-                }
-            )
-        selected = call["policy"]["sink"]["selected"]
-        positives = [s for s in source_sets if s["detector_positive"] is True]
-        status, flag = "unknown", None
-        if not selected:
-            status = "not_selected"
-        elif explicit:
-            status, flag = "explicit_positive", True
-        elif positives:
-            status, flag = "predicted_control_positive", True
-        elif predictions["complete"]:
-            status, flag = "negative_under_tested_interventions", False
-        elif plan["reason"] == "no_eligible_source" and not call["policy"].get("unclassified_source_count"):
-            status, flag = "negative_no_policy_source", False
-        single_positives = [s for s in positives if s["kind"] == "single_source"]
-        highest = max((s["confidence"] for s in single_positives), default=None)
-        verdicts.append(
-            {
-                "proposal_event_id": identifier,
-                "sink_node_id": sink_node,
-                "function": call["function"],
-                "selected_sink": selected,
-                "status": status,
-                "detector_positive": flag,
-                "explicit_evidence": explicit,
-                "explicit_pair_inventory": [
-                    {
-                        "argument_path": field["argument_path"],
-                        "origin_scope": "direct_visible",
-                        **{
-                            key: pair.get(key)
-                            for key in (
-                                "source_id",
-                                "status",
-                                "matched",
-                                "complete",
-                                "truncated",
-                                "first_matched_tier",
-                            )
-                        },
-                    }
-                    for field in call.get("fields", [])
-                    for pair in field.get("nt_style_cascade", [])
-                ]
-                + [
-                    {
-                        "origin_scope": "restored_memory",
-                        **{
-                            key: pair.get(key)
-                            for key in (
-                                "argument_path",
-                                "label_id",
-                                "carrier_source_id",
-                                "status",
-                                "matched",
-                                "complete",
-                                "truncated",
-                                "first_matched_tier",
-                            )
-                        },
-                    }
-                    for pair in call["lineage"].get("comparisons", [])
-                ],
-                "source_set_decisions": source_sets,
-                "highest_confidence_singleton_sources": [
-                    s["source_ids"][0] for s in single_positives if s["confidence"] == highest
-                ],
-                "conservatively_reported_joint_source_sets": [
-                    p["source_ids"] for p in predictions["pairs"] if p["pattern"] == "predicted_AND_like"
-                ],
-                "source_selection_scope": "Highest self-reported positive singleton confidence, retaining ties; pair scores are not ranked against singletons",
-                "prediction_summary": predictions,
-                "plan_status": plan["status"],
-                "plan_reason": plan["reason"],
-                "decision_resolved": flag is not None or status == "not_selected",
-                "causal_coverage_complete": predictions["complete"],
-                "maliciousness": "not_assessed",
-                "independent_causal_accuracy": None,
-            }
+        decision, additions = compose_proposal(
+            call, graph, planned[call["proposal_event_id"]], rows, format_name
         )
+        verdicts.append(decision)
+        added_nodes.extend(additions["added_nodes"])
+        added_edges.extend(additions["added_edges"])
     return verdicts, {
         "schema_version": 1,
         "protocol": PROTOCOL + "-derived-graph",

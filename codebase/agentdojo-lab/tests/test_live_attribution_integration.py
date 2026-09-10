@@ -42,14 +42,20 @@ def read_lines(path):
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
-def run_native(tmp_path, script, *, enabled, matcher=None, query_count=1):
+def run_native(tmp_path, script, *, enabled, matcher=None, query_count=1, sidecar_builder=None):
     """Run the same actual SDK/native runtime path with only the sidecar changed."""
     tmp_path.mkdir()
     requests, executed, runtime_observations = [], [], []
     runtime = native.note_runtime(executed)
     original_runtime = runtime.run_function
     provenance_path = tmp_path / "provenance.jsonl"
-    sidecar = OnlineProvenance(provenance_path, semantic_matcher=matcher) if enabled else None
+    sidecar = (
+        sidecar_builder(provenance_path)
+        if enabled and sidecar_builder is not None
+        else OnlineProvenance(provenance_path, semantic_matcher=matcher)
+        if enabled
+        else None
+    )
     recorder = EventRecorder(
         tmp_path / "events.jsonl",
         "same-fixture-run",
@@ -150,6 +156,122 @@ def test_sidecar_preserves_requests_actions_and_environment_and_flushes_before_t
         assert timing["analysis_before_runtime"] is True
         assert timing["receipt_before_runtime"] is True
         assert timing["timing"]["analysis_flushed_monotonic_ns"] <= start["monotonic_ns"]
+
+
+def test_m7_online_causal_is_isolated_bound_and_non_enforcing_on_native_runtime(tmp_path):
+    from test_causal_v2 import NegativeSemantic
+
+    from agentdojo_lab.lineage import DCPG
+    from agentdojo_lab.online_causal import OnlineCausalAuditor
+    from agentdojo_lab.policy import ToolPolicy
+
+    script = [
+        native.tool_message(native.tool_call("read_note", {"labels": ["alpha"]}, "read-1")),
+        native.tool_message(
+            native.tool_call("update_note", {"text": "ZXQJ QVBN"}, "write-1"),
+            native.tool_call("update_note", {"text": "Original note."}, "write-2"),
+        ),
+        native.final_message(),
+    ]
+    baseline = run_native(tmp_path / "disabled", script, enabled=False)
+    policy = ToolPolicy.from_dict(
+        {
+            "schema_version": 1,
+            "policy_id": "m7-native-fixture",
+            "suite": "workspace",
+            "benchmark_version": "v1.2.2",
+            "sources": {
+                "read_note": {
+                    "output_scope": "visible_text",
+                    "rationale": "Fixture external note content.",
+                }
+            },
+            "sinks": {
+                "update_note": {
+                    "argument_paths": ["/text"],
+                    "rationale": "Fixture state-changing note update.",
+                }
+            },
+            "neutral_tools": {},
+        }
+    )
+    matcher = NegativeSemantic()
+    lineage = DCPG("m7-native-fixture", policy)
+    judge_requests = []
+
+    def judge_response(request):
+        body = json.loads(request.content)
+        judge_requests.append(body)
+        assert not {"tools", "tool_choice", "functions", "function_call"}.intersection(body)
+        return httpx.Response(
+            200,
+            json={
+                "id": "isolated-m7-judge",
+                "object": "chat.completion",
+                "created": 0,
+                "model": "openai/gpt-oss-120b",
+                "choices": [
+                    {
+                        "index": 0,
+                        "finish_reason": "stop",
+                        "message": {
+                            "role": "assistant",
+                            "content": json.dumps(
+                                {
+                                    "would_call_anyway": False,
+                                    "confidence": 0.8,
+                                    "reasoning": "The recorded source changes this predicted call.",
+                                }
+                            ),
+                        },
+                    }
+                ],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
+            },
+        )
+
+    judge_client = openai.OpenAI(
+        api_key="isolated-fixture-key",
+        base_url="https://isolated-m7.invalid/v1",
+        max_retries=0,
+        http_client=httpx.Client(transport=httpx.MockTransport(judge_response)),
+    )
+    causal = None
+
+    def build_sidecar(path):
+        nonlocal causal
+        causal = OnlineCausalAuditor(path.with_name("causal-online.jsonl"), client=judge_client)
+        return OnlineProvenance(
+            path,
+            semantic_matcher=matcher,
+            policy=policy,
+            lineage=lineage,
+            causal_auditor=causal,
+        )
+
+    enabled = run_native(
+        tmp_path / "enabled", script, enabled=True, sidecar_builder=build_sidecar
+    )
+    assert causal is not None
+    causal.close(final_graph=lineage.snapshot())
+    judge_client.close()
+
+    assert_native_equal(baseline, enabled)
+    status = causal.status()
+    assert status["complete"] is True
+    assert status["request_count"] == len(judge_requests) == 1
+    assert status["before_runtime_verified_count"] == 3
+    assert enabled["sidecar_status"]["causal_bridge_error_count"] == 0
+    assert len(native.of_type(enabled["events"], "MODEL_REQUEST")) == len(enabled["requests"])
+    rows = read_lines(tmp_path / "enabled" / "causal-online.jsonl")
+    assert len([row for row in rows if row["record_type"] == "causal_analysis"]) == 3
+    assert all(
+        row["receipt_before_runtime"] is True
+        for row in rows
+        if row["record_type"] == "causal_runtime_timing"
+    )
+    graph = json.loads((tmp_path / "enabled" / "causal-online-graph.json").read_text())
+    assert "predicted_control" in {edge["relation"] for edge in graph["added_edges"]}
 
 
 def test_live_results_equal_prefix_replay_and_same_response_cannot_see_later_results(tmp_path):
