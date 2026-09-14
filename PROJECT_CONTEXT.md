@@ -212,6 +212,12 @@ No Scout inference or new research trajectory has occurred. Preparation job
 evidence is retained in
 `/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/` outside Git.
 
+Git synchronization: implementation checkpoint **`7ebce74`** was pushed to
+`origin/codex/agentdojo-lab` on 2026-09-14. SSH authentication verified repository
+owner `YuTungLam`, and local/remote heads matched after the push. The live
+preparation jobs continue under Slurm independently of this chat; inspect their
+terminal receipts before calling the local deployment verified.
+
 ## Moving between devices
 
 Git syncs tracked code, configurations, and these context files on the selected
