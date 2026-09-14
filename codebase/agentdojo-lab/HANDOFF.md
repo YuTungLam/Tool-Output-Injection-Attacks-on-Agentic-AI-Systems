@@ -39,11 +39,15 @@ The benign mock fixture is `reports/20260915-paired-report-fixture-v2/index.html
 The updated HPC suite passed 28 tests plus 25 subtests. These are new 2026-09-15
 checks, distinct from the historical full-suite totals above.
 
-A Case A implementation subagent was stopped by a platform security-risk flag.
-Its unfinished draft was preserved outside active source and was not executed by
-the root agent; no research model calls occurred. Read
-[RESEARCH_PROGRESS.md](../../RESEARCH_PROGRESS.md) for the restriction, preserved
-hash manifest, percentage and run-by-run outcomes before continuing that work.
+The first Case A implementation subagent was stopped by a platform security-risk
+flag. Its unfinished draft and hash manifest remain preserved outside active
+source. A Daybreak Blue retry in the current Codex workspace verified those hashes,
+reviewed the bounded simulated-tool design, restored and completed the active
+runner. The combined Case A, report, runner and provider selection passed 84 tests;
+Ruff and Python compilation passed, while `prepare` made zero model requests.
+This confirms Daybreak access only for the current Codex product surface. Read
+[RESEARCH_PROGRESS.md](../../RESEARCH_PROGRESS.md) for the original restriction,
+retry evidence, percentage and run-by-run outcomes. No Scout research call occurred.
 
 ### Implemented local transport and usage
 
@@ -111,9 +115,11 @@ not leave a server available for a later native run.
   attribution accuracy, propagation failures, or end-to-end attack success.
 
 Next: inspect scheduled GPU smoke `9039289` and verify actual Scout tool calls.
-Keep the recorded Case A platform restriction separate from infrastructure
-results; resolve it before continuing that stopped implementation. Preserve
-failures and unavailable evidence, and update root progress from terminal receipts.
+After the same serving job records passing synthetic and native smoke receipts,
+use [CASE-A-SCOUT-V1.md](CASE-A-SCOUT-V1.md) to bind and run the clean/attacked
+slots. Keep the original Case A platform restriction separate from infrastructure
+and research outcomes. Preserve failures and unavailable evidence, and update
+root progress from terminal receipts.
 
 The dated sections below are historical context. Their former next steps and
 local-only/no-push notes do not override the new direction and cross-device

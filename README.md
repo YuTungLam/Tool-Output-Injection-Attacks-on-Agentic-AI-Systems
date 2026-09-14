@@ -22,8 +22,8 @@ implementation, and interactive experiment reports.
 propagation case studies. Historical large evaluation plans are deferred. The
 local endpoint adapter is tested, and Scout is authenticated, downloaded and
 checksum-verified. The container retry passed; GPU smoke `9039289` is queued.
-The offline paired exporter is verified. Scout inference and the new pilot have
-not run. See [progress and per-run results](RESEARCH_PROGRESS.md), [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15)
+The offline paired exporter and bounded Case A runner are verified. Scout inference
+and the new pilot have not run. See [progress and per-run results](RESEARCH_PROGRESS.md), [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15)
 and HPC_SETUP.md for the remaining work and retained job outcomes.
 
 ## Continuing on another device

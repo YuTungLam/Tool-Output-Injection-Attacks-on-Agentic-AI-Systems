@@ -12,6 +12,8 @@ all 63 pinned model files passed their checksums. Rechecked 2026-09-15:
 the first container/GPU attempts failed or were cancelled; retry `9039259` passed
 and GPU smoke `9039289` is queued. Scout inference remains unverified. The offline
 single-episode pair exporter passed 38 tests; use `scripts/report_trace_pair.py`.
+The bounded [Scout Case A v1](CASE-A-SCOUT-V1.md) runner is also implemented and
+its 84-test runner/provider/report selection passes, with zero live model requests.
 See [progress/results](../../RESEARCH_PROGRESS.md) and [the supervisor checklist](../../RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15). Historical
 run/HTML bundles still need separate transfer. The large evaluation below remains
 deferred: its ledger records zero started native trajectories and no frozen native

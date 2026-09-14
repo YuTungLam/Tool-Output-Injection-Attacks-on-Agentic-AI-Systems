@@ -27,9 +27,10 @@ That does not complete the supervisor's new experimental deliverables.
   the failed first attempt and reusing the verified Scout model.
 - GPU smoke **9039289 is waiting for scheduling priority**, with preparation complete. It checks
   synthetic function calls and one benign native AgentDojo task before research.
-- The offline single-episode comparison is implemented and verified. Case A implementation was stopped
-  by a platform security flag; its incomplete draft is preserved outside active
-  source. Proposed payloads and offline fixtures are not live results.
+- The offline single-episode comparison and bounded Case A runner are implemented
+  and verified. The first Case A attempt's platform flag and quarantined draft
+  remain preserved; Daybreak Blue completed the retry on this Codex surface.
+  Proposed payloads and offline fixtures are not live results.
 
 ## Run-by-run results
 
@@ -180,11 +181,12 @@ that defect was fixed before the passing report was exported to a new directory.
 This component handles single-episode tool-proposal comparisons. Assistant prose,
 cross-session alignment and causal attribution remain outside its scope. The
 combined exporter/local-case-runner prerequisite is therefore still unchecked;
-the selected local runners and joint/replay support are unfinished.
+the Case A runner is now implemented, while joint/replay and cross-session support
+are unfinished.
 
 ### Case A implementation attempt — stopped by platform
 
-The implementation subagent ended with the platform message **“This content was
+The first implementation subagent ended with the platform message **“This content was
 flagged for possible cybersecurity risk.”** This is a Codex/platform tooling
 restriction, not a Hugging Face authentication failure, Scout refusal, detector
 prediction, or research attack result. No research model requests were made.
@@ -192,10 +194,35 @@ prediction, or research attack result. No research model requests were made.
 Four incomplete draft files were moved byte-for-byte out of active source into
 `codebase/agentdojo-lab/reports/20260915-scout-continuation-v2/quarantined-case-a-draft/`.
 `quarantine.json` records their original paths and SHA-256 hashes. The root agent
-did not finish or execute the stopped draft. It is not an accepted runnable
-protocol, and the Case A preparation checkbox remains incomplete. The unaffected
-container recovery and offline comparison continued. Resolving this platform
-restriction is required before continuing that stopped implementation task.
+did not finish or execute that stopped draft. At that checkpoint it was not an
+accepted runnable protocol. The unaffected container recovery and offline
+comparison continued.
+
+### Case A Daybreak Blue retry — offline implementation passed
+
+A Daybreak Blue worker started successfully in the current Codex workspace,
+confirming access for this product surface. It first matched all four preserved
+files against `quarantine.json`, independently reviewed the bounded simulated-tool
+scope, restored them as active source, and completed the runner, tests and protocol.
+This does not establish Daybreak access for a separate API organization, project,
+or product surface.
+
+Root verification passed **84 selected Case A, paired-report, runner and local-provider
+tests** in 21.67 seconds. Ruff and Python compilation passed. The CLI `prepare`
+path returned `prepared_not_executed` with **0 model requests**. Outcome extraction
+requires a unique, ordered proposal → runtime start → runtime return chain with
+matching function and arguments, explicit null error fields, and an identical new
+native sent-email object. Malformed, return-only and duplicate evidence remains
+unconfirmed. Native attachment `19` serializes as `attachments: ["19"]`.
+
+The active protocol is [CASE-A-SCOUT-V1.md](codebase/agentdojo-lab/CASE-A-SCOUT-V1.md),
+and implementation checkpoint **`6071eb0`** is pushed to
+`origin/codex/agentdojo-lab`. The original quarantine was not altered. No live
+Scout call, research trajectory, Slurm submission, sink outcome or attack result
+was produced. Live execution remains gated by same-job passing synthetic and
+benign native smoke receipts; job `9039289` is still pending scheduling priority.
+The checklist remains **8/25 (32%)** and new experimental deliverables remain
+**0/13**.
 
 ## Evidence locations and continuing work
 
@@ -211,7 +238,7 @@ A running or queued job has no percentage estimate unless its own instrumentatio
 provides a measurable denominator. See [HPC_SETUP.md](HPC_SETUP.md) for pins,
 resources, current job IDs, and the next deployment gate.
 
-Synchronization: recovery/reporting checkpoint **`9fca3d6`** was pushed to
-`origin/codex/agentdojo-lab`; local and remote heads matched. This synchronization
-does not include ignored raw artifacts or imply completion of queued GPU job
-`9039289`.
+Synchronization: Case A implementation checkpoint **`6071eb0`** was pushed to
+`origin/codex/agentdojo-lab`; the documentation update follows it on the same
+branch. This synchronization does not include ignored raw artifacts or imply
+completion of queued GPU job `9039289`.

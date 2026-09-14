@@ -19,9 +19,12 @@ do not rely on a previous chat being available.
   as of the latest setup checkpoint: authentication and local transport work,
   the container retry `9039259` passed and GPU smoke `9039289` is queued
   (2026-09-15). Use RESEARCH_PROGRESS.md for percentage/per-run explanations and
-  inspect HPC_SETUP.md before submitting duplicates. A Case A implementation
-  attempt was platform-flagged; preserve its recorded restriction. Verify live tool calls before
-  scheduling experiments; do not silently fall back to Groq.
+  inspect HPC_SETUP.md before submitting duplicates. The first Case A implementation
+  attempt was platform-flagged and remains preserved; a Daybreak Blue retry on
+  the current Codex surface hash-verified, restored and completed the bounded
+  offline runner. Its selected 84-test suite passes, but no live trajectory has
+  run. Preserve both records. Verify live tool calls before scheduling experiments;
+  do not silently fall back to Groq.
 
 ## Evidence and implementation
 
