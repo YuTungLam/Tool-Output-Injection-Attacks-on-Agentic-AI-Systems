@@ -210,3 +210,8 @@ Update this snapshot from receipts and accounting after each terminal attempt.
 A running or queued job has no percentage estimate unless its own instrumentation
 provides a measurable denominator. See [HPC_SETUP.md](HPC_SETUP.md) for pins,
 resources, current job IDs, and the next deployment gate.
+
+Synchronization: recovery/reporting checkpoint **`9fca3d6`** was pushed to
+`origin/codex/agentdojo-lab`; local and remote heads matched. This synchronization
+does not include ignored raw artifacts or imply completion of queued GPU job
+`9039289`.

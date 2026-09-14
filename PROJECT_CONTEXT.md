@@ -245,6 +245,8 @@ Git synchronization: this continuation started from clean checkpoint **`2762df0`
 matching `origin/codex/agentdojo-lab`. SSH push and pull were already verified for
 repository owner `YuTungLam`. Git synchronization does not imply that the queued
 GPU job has finished; inspect its terminal receipts separately.
+The verified recovery/reporting checkpoint **`9fca3d6`** was subsequently committed
+and pushed to that branch; local and remote heads matched after the push.
 
 ## Moving between devices
 
