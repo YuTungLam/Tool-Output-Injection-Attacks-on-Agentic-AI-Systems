@@ -1,5 +1,15 @@
 # AgentDojo Lab
 
+**Current direction — 2026-09-14:** the next phase is a small set of end-to-end
+NeuroTaint stress tests on NeSI, following the supervisor's latest guidance.
+Read [PROJECT_CONTEXT.md](../../PROJECT_CONTEXT.md),
+[RESEARCH_PLAN.md](../../RESEARCH_PLAN.md), and [HPC_SETUP.md](../../HPC_SETUP.md).
+Local Scout inference is planned, not deployed; primary and auditor transports
+still require explicit local-backend integration. Historical runs/HTML and the
+lab environment were not transferred with Git. The large evaluation described
+below is deferred, and its ledger records zero started native trajectories and
+no frozen native plan. Lower dated sections retain their historical scope.
+
 **Active evaluation — NT-AgentDojo-Eval-v1, 2026-09-10:** SafeTool, CTTA,
 model-weight updates and action blocking are outside the current phase. M1–M7 of
 the independent NeuroTaint method implementation are complete under the declared

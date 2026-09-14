@@ -1,5 +1,26 @@
 # Handoff: current state and historical notes
 
+## Current direction — NeSI case studies, 2026-09-14
+
+Start with the tracked root [project context](../../PROJECT_CONTEXT.md),
+[research plan](../../RESEARCH_PLAN.md), and [NeSI setup](../../HPC_SETUP.md).
+The researcher's latest supervisor guidance prioritizes a few concrete
+clean/attacked propagation traces: changed sensitive arguments, joint sources,
+transformations, memory, and ambiguous or inconsistent influence judgments.
+The older 120-trajectory NT evaluation below is deferred; its ledger records zero
+started native trajectories and no frozen native plan. Preserve all historical
+protocols and ledgers rather than relabeling them as local-Llama experiments.
+
+On this device the source is present, but `runs/`, `reports/`, `.venv/`,
+`vendor/agentdojo/`, and `.model-cache/` are absent at the migration inspection.
+Historical outcomes and test totals below have not been reverified here. The
+current code remains Groq-specific; Scout deployment and both primary/auditor
+endpoint integration are pending. No model jobs were run by this handoff.
+
+The dated sections below are historical context. Their former next steps and
+local-only/no-push notes do not override the new direction and cross-device
+documentation request.
+
 ## Active NT-AgentDojo evaluation — 2026-09-10
 
 The current user scope excludes SafeTool and any defense. Finish and measure the
