@@ -1,6 +1,6 @@
 # Handoff: current state and historical notes
 
-## Current direction — NeSI case studies, 2026-09-14
+## Current direction — NeSI case studies, 2026-09-15
 
 Start with the tracked root [project context](../../PROJECT_CONTEXT.md),
 [research plan](../../RESEARCH_PLAN.md), and [NeSI setup](../../HPC_SETUP.md).
@@ -26,8 +26,24 @@ result bundles and their older outcome claims remain unavailable locally.
 Hugging Face authentication and access to Scout's gated configuration are verified.
 All 63 pinned Scout files are downloaded and checksum-verified (CPU job 9029207
 completed). Rechecked 2026-09-15: container job 9029215 failed; dependent GPU
-smoke 9029415 was cancelled without starting. No Scout inference or new attack trajectory has run. See the root setup document for the latest
+smoke 9029415 was cancelled without starting. Recovery `9039259` then passed in
+6m 49s; its SIF and input preflight are verified, and GPU smoke `9039289` is queued.
+No Scout inference or new attack trajectory has run. See the root setup document for the latest
 download/job status rather than treating preparation as a deployment receipt.
+
+The new offline single-episode exporter (`scripts/report_trace_pair.py`) passed
+38 selected tests, including 14 new cases. It compares tool-proposal sequences,
+sensitive argument changes, exposure/runtime/state evidence and initial environment
+differences; cross-session alignment and causal attribution remain out of scope.
+The benign mock fixture is `reports/20260915-paired-report-fixture-v2/index.html`.
+The updated HPC suite passed 28 tests plus 25 subtests. These are new 2026-09-15
+checks, distinct from the historical full-suite totals above.
+
+A Case A implementation subagent was stopped by a platform security-risk flag.
+Its unfinished draft was preserved outside active source and was not executed by
+the root agent; no research model calls occurred. Read
+[RESEARCH_PROGRESS.md](../../RESEARCH_PROGRESS.md) for the restriction, preserved
+hash manifest, percentage and run-by-run outcomes before continuing that work.
 
 ### Implemented local transport and usage
 
@@ -94,10 +110,10 @@ not leave a server available for a later native run.
   credential redaction. These checks do not measure Scout's tool-use quality,
   attribution accuracy, propagation failures, or end-to-end attack success.
 
-Next: finish environment/model/container preparation; validate actual Scout tool
-calls in a scheduled smoke; then freeze only the small case-study protocol in the
-root research plan. Preserve failures and unavailable evidence. Record later
-test receipts and job results in the root current-state notes.
+Next: inspect scheduled GPU smoke `9039289` and verify actual Scout tool calls.
+Keep the recorded Case A platform restriction separate from infrastructure
+results; resolve it before continuing that stopped implementation. Preserve
+failures and unavailable evidence, and update root progress from terminal receipts.
 
 The dated sections below are historical context. Their former next steps and
 local-only/no-push notes do not override the new direction and cross-device

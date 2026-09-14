@@ -153,7 +153,7 @@ clean before this documentation handoff. Recheck these facts on a later visit.
 | Semantic weights | Pinned MiniLM snapshot downloaded and file hashes verified; locked semantic dependencies installed and 53 dependent regressions passed |
 | Default Python / lab Python | System 3.9.25; restored lab `.venv` 3.12.14 |
 | Local LLM integration | Explicit primary/online judge endpoints, local deferred single-source judge, provider-aware doctor and regression coverage implemented; legacy batch/joint paths remain scoped out |
-| Scout weights/server | All 63 pinned files verified; download 9029207 completed. Container 9029215 FAILED; dependent GPU smoke 9029415 CANCELLED before starting |
+| Scout weights/server | All 63 pinned files verified. First container 9029215 FAILED and GPU 9029415 CANCELLED. CPU retry 9039259 COMPLETED in 6m 49s; SIF/input preflight passed. GPU smoke 9039289 waits for scheduling priority; inference unverified |
 | Hugging Face access | Browser login complete; saved identity and authenticated pinned Scout config download verified |
 | Model storage | Private scratch root `/nesi/nobackup/uoa04799/dyu848/tool-output-lab`; 10 TiB project scratch allocation |
 | NeSI offline smoke | Completed native fixture with a valid 15-event recording and HTML; no real LLM calls |
@@ -181,15 +181,26 @@ ledgers and result notes retain their historical values.
 
 1. Use [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15)
    to track delivered results separately from existing code and preparation.
-2. Diagnose the retained failure of container job `9029215` before starting a
-   new bounded preparation attempt. Model job `9029207` succeeded; reuse its
-   verified snapshot. GPU job `9029415` was cancelled without starting.
-3. After successful container preparation, run and inspect a newly named
-   synthetic/native GPU smoke. Live Scout inference is still unverified.
-4. Add a small offline paired report for changed arguments and first observable
-   and security-relevant divergence, reusing existing trace/graph exports.
+2. Inspect queued GPU smoke `9039289`; do not submit duplicates. Container retry
+   `9039259` completed successfully, with published SIF and passing input
+   preflight. It reused model job `9029207`'s verified snapshot and preserved the
+   original failed/cancelled attempts.
+3. Verify the new synthetic/native GPU smoke's terminal receipts. Live Scout
+   inference remains unverified while the GPU job is queued.
+4. Use the new offline single-episode paired report for changed tool arguments,
+   proposal divergence and configured sensitive-field divergence. Cross-session
+   alignment and selected local case/joint-replay integration remain pending.
 5. Freeze and execute the small case-study protocol in RESEARCH_PLAN.md, then
    examine repeatability only for a clearly specified candidate pattern.
+
+The 2026-09-15 Case A implementation subagent was stopped by a platform
+security-risk flag. Its four unfinished files were preserved byte-for-byte in
+`codebase/agentdojo-lab/reports/20260915-scout-continuation-v2/quarantined-case-a-draft/`
+with a hash manifest, and removed from active source. No live Case A request was
+made; this is not a model refusal or an experimental finding. Do not silently
+retry or relabel that stopped work. Container recovery and the independent
+offline comparison remain unaffected; the platform restriction must be resolved
+before continuing that implementation task.
 
 The 2026-09-15 checklist review read Slurm accounting and retained job artifacts.
 It did not rerun tests or launch replacement jobs. Container failure and GPU
@@ -199,6 +210,13 @@ states and evidence paths are in HPC_SETUP.md.
 The user confirms Hugging Face approval, has signed in successfully on NeSI,
 and has delegated storage choices. No further authentication input is needed.
 Previous run/report bundle locations remain unknown.
+
+Continuation on 2026-09-15: [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) now
+provides progress bars and per-run explanations. The first supervisor checklist
+is **8/25 complete (32%)**, including preparation; its 13 new experimental
+deliverables remain **0/13**. This counts completed items, not elapsed time or
+detector accuracy. The new CPU/GPU attempt uses private, separately named
+evidence and site files described in HPC_SETUP.md.
 
 The NeSI bootstrap and offline smoke have run. The smoke is
 `codebase/agentdojo-lab/runs/20260914-nesi-offline-smoke-v1`; setup receipts are
@@ -214,11 +232,19 @@ No Scout inference or new research trajectory has occurred. Preparation job
 evidence is retained in
 `/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/` outside Git.
 
-Git synchronization: implementation checkpoint **`7ebce74`** was pushed to
-`origin/codex/agentdojo-lab` on 2026-09-14. SSH authentication verified repository
-owner `YuTungLam`, and local/remote heads matched after the push. The later status review found failed container preparation and a cancelled
-GPU smoke; neither job is still queued. Inspect terminal receipts before calling
-the local deployment verified.
+New 2026-09-15 verification passed **28 HPC tests plus 25 subtests**, and **38
+paired/report tests including 14 new tests**; Ruff and shell syntax also passed.
+The benign paired fixture has 25 valid events per arm, two successful simulated
+tool calls and one file-state change per arm, with zero real model calls. Its
+report is `reports/20260915-paired-report-fixture-v2/index.html` in the lab.
+This demonstrates the exporter, not a Scout attack. It compares tool proposals
+within a single episode; assistant prose and cross-session alignment are outside
+that component. Detailed receipts and limitations are in RESEARCH_PROGRESS.md.
+
+Git synchronization: this continuation started from clean checkpoint **`2762df0`**,
+matching `origin/codex/agentdojo-lab`. SSH push and pull were already verified for
+repository owner `YuTungLam`. Git synchronization does not imply that the queued
+GPU job has finished; inspect its terminal receipts separately.
 
 ## Moving between devices
 

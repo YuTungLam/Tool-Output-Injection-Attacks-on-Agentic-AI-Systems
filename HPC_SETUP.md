@@ -4,8 +4,46 @@ Last updated: **2026-09-15 UTC**. The CPU lab and pinned MiniLM files have been
 restored, and the offline native-tool fixture passes. Hugging Face login and
 Scout gated-file access are verified. Local transport is implemented; the pinned
 checkpoint is fully downloaded and verified. The first serving-container build
-failed; its dependent GPU smoke was cancelled before starting. No Scout
-inference has completed yet.
+failed; its dependent GPU smoke was cancelled before starting. The separately
+named retry has now passed, and a new GPU smoke is queued. No Scout inference
+has completed yet.
+
+## Recovery in progress — 2026-09-15
+
+The user requested continued runs with percentages and explanations. The fresh
+container retry **passed**, and its GPU smoke is now waiting for scheduling
+priority with its build dependency fulfilled. See [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) for the checklist
+count and the interpretation of every attempt.
+
+| Job | Latest observed state | Bounded scope |
+| --- | --- | --- |
+| `9039259` | COMPLETED on Genoa `g01`, Slurm elapsed 6m 49s, exit `0:0` | CPU container retry: 8 requested CPUs / 16 allocated logical CPUs, 32 GiB, local SSD, 2 hours maximum; no GPUs |
+| `9039289` | PENDING, Priority; `afterok:9039259` fulfilled | Four A100s, 48 requested CPUs, 320 GiB, 1 hour, at most eight synthetic/benign native generation requests |
+
+The new protocol is `nesi-scout-container-prep-ssd-gzip1-v2`: same immutable OCI
+image, node-local SSD temporary files, gzip compression level 1, and a 6,600-second
+build deadline. It reuses the OCI cache and verified model, preserving the old
+incomplete rootfs and failed records. It records stage timestamps in
+`stages.jsonl`; a running build has no measurable percentage denominator.
+
+Private site file: `/nesi/project/uoa04799/dyu848/tools/scout-site-20260915-v2.env`.
+The original site file remains unchanged. New evidence directories under
+`/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/` are:
+
+- `scout-recovery-submission-20260915-v2/`: submission plan and frozen helper copies.
+- `container-prep-20260915-v2/`: CPU plan, build log, stages and terminal receipts.
+- `scout-smoke-20260915-v2/`: GPU receipts, created only when that phase starts.
+
+The new SIF destination is
+`/nesi/nobackup/uoa04799/dyu848/tool-output-lab/containers/vllm-openai-v0.29.0-cu129-ssd-gzip1-v2.sif`.
+The published image is **11,042,500,608 bytes**, SHA-256
+`2e34131f9ef3257b67e628e735fa76dee506449152f3882bf50204c92e38b6c2`.
+`completed.json` confirms inspection/publication and the private site checksum
+update. Build time was 391.20 seconds; hashing/publication took another 10.15
+seconds. The receipt explicitly says GPU validation has not run. The queued
+GPU job includes no research experiment. Scheduler test-only probes predicted a much
+later start, but backfilling started the CPU job immediately. Treat queue estimates
+as provisional and recheck actual state before reporting results or submitting work.
 
 ## Status recheck on 2026-09-15
 
@@ -28,8 +66,9 @@ Evidence directory:
 `/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/container-prep-20260914-v1/`
 (`build.log`, `job-exit-code.txt`, `plan.json`), plus scheduler log
 `evidence/prep-logs/container-9029215.log`. Preserve these failed-attempt records.
-The next deployment step is container recovery and a newly named smoke attempt,
-not resubmitting the old cancelled job as if it had never started preparation.
+That review identified container recovery and a newly named smoke as the next
+steps. The recovery outcome and new queued job are recorded above; the cancelled
+first attempt remains terminal.
 For research deliverables, see [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15).
 
 ## Selected storage and sign-in
@@ -150,7 +189,8 @@ frozen research protocols. No live Scout capability follows from mock tests.
 ## Pinned preparation and smoke tooling
 
 See [hpc/README.md](codebase/agentdojo-lab/hpc/README.md) for executable steps.
-The private site file is `/nesi/project/uoa04799/dyu848/tools/scout-site.env`.
+The original private site file is `/nesi/project/uoa04799/dyu848/tools/scout-site.env`.
+The successful retry uses the separate `scout-site-20260915-v2.env` recorded above.
 It contains paths and pins, not credentials. The candidate is vLLM 0.29.0 with
 CUDA 12.9, pinned to a linux/amd64 OCI manifest. The original official chat template is preserved. The separately named
 `typed_v1` correction preserves historical argument types and escaping; it passed
@@ -249,7 +289,7 @@ must remain visible failures. None of these checks is an attack experiment.
 
 ## Inputs and evidence still missing
 
-- The built SIF's checksum and successful container-preparation receipt.
+- A successful GPU capability result for the now-published SIF; its checksum and CPU completion receipt are present.
 - Actual GPU driver compatibility and measured Scout memory/startup/tool behavior.
 - Successful synthetic and native Scout smoke receipts, followed by a new small frozen research protocol.
 - Selected old raw run/report bundles from the personal computer; none restored.

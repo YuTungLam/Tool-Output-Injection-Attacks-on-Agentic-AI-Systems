@@ -10,6 +10,13 @@ container job `9029215` failed during SIF creation after 50m 31s, and dependent
 GPU job `9029415` was cancelled without starting. No live Scout smoke passed.
 See [the current setup status](../../../HPC_SETUP.md#status-recheck-on-2026-09-15).
 
+Continuation on 2026-09-15 submitted the separately named SSD/gzip-level-1
+container attempt **9039259**, followed by the dependent synthetic/native smoke
+**9039289**. The CPU job completed on `g01` in **6m 49s**, publishing the verified
+SIF. The GPU job then became pending for priority after its dependency
+was fulfilled. Live Scout inference remains unverified. Inspect the current
+receipts before submitting another attempt. The original model download is reused.
+
 ## Resource and software choice
 
 `scout-smoke.sbatch` requests one Milan node, four A100s, 48 CPU cores,
@@ -245,6 +252,84 @@ with scheduler log `evidence/prep-logs/container-9029215.log`. A job ID is not a
 completion or deployment claim. Do not submit a replacement without inspecting
 the retained outcome and its bounded protocol.
 
+### Recovery attempt: SSD and gzip level 1, v2
+
+The first job's 50m 31s elapsed time is consistent with its 3,000-second build
+timeout and 30-second kill grace. Its log reached SIF creation, but does not
+explicitly identify timeout or out-of-memory termination. Accounting reports
+136,732 KiB MaxRSS for the cancelled build step; that sample does not establish
+the peak memory of all compressor subprocesses. No partial SIF remains at its
+planned destination. Its roughly 21 GiB extracted temporary tree and 9.9 GiB OCI
+cache remain; the failed tree is preserved and is not used as a completed image.
+
+[`container-prep-ssd-v2.sbatch`](container-prep-ssd-v2.sbatch) is a new protocol,
+`nesi-scout-container-prep-ssd-gzip1-v2`. It uses the same immutable OCI source,
+8 requested CPUs, 32 GiB RAM, a 2-hour ceiling and a 6,600-second build timeout.
+It requests one Genoa node's SSD with `--gres=ssd`, requires the supplied
+`JOB_SCRATCH_DIR`, and refuses a RAM/shared-filesystem fallback. The observed
+job directory is on XFS with about 3.18 TB free at start. This avoids extracting
+and rereading thousands of files on shared scratch. NeSI removes the new local
+temporary tree when the job ends; logs, stage timestamps, receipts and any
+published image remain in their durable/shared locations.
+[NeSI temporary directories](https://docs.nesi.org.nz/Batch_Computing/Temporary_Directories/).
+
+The compressor retains gzip compatibility but explicitly uses level 1, with
+8 workers and an 8 GiB compressor-memory bound. This follows Apptainer's
+documented fast gzip setting; its actual elapsed time remains a measured result,
+not a promised speedup. The warm content-addressed OCI cache is reused.
+[Apptainer compressors](https://apptainer.org/docs/user/1.4/build_a_container.html#alternative-compressors).
+
+The new site file is
+`/nesi/project/uoa04799/dyu848/tools/scout-site-20260915-v2.env`.
+It preserves the original site and selects
+`containers/vllm-openai-v0.29.0-cu129-ssd-gzip1-v2.sif` under the same scratch
+root. The finalizer accepts the explicit new protocol while preserving the v1
+default for historical tooling. It publishes without overwrite and updates
+only the new site's SIF checksum.
+
+The submission bundle is
+`/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-recovery-submission-20260915-v2`.
+It contains copied helper scripts/template, `submission-plan.json`,
+`submitted.json`, hashes and initial Slurm status. `SCOUT_HPC_DIR` points to this
+bundle's `hpc` directory so subsequent repository edits cannot change the queued
+HPC helpers. The native client uses the existing lab Python explicitly.
+The copied CPU script SHA-256 is
+`0d03b0ad215a0439ed5b33afd284083a555560d436cabb974c800c57c8ea62c7`;
+the unchanged GPU script is
+`8554d25dc2a9288111c578eae0b05fbd1fb0e837526f46de373f320705787420`.
+
+CPU job **9039259** completed and writes `evidence/container-prep-20260915-v2`, including
+`stages.jsonl` with preparation, build, inspection and publication timestamps.
+The scheduler log is `evidence/prep-logs/container-v2-9039259.log`.
+GPU job **9039289** has `afterok:9039259` and `--kill-on-invalid-dep=yes`;
+it writes the fresh `evidence/scout-smoke-20260915-v2` directory and scheduler
+log `evidence/prep-logs/scout-smoke-v2-9039289.log` if it starts.
+The GPU limits remain four A100s, 48 requested CPUs, 320 GiB, one hour and at most
+eight generation requests. No research trials were submitted. Pre-submission
+queue estimates were later than the actual CPU backfill start and are not
+completion/start-time guarantees.
+
+Its terminal receipt records **11,042,500,608 bytes** and SIF SHA-256
+`2e34131f9ef3257b67e628e735fa76dee506449152f3882bf50204c92e38b6c2`, with
+`site_checksum_updated: true` and `gpu_validation: not_run`. The build took
+391.20 seconds; inspection and checksum/publication took about 10.23 seconds.
+Slurm's allocation elapsed time was **6m 49s**, with exit `0:0`, 16 allocated
+logical CPUs and 32 GiB RAM. The build step's sampled MaxRSS was 6,111,080 KiB.
+These timestamps establish completion of this preparation attempt, not an
+isolated speed comparison between compressors or filesystems. The original
+failure and its remaining extracted files are preserved.
+
+`completed-input-preflight.json` in the submission bundle subsequently passed
+the complete input preflight, including the new SIF hash, template hash and
+binding to the verified model receipt. GPU job `9039289` was still pending for
+priority; the scheduler displayed `Sep 15 22:35` in its local timezone as an
+estimated start, which can change. No generation requests have run.
+
+On 2026-09-15, the HPC pytest suite passed **28 tests and 25 subtests**;
+Ruff, the new script's `bash -n`, and `git diff --check` passed. New finalizer
+checks verify explicit v2 receipt identity and refusal to publish an unknown
+protocol. These are offline checks; inspect the scheduled results separately.
+
 ## Bounds, isolation, and receipts
 
 The server binds `127.0.0.1`, receives a new random key through `VLLM_API_KEY`,
@@ -283,12 +368,13 @@ response, status, and timing, excluding authentication headers and redacting
 any echoed local key. Forced scheduler termination can leave an incomplete
 receipt; that remains a failed/unavailable smoke attempt.
 
-A passing smoke demonstrates this narrow transport/parser behavior. It does not
-test native AgentDojo execution, NeuroTaint, attack success, causal accuracy,
-long-context reliability, performance, or repeated-run stability. The integrated
-lab uses `configs/local_scout.toml` and the same served model/key environment
-names; a native clean task is a separate next check inside a separately bounded
-allocation. The smoke job shuts its server down when these four requests finish.
+A passing synthetic phase demonstrates this narrow transport/parser behavior.
+With `SCOUT_NATIVE_SMOKE=1`, the same allocation then checks one native clean
+AgentDojo task and saves its separate receipt. Neither phase establishes
+NeuroTaint accuracy, attack success, long-context reliability, performance or
+repeated-run stability. The integrated lab uses `configs/local_scout.toml` and
+the same served model/key environment names. The job shuts its server down after
+its selected phases finish or a failure stops dependent execution.
 
 ## Offline verification
 
@@ -297,6 +383,7 @@ python3 -m unittest discover -s codebase/agentdojo-lab/hpc -p 'test_*.py' -v
 bash -n codebase/agentdojo-lab/hpc/scout-smoke.sbatch
 bash -n codebase/agentdojo-lab/hpc/site.env.example
 bash -n codebase/agentdojo-lab/hpc/container-prep.sbatch
+bash -n codebase/agentdojo-lab/hpc/container-prep-ssd-v2.sbatch
 codebase/agentdojo-lab/.venv/bin/ruff check codebase/agentdojo-lab/hpc
 codebase/agentdojo-lab/.venv/bin/python -m pytest codebase/agentdojo-lab/tests/test_scout_chat_template.py -q
 ```

@@ -1,6 +1,6 @@
 # AgentDojo Lab
 
-**Current direction — 2026-09-14:** the next phase is a small set of end-to-end
+**Current direction — 2026-09-15:** the next phase is a small set of end-to-end
 NeuroTaint stress tests on NeSI, following the supervisor's latest guidance.
 Read [PROJECT_CONTEXT.md](../../PROJECT_CONTEXT.md),
 [RESEARCH_PLAN.md](../../RESEARCH_PLAN.md), and [HPC_SETUP.md](../../HPC_SETUP.md).
@@ -9,8 +9,10 @@ online causal sidecar, and explicitly configured deferred single-source judge.
 The Python 3.12.14 lab and pinned AgentDojo checkout have been restored. Scout
 access is authenticated and its gated configuration was read successfully;
 all 63 pinned model files passed their checksums. Rechecked 2026-09-15:
-container job 9029215 failed and GPU smoke 9029415 was cancelled before starting;
-Scout inference remains unverified. See [the supervisor checklist](../../RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15). Historical
+the first container/GPU attempts failed or were cancelled; retry `9039259` passed
+and GPU smoke `9039289` is queued. Scout inference remains unverified. The offline
+single-episode pair exporter passed 38 tests; use `scripts/report_trace_pair.py`.
+See [progress/results](../../RESEARCH_PROGRESS.md) and [the supervisor checklist](../../RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15). Historical
 run/HTML bundles still need separate transfer. The large evaluation below remains
 deferred: its ledger records zero started native trajectories and no frozen native
 plan. Lower dated sections retain their historical scope.

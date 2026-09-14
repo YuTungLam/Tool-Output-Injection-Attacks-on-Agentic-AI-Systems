@@ -14,6 +14,12 @@ been produced, and no new Scout research trajectories have run.
 A checked box means the stated deliverable is complete. Existing code, a proposed
 case, or a historical result note does not complete an experimental checkbox.
 
+Progress reporting: [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) gives the
+percentage, progress bars, and a run-by-run interpretation. The current first
+checklist contains 25 items, of which 8 are complete (**32%**); the 13 new
+experimental deliverables remain **0/13**. These are equal checkbox counts,
+not time estimates or accuracy scores.
+
 ### Completed preparation
 
 - [x] Preserve the original idea and supervisor guidance in tracked context files.
@@ -69,13 +75,20 @@ case, or a historical result note does not complete an experimental checkbox.
 ### Remaining prerequisites and historical evidence
 
 - [ ] Complete the serving container and pass the synthetic plus benign native
-  Scout smoke. **Current blocker:** container job `9029215` failed after 50m 31s
-  during SIF creation; GPU job `9029415` was cancelled without starting. The
-  50-minute internal build timeout plus 30-second kill grace is consistent with
-  that timing, but the retained logs do not explicitly establish the cause.
+  Scout smoke. First container job `9029215` failed after 50m 31s during SIF
+  creation; GPU job `9029415` was cancelled without starting. Recovery CPU job
+  `9039259` passed in 6m 49s with local SSD/faster compression and a longer bounded
+  deadline; GPU smoke `9039289` now waits for scheduling priority. No live
+  Scout result is available yet. See HPC_SETUP.md for all attempt receipts.
 - [ ] Add a paired comparison exporter and adapt the selected case runners and
   joint/replay auditors to the explicit local endpoint. Several historical batch
-  entry points still retain their Groq protocols.
+  entry points still retain their Groq protocols. The new **single-episode offline
+  exporter is implemented**: 38 selected tests (14 new) and a benign native fixture
+  pass; cross-session alignment and selected local runners/auditors remain pending.
+  The 2026-09-15 Case A
+  implementation attempt was stopped by a platform security flag; its unfinished
+  draft is preserved outside active source, with zero research requests. This is
+  a tooling restriction, not a scientific result; see RESEARCH_PROGRESS.md.
 - [ ] Freeze exact tasks, payloads, source sets, conditions, budgets, settings,
   success criteria and run order before the new research trials.
 - [ ] Recover selected historical raw runs/reports if available and reverify them.
@@ -337,17 +350,20 @@ be tracked in Git. Publish observed counts with their denominators and unknowns.
 - [x] Restore default lab/upstream; pass native offline smoke and initial local transport tests.
 - [x] Restore semantic dependencies and pass 53 additional targeted checks.
 - [x] Pass the full 2,056-test repository suite and 26 HPC tests.
-- [ ] Recover container preparation and verify Scout inference in a new named GPU attempt.
+- [ ] Verify Scout inference in GPU attempt `9039289`; container recovery `9039259` passed.
 - [ ] Restore selected historical evidence bundles if available.
 - [x] Implement explicit local primary/online judge and deferred single-source endpoints.
-- [ ] Add the offline paired exporter and migrate the selected case runners/auditors.
+- [ ] Finish selected case runners/auditors and cross-session comparison; the single-episode paired exporter is verified.
 - [ ] Freeze the new small protocol, run it, and produce actual case studies.
 - [ ] Repeat and classify a supported candidate pattern.
 
 Setup evidence is in `codebase/agentdojo-lab/reports/20260914-nesi-setup-v1` and
 `runs/20260914-nesi-offline-smoke-v1`. Model job 9029207 completed successfully;
 container job 9029215 failed, and dependent GPU smoke 9029415 was cancelled
-without starting (rechecked 2026-09-15). No Scout inference or new research
-experiment has completed. The
-final full repository suite passed 2,056 tests; 26 HPC tests also passed. Update these
-checkboxes only with concrete evidence and actual verification results.
+without starting. The new CPU container retry `9039259` passed in 6m 49s; GPU
+smoke `9039289` is pending scheduling priority. No Scout inference or new research
+experiment has completed. The 2026-09-14 full repository suite passed 2,056 tests;
+new 2026-09-15 checks passed 28 HPC tests plus 25 subtests and 38 paired/report
+tests. The Case A implementation draft was platform-flagged and remains unaccepted.
+See RESEARCH_PROGRESS.md for receipts and limits. Update checkboxes only with
+concrete evidence and actual verification results.

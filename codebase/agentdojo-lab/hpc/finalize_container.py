@@ -14,6 +14,7 @@ from pathlib import Path
 
 OCI_SOURCE = "docker://vllm/vllm-openai@sha256:3e10e8189823e0f7ae4620c271bcdaaf64127ec7d0edc351591a508498b7684a"
 CHECKSUM_LINE = re.compile(r"^(?:export\s+)?VLLM_SIF_SHA256=.*$", re.MULTILINE)
+PROTOCOLS = ("nesi-scout-container-prep-v1", "nesi-scout-container-prep-ssd-gzip1-v2")
 
 
 def file_hash(path: Path) -> str:
@@ -50,12 +51,15 @@ def set_site_checksum(site: Path, checksum: str) -> None:
             temporary.unlink()
 
 
-def finalize(partial: Path, destination: Path, site: Path, output: Path) -> dict:
+def finalize(partial: Path, destination: Path, site: Path, output: Path,
+             protocol: str = PROTOCOLS[0]) -> dict:
+    if protocol not in PROTOCOLS:
+        raise ValueError("Unknown container preparation protocol")
     if not partial.is_file() or partial.stat().st_size == 0:
         raise ValueError("Missing or empty completed SIF")
     if partial.is_symlink() or destination.exists() or destination.is_symlink():
         raise ValueError("Refusing a symlink source or existing destination")
-    receipt = {"protocol": "nesi-scout-container-prep-v1", "source": OCI_SOURCE,
+    receipt = {"protocol": protocol, "source": OCI_SOURCE,
                "job_id": os.environ.get("SLURM_JOB_ID"), "destination": str(destination),
                "bytes": partial.stat().st_size, "sha256": file_hash(partial),
                "completed_utc": datetime.now(timezone.utc).isoformat(), "site_checksum_updated": False,
@@ -77,9 +81,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("partial", "destination", "site", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--protocol", choices=PROTOCOLS, default=PROTOCOLS[0])
     args = parser.parse_args()
     try:
-        finalize(args.partial, args.destination, args.site, args.output)
+        finalize(args.partial, args.destination, args.site, args.output, args.protocol)
     except (OSError, ValueError):
         print("Container finalization failed; preserve local image and receipts for inspection.")
         return 2

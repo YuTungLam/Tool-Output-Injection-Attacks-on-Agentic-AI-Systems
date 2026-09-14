@@ -14,14 +14,16 @@ implementation, and interactive experiment reports.
 | --- | --- |
 | [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) | Original idea, supervisor guidance, repository map, and current state |
 | [RESEARCH_PLAN.md](RESEARCH_PLAN.md) | Small case-study pilot, evidence requirements, and implementation order |
+| [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) | Percentage, progress bars, and explanations of each setup/experiment run |
 | [HPC_SETUP.md](HPC_SETUP.md) | NeSI migration and Llama 4 Scout deployment plan |
 | [AGENTS.md](AGENTS.md) | Instructions for future Codex sessions |
 
 **Current phase, 2026-09-15:** prepare local inference on NeSI and a few concrete
 propagation case studies. Historical large evaluation plans are deferred. The
 local endpoint adapter is tested, and Scout is authenticated, downloaded and
-checksum-verified. The first container build failed and its dependent GPU smoke
-was cancelled. Scout inference and the new pilot have not run. See [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15)
+checksum-verified. The container retry passed; GPU smoke `9039289` is queued.
+The offline paired exporter is verified. Scout inference and the new pilot have
+not run. See [progress and per-run results](RESEARCH_PROGRESS.md), [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15)
 and HPC_SETUP.md for the remaining work and retained job outcomes.
 
 ## Continuing on another device
