@@ -1,11 +1,36 @@
 # NeSI setup and local inference plan
 
-Last updated: **2026-09-14 UTC**. The CPU lab and pinned MiniLM files have been
+Last updated: **2026-09-15 UTC**. The CPU lab and pinned MiniLM files have been
 restored, and the offline native-tool fixture passes. Hugging Face login and
 Scout gated-file access are verified. Local transport is implemented; the pinned
-checkpoint is fully downloaded and verified. The serving container is being
-prepared, with its dependent GPU smoke queued. No Scout inference has
-completed yet.
+checkpoint is fully downloaded and verified. The first serving-container build
+failed; its dependent GPU smoke was cancelled before starting. No Scout
+inference has completed yet.
+
+## Status recheck on 2026-09-15
+
+Read-only `sacct` and retained receipt/log inspection establish:
+
+| Job | Outcome | Evidence/implication |
+| --- | --- | --- |
+| `9029207` model download | COMPLETED, 27m 05s, exit `0:0` | All 63 pinned files verified; reusable model snapshot is present |
+| `9029215` container preparation | FAILED, 50m 31s, Slurm exit `9:0` | Build log ends at SIF creation; wrapper exit is `137`; no `completed.json` or successful SIF-finalization receipt |
+| `9029415` GPU smoke | CANCELLED, zero runtime, no start time | Its successful-preparation dependency was not met; no synthetic/native Scout smoke directory or receipt |
+
+The 50-minute build timeout and 30-second kill grace match the observed failure
+timing, but the logs only report that the process was killed; timeout is an
+inference, not a conclusively recorded cause. Inspect the retained build/partial
+artifacts before choosing a new bounded preparation attempt. No retry was
+submitted during this checklist/status review, and no new test run is claimed.
+The passing software checks below are the 2026-09-14 verification results.
+
+Evidence directory:
+`/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/container-prep-20260914-v1/`
+(`build.log`, `job-exit-code.txt`, `plan.json`), plus scheduler log
+`evidence/prep-logs/container-9029215.log`. Preserve these failed-attempt records.
+The next deployment step is container recovery and a newly named smoke attempt,
+not resubmitting the old cancelled job as if it had never started preparation.
+For research deliverables, see [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15).
 
 ## Selected storage and sign-in
 
@@ -146,15 +171,16 @@ The completed `model-integrity.json` is the required GPU-preflight input.
 The materialized snapshot is
 `/nesi/nobackup/uoa04799/dyu848/tool-output-lab/models/llama-4-scout-92f3b159`.
 
-The CPU container job **9029215** is running its immutable OCI-to-SIF build
-(8 requested CPUs, 32 GiB RAM, one hour maximum, no GPUs). It records the SIF's
-own checksum and updates the private site file only after successful conversion.
+CPU container job **9029215** attempted the immutable OCI-to-SIF build
+(8 requested CPUs, 32 GiB RAM, one hour maximum, no GPUs) and failed during
+SIF creation. Successful conversion would record the SIF checksum and update
+the private site file; that completion receipt is absent.
 The preparation jobs received 8 and 16 logical CPUs respectively;
 requested CPU count and scheduler billing are not identical on these nodes.
 
-GPU smoke job **9029415** is submitted and pending its `afterok` dependencies
-on jobs `9029207` and `9029215`. It cannot run if either preparation fails. The
-first combined check requests one Milan node, four A100s, 48 CPUs, 320 GiB host RAM and **60 minutes
+GPU smoke job **9029415** was cancelled because its `afterok` preparation
+dependencies were not both successful. It never started. The prepared
+combined check requests one Milan node, four A100s, 48 CPUs, 320 GiB host RAM and **60 minutes
 maximum** (four GPU-hours at the ceiling). It must depend on successful model
 and container preparation. It verifies the full model-integrity receipt,
 metadata/template/SIF hashes, container versions and allocated GPUs, then serves

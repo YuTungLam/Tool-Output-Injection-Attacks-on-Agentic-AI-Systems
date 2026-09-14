@@ -1,6 +1,6 @@
 # Project context: Tool Output Injection Attacks
 
-Last updated: 2026-09-14. This is the durable project brief for the researcher,
+Last updated: 2026-09-15. This is the durable project brief for the researcher,
 supervisor, and future Codex sessions. It records the user's initial idea and
 supervisor guidance, followed by a separately identified repository assessment.
 Update the current-state sections as work progresses; preserve the original intent.
@@ -140,7 +140,7 @@ Paths in the table are relative to `codebase/agentdojo-lab/` unless stated other
 
 Bare module filenames in this map refer to `src/agentdojo_lab/`.
 
-## Current state on NeSI — 2026-09-14
+## Current state on NeSI — 2026-09-15
 
 Inspected source baseline: `385de2c` on `codex/agentdojo-lab`. The worktree was
 clean before this documentation handoff. Recheck these facts on a later visit.
@@ -153,7 +153,7 @@ clean before this documentation handoff. Recheck these facts on a later visit.
 | Semantic weights | Pinned MiniLM snapshot downloaded and file hashes verified; locked semantic dependencies installed and 53 dependent regressions passed |
 | Default Python / lab Python | System 3.9.25; restored lab `.venv` 3.12.14 |
 | Local LLM integration | Explicit primary/online judge endpoints, local deferred single-source judge, provider-aware doctor and regression coverage implemented; legacy batch/joint paths remain scoped out |
-| Scout weights/server | All 63 pinned files verified; CPU download 9029207 completed. Container 9029215 building; dependent GPU smoke 9029415 queued |
+| Scout weights/server | All 63 pinned files verified; download 9029207 completed. Container 9029215 FAILED; dependent GPU smoke 9029415 CANCELLED before starting |
 | Hugging Face access | Browser login complete; saved identity and authenticated pinned Scout config download verified |
 | Model storage | Private scratch root `/nesi/nobackup/uoa04799/dyu848/tool-output-lab`; 10 TiB project scratch allocation |
 | NeSI offline smoke | Completed native fixture with a valid 15-event recording and HTML; no real LLM calls |
@@ -179,20 +179,22 @@ ledgers and result notes retain their historical values.
 
 ## Next actions and unresolved inputs
 
-1. Finish the pinned serving SIF; Scout's complete download/integrity pass has
-   succeeded.
-   Model CPU job: `9029207`; container CPU job: `9029215`; dependent GPU
-   smoke job: `9029415`. Inspect existing jobs
-   and receipts before submitting anything again. See HPC_SETUP.md and hpc/README.md.
-2. Inspect the queued GPU job and its retained receipts once the container is
-   ready; full repository and HPC verification already pass.
-3. Review the existing combined GPU job's synthetic and native receipts after
-   it finishes. Correct infrastructure failures before research trials; do not
-   replace a job merely because it is waiting in the queue.
+1. Use [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15)
+   to track delivered results separately from existing code and preparation.
+2. Diagnose the retained failure of container job `9029215` before starting a
+   new bounded preparation attempt. Model job `9029207` succeeded; reuse its
+   verified snapshot. GPU job `9029415` was cancelled without starting.
+3. After successful container preparation, run and inspect a newly named
+   synthetic/native GPU smoke. Live Scout inference is still unverified.
 4. Add a small offline paired report for changed arguments and first observable
    and security-relevant divergence, reusing existing trace/graph exports.
 5. Freeze and execute the small case-study protocol in RESEARCH_PLAN.md, then
    examine repeatability only for a clearly specified candidate pattern.
+
+The 2026-09-15 checklist review read Slurm accounting and retained job artifacts.
+It did not rerun tests or launch replacement jobs. Container failure and GPU
+cancellation are infrastructure outcomes, not research attack trials. Detailed
+states and evidence paths are in HPC_SETUP.md.
 
 The user confirms Hugging Face approval, has signed in successfully on NeSI,
 and has delegated storage choices. No further authentication input is needed.
@@ -214,9 +216,9 @@ evidence is retained in
 
 Git synchronization: implementation checkpoint **`7ebce74`** was pushed to
 `origin/codex/agentdojo-lab` on 2026-09-14. SSH authentication verified repository
-owner `YuTungLam`, and local/remote heads matched after the push. The live
-preparation jobs continue under Slurm independently of this chat; inspect their
-terminal receipts before calling the local deployment verified.
+owner `YuTungLam`, and local/remote heads matched after the push. The later status review found failed container preparation and a cancelled
+GPU smoke; neither job is still queued. Inspect terminal receipts before calling
+the local deployment verified.
 
 ## Moving between devices
 

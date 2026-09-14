@@ -8,8 +8,9 @@ Local OpenAI-compatible transport is now implemented for the primary agent,
 online causal sidecar, and explicitly configured deferred single-source judge.
 The Python 3.12.14 lab and pinned AgentDojo checkout have been restored. Scout
 access is authenticated and its gated configuration was read successfully;
-all 63 pinned model files passed their checksums. Container job 9029215 is
-building; GPU smoke 9029415 is queued, with no Scout inference yet. Historical
+all 63 pinned model files passed their checksums. Rechecked 2026-09-15:
+container job 9029215 failed and GPU smoke 9029415 was cancelled before starting;
+Scout inference remains unverified. See [the supervisor checklist](../../RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15). Historical
 run/HTML bundles still need separate transfer. The large evaluation below remains
 deferred: its ledger records zero started native trajectories and no frozen native
 plan. Lower dated sections retain their historical scope.
@@ -32,7 +33,7 @@ fallback to Groq occurs. `doctor` checks configuration and key presence, not
 server connectivity or tool-call capability.
 
 First prepare and validate the scheduled server using [the HPC runbook](hpc/README.md).
-The first queued combined smoke runs four synthetic requests and then one
+The prepared combined smoke is designed to run four synthetic requests and then one
 benign native task with a hard four-attempt cap, before stopping its server.
 For later ordinary native runs, use the following **inside an allocation with a
 running server and client on the same node**, with a fresh output directory:

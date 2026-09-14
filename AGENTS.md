@@ -17,9 +17,9 @@ do not rely on a previous chat being available.
   A new defense or another method reproduction is a later research decision.
 - The local model requested by the user is Llama 4 Scout. It is not deployed yet
   as of the latest setup checkpoint: authentication and local transport work,
-  while CPU preparation and a dependent GPU smoke are scheduled. Check their
-  recorded job IDs and results
-  in HPC_SETUP.md before submitting duplicates. Verify live tool calls before
+  while the first container build failed and its dependent GPU smoke was cancelled
+  (rechecked 2026-09-15). Use the supervisor checklist in RESEARCH_PLAN.md and
+  inspect retained job evidence in HPC_SETUP.md before a new named attempt. Verify live tool calls before
   scheduling experiments; do not silently fall back to Groq.
 
 ## Evidence and implementation

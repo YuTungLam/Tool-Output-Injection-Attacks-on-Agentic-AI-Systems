@@ -1,8 +1,107 @@
 # Next phase: concrete propagation case studies on NeSI
 
-Date: 2026-09-14. Status: **proposed implementation and experiment plan; not an
+Plan date: 2026-09-14; checklist reviewed 2026-09-15. Status: **proposed implementation and experiment plan; not an
 executed experiment or frozen run manifest**. This plan follows the researcher's
 new supervisor guidance in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
+
+## Supervisor checklist — checked 2026-09-15
+
+Most completed work in the NeSI phase is preparation. The existing independent
+NeuroTaint implementation and per-run HTML reports predate this phase. They are
+the foundation for the requested stress tests. The new meeting packet has not
+been produced, and no new Scout research trajectories have run.
+
+A checked box means the stated deliverable is complete. Existing code, a proposed
+case, or a historical result note does not complete an experimental checkbox.
+
+### Completed preparation
+
+- [x] Preserve the original idea and supervisor guidance in tracked context files.
+- [x] Review and reuse the existing AgentDojo/NeuroTaint implementation; defer the
+  old 120-trajectory evaluation and prioritize a few concrete cases.
+- [x] Inventory existing argument tracking, source graphs, semantic matching,
+  file-memory lineage, single/pair interventions, and per-run HTML support.
+- [x] Draft three case families: changed recipient, two-source composition, and
+  transformed information carried into a fresh session.
+- [x] Identify a concrete Case A candidate (`user_task_33`) and inspect its
+  injection point, recipient, tool schema, and tokenizer context budget.
+- [x] Restore the NeSI lab, pinned AgentDojo, semantic model and plotting stack;
+  implement explicit local primary/online-judge and deferred single-source endpoints.
+- [x] Authenticate Hugging Face and download/checksum-verify all 63 Scout files.
+- [x] Verify implementation on 2026-09-14: 2,056 repository tests, 26 HPC tests,
+  and an offline native fixture passed. These are software checks, not evidence
+  that the detector reliably identifies attacks.
+
+### Supervisor's experimental deliverables — still outstanding
+
+- [ ] **Same tool, contaminated argument:** run a clean/attacked pair where the
+  tool stays `send_email` but the recipient changes; establish the new value's
+  source and whether the simulated send actually succeeds. Case A is proposed.
+- [ ] **Joint influence:** test both sources, A alone, B alone and neither;
+  determine whether both sources are necessary for the observed action in the
+  new case. A bounded earlier Groq pilot is recorded below.
+- [ ] **Redundant sources and ambiguous removal:** test cases where removing one
+  source preserves the action but removing both changes it. This is a separate
+  proposed variant, not established by the joint-source construction.
+- [ ] **Long propagation chains:** trace malicious information through multiple
+  tool interactions to an executed sensitive action, with event references.
+- [ ] **Summarization, rewriting and paraphrase:** verify that the source was
+  exposed and transformed, then identify where its provenance is retained or lost.
+- [ ] **Cross-session memory attack:** persist contaminated content in session A,
+  retrieve it in a genuinely fresh session B, and verify the later consequence.
+- [ ] **Ambiguous judgments:** preserve uncertain, missing and contradictory
+  judgments; compare judge predictions with observed interventions.
+- [ ] **Inconsistent repeated runs:** freeze repetitions and controls, then measure
+  whether the same inputs produce different actions or attribution conclusions.
+- [ ] **Clean/attacked comparisons:** align executions, show changed arguments,
+  and identify both the first behavioral and first security-relevant divergence.
+- [ ] **Complete propagation flowcharts:** link source → entry point → first
+  divergence → intermediate propagation → memory/tools → final action. The
+  illustrative diagram below is a template; case-specific evidence charts remain undone.
+- [ ] **Assess NeuroTaint's coverage:** compare recovered and missing path segments
+  against recorded execution evidence, including final task/attack outcomes.
+- [ ] **Produce the meeting packet:** a small set of end-to-end examples, paired
+  traces, flowcharts, outcomes and limitations. Preserve unsuccessful cases too.
+- [ ] **Establish a systematic failure pattern and research gap:** repeat a
+  supported candidate and distinguish implementation defects, missing exposure,
+  ambiguous method choices and actual method limitations before proposing a defense.
+
+### Remaining prerequisites and historical evidence
+
+- [ ] Complete the serving container and pass the synthetic plus benign native
+  Scout smoke. **Current blocker:** container job `9029215` failed after 50m 31s
+  during SIF creation; GPU job `9029415` was cancelled without starting. The
+  50-minute internal build timeout plus 30-second kill grace is consistent with
+  that timing, but the retained logs do not explicitly establish the cause.
+- [ ] Add a paired comparison exporter and adapt the selected case runners and
+  joint/replay auditors to the explicit local endpoint. Several historical batch
+  entry points still retain their Groq protocols.
+- [ ] Freeze exact tasks, payloads, source sets, conditions, budgets, settings,
+  success criteria and run order before the new research trials.
+- [ ] Recover selected historical raw runs/reports if available and reverify them.
+  Their absence does not block new named trials, but old outcome notes cannot
+  substitute for locally inspected evidence.
+
+### Partial progress from earlier Groq pilots
+
+These results predate the NeSI setup and are recorded in tracked notes. Their raw
+bundles are absent locally, so this review has not reverified the reported outcomes.
+
+| Area | Recorded historical progress | Remaining limit |
+| --- | --- | --- |
+| Joint sources | 16 native trajectories across two constructed attack families; each both-payload condition succeeded in 2/2 repetitions, singleton/neither arms in 0/2 | Small constructed pilot; new Scout case and paired meeting presentation still pending |
+| Rewriting | Four normal-task processes produced nonverbatim outputs, but all omitted a required second read | Not malicious transformed propagation; requested step coverage was incomplete |
+| Cross-session memory | Four original/neutralized processes successfully copied and restored file content | Authorized exact-copy control, not an attacked paraphrased-memory case |
+| Judge ambiguity | Six valid later judgments included four agreements and two disagreements with earlier one-step replays | Judge/replay disagreement does not establish variability across repeated identical judgments |
+| Reporting and hypotheses | Per-run HTML/graphs and controlled comparison notes; candidate LCS overmatching/fallback starvation | New aligned source-to-action packet and reproducible research-gap evidence still missing |
+
+These pilots provide useful leads. The existing implementation contract does not
+establish original-paper results or complete the new supervisor deliverables. See
+[the implementation contract](codebase/agentdojo-lab/REPRODUCTION-CONTRACT.md),
+[historical attack results](codebase/agentdojo-lab/ATTACK-VALIDATION-RESULTS.md),
+[semantic validation](codebase/agentdojo-lab/SEMANTIC-VALIDATION-RESULTS.md),
+[memory results](codebase/agentdojo-lab/METHOD-COMPLETION-RESULTS.md), and
+[current setup evidence](HPC_SETUP.md#status-recheck-on-2026-09-15).
 
 ## Deliverable for the next meeting
 
@@ -238,7 +337,7 @@ be tracked in Git. Publish observed counts with their denominators and unknowns.
 - [x] Restore default lab/upstream; pass native offline smoke and initial local transport tests.
 - [x] Restore semantic dependencies and pass 53 additional targeted checks.
 - [x] Pass the full 2,056-test repository suite and 26 HPC tests.
-- [ ] Verify Scout inference in the queued GPU allocation.
+- [ ] Recover container preparation and verify Scout inference in a new named GPU attempt.
 - [ ] Restore selected historical evidence bundles if available.
 - [x] Implement explicit local primary/online judge and deferred single-source endpoints.
 - [ ] Add the offline paired exporter and migrate the selected case runners/auditors.
@@ -247,7 +346,8 @@ be tracked in Git. Publish observed counts with their denominators and unknowns.
 
 Setup evidence is in `codebase/agentdojo-lab/reports/20260914-nesi-setup-v1` and
 `runs/20260914-nesi-offline-smoke-v1`. Model job 9029207 completed successfully;
-container job 9029215 is building. GPU smoke 9029415 is queued behind their success. No Scout
-inference or new research experiment has completed. The
+container job 9029215 failed, and dependent GPU smoke 9029415 was cancelled
+without starting (rechecked 2026-09-15). No Scout inference or new research
+experiment has completed. The
 final full repository suite passed 2,056 tests; 26 HPC tests also passed. Update these
 checkboxes only with concrete evidence and actual verification results.

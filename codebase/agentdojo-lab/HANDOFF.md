@@ -25,8 +25,8 @@ result bundles and their older outcome claims remain unavailable locally.
 
 Hugging Face authentication and access to Scout's gated configuration are verified.
 All 63 pinned Scout files are downloaded and checksum-verified (CPU job 9029207
-completed). Container job 9029215 is building; dependent GPU smoke 9029415 is
-queued. No Scout inference or new attack trajectory has run. See the root setup document for the latest
+completed). Rechecked 2026-09-15: container job 9029215 failed; dependent GPU
+smoke 9029415 was cancelled without starting. No Scout inference or new attack trajectory has run. See the root setup document for the latest
 download/job status rather than treating preparation as a deployment receipt.
 
 ### Implemented local transport and usage

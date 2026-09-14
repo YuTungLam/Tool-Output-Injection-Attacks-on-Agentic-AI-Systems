@@ -17,11 +17,12 @@ implementation, and interactive experiment reports.
 | [HPC_SETUP.md](HPC_SETUP.md) | NeSI migration and Llama 4 Scout deployment plan |
 | [AGENTS.md](AGENTS.md) | Instructions for future Codex sessions |
 
-**Current phase, 2026-09-14:** prepare local inference on NeSI and a few concrete
+**Current phase, 2026-09-15:** prepare local inference on NeSI and a few concrete
 propagation case studies. Historical large evaluation plans are deferred. The
 local endpoint adapter is tested, and Scout is authenticated, downloaded and
-checksum-verified. Container preparation and a dependent GPU smoke are scheduled. Scout inference and the new pilot
-have not run. See HPC_SETUP.md for current jobs and checks before resubmitting.
+checksum-verified. The first container build failed and its dependent GPU smoke
+was cancelled. Scout inference and the new pilot have not run. See [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15)
+and HPC_SETUP.md for the remaining work and retained job outcomes.
 
 ## Continuing on another device
 

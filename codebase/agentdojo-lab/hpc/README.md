@@ -5,6 +5,11 @@ synthetic transport tests run without a scheduler or model. The batch script
 requires an already prepared local model, chat template, and Apptainer image.
 It never downloads them, submits another job, or runs research attacks.
 
+Status rechecked 2026-09-15: model download/verification job `9029207` completed,
+container job `9029215` failed during SIF creation after 50m 31s, and dependent
+GPU job `9029415` was cancelled without starting. No live Scout smoke passed.
+See [the current setup status](../../../HPC_SETUP.md#status-recheck-on-2026-09-15).
+
 ## Resource and software choice
 
 `scout-smoke.sbatch` requests one Milan node, four A100s, 48 CPU cores,
@@ -200,8 +205,9 @@ prompts must fit the explicit 8,192-token context; there is no silent truncation
 
 The log parent directory must already exist before `sbatch`; Slurm opens its
 output before the script creates directories. The combined command was submitted
-as job **9029415** on 2026-09-14 and is pending the two preparation dependencies.
-Check its state before submitting another GPU job. The job and smoke client use the stdlib
+as job **9029415** on 2026-09-14; it was cancelled after container preparation
+failed. The command above records that historical submission. A new attempt
+needs successful preparation dependencies and a fresh evidence directory. The job and smoke client use the stdlib
 features available in Python 3.9+, so the host Python suffices; the AgentDojo lab
 itself still requires its separate Python 3.12 environment.
 
