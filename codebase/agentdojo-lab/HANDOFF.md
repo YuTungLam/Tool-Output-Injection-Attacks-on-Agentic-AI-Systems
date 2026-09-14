@@ -11,11 +11,93 @@ The older 120-trajectory NT evaluation below is deferred; its ledger records zer
 started native trajectories and no frozen native plan. Preserve all historical
 protocols and ledgers rather than relabeling them as local-Llama experiments.
 
-On this device the source is present, but `runs/`, `reports/`, `.venv/`,
-`vendor/agentdojo/`, and `.model-cache/` are absent at the migration inspection.
-Historical outcomes and test totals below have not been reverified here. The
-current code remains Groq-specific; Scout deployment and both primary/auditor
-endpoint integration are pending. No model jobs were run by this handoff.
+The migration initially lacked local environments, vendor checkout, model caches,
+and historical run/report bundles. The Python **3.12.14** lab and pinned AgentDojo
+checkout are now restored. `doctor` verified the upstream pin; an offline native
+smoke completed one tool call and two mocked completions with **15 valid events**.
+Its new evidence is [runs/20260914-nesi-offline-smoke-v1/report.html](runs/20260914-nesi-offline-smoke-v1/report.html).
+The semantic and plotting extras are restored from the unchanged lockfile.
+Final verification passed **2,056 repository tests**, **26 HPC tests** and
+25 HPC subtests, plus Ruff and shell syntax checks. The initial full run's six
+failures were resolved (missing plotting dependencies and a plan-only auditor
+guard bug); its log is retained alongside the successful final rerun. Historical
+result bundles and their older outcome claims remain unavailable locally.
+
+Hugging Face authentication and access to Scout's gated configuration are verified.
+All 63 pinned Scout files are downloaded and checksum-verified (CPU job 9029207
+completed). Container job 9029215 is building; dependent GPU smoke 9029415 is
+queued. No Scout inference or new attack trajectory has run. See the root setup document for the latest
+download/job status rather than treating preparation as a deployment receipt.
+
+### Implemented local transport and usage
+
+`RunConfig` now supports `provider = "openai_compatible"` with an explicit
+`model`, `base_url`, and `api_key_env`. Existing Groq defaults and default serialized
+config fields are preserved. [configs/local_scout.toml](configs/local_scout.toml)
+selects `llama-4-scout-local` at `http://127.0.0.1:8000/v1`, using
+`LOCAL_LLM_API_KEY`; it omits unsupported `reasoning_effort`. Credentials stay
+outside config snapshots and known keys are redacted from recorded errors.
+
+From the lab directory, check local configuration without inference:
+
+```bash
+.venv/bin/dojo-lab doctor --config configs/local_scout.toml
+```
+
+After [the HPC serving preparation](hpc/README.md), start a bounded native smoke
+inside an allocation with a server on the same node and its matching key already
+set privately:
+
+```bash
+.venv/bin/dojo-lab run --config configs/local_scout.toml --output runs/NEW-local-clean
+```
+
+This config runs the clean agent with event recording; provenance is not enabled.
+For a new online-provenance experiment, add the existing frozen policy, lineage
+namespace, pinned semantic model/revision, and online flags. Keep the explicit
+`[causal_endpoint]` table: it selects a separate judge provider/model/URL/key
+variable. Local primary configurations cannot enable online causal auditing
+without an explicitly selected judge. Primary and judge requests retain disabled
+SDK retries; local judge requests omit `reasoning_effort` and executable tools.
+Server tool-call formatting, context limits, and actual model behavior still need
+live validation. A zero temperature does not establish repeatability.
+
+For deferred single-source auditing of a run with provenance and a DCPG checkpoint:
+
+```bash
+.venv/bin/dojo-lab counterfactual --run runs/LOCAL-provenance-run \
+  --output reports/NEW-local-audit --live --max-probes 4 \
+  --judge-config configs/local_scout_judge.toml
+```
+
+This also needs a running local endpoint in the allocation. Omit both `--live`
+and `--judge-config` for plan-only analysis. All run/audit output paths must be
+fresh. The server smoke batch stops after its four synthetic requests; it does
+not leave a server available for a later native run.
+
+### Migration limits and next implementation boundary
+
+- `run`, configured `doctor`, the online causal sidecar, explicitly configured
+  `counterfactual`, and per-run HTML support the new local transport.
+- Aggregate `dojo-lab report` still filters for `live-groq` clean runs. Local
+  runs are excluded; inspect their per-run HTML instead.
+- Historical `pilot`, `evaluate`, `neurotaint-eval`, `input-comparison`, `heldout`,
+  and specialized attack/memory/panel/native-replay scripts retain frozen Groq
+  settings. Reusing their implementation patterns requires a newly named local
+  protocol; changing or resuming old frozen batches is not migration support.
+- Default live `paper_audit`, `causal_v2_audit`, and `causal_replay` reject a local
+  source manifest before constructing their implicit Groq client. Their old
+  protocols were not converted. The supported deferred single-source judge is
+  not equivalent to the full joint completed-trace composition.
+- Local wire mocks verified call IDs, list/null arguments, unmodified Unicode
+  tool output, separate primary/judge routing, bounded judge requests, and
+  credential redaction. These checks do not measure Scout's tool-use quality,
+  attribution accuracy, propagation failures, or end-to-end attack success.
+
+Next: finish environment/model/container preparation; validate actual Scout tool
+calls in a scheduled smoke; then freeze only the small case-study protocol in the
+root research plan. Preserve failures and unavailable evidence. Record later
+test receipts and job results in the root current-state notes.
 
 The dated sections below are historical context. Their former next steps and
 local-only/no-push notes do not override the new direction and cross-device

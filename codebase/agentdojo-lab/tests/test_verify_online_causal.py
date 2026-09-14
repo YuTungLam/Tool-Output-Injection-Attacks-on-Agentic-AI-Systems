@@ -126,7 +126,7 @@ def primary_client(suite, task, model):
     )
 
 
-def build_run(path, *, non_english=False):
+def build_run(path, *, non_english=False, local=False):
     suite = runner.get_suite("v1.2.2", "workspace")
     task = suite.user_tasks["user_task_0"]
     call = task.ground_truth(suite.load_and_inject_default_environment({}))[0]
@@ -155,11 +155,26 @@ def build_run(path, *, non_english=False):
         )
     )
     causal = CausalClient(non_english=non_english)
+    endpoints = {}
+    if local:
+        endpoint = {
+            "provider": "openai_compatible",
+            "model": "fixture-local-judge",
+            "base_url": "http://127.0.0.1:8000/v1",
+            "api_key_env": "LOCAL_JUDGE_API_KEY",
+        }
+        endpoints = {
+            **endpoint,
+            "model": "fixture-local-primary",
+            "api_key_env": "LOCAL_PRIMARY_API_KEY",
+            "causal_endpoint": endpoint,
+        }
     try:
         with pytest.MonkeyPatch.context() as patch:
             patch.setattr(runner, "make_offline_client", primary_client)
             result = run_clean(
                 RunConfig(
+                    **endpoints,
                     online_provenance=True,
                     online_causal_audit=True,
                     provenance_policy=str(policy),
@@ -178,6 +193,10 @@ def build_run(path, *, non_english=False):
         policy.unlink()
     assert result["online_causal_audit"]["complete"] is True
     assert len(causal.calls) == 1
+    if local:
+        assert causal.calls[0]["model"] == "fixture-local-judge"
+        assert "reasoning_effort" not in causal.calls[0]
+        assert not verifier.FORBIDDEN_REQUEST_KEYS.intersection(causal.calls[0])
     return path
 
 
@@ -187,6 +206,7 @@ def source_runs(tmp_path_factory):
     return {
         "inline": build_run(root / "inline"),
         "quarantine": build_run(root / "quarantine", non_english=True),
+        "local": build_run(root / "local", local=True),
     }
 
 
@@ -309,3 +329,42 @@ def test_quarantined_response_byte_tampering_and_orphan_files_are_rejected(sourc
     result = verifier.verify(orphan)
     assert result["passed"] is False
     assert result["checks"]["quarantined_response_inventory_exact"] is False
+
+
+@pytest.mark.parametrize("field", ["provider", "model", "base_url", "api_key_env"])
+def test_local_declared_endpoint_must_match_run_config(source_runs, tmp_path, field):
+    run = tmp_path / "local"
+    shutil.copytree(source_runs["local"], run)
+    manifest_path = run / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["online_causal_audit"]["endpoint"][field] = "changed-endpoint"
+    manifest_path.write_text(json.dumps(manifest))
+    result = verifier.verify(run)
+    assert result["passed"] is False
+    assert result["checks"]["manifest_contract_matches"] is False
+
+
+def test_local_live_mode_must_match_selected_provider(source_runs):
+    run = source_runs["local"]
+    manifest = json.loads((run / "manifest.json").read_text())
+    summary = json.loads((run / "summary.json").read_text())
+    manifest["online_causal_audit"]["mode"] = "isolated_openai_compatible"
+    assert verifier._manifest_contract(manifest, summary) is True
+    manifest["online_causal_audit"]["mode"] = "isolated_groq"
+    assert verifier._manifest_contract(manifest, summary) is False
+
+
+def test_local_request_cannot_be_relabelled_with_groq_reasoning_schema(source_runs, tmp_path):
+    run = tmp_path / "local"
+    shutil.copytree(source_runs["local"], run)
+    manifest_path = run / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    endpoint = manifest["config"]["causal_endpoint"]
+    endpoint["provider"] = "groq"
+    del endpoint["base_url"]
+    manifest["online_causal_audit"]["endpoint"] = copy.deepcopy(endpoint)
+    manifest_path.write_text(json.dumps(manifest))
+    result = verifier.verify(run)
+    assert result["checks"]["manifest_contract_matches"] is True
+    assert result["checks"]["plans_requests_budget_and_judgments_revalidate"] is False
+    assert result["passed"] is False

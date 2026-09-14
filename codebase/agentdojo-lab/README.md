@@ -4,11 +4,88 @@
 NeuroTaint stress tests on NeSI, following the supervisor's latest guidance.
 Read [PROJECT_CONTEXT.md](../../PROJECT_CONTEXT.md),
 [RESEARCH_PLAN.md](../../RESEARCH_PLAN.md), and [HPC_SETUP.md](../../HPC_SETUP.md).
-Local Scout inference is planned, not deployed; primary and auditor transports
-still require explicit local-backend integration. Historical runs/HTML and the
-lab environment were not transferred with Git. The large evaluation described
-below is deferred, and its ledger records zero started native trajectories and
-no frozen native plan. Lower dated sections retain their historical scope.
+Local OpenAI-compatible transport is now implemented for the primary agent,
+online causal sidecar, and explicitly configured deferred single-source judge.
+The Python 3.12.14 lab and pinned AgentDojo checkout have been restored. Scout
+access is authenticated and its gated configuration was read successfully;
+all 63 pinned model files passed their checksums. Container job 9029215 is
+building; GPU smoke 9029415 is queued, with no Scout inference yet. Historical
+run/HTML bundles still need separate transfer. The large evaluation below remains
+deferred: its ledger records zero started native trajectories and no frozen native
+plan. Lower dated sections retain their historical scope.
+
+## Local endpoint workflow — 2026-09-14
+
+Run these commands from `codebase/agentdojo-lab`. Installation and credential
+presence checks make no model requests:
+
+```bash
+.venv/bin/dojo-lab doctor --config configs/local_scout.toml
+```
+
+[local_scout.toml](configs/local_scout.toml) selects
+`provider = "openai_compatible"`, model `llama-4-scout-local`, endpoint
+`http://127.0.0.1:8000/v1`, and environment variable `LOCAL_LLM_API_KEY`. Set that
+variable privately to the server's matching key. The config stores its variable
+name only. Local requests omit `reasoning_effort`; no endpoint or credential
+fallback to Groq occurs. `doctor` checks configuration and key presence, not
+server connectivity or tool-call capability.
+
+First prepare and validate the scheduled server using [the HPC runbook](hpc/README.md).
+The first queued combined smoke runs four synthetic requests and then one
+benign native task with a hard four-attempt cap, before stopping its server.
+For later ordinary native runs, use the following **inside an allocation with a
+running server and client on the same node**, with a fresh output directory:
+
+```bash
+.venv/bin/dojo-lab run --config configs/local_scout.toml --output runs/NEW-local-clean
+```
+
+The ordinary run writes its native trace, events, summary, and per-run
+`report.html`. The starter config does not enable provenance or causal auditing.
+To enable the online sidecar in a separately named configuration, retain its
+explicit `[causal_endpoint]` and set the existing policy, lineage namespace,
+pinned semantic-model paths/revision, and online flags. The nested endpoint
+selects the judge's provider, model, URL, and key variable independently. A local
+primary with online auditing and no explicit judge endpoint is rejected. Keep
+new experiment request budgets explicit: `max_tool_rounds` limits each tool loop,
+not all AgentDojo pipeline attempts combined.
+
+For a recorded local run that already has provenance and a DCPG checkpoint,
+the deferred single-source judge also accepts an explicit endpoint:
+
+```bash
+.venv/bin/dojo-lab counterfactual --run runs/LOCAL-provenance-run \
+  --output reports/NEW-local-audit --live --max-probes 4 \
+  --judge-config configs/local_scout_judge.toml
+```
+
+This requires a live server in the same allocation. Without `--live`, omit
+`--judge-config` to plan without inference. The plain clean smoke above does not
+produce the provenance/checkpoint prerequisites for this audit.
+
+Migration scope is deliberately explicit:
+
+- Per-run HTML supports local runs. The aggregate `dojo-lab report` command
+  still selects only historical `live-groq` clean runs and excludes local runs.
+- `pilot`, `evaluate`, `neurotaint-eval`, `input-comparison`, `heldout`, and
+  specialized attack, memory, panel, and native-replay scripts retain their
+  frozen Groq protocols. Do not resume them with local settings; create a new
+  named case-study protocol.
+- Standalone `paper_audit`, `causal_v2_audit`, and `causal_replay` keep their
+  legacy live protocols. Their default live paths reject a local source trace
+  instead of selecting Groq implicitly. The configured deferred command above
+  is a single-source judge, not a replacement for the complete joint composer.
+
+Migration verification: the restored environment passed `doctor` and an offline
+native smoke with one tool call, two mocked completions, and 15 valid events;
+see [its HTML trace](runs/20260914-nesi-offline-smoke-v1/report.html). The focused
+transport checks were followed by a complete rerun with both semantic and
+plotting extras installed: **2,056 repository tests passed**, plus **26 HPC
+tests** and 25 HPC subtests. Ruff and shell syntax checks passed. See
+`reports/20260914-nesi-setup-v1/pytest-full-final.txt` and `pytest-hpc.txt`.
+These checks establish implementation behavior, not Scout capability or new
+research outcomes; live status belongs in [the root handoff](../../PROJECT_CONTEXT.md).
 
 **Active evaluation — NT-AgentDojo-Eval-v1, 2026-09-10:** SafeTool, CTTA,
 model-weight updates and action blocking are outside the current phase. M1–M7 of

@@ -1,6 +1,55 @@
 # NeSI setup and local inference plan
 
-Last inspected: **2026-09-14 UTC**. This is a deployment plan, not a deployment receipt. No dependencies or weights were downloaded, no GPU job was submitted, and no model endpoint was tested during this assessment.
+Last updated: **2026-09-14 UTC**. The CPU lab and pinned MiniLM files have been
+restored, and the offline native-tool fixture passes. Hugging Face login and
+Scout gated-file access are verified. Local transport is implemented; the pinned
+checkpoint is fully downloaded and verified. The serving container is being
+prepared, with its dependent GPU smoke queued. No Scout inference has
+completed yet.
+
+## Selected storage and sign-in
+
+The researcher delegated storage choices. `nn_storage_quota -p uoa04799` reports
+a 200 GiB project allocation and a 10,240 GiB scratch allocation, each with about
+1 GiB used at inspection. Scout's pinned 50 safetensors shards total
+217,283,738,720 bytes (about 202.4 GiB), exceeding project storage even before
+environments and results. The chosen layout is:
+
+| Material | Location |
+| --- | --- |
+| Code and retained experiment evidence | Existing repository in `/nesi/project/uoa04799/dyu848/repos/` |
+| Scout weights | `/nesi/nobackup/uoa04799/dyu848/tool-output-lab/models/` |
+| Download, serving, and temporary caches | `/nesi/nobackup/uoa04799/dyu848/tool-output-lab/cache/` and `tmp/` |
+| Rebuildable serving containers | `/nesi/nobackup/uoa04799/dyu848/tool-output-lab/containers/` |
+| Hugging Face CLI | `/nesi/project/uoa04799/dyu848/tools/hf/bin/hf` |
+| Hugging Face credential | Private default `~/.cache/huggingface/`; never in Git or the shared model directory |
+
+The scratch root was created with mode 700. No Scout copy was available in
+`/opt/nesi/models/huggingface` at inspection. Scratch is not archival storage:
+NeSI's policy permits automatic deletion after 90 days without access. Keep
+retained results in project storage and preserve model/container revision and
+checksum manifests so cached inputs can be restored.
+[NeSI storage guidance](https://docs.nesi.org.nz/Getting_Started/FAQs/Where_should_I_store_my_data/),
+[scratch cleanup policy](https://docs.nesi.org.nz/Announcements/Autodeletion_of_Scratch_Filesystem/).
+
+The CLI uses `huggingface_hub==1.30.0`, matching the lab lockfile. Sign-in is
+complete on this server. On a new device, run this in your own terminal:
+
+```bash
+/nesi/project/uoa04799/dyu848/tools/hf/bin/hf auth login
+```
+
+Choose browser sign-in if prompted. No token needs to be pasted into chat.
+`hf auth whoami` checks the saved account. On 2026-09-14 both this check and an
+authenticated download of Scout's pinned `config.json` succeeded. Its receipt
+is `reports/20260914-nesi-setup-v1/scout-authenticated-access.json` in the lab.
+[Hugging Face CLI authentication](https://huggingface.co/docs/huggingface_hub/guides/cli#hf-auth-login).
+
+The inspected immutable model revision is
+`92f3b1597a195b523d8d9e5700e57e4fbb8f20d3`. Public metadata and MiniLM file-hash
+receipts are in `codebase/agentdojo-lab/reports/20260914-nesi-setup-v1/` (ignored
+runtime evidence). The public inventory predates authentication; retain it
+alongside the later access check and complete download receipts.
 
 ## What is available here
 
@@ -9,12 +58,12 @@ Read-only checks of this session found:
 | Item | Observed state |
 | --- | --- |
 | Host | `login03.hpc.nesi.org.nz`; use scheduled compute nodes for inference |
-| System Python | `3.9.25`; the AgentDojo lab requires Python `3.12.*` |
+| System Python | `3.9.25`; restored lab `.venv` uses `3.12.14` |
 | Scheduler | Slurm; cluster `hpc`; user association with account `uoa04799`, QOS `debug,normal`, default `normal` |
 | GPU partitions | `milan`: 4 nodes × 4 `a100`; `genoa`: 4 nodes × 2 `h100`, 4 nodes × 2 `pro_6000`, and 4 nodes × 4 `l4` |
 | Environment modules | `uv/0.10.3-GCC-12.3.0`, Miniforge3, and CUDA versions are listed; no vLLM module was found |
 | Containers | System Apptainer `1.4.5-3.el9` is available |
-| Upstream dependency | `codebase/agentdojo-lab/vendor/agentdojo` is absent; the lab cannot run until its pinned checkout is restored |
+| Upstream dependency | Restored at pinned commit `089ed468cf3ed0322acc66b0211f26d9d90dbf60`; `doctor` verifies a clean matching checkout |
 
 Commands used to inspect scheduler metadata:
 
@@ -29,7 +78,7 @@ NeSI currently documents A100 80 GB (four per Milan node), H100 NVL 94 GB (two),
 
 ## Scout feasibility
 
-The requested model is [`meta-llama/Llama-4-Scout-17B-16E-Instruct`](https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct). Meta specifies **17 billion activated parameters but 109 billion total parameters**. The full expert weights still need storage. Access is gated; this session has not verified account approval. [Meta model card, checked 2026-09-14](https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct)
+The requested model is [`meta-llama/Llama-4-Scout-17B-16E-Instruct`](https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct). Meta specifies **17 billion activated parameters but 109 billion total parameters**. The full expert weights still need storage. Account approval and authenticated gated-file access are verified. [Meta model card, checked 2026-09-14](https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct)
 
 Approximate **weights-only estimates**, calculated from 109 billion parameters:
 
@@ -43,31 +92,96 @@ These exclude quantization metadata, buffers, activations, KV cache, and runtime
 
 Preserve an unquantized baseline if resources permit. Quantization and changing from Groq's `openai/gpt-oss-120b` to Scout both change the experimental condition. Record and analyze them separately.
 
-## Repository integration still required
+## Implemented local transport
 
-The active package is [codebase/agentdojo-lab](codebase/agentdojo-lab/README.md). It already uses the OpenAI Python SDK, but it does **not** currently expose a supported local-provider configuration:
+The active [lab](codebase/agentdojo-lab/README.md) now supports an explicit
+`openai_compatible` provider through the OpenAI SDK. The primary agent and online
+causal judge have independent endpoint/model/key-variable settings; no local
+error falls back to Groq. Credentials remain environment values, SDK retries
+remain disabled, and Scout requests omit Groq-specific `reasoning_effort`.
+Default Groq configuration serialization remains compatible with frozen runs.
 
-| Code | Gap to address |
-| --- | --- |
-| [runner.py](codebase/agentdojo-lab/src/agentdojo_lab/runner.py) | `RunConfig.provider` accepts only `groq`; authentication uses `GROQ_API_KEY`; primary and online causal clients hard-code the Groq endpoint |
-| [groq_adapter.py](codebase/agentdojo-lab/src/agentdojo_lab/groq_adapter.py) | Native tool serialization and observation hooks are reusable; provider naming and wire compatibility require explicit tests |
-| [counterfactual_audit.py](codebase/agentdojo-lab/src/agentdojo_lab/counterfactual_audit.py), [causal_v2_audit.py](codebase/agentdojo-lab/src/agentdojo_lab/causal_v2_audit.py), [cli.py](codebase/agentdojo-lab/src/agentdojo_lab/cli.py) | Separate auditor entry points also default to Groq; changing the primary client alone leaves these remote defaults intact |
-| Evaluation and batch configs | Several freeze Groq model IDs and protocol settings; create new local experiment identities instead of modifying or resuming historical batches |
+- [local_scout.toml](codebase/agentdojo-lab/configs/local_scout.toml) is the primary
+  starter config, with its online observer disabled until a new protocol enables it.
+- [local_scout_judge.toml](codebase/agentdojo-lab/configs/local_scout_judge.toml)
+  explicitly selects a local completed-trace single-source judge through
+  `dojo-lab counterfactual --live --judge-config ...`.
+- `dojo-lab doctor --config configs/local_scout.toml` checks local configuration,
+  key availability, and upstream pins. It does not contact or prove a live server.
+- Offline wire/native-adapter tests cover routing, independent primary/judge
+  choices, typed arguments, tool-result IDs, isolated no-tools JSON judgments,
+  credential redaction, and default Groq compatibility. The final full suite passed
+  **2,056 tests**, including the strict local/Groq online-causal verifier, real
+  MiniLM path and report generation; **26 HPC tests** also pass. Ruff and shell
+  syntax checks passed. Logs are in `reports/20260914-nesi-setup-v1` in the lab.
 
-Minimal implementation should add an explicit OpenAI-compatible provider with a required endpoint, environment-variable name for its key, served model name, and equivalent settings for every enabled auditor. Reuse the observation hooks, retain disabled SDK retries and existing request budgets, omit unsupported `reasoning_effort` for Scout, and record actual provider/model/endpoint metadata. Endpoint errors must fail visibly without falling back to Groq. Keep secrets out of config snapshots and logs.
+Migration is deliberately scoped. Historical batch/memory/panel scripts and
+aggregate `dojo-lab report` remain Groq-specific. Per-run HTML works with the local
+run path. The old completed-trace joint composer and replay entry points reject
+local manifests that would otherwise choose Groq implicitly; they need explicit
+local migration before those case-study diagnostics. Starter configs are not
+frozen research protocols. No live Scout capability follows from mock tests.
 
-Before live inference, extend [the mock transport tests](codebase/agentdojo-lab/tests/test_groq_adapter.py) and runner tests to cover local routing, primary/judge endpoint selection, untouched tool-output content, call IDs, argument types, no-tools judge requests, error handling, and credential redaction. Existing Groq tests should continue to pass. These tests establish transport behavior; they do not establish Scout's tool-use quality.
+## Pinned preparation and smoke tooling
+
+See [hpc/README.md](codebase/agentdojo-lab/hpc/README.md) for executable steps.
+The private site file is `/nesi/project/uoa04799/dyu848/tools/scout-site.env`.
+It contains paths and pins, not credentials. The candidate is vLLM 0.29.0 with
+CUDA 12.9, pinned to a linux/amd64 OCI manifest. The original official chat template is preserved. The separately named
+`typed_v1` correction preserves historical argument types and escaping; it passed
+28 offline tests and actual Scout tokenizer encode/decode checks. Its SHA-256 is
+`524a672eb654846b9ba1ab8a59ad9c3a80e3ad035dd7d01f701c64a71a09385f`. SIF construction and its own checksum are
+separate from the OCI digest.
+
+CPU-only download job **9029207** completed successfully in **27m 05s**, using
+`hpc/scout-download.sbatch` (4 requested CPUs, 16 GiB RAM, four hours maximum).
+All **63 root files** passed their pinned integrity checks,
+including 50 safetensors shards, from revision
+`92f3b1597a195b523d8d9e5700e57e4fbb8f20d3`; duplicate original-format weights are
+excluded. Verification used the Hub's pinned LFS SHA-256 or Git blob ID for
+every selected file. A separate preflight recheck also passed for the complete
+serving inventory and current metadata content. Its durable evidence directory is
+`/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-download-20260914-v1`.
+The completed `model-integrity.json` is the required GPU-preflight input.
+The materialized snapshot is
+`/nesi/nobackup/uoa04799/dyu848/tool-output-lab/models/llama-4-scout-92f3b159`.
+
+The CPU container job **9029215** is running its immutable OCI-to-SIF build
+(8 requested CPUs, 32 GiB RAM, one hour maximum, no GPUs). It records the SIF's
+own checksum and updates the private site file only after successful conversion.
+The preparation jobs received 8 and 16 logical CPUs respectively;
+requested CPU count and scheduler billing are not identical on these nodes.
+
+GPU smoke job **9029415** is submitted and pending its `afterok` dependencies
+on jobs `9029207` and `9029215`. It cannot run if either preparation fails. The
+first combined check requests one Milan node, four A100s, 48 CPUs, 320 GiB host RAM and **60 minutes
+maximum** (four GPU-hours at the ceiling). It must depend on successful model
+and container preparation. It verifies the full model-integrity receipt,
+metadata/template/SIF hashes, container versions and allocated GPUs, then serves
+on authenticated loopback. Four synthetic requests cover typed tool calls,
+result-ID round trips, parallel calls, and a no-tools JSON judge.
+
+After these pass, a separate native receipt covers one benign AgentDojo
+`user_task_0` with at most four additional SDK attempts, 2,048 completion tokens
+per request and no online auditor. The combined cap is eight generative requests;
+the job shuts down its server afterwards. Native utility, successful tool
+execution, event validation and per-run HTML are checked. Exact Scout tokenization
+measured 4,591 initial prompt tokens and 4,753 after the expected native read;
+with a 2,048-token completion reserve, the latter fits the 8,192 context with
+1,391 tokens remaining. Extra actual reads may still exhaust the context and
+must remain visible failures. None of these checks is an attack experiment.
 
 ## Staged runbook
 
-1. **Restore the CPU-side lab.** Read [bootstrap.py](codebase/agentdojo-lab/scripts/bootstrap.py), then use it to restore AgentDojo commit `089ed468cf3ed0322acc66b0211f26d9d90dbf60` and the locked Python 3.12 environment. The script downloads packages and installs its own pinned `uv`; it was not run in this assessment. Keep the inference server in a separate environment/container so its Torch/CUDA requirements do not rewrite the lab lockfile. Run `dojo-lab doctor`, the offline fixture, and the appropriate offline tests. The current `doctor` reports Groq readiness and needs updating for local endpoints.
+1. **Restore the CPU-side lab.** Read [bootstrap.py](codebase/agentdojo-lab/scripts/bootstrap.py), then use it to restore AgentDojo commit `089ed468cf3ed0322acc66b0211f26d9d90dbf60` and the locked Python 3.12 environment. The script has completed on NeSI and installed its own pinned `uv`. Keep the inference server in a separate environment/container so its Torch/CUDA requirements do not rewrite the lab lockfile. Run `dojo-lab doctor`, the offline fixture, and the appropriate offline tests. The provider-aware `doctor` and the offline native fixture have passed.
 
    Bootstrap's default sync omits the optional semantic stack. After bootstrap,
-   install that extra from `codebase/agentdojo-lab/` using its own environment:
+   install both semantic and plotting extras from `codebase/agentdojo-lab/` using
+   its own environment (plotting is required by the complete report test suite):
 
    ```bash
    UV_CACHE_DIR=.uv-cache UV_PYTHON_INSTALL_DIR=.python \
-     .bootstrap/bin/python -m uv sync --locked --python 3.12 --extra semantic
+     .bootstrap/bin/python -m uv sync --locked --python 3.12 --extra semantic --extra figures
    ```
 
    Restore or download `sentence-transformers/all-MiniLM-L6-v2` at revision
@@ -81,11 +195,11 @@ Before live inference, extend [the mock transport tests](codebase/agentdojo-lab/
    arrive through Git. Preserve the lockfile and distinguish model integrity
    checks from historical live-accuracy claims.
 
-2. **Resolve access, storage, and resource limits.** Confirm the project's GPU allocation and the agreed first-job limit, HF model access, and a project model/cache directory with enough quota for the checkpoint, container/environment, and temporary download files. Do not put weights in Git. Authenticate locally; do not send tokens in chat. Record an exact model revision, actual file size, and checksums before scheduling inference.
+2. **Resolve access, storage, and resource limits.** Storage and authenticated HF access are confirmed; the bounded job limits are recorded above. Scheduler acceptance and actual remaining allocation are distinct; record job accounting when it runs. Do not put weights in Git. Authenticate locally; do not send tokens in chat. Record an exact model revision, actual file size, and checksums before scheduling inference.
 
 3. **Pin a serving environment.** Select a vLLM release/container compatible with the allocated GPU driver. Record the release or image digest, CUDA/PyTorch versions, model/tokenizer revision, and tool chat-template hash. Check installed `vllm serve --help` against the pinned release. Current vLLM documentation recommends `llama4_pythonic` and its matching Llama 4 chat template; automatic tool choice needs enabling. [vLLM tool calling, checked 2026-09-14](https://docs.vllm.ai/en/latest/features/tool_calling/)
 
-4. **Prepare a bounded Slurm smoke job.** A candidate BF16 request is `--account=uoa04799 --partition=milan --nodes=1 --gpus-per-node=a100:4`; CPU count, RAM, walltime and QOS still need setting from the resource budget. GPU memory is separate from Slurm host RAM. The typed GPU request follows [NeSI's GPU instructions, checked 2026-09-14](https://docs.nesi.org.nz/Batch_Computing/Using_GPUs/). Capture `nvidia-smi` inside the allocation and server startup logs. Serve and run the test client in the same job on loopback; stop the server when the client exits.
+4. **Prepare a bounded Slurm smoke job.** A candidate BF16 request is `--account=uoa04799 --partition=milan --nodes=1 --gpus-per-node=a100:4`; the prepared batch file fixes its CPU, host RAM and walltime limits above. GPU memory is separate from Slurm host RAM. The typed GPU request follows [NeSI's GPU instructions, checked 2026-09-14](https://docs.nesi.org.nz/Batch_Computing/Using_GPUs/). Capture `nvidia-smi` inside the allocation and server startup logs. Serve and run the test client in the same job on loopback; stop the server when the client exits.
 
    The following is an **unexecuted starting command inside that allocation**, after `SCOUT_SNAPSHOT` points to the downloaded, pinned local model and `SCOUT_CHAT_TEMPLATE` points to the matching pinned vLLM template:
 
@@ -109,9 +223,11 @@ Before live inference, extend [the mock transport tests](codebase/agentdojo-lab/
 
 ## Inputs and evidence still missing
 
-- HF access approval for the requested checkpoint; no secret needs to be shared.
-- Model/cache storage location and quota; any existing approved checkpoint or serving container.
-- Remaining project allocation and the first job's CPU/RAM/GPU/walltime budget.
-- Actual GPU driver compatibility, a pinned vLLM release, and measured Scout memory/startup behavior.
-- Whether the initial causal judge uses Scout as well or a separately specified model; record the resulting evaluation limitations.
-- Restored runtime/test results and a live local tool-call receipt. Until those exist, local inference remains planned.
+- The built SIF's checksum and successful container-preparation receipt.
+- Actual GPU driver compatibility and measured Scout memory/startup/tool behavior.
+- Successful synthetic and native Scout smoke receipts, followed by a new small frozen research protocol.
+- Selected old raw run/report bundles from the personal computer; none restored.
+
+The starter primary and judge both use local Scout, with independent endpoint
+configuration. A different judge requires a new explicit model condition. The
+project's remaining allocation balance has not been independently verified.

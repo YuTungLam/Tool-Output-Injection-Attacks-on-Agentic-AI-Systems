@@ -20,6 +20,7 @@ import threading
 import time
 from collections import Counter
 from pathlib import Path
+from typing import Literal
 
 from agentdojo_lab import causal_v2, judgment_formats, paper_audit
 from agentdojo_lab import causal_v2_audit as transport
@@ -92,6 +93,7 @@ class OnlineCausalAuditor:
         judgment_format: str = judgment_formats.ENGLISH_PUNCTUATION_FORMAT,
         request_timeout_seconds: float = 60,
         model: str | None = None,
+        reasoning_effort: Literal["low", "medium", "high"] | None = "low",
     ):
         if type(max_requests) is not int or not 0 <= max_requests <= transport.MAX_REQUESTS:
             raise ValueError("Online causal request budget must be an integer from zero through 32")
@@ -111,6 +113,8 @@ class OnlineCausalAuditor:
         selected_model = transport.MODEL if model is None else model
         if not isinstance(selected_model, str) or not selected_model.strip():
             raise ValueError("Online causal model must be a nonempty string")
+        if reasoning_effort not in (None, "low", "medium", "high"):
+            raise ValueError("Invalid causal reasoning effort")
 
         self._lock = threading.RLock()
         self._path = Path(path)
@@ -124,6 +128,7 @@ class OnlineCausalAuditor:
         self._judgment_format = judgment_format
         self._request_timeout_seconds = float(request_timeout_seconds)
         self._model = selected_model
+        self._reasoning_effort = reasoning_effort
         self._closed = False
         self._disabled = False
         self._errors: list[dict] = []
@@ -244,6 +249,10 @@ class OnlineCausalAuditor:
         }
         body = transport.request_body(probe, judgment_format=self._judgment_format)
         body["model"] = self._model
+        if self._reasoning_effort is None:
+            body.pop("reasoning_effort", None)
+        else:
+            body["reasoning_effort"] = self._reasoning_effort
         row["request_body_sha256"] = _hash(body)
         if {"tools", "tool_choice", "functions", "function_call"}.intersection(body):
             row.update(status="error", reason="auditor_request_schema_failed")

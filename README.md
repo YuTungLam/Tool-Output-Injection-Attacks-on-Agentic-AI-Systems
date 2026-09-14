@@ -19,7 +19,9 @@ implementation, and interactive experiment reports.
 
 **Current phase, 2026-09-14:** prepare local inference on NeSI and a few concrete
 propagation case studies. Historical large evaluation plans are deferred. The
-model is not deployed and the new pilot has not run.
+local endpoint adapter is tested, and Scout is authenticated, downloaded and
+checksum-verified. Container preparation and a dependent GPU smoke are scheduled. Scout inference and the new pilot
+have not run. See HPC_SETUP.md for current jobs and checks before resubmitting.
 
 ## Continuing on another device
 

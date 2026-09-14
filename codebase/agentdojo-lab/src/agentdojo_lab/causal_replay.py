@@ -293,6 +293,10 @@ def run_replay(plans_dir: Path, output: Path, *, client=None, live=False, max_re
         raise ValueError("Replay permits a total of zero through eight SDK requests")
     folder, output = _local(plans_dir), _local(output)
     plans, source, export_before, source_before, _ = _validate_export(folder)
+    if live and client is None:
+        from agentdojo_lab.providers import reject_implicit_groq_audit
+
+        reject_implicit_groq_audit(source)
     for tree in (folder, source):
         if output.exists() or output.is_relative_to(tree) or tree.is_relative_to(output):
             raise ValueError("Use a fresh replay output separate from both input trees")

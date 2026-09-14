@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 from uuid import uuid4
 
-import openai
+import openai as openai  # Compatibility export used by existing callers and mock transports.
 from agentdojo.agent_pipeline.agent_pipeline import AgentPipeline, PipelineConfig
 from agentdojo.agent_pipeline.base_pipeline_element import BasePipelineElement
 from agentdojo.agent_pipeline.tool_execution import ToolsExecutionLoop
@@ -31,13 +31,14 @@ from agentdojo_lab.inspection import inspect_events
 from agentdojo_lab.observation import ObservationSession, observe_pipeline
 from agentdojo_lab.offline import make_offline_client
 from agentdojo_lab.pacing import RequestPacer
+from agentdojo_lab.providers import GROQ_BASE_URL as GROQ_BASE_URL
+from agentdojo_lab.providers import EndpointSettings, Provider
 from agentdojo_lab.recording import EventRecorder
 
 if TYPE_CHECKING:
     from agentdojo_lab.evaluation_runner import EvaluationTrial
 
 ROOT = Path(__file__).resolve().parents[2]
-GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 
 
 class RunExecutionError(RuntimeError):
@@ -49,10 +50,13 @@ class RunExecutionError(RuntimeError):
 
 
 class RunConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
 
-    provider: Literal["groq"] = "groq"
+    provider: Provider = "groq"
     model: str = "openai/gpt-oss-120b"
+    base_url: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    api_key_env: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    causal_endpoint: EndpointSettings | None = Field(default=None, exclude_if=lambda value: value is None)
     benchmark_version: str = "v1.2.2"
     suite: str = "workspace"
     user_tasks: list[str] = Field(default_factory=lambda: ["user_task_0"], min_length=1)
@@ -85,6 +89,16 @@ class RunConfig(BaseModel):
 
     @model_validator(mode="after")
     def attribution_configuration(self):
+        self.primary_endpoint()
+        if self.provider == "openai_compatible":
+            if "model" not in self.model_fields_set:
+                raise ValueError("openai_compatible requires an explicit served model name")
+            if self.reasoning_effort is not None:
+                raise ValueError("openai_compatible currently requires reasoning_effort to be omitted")
+            if self.online_causal_audit and self.causal_endpoint is None:
+                raise ValueError("A local primary with online causal auditing requires explicit causal_endpoint")
+        if self.causal_endpoint is not None and self.causal_model != "openai/gpt-oss-120b":
+            raise ValueError("Use causal_endpoint.model instead of causal_model when selecting an endpoint")
         if self.cascade_profile != "ordinary" and not self.provenance_policy:
             raise ValueError("A nonordinary cascade profile requires a frozen provenance policy")
         if self.canary_enabled and (not self.provenance_policy or len(self.user_tasks) != 1):
@@ -119,6 +133,14 @@ class RunConfig(BaseModel):
         ):
             raise ValueError("Semantic model settings require online_provenance and nonempty values")
         return self
+
+    def primary_endpoint(self) -> EndpointSettings:
+        return EndpointSettings(
+            provider=self.provider, model=self.model, base_url=self.base_url, api_key_env=self.api_key_env
+        )
+
+    def judge_endpoint(self) -> EndpointSettings:
+        return self.causal_endpoint or EndpointSettings(provider="groq", model=self.causal_model)
 
     @field_validator("model", "suite", "benchmark_version", "causal_model")
     @classmethod
@@ -164,11 +186,11 @@ def configured_key() -> str:
     return os.environ.get("GROQ_API_KEY", "").strip()
 
 
-def doctor() -> dict:
+def doctor(config: RunConfig | None = None) -> dict:
     status = upstream_status()
     suites = get_suites(status["benchmark_version"])
     has_key = bool(configured_key())
-    return {
+    result = {
         "python": platform.python_version(),
         "platform": platform.platform(),
         "upstream": status,
@@ -183,6 +205,19 @@ def doctor() -> dict:
         "live_connectivity_verified": False,
         "env_file": str(ROOT / ".env"),
     }
+    if config is not None:
+        endpoint = config.primary_endpoint()
+        primary_ready = bool(endpoint.configured_key())
+        judge = config.judge_endpoint() if config.online_causal_audit else None
+        judge_ready = judge is None or config.causal_max_requests == 0 or bool(judge.configured_key())
+        result.update(
+            endpoint=endpoint.model_dump(),
+            api_key_configured=primary_ready,
+            causal_endpoint=judge.model_dump() if judge is not None else None,
+            causal_api_key_configured=bool(judge.configured_key()) if judge is not None else None,
+            live_prerequisites_ready=status["pin_matches"] and primary_ready and judge_ready,
+        )
+    return result
 
 
 def write_json(path: Path, value: dict) -> None:
@@ -246,9 +281,22 @@ def run_clean(
     if causal_client is not None and not config.online_causal_audit:
         raise ValueError("An injected causal client requires online_causal_audit")
 
-    key = "" if offline else configured_key()
+    endpoint = config.primary_endpoint()
+    judge_endpoint = config.judge_endpoint()
+    if not offline:
+        load_dotenv(ROOT / ".env", override=False)
+    key = "" if offline else (
+        configured_key() if endpoint.key_variable == "GROQ_API_KEY" else endpoint.configured_key()
+    )
     if not offline and not key:
-        raise ValueError(f"Set GROQ_API_KEY in {ROOT / '.env'} before a live run. Do not paste it in chat.")
+        raise ValueError(f"Set {endpoint.key_variable} in {ROOT / '.env'} before a live run.")
+    judge_key = ""
+    if config.online_causal_audit and not offline and config.causal_max_requests:
+        if causal_client is None:
+            judge_key = key if judge_endpoint.key_variable == endpoint.key_variable else judge_endpoint.require_key()
+        else:
+            judge_key = getattr(causal_client, "api_key", "")
+    redactions = tuple(sorted({value for value in (key, judge_key) if value}, key=len, reverse=True))
 
     policy = None
     if config.provenance_policy is not None:
@@ -285,7 +333,7 @@ def run_clean(
 
         canary = CanaryInjector(policy)
 
-    mode = "offline-fixture" if offline else "live-groq"
+    mode = "offline-fixture" if offline else f"live-{config.provider.replace('_', '-')}"
     pacer = (
         RequestPacer(config.pacing_tokens_per_minute, pacing_state)
         if config.pacing_tokens_per_minute
@@ -303,14 +351,14 @@ def run_clean(
         "python": platform.python_version(),
         "platform": platform.platform(),
         "uv_lock_sha256": lock_hash,
-        "endpoint": "in-process mock transport" if offline else GROQ_BASE_URL,
+        "endpoint": "in-process mock transport" if offline else endpoint.url,
         "sdk_max_retries": 0,
         "request_pacing": {
             "enabled": pacer is not None,
             "tokens_per_minute": config.pacing_tokens_per_minute,
             "window_seconds": RequestPacer.window_seconds if pacer else None,
         },
-        "adapter": "groq-text-v1",
+        "adapter": "groq-text-v1" if config.provider == "groq" else "openai-compatible-text-v1",
         "event_recording": {"enabled": config.record_events, "schema_version": 1},
         "input_condition": "canary_intervention" if canary is not None else "passive",
         "online_provenance": {
@@ -345,9 +393,9 @@ def run_clean(
                 if causal_client is not None
                 else "plan_only"
                 if offline or config.causal_max_requests == 0
-                else "isolated_groq"
+                else f"isolated_{judge_endpoint.provider}"
             ),
-            "model": config.causal_model,
+            "model": judge_endpoint.model,
             "max_requests": config.causal_max_requests,
             "max_sources": config.causal_max_sources,
             "max_pairs": config.causal_max_pairs,
@@ -381,6 +429,8 @@ def run_clean(
             "Recording observes execution; it does not establish source attribution or causality.",
         ],
     }
+    if config.causal_endpoint is not None:
+        manifest["online_causal_audit"]["endpoint"] = judge_endpoint.model_dump()
     if lineage is not None:
         manifest["online_provenance"]["lineage"] = lineage.metadata
         manifest["online_provenance"]["implementation_sha256"]["lineage.py"] = hashlib.sha256(
@@ -444,11 +494,8 @@ def run_clean(
 
                     judge_client = causal_client
                     if judge_client is None and not offline and config.causal_max_requests:
-                        owned_causal_client = openai.OpenAI(
-                            api_key=key,
-                            base_url=GROQ_BASE_URL,
-                            max_retries=0,
-                            timeout=config.causal_request_timeout_seconds,
+                        owned_causal_client = judge_endpoint.client(
+                            key=judge_key, timeout=config.causal_request_timeout_seconds
                         )
                         judge_client = owned_causal_client
                     causal_auditor = OnlineCausalAuditor(
@@ -460,7 +507,8 @@ def run_clean(
                         max_pairs=config.causal_max_pairs,
                         judgment_format=judgment_formats.ENGLISH_PUNCTUATION_FORMAT,
                         request_timeout_seconds=config.causal_request_timeout_seconds,
-                        model=config.causal_model,
+                        model=judge_endpoint.model,
+                        **({"reasoning_effort": None} if judge_endpoint.provider == "openai_compatible" else {}),
                     )
 
                 attribution = OnlineProvenance(
@@ -479,7 +527,7 @@ def run_clean(
             recorder = EventRecorder(
                 run_dir / "events.jsonl",
                 run_dir.name,
-                redactions=(key,),
+                redactions=redactions,
                 on_event=attribution.consume if attribution is not None else None,
             )
             recorder.emit("RUN_STARTED", {"mode": mode, "config": config.model_dump()})
@@ -487,12 +535,7 @@ def run_clean(
         client = (
             make_offline_client(suite, suite.user_tasks["user_task_0"], config.model)
             if offline
-            else openai.OpenAI(
-                api_key=key,
-                base_url=GROQ_BASE_URL,
-                max_retries=0,
-                timeout=config.request_timeout_seconds,
-            )
+            else endpoint.client(key=key, timeout=config.request_timeout_seconds)
         )
         with client:
             if observer is not None:
@@ -512,6 +555,7 @@ def run_clean(
                 reasoning_effort=config.reasoning_effort,
                 observer=observer,
                 pacer=pacer,
+                **({"provider": config.provider} if config.provider != "groq" else {}),
                 **llm_extra,
             )
             if offline:
@@ -582,7 +626,9 @@ def run_clean(
             summary["task_success_rate"] = None
     except BaseException as exc:
         # Persist a useful failure record without serializing clients or credentials.
-        detail = str(exc).replace(key, "[REDACTED]") if key else str(exc)
+        detail = str(exc)
+        for secret in redactions:
+            detail = detail.replace(secret, "[REDACTED]")
         summary.update(status="failed", error_type=type(exc).__name__, error=detail[:2000])
         if isinstance(exc, Exception):
             raise RunExecutionError(run_dir / "summary.json", exc) from exc
@@ -671,7 +717,7 @@ def run_clean(
         # Reporting happens after execution and recording are complete. Its
         # failures must not replace an agent error or change evaluator results.
         try:
-            report_status = export_run_html(run_dir, redactions=(key,))
+            report_status = export_run_html(run_dir, redactions=redactions)
         except Exception as exc:
             report_status = {"status": "failed", "error_type": type(exc).__name__}
         try:

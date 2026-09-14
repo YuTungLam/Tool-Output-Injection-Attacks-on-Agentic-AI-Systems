@@ -16,8 +16,11 @@ do not rely on a previous chat being available.
   arguments, joint/redundant sources, transformations, memory, and inconsistency.
   A new defense or another method reproduction is a later research decision.
 - The local model requested by the user is Llama 4 Scout. It is not deployed yet
-  as of the initial NeSI handoff. Resolve actual hardware/access and provider
-  integration before scheduling experiments; do not silently fall back to Groq.
+  as of the latest setup checkpoint: authentication and local transport work,
+  while CPU preparation and a dependent GPU smoke are scheduled. Check their
+  recorded job IDs and results
+  in HPC_SETUP.md before submitting duplicates. Verify live tool calls before
+  scheduling experiments; do not silently fall back to Groq.
 
 ## Evidence and implementation
 

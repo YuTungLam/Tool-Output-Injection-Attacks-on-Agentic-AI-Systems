@@ -125,7 +125,7 @@ Paths in the table are relative to `codebase/agentdojo-lab/` unless stated other
 
 | Area | Where to look | What it provides |
 | --- | --- | --- |
-| Runtime/configuration | `src/agentdojo_lab/runner.py`, `groq_adapter.py`, `cli.py` | Native AgentDojo execution; currently Groq-specific transport |
+| Runtime/configuration | `src/agentdojo_lab/runner.py`, `providers.py`, `groq_adapter.py`, `cli.py` | Native AgentDojo execution; Groq and explicit OpenAI-compatible endpoints |
 | Version pins | `upstream.json`, `pyproject.toml`, `uv.lock`, `scripts/bootstrap.py` | Python 3.12, AgentDojo 0.1.35 at a fixed commit, locked dependencies |
 | Observations | `recording.py`, `observation.py`, `online.py` in `src/agentdojo_lab/` | Requests, exposures, proposals, tool execution, and observer receipts |
 | Sources and argument fields | `provenance.py`, `policy.py`, `configs/workspace_policy_v1.yaml` | Source bindings and recursive argument leaves with JSON Pointers |
@@ -135,7 +135,7 @@ Paths in the table are relative to `codebase/agentdojo-lab/` unless stated other
 | Joined audit | `paper_audit.py`, `online_causal.py` | Completed-trace composition and online proposal-boundary integration |
 | Presentation | `html_report.py`, `provenance_report.py`, `templates/` | Interactive per-run timelines and graphs |
 | Prior experiments | `ATTACK-VALIDATION-RESULTS.md`, `METHOD-COMPLETION-RESULTS.md`, `NEUROTAINT_EVAL_PROGRESS.json` | Historical outcomes and bounded claims |
-| Regression coverage | `tests/` | 91 test files at the migration inspection; tests not run in this handoff |
+| Regression coverage | `tests/` | Historical coverage plus new local-provider regression tests; see current verification below |
 | Older separate harness | root `codebase/tool_output_lab/` | Earlier experiment harness; different event schema, not the active lab |
 
 Bare module filenames in this map refer to `src/agentdojo_lab/`.
@@ -148,11 +148,15 @@ clean before this documentation handoff. Recheck these facts on a later visit.
 | Item | Observed state |
 | --- | --- |
 | Source/configuration/test files | Present in Git |
-| Previous raw runs and generated HTML | `runs/` and `reports/` absent on this device |
-| Lab environment, AgentDojo checkout, semantic weights | `.venv/`, `vendor/agentdojo/`, `.model-cache/` absent |
-| Default Python | 3.9.25; active lab requires 3.12 |
-| Local LLM integration | Not implemented: provider validation and primary/auditor endpoints remain Groq-specific |
-| Scout weights/server | Not provisioned or started by this handoff |
+| Previous raw runs and generated HTML | Historical bundles absent; new setup receipts/offline smoke exist locally |
+| Lab environment and AgentDojo checkout | Restored on NeSI; `doctor` verifies the pinned clean upstream |
+| Semantic weights | Pinned MiniLM snapshot downloaded and file hashes verified; locked semantic dependencies installed and 53 dependent regressions passed |
+| Default Python / lab Python | System 3.9.25; restored lab `.venv` 3.12.14 |
+| Local LLM integration | Explicit primary/online judge endpoints, local deferred single-source judge, provider-aware doctor and regression coverage implemented; legacy batch/joint paths remain scoped out |
+| Scout weights/server | All 63 pinned files verified; CPU download 9029207 completed. Container 9029215 building; dependent GPU smoke 9029415 queued |
+| Hugging Face access | Browser login complete; saved identity and authenticated pinned Scout config download verified |
+| Model storage | Private scratch root `/nesi/nobackup/uoa04799/dyu848/tool-output-lab`; 10 TiB project scratch allocation |
+| NeSI offline smoke | Completed native fixture with a valid 15-event recording and HTML; no real LLM calls |
 | Git transport | SSH push and pull tested successfully on this device earlier in the session |
 | New case-study pilot | Planned in RESEARCH_PLAN.md; zero new trajectories |
 
@@ -175,20 +179,38 @@ ledgers and result notes retain their historical values.
 
 ## Next actions and unresolved inputs
 
-1. Confirm Hugging Face access to the gated Scout repository, storage location
-   and quota, and the usable NeSI GPU allocation. Never place tokens in chat/Git.
-2. Restore the pinned lab environment and, if available, selected historical
-   artifact bundles from the personal computer. Record missing evidence explicitly.
-3. Add an explicit local endpoint path for both primary and auditor clients;
-   preserve old Groq protocols. Validate tool-call round trips before experiments.
+1. Finish the pinned serving SIF; Scout's complete download/integrity pass has
+   succeeded.
+   Model CPU job: `9029207`; container CPU job: `9029215`; dependent GPU
+   smoke job: `9029415`. Inspect existing jobs
+   and receipts before submitting anything again. See HPC_SETUP.md and hpc/README.md.
+2. Inspect the queued GPU job and its retained receipts once the container is
+   ready; full repository and HPC verification already pass.
+3. Review the existing combined GPU job's synthetic and native receipts after
+   it finishes. Correct infrastructure failures before research trials; do not
+   replace a job merely because it is waiting in the queue.
 4. Add a small offline paired report for changed arguments and first observable
    and security-relevant divergence, reusing existing trace/graph exports.
 5. Freeze and execute the small case-study protocol in RESEARCH_PLAN.md, then
    examine repeatability only for a clearly specified candidate pattern.
 
-The first unresolved user inputs are Hugging Face approval and the location of
-any prior run/report bundles. No new inference, weight download, environment
-installation, or Slurm submission was performed during this documentation task.
+The user confirms Hugging Face approval, has signed in successfully on NeSI,
+and has delegated storage choices. No further authentication input is needed.
+Previous run/report bundle locations remain unknown.
+
+The NeSI bootstrap and offline smoke have run. The smoke is
+`codebase/agentdojo-lab/runs/20260914-nesi-offline-smoke-v1`; setup receipts are
+in `codebase/agentdojo-lab/reports/20260914-nesi-setup-v1`. These are new setup
+artifacts, not restored historical experiments or new attack evidence. The final
+full verification passed **2,056 repository tests** and **26 HPC tests** (plus
+25 HPC subtests), with Ruff, shell syntax and documentation link checks passing.
+Logs are `pytest-full-final.txt` and `pytest-hpc.txt` in the setup receipt directory.
+The initial full run's six failures are retained in `pytest-full.txt`: four were
+missing plotting dependencies; two exposed a plan-only auditor guard bug, which
+was fixed without changing frozen protocols. The final full rerun passes.
+No Scout inference or new research trajectory has occurred. Preparation job
+evidence is retained in
+`/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/` outside Git.
 
 ## Moving between devices
 

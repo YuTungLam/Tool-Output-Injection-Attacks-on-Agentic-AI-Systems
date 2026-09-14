@@ -228,6 +228,10 @@ def run_audit(
     if output.exists() or output.is_relative_to(folder) or folder.is_relative_to(output):
         raise ValueError("Use a fresh audit output separate from the plan export")
     plans, source, export_hashes, source_hashes, slots = _validate_export(folder)
+    if live and client is None:
+        from agentdojo_lab.providers import reject_implicit_groq_audit
+
+        reject_implicit_groq_audit(source)
     if output.is_relative_to(source) or source.is_relative_to(output):
         raise ValueError("Audit output must be separate from original source artifacts")
     if client is not None:

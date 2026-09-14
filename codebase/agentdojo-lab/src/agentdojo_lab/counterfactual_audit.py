@@ -251,6 +251,35 @@ class GroqCounterfactualJudge:
             self.pacer.after_response(ticket, response.usage.total_tokens if response.usage else None)
         return {"response": response.model_dump(mode="json"), "pacing_wait_seconds": waited}
 
+    def close(self):
+        close = getattr(self.client, "close", None)
+        if close is not None:
+            close()
+
+
+class ConfiguredCounterfactualJudge(GroqCounterfactualJudge):
+    """Explicit provider for a new audit; preserves the legacy class's default contract."""
+
+    def __init__(self, endpoint, *, client=None, pacer=None, timeout=60.0):
+        from dotenv import load_dotenv
+
+        from agentdojo_lab.providers import EndpointSettings
+        from agentdojo_lab.runner import ROOT
+
+        endpoint = EndpointSettings.model_validate(endpoint)
+        if client is None:
+            load_dotenv(ROOT / ".env", override=False)
+            client = endpoint.client(key=endpoint.require_key(), timeout=timeout)
+        super().__init__(client=client, pacer=pacer, model=endpoint.model)
+        self.explicit_endpoint = True
+        self.metadata.update(
+            provider=endpoint.provider,
+            base_url=endpoint.url,
+            api_key_env=endpoint.key_variable,
+            timeout_seconds=timeout,
+            reasoning_effort=None if endpoint.provider == "openai_compatible" else "low",
+        )
+
 
 def request_body(probe: dict, config: dict) -> dict:
     return {
@@ -263,6 +292,7 @@ def request_body(probe: dict, config: dict) -> dict:
                 "reasoning_effort",
                 "response_format",
             )
+            if config.get(key) is not None
         },
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -293,6 +323,12 @@ def audit_run(run_dir: Path, output: Path, *, judge=None, max_probes: int = 8) -
     if type(max_probes) is not int or not 0 <= max_probes <= 64:
         raise ValueError("max_probes must be an integer between 0 and 64")
     root, destination = Path(run_dir).resolve(), Path(output).resolve()
+    if judge is not None and isinstance(judge, GroqCounterfactualJudge) and not getattr(
+        judge, "explicit_endpoint", False
+    ):
+        from agentdojo_lab.providers import reject_implicit_groq_audit
+
+        reject_implicit_groq_audit(root)
     if destination.is_relative_to(root) or root.is_relative_to(destination):
         raise ValueError("Audit output must be separate from the source run")
     if not all(

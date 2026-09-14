@@ -26,6 +26,7 @@ from agentdojo_lab.evaluation_review import _strict
 from agentdojo_lab.inspection import inspect_events
 from agentdojo_lab.online import AVAILABILITY as PROVENANCE_AVAILABILITY
 from agentdojo_lab.online_causal import AVAILABILITY, GRAPH_PROTOCOL, PROTOCOL, SCOPE, _usage
+from agentdojo_lab.providers import EndpointSettings
 from agentdojo_lab.runner import RunConfig
 
 MAX_JSONL_BYTES = 64 * 1024 * 1024
@@ -135,7 +136,8 @@ def _manifest_contract(manifest: dict, summary: dict) -> bool:
     source_budget = resolved.causal_max_sources
     pair_budget = resolved.causal_max_pairs
     timeout = resolved.causal_request_timeout_seconds
-    model = resolved.causal_model
+    endpoint = resolved.judge_endpoint()
+    model = endpoint.model
     mode = declared["mode"]
     return (
         config["online_causal_audit"] is True
@@ -165,7 +167,9 @@ def _manifest_contract(manifest: dict, summary: dict) -> bool:
         and declared.get("max_pairs") == pair_budget
         and declared.get("request_timeout_seconds") == timeout
         and declared.get("sdk_max_retries") == 0
-        and declared.get("mode") in {"plan_only", "isolated_groq", "injected_client"}
+        and declared.get("mode") in {"plan_only", f"isolated_{endpoint.provider}", "injected_client"}
+        and declared.get("endpoint")
+        == (endpoint.model_dump() if resolved.causal_endpoint is not None else None)
         and declared.get("transport_isolation") == "separate_unobserved_client; no_tools"
         and declared.get("execution")
         == "synchronous_before_native_tool_runtime; observational_only"
@@ -332,7 +336,7 @@ def _result_binding(
     ordinal: int,
     proposal_event_id: str,
     judgment_format: str,
-    model: str,
+    endpoint: EndpointSettings,
     watched: dict[str, bytes],
 ) -> tuple[dict, int]:
     expected = {
@@ -348,7 +352,9 @@ def _result_binding(
     if any(result.get(key) != value for key, value in expected.items()):
         raise ValueError("Causal result differs from its planned slot")
     body = transport.request_body(probe, judgment_format=judgment_format)
-    body["model"] = model
+    body["model"] = endpoint.model
+    if endpoint.provider == "openai_compatible":
+        body.pop("reasoning_effort", None)
     if FORBIDDEN_REQUEST_KEYS.intersection(body) or result.get("request_body_sha256") != _hash(
         body
     ):
@@ -451,7 +457,7 @@ def _plans_and_judgments(
                 ordinal,
                 identifier,
                 judgment_format,
-                config.causal_model,
+                config.judge_endpoint(),
                 watched,
             )
             expected_reason = None
@@ -694,7 +700,7 @@ def _summary_counts(
         "record_count": len(rows),
         "graph_saved": True,
         "graph_sha256": graph_sha256,
-        "model": resolved.causal_model,
+        "model": resolved.judge_endpoint().model,
         "judgment_format": judgment_formats.ENGLISH_PUNCTUATION_FORMAT,
         "request_timeout_seconds": resolved.causal_request_timeout_seconds,
         "sdk_max_retries": 0,

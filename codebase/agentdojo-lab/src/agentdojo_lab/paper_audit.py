@@ -505,6 +505,10 @@ def run(
     if auditor_dir is not None and (live or client is not None or max_requests):
         raise ValueError("Reuse an existing auditor or request new predictions, not both")
     source, output = _local(run_dir), _local(output)
+    if live and client is None:
+        from agentdojo_lab.providers import reject_implicit_groq_audit
+
+        reject_implicit_groq_audit(source)
     existing = _local(auditor_dir) if auditor_dir is not None else None
     if (
         output.exists()

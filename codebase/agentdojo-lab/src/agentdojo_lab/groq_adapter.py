@@ -23,6 +23,7 @@ from openai.types.chat import ChatCompletionMessageParam
 
 from agentdojo_lab.observation import ObservationSession
 from agentdojo_lab.pacing import RequestPacer
+from agentdojo_lab.providers import Provider
 
 ReasoningEffort = Literal["low", "medium", "high"]
 
@@ -63,6 +64,7 @@ class GroqLLM(BasePipelineElement):
         reasoning_effort: ReasoningEffort | None = None,
         observer: ObservationSession | None = None,
         pacer: RequestPacer | None = None,
+        provider: Provider = "groq",
     ) -> None:
         if not model or not model.strip():
             raise ValueError("model must be a non-empty Groq model ID")
@@ -81,7 +83,10 @@ class GroqLLM(BasePipelineElement):
         self.reasoning_effort = reasoning_effort
         self.observer = observer
         self.pacer = pacer
-        self.name = f"groq_{model}"
+        if provider not in ("groq", "openai_compatible"):
+            raise ValueError("Unsupported completion provider")
+        self.provider = provider
+        self.name = f"{provider}_{model}"
         self.stats = {"request_count": 0, "prompt_tokens": 0, "completion_tokens": 0}
         if pacer is not None:
             self.stats["pacing_wait_seconds"] = 0.0
@@ -122,6 +127,12 @@ class GroqLLM(BasePipelineElement):
                 raise ValueError("Groq returned no completion choices")
             output = _openai_to_assistant_message(completion.choices[0].message)
         except BaseException as exc:
+            # Native AgentDojo can persist str(APIError). A local service's error
+            # response must not copy the configured bearer key into that log.
+            key = getattr(self.client, "api_key", "")
+            if self.provider == "openai_compatible" and isinstance(exc, openai.APIError) and key:
+                exc.message = str(exc).replace(key, "[REDACTED]")
+                exc.args = (exc.message,)
             if self.observer is not None:
                 self.observer.model_failed(exc)
             raise

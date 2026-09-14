@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import sys
+import tomllib
 from pathlib import Path
 
 from agentdojo.task_suite.load_suites import get_suites
@@ -15,7 +16,8 @@ from agentdojo_lab.runner import ROOT, RunConfig, RunExecutionError, doctor, loa
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    commands.add_parser("doctor", help="Check installation and credentials without network requests")
+    check = commands.add_parser("doctor", help="Check installation and credentials without network requests")
+    check.add_argument("--config", type=Path, help="Check the endpoints selected by this run config")
     tasks = commands.add_parser("tasks", help="List native clean user tasks")
     tasks.add_argument("--suite", default="workspace")
     tasks.add_argument("--benchmark-version", default="v1.2.2")
@@ -66,7 +68,11 @@ def main(argv: list[str] | None = None) -> int:
     causal.add_argument("--run", type=Path, required=True)
     causal.add_argument("--output", type=Path, required=True, help="New directory outside the source run")
     causal.add_argument(
-        "--live", action="store_true", help="Call Groq; default is plan-only with no API calls"
+        "--live", action="store_true", help="Call the selected judge; default is plan-only with no API calls"
+    )
+    causal.add_argument(
+        "--judge-config", type=Path,
+        help="Explicit provider/model/base_url/api_key_env TOML; required for live local-trace audits",
     )
     causal.add_argument("--max-probes", type=int, default=8)
     causal.add_argument("--pacing-state", type=Path, help="Shared sequential auditor quota state")
@@ -163,9 +169,9 @@ def main(argv: list[str] | None = None) -> int:
     assisted.add_argument(
         "--output", type=Path, required=True, help="New directory outside the frozen packet"
     )
-    live = commands.add_parser("run", help="Run selected clean tasks against Groq")
+    live = commands.add_parser("run", help="Run selected clean tasks against the configured provider")
     live.add_argument("--config", type=Path, default=ROOT / "configs" / "groq.toml")
-    live.add_argument("--model", help="Override the Groq model ID")
+    live.add_argument("--model", help="Override the configured served model ID")
     live.add_argument("--task", action="append", help="Replace configured tasks; repeat to select more")
     live.add_argument("--no-record", action="store_true", help="Disable event recording for a control run")
     live.add_argument("--pacing-state", type=Path, help="Shared quota state for one sequential paced batch")
@@ -204,7 +210,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == "doctor":
-            result = doctor()
+            result = doctor(load_config(args.config)) if args.config is not None else doctor()
         elif args.command == "evaluate":
             from agentdojo_lab.evaluation_batch import (
                 create_evaluation_plan,
@@ -429,13 +435,30 @@ def main(argv: list[str] | None = None) -> int:
 
             result = export_assisted_review(args.packet, args.answers, args.owner, args.output)
         elif args.command == "counterfactual":
-            from agentdojo_lab.counterfactual_audit import GroqCounterfactualJudge, audit_run
-            from agentdojo_lab.pacing import RequestPacer
-
-            judge = (
-                GroqCounterfactualJudge(pacer=RequestPacer(7000, args.pacing_state)) if args.live else None
+            from agentdojo_lab.counterfactual_audit import (
+                ConfiguredCounterfactualJudge,
+                GroqCounterfactualJudge,
+                audit_run,
             )
-            result = audit_run(args.run, args.output, judge=judge, max_probes=args.max_probes)
+            from agentdojo_lab.pacing import RequestPacer
+            from agentdojo_lab.providers import EndpointSettings, reject_implicit_groq_audit
+
+            if args.judge_config is not None and not args.live:
+                raise ValueError("--judge-config requires --live; plan-only performs no provider selection")
+            judge = None
+            if args.live:
+                if args.judge_config is None:
+                    reject_implicit_groq_audit(args.run)
+                    judge = GroqCounterfactualJudge(pacer=RequestPacer(7000, args.pacing_state))
+                else:
+                    endpoint = EndpointSettings.model_validate(tomllib.loads(args.judge_config.read_text()))
+                    pacer = RequestPacer(7000, args.pacing_state) if endpoint.provider == "groq" else None
+                    judge = ConfiguredCounterfactualJudge(endpoint, pacer=pacer)
+            try:
+                result = audit_run(args.run, args.output, judge=judge, max_probes=args.max_probes)
+            finally:
+                if judge is not None:
+                    judge.close()
         elif args.command == "inspect":
             result = inspect_events(args.events)
         elif args.command == "report":
