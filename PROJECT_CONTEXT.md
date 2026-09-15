@@ -145,15 +145,16 @@ Bare module filenames in this map refer to `src/agentdojo_lab/`.
 
 This continuation began from clean source checkpoint `3c71025` on
 `codex/agentdojo-lab`. The failed Case A job used pushed checkpoint
-`228f7c2ce4255a8587921ef955c633868b1fb10d`; the last pushed repository head before
-the current remediation was `a54f1e31c022005bfe2fa7ac9b83600eb4384c2b` ("Record
-Case B submission"), matching `origin/codex/agentdojo-lab`. The audited Case A/B
-remediation and Case C implementation are current working-tree changes, so recheck
-Git state after they are committed and pushed.
+`228f7c2ce4255a8587921ef955c633868b1fb10d`. Current head
+`74c31d5e5ad5fc5bbb89a5eb4e1520b7787d3336` matches
+`origin/codex/agentdojo-lab`. Case A/B bundles bind
+`ebc619813a9c22bdb2eb3bed675213edfc83bc89`; their source inventories exclude the
+later C-only fix and were revalidated after it. Corrected Case C v2 binds
+`74c31d5e5ad5fc5bbb89a5eb4e1520b7787d3336`.
 
 | Item | Observed state |
 | --- | --- |
-| Source/configuration/test files | Pushed baseline present; audited A/B remediation and Case C additions pass 350 tests plus 16 subtests but remain uncommitted at this snapshot |
+| Source/configuration/test files | Case A/B remediation, Case C and the explicit disabled-auditor binding are pushed at `74c31d5`; the final submitted-source suite passed 351 tests plus 16 subtests in 168.01 seconds |
 | Previous raw runs and generated HTML | Historical bundles absent; new setup receipts/offline smoke exist locally |
 | Lab environment and AgentDojo checkout | Restored on NeSI; `doctor` verifies the pinned clean upstream |
 | Semantic weights | Pinned MiniLM snapshot downloaded and file hashes verified; locked semantic dependencies installed and 53 dependent regressions passed |
@@ -164,10 +165,10 @@ Git state after they are committed and pushed.
 | Model storage | Private scratch root `/nesi/nobackup/uoa04799/dyu848/tool-output-lab`; 10 TiB project scratch allocation |
 | NeSI offline smoke | Completed native fixture with a valid 15-event recording and HTML; no real LLM calls |
 | Git transport | SSH push and pull tested successfully on this device earlier in the session |
-| Scout Case A runner | Historical 85-source v4 plan recorded zero requests. Job 9043206 was cancelled before allocation; job 9050478 then failed in 30 seconds during request-free validation because its frozen launcher imported changed repository source. Audited self-contained hardening invalidates v4; replacement v5 awaits generation from the pushed source |
-| Scout Case B runner | Historical 163-source v2 plan recorded zero calls. Job 9052477 loaded Scout and passed 4/4 synthetic requests, then failed before native inference because the bundle omitted `configs/local_scout.toml`. Audited config/source hardening invalidates v2; replacement v3 awaits generation from the pushed source |
-| Scout Case C runner | Four-session transformed-memory protocol, native oracles, cross-session export and same-allocation wrapper implemented and independently audited. A prior scripted fixture used zero live calls but predates final hardening and is noncanonical; v1 preparation awaits generation from the pushed source |
-| New case-study pilot | Planned in RESEARCH_PLAN.md; zero new trajectories |
+| Scout Case A runner | Historical v4/failed jobs remain preserved. Canonical 205-source v5 records zero requests, passed exact validation and is queued as job `9064136` |
+| Scout Case B runner | Historical v2/job `9052477` remain preserved. Canonical 164-source v3 records zero requests, passed exact validation and is queued as job `9064141` |
+| Scout Case C runner | Four-session transformed-memory protocol and wrapper implemented. Unsubmitted v1 was rejected request-free for a missing explicit disabled-auditor field; corrected canonical 206-source v2 passed and is queued as job `9064142` |
+| New case-study pilot | Frozen and queued; zero new research trajectories have started |
 
 The read-only scheduler assessment found project association `uoa04799` and GPU
 nodes; see [HPC_SETUP.md](HPC_SETUP.md) for the dated inventory and feasibility
@@ -190,12 +191,12 @@ ledgers and result notes retain their historical values.
 
 1. Use [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15)
    to track delivered results separately from existing code and preparation.
-2. Preserve failed jobs `9050478` and `9052477` and their original bundles. Finish
-   the self-contained source/config bundle regressions, prepare new zero-request
-   plans, and submit separately named replacements only after relocation checks pass.
-3. For each replacement, verify every same-allocation synthetic/native smoke
-   receipt, request-accounting record, case trace and report before interpreting
-   any recipient or sink result.
+2. Preserve failed jobs `9050478` and `9052477`, rejected unsubmitted Case C v1,
+   and their original bundles. Monitor queued jobs `9064136`, `9064141` and
+   `9064142`; Slurm starts them automatically, so do not submit duplicates.
+3. After each new job becomes terminal, verify every same-allocation
+   synthetic/native smoke receipt, request-accounting record, case trace and report
+   before interpreting any recipient or sink result.
 4. Use the offline single-episode paired report for changed tool arguments,
    proposal divergence and configured sensitive-field divergence. The separate
    `offline-cross-session-propagation-v2` exporter validates eight typed path
@@ -203,11 +204,9 @@ ledgers and result notes retain their historical values.
    replay accept explicit configured OpenAI-compatible endpoints while preserving
    their legacy defaults. Causal influence remains unassessed and attack success
    unknown for the offline controls.
-5. Freeze the implemented Case C v1 plan and immutable bundle after the shared
-   source tree is stable. Its prior deterministic four-worker fixture is
-   noncanonical engineering evidence, not a live Scout result. Rerun it from the
-   final source, then queue the bounded wrapper only after request-free cross-root
-   verification and Case A/B remediation checks pass.
+5. Keep rejected Case C v1 as noncanonical engineering evidence. Monitor corrected
+   C v2 job `9064142`, then distinguish its live four-session outcomes from the
+   earlier scripted fixture and from the rejected request-free packaging attempt.
 
 The first 2026-09-15 Case A implementation subagent was stopped by a platform
 security-risk flag. Its four unfinished files remain preserved byte-for-byte in
@@ -237,9 +236,9 @@ MiniLM revision pin in its source inventory. Historical preparation
 `codebase/agentdojo-lab/runs/scout-case-a-prepared-v4` binds 85 source files, has
 plan SHA-256
 `5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`
-and records zero model requests. Current source hardening invalidates v4; the v5
-replacement remains pending final source freeze and has no plan hash. After smoke
-`9039289` passed, the exact source at
+and records zero model requests. Current source hardening invalidates v4; canonical
+v5 is frozen with 205 sources and zero requests, as recorded in the active set
+below. After smoke `9039289` passed, the exact source at
 pushed checkpoint `84fe7cc` was copied into immutable bundle
 `evidence/scout-case-a-submission-20260915-v1`, with private site file
 `/nesi/project/uoa04799/dyu848/tools/scout-case-a-site-20260915-v1.env`.
@@ -272,16 +271,38 @@ corrected submission launched no model process. Container failure, cancellation
 and pre-inference validation failure are infrastructure/orchestration states, not
 research attack trials. Detailed states and evidence paths are in HPC_SETUP.md.
 
+The active Case A/B replacement bundles bind pushed source
+`ebc619813a9c22bdb2eb3bed675213edfc83bc89`; they were revalidated after the
+C-only follow-up. Corrected Case C v2 binds pushed source
+`74c31d5e5ad5fc5bbb89a5eb4e1520b7787d3336`. Canonical zero-request preparations
+are Case A v5 (205 sources, plan
+`992509a7a4e1b8e8817072d4c2720ded6ec5981a559fd4aa1062cb5676fe1d15`), Case B
+v3 (164 sources, plan
+`a5c0b7d19d32b619df337ab5ba47f79a4c6ba1e47732ea2f08278236390d98cf`) and Case
+C v2 (206 sources, plan
+`b28f3497f1f75faf608784d73714b9ec67cf07bbdae89e21399508a217aa1388`). Each
+preparation contains only `plan.json` and `preparation.json`; copied immutable
+bundles passed exact validation. Jobs `9064136`, `9064141` and `9064142` are
+pending for Priority with runtime zero, no allocation and no requests. Their
+latest displayed starts are Sep 16 14:14 for A, 16:15 for B and 18:15 for C;
+they are provisional and Slurm will start the jobs automatically.
+
+Case C v1 and its first bundle remain preserved but unsubmitted. The copied-wrapper
+gate caught a missing explicit `online_causal_audit = false` plan field before any
+model, network, GPU or scheduler action. Commit `74c31d5` fixed it; corrected C v2
+and 81 current-source focused tests passed. This is packaging evidence, not a
+research result.
+
 The user confirms Hugging Face approval, has signed in successfully on NeSI,
 and has delegated storage choices. No further authentication input is needed.
 Previous run/report bundle locations remain unknown.
 
-Continuation on 2026-09-15: [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) now
+Continuation through 2026-09-16: [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) now
 provides progress bars and per-run explanations. The first supervisor checklist
-is **10/25 complete (40%)**, including preparation; its 13 new experimental
-deliverables remain **0/13**. This counts completed items, not elapsed time or
-detector accuracy. The new CPU/GPU attempt uses private, separately named
-evidence and site files described in HPC_SETUP.md.
+is **11/25 complete (44%)**, including preparation; preparation/prerequisites are
+**11/12 (92%)**, while its 13 new experimental deliverables remain **0/13**. This
+counts completed items, not elapsed time or detector accuracy. The active jobs use
+private, separately named evidence and site files described in HPC_SETUP.md.
 
 The NeSI bootstrap and offline smoke have run. The smoke is
 `codebase/agentdojo-lab/runs/20260914-nesi-offline-smoke-v1`; setup receipts are
@@ -359,8 +380,8 @@ AgentDojo runtime/package-metadata files, and a nine-entry launch manifest.
 `69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`
 and `ba663d561892b614f7320be36a8fc9c4bf363c946c15837ac52e905fa1b45906`.
 The preparation records zero model calls. Current source/config hardening
-invalidates both preserved v1 and v2. Replacement v3 remains pending final source
-freeze and has no plan hash.
+invalidates both preserved v1 and v2. Canonical v3 is frozen with 164 sources and
+zero requests, as recorded in the active set above.
 
 The immutable Case B bundle is
 `/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-b-submission-20260915-v1`.
@@ -382,14 +403,14 @@ has SHA-256
 
 Git synchronization: this continuation started from clean checkpoint **`3c71025`**,
 matching `origin/codex/agentdojo-lab`. SSH push and pull were already verified for
-repository owner `YuTungLam`. The Case A implementation checkpoint **`6071eb0`**,
-batch-preparation checkpoint **`7b5f1eb`**, and hardened execution/propagation
-checkpoint **`84fe7cc`** and Case A submission checkpoint
-**`228f7c2ce4255a8587921ef955c633868b1fb10d`** were subsequently pushed to that
-branch. Job `9050478` used the latter checkpoint. The last pushed head before the
-current working-tree remediation is **`a54f1e31c022005bfe2fa7ac9b83600eb4384c2b`**.
-Terminal job state comes from scheduler and submission receipts rather than Git;
-the current uncommitted remediation and Case C files are not yet synchronized.
+repository owner `YuTungLam`. Historical jobs retain their original checkpoints.
+Current head and `origin/codex/agentdojo-lab` both resolve to
+**`74c31d5e5ad5fc5bbb89a5eb4e1520b7787d3336`**. Active A/B bundles bind
+**`ebc619813a9c22bdb2eb3bed675213edfc83bc89`** and were revalidated after the
+C-only follow-up; active C v2 binds
+**`74c31d5e5ad5fc5bbb89a5eb4e1520b7787d3336`**. Scheduler receipts establish
+job state independently of Git; ignored plans, runs, reports and external bundles
+do not travel with a clone.
 
 ## Moving between devices
 

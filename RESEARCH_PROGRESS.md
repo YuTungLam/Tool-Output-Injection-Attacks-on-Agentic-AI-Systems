@@ -6,14 +6,14 @@ is the source of the completion count. Historical ledgers keep their own scope.
 
 | Scope | Progress | Completed / total |
 | --- | --- | ---: |
-| Current checklist | **40%** `████████░░░░░░░░░░░░` | 10 / 25 |
-| Preparation and remaining prerequisites | **83%** `█████████████████░░░` | 10 / 12 |
+| Current checklist | **44%** `█████████░░░░░░░░░░░` | 11 / 25 |
+| Preparation and remaining prerequisites | **92%** `██████████████████░░` | 11 / 12 |
 | Supervisor's new experimental deliverables | **0%** `░░░░░░░░░░░░░░░░░░░░` | 0 / 13 |
 
 Percentages count completed checkboxes equally; they are not estimates of time
 remaining, model-download progress, attack success rate, or detector accuracy.
-The denominator is the first checklist's 10 completed preparation/prerequisite
-items, 13 experimental deliverables, and 2 unfinished prerequisites. It excludes
+The denominator is the first checklist's 11 completed preparation/prerequisite
+items, 13 experimental deliverables, and 1 unfinished prerequisite. It excludes
 the older checklist later in the plan. A partial item remains unchecked. Recovering old
 raw artifacts is listed but does not block new named experiments.
 
@@ -45,13 +45,13 @@ That does not complete the supervisor's new experimental deliverables.
   failed before the native smoke made a request because its immutable bundle
   omitted `configs/local_scout.toml`. No Case B research session started.
 - Case A/B bundle remediation and the Case C transformed-memory protocol passed
-  **350 tests plus 16 subtests**, Ruff, compilation, Bash syntax and diff checks.
+  the final exact submitted-source suite: **351 tests plus 16 subtests in 168.01
+  seconds**. Scoped Ruff, compilation, Bash syntax and diff checks passed.
   Independent copied-bundle audits returned GO for A, B and C after exact path and
-  symlink mutations. Historical Case A v4 and Case B v2 preparations are now
-  source-invalidated. Final Case A v5, Case B v3 and Case C v1 preparations await
-  generation from the pushed source. The prior scripted Case C fixture predates
-  final hardening and is noncanonical engineering evidence with zero live model
-  requests.
+  symlink mutations. Canonical Case A v5 and Case B v3 bind pushed commit
+  `ebc6198`; corrected Case C v2 binds `74c31d5`. Jobs `9064136`, `9064141` and
+  `9064142` are pending with zero requests. Rejected unsubmitted C v1 and the
+  earlier scripted fixture remain noncanonical engineering evidence.
 
 ## Run-by-run results
 
@@ -225,8 +225,50 @@ the independent transformation and exact native-sink oracles in both branches,
 and exported both observed cross-session paths. It used scripted responses and
 **0 live model requests**, so the attacked recipient is not evidence about Scout.
 Later path hardening source-invalidated that fixture; it is noncanonical and must
-be rerun after final source freeze. Case C v1 preparation and immutable-bundle
-validation remain before a live submission.
+not be substituted for the canonical run. A separate request-free Case C v1
+packaging attempt was also rejected as described below. Corrected C v2 is now
+frozen and queued for live execution.
+
+### Canonical A/B/C freeze and submissions — queued
+
+Case A/B bind pushed source `ebc619813a9c22bdb2eb3bed675213edfc83bc89` and were
+revalidated after the later C-only change. Corrected Case C v2 binds pushed source
+`74c31d5e5ad5fc5bbb89a5eb4e1520b7787d3336`. Each preparation contains only
+`plan.json` and `preparation.json` and records zero model requests:
+
+| Case | Preparation | Sources | Plan SHA-256 | Preparation SHA-256 |
+| --- | --- | ---: | --- | --- |
+| A v5 | `runs/scout-case-a-prepared-v5` | 205 | `992509a7a4e1b8e8817072d4c2720ded6ec5981a559fd4aa1062cb5676fe1d15` | `c11364861e2d8ef53bb202da66fdaf272d2bbfde2a2a635d84a9e7ebd22e24f3` |
+| B v3 | `runs/scout-case-b-prepared-v3` | 164 | `a5c0b7d19d32b619df337ab5ba47f79a4c6ba1e47732ea2f08278236390d98cf` | `88cbdc554b900a2e0af7500b2c293eb96c183bca4cf8cb1df2a2c045e23b1da1` |
+| C v2 | `runs/scout-case-c-prepared-v2` | 206 | `b28f3497f1f75faf608784d73714b9ec67cf07bbdae89e21399508a217aa1388` | `5c1a526f2318dca97151a2ec709e757c5ded212b7251c77b64c1b9d2d66c8d85` |
+
+The exact copied-bundle validations passed for A and B and for corrected C v2.
+The immutable submission receipts are:
+
+| Case | Bundle | Site / manifest / submission-plan / submitted SHA-256 |
+| --- | --- | --- |
+| A | `evidence/scout-case-a-submission-20260916-v3` | `a2b5c35df88f7ba4e0769bd72b997a6b612c3a47d76d53f47b12948df928cd43` / `3be4adeb3d3d91233dc2cbdce6186f3ff2f48ee753b56800dd8dd0bf5d6ac9f8` / `f5351c7113d0c8b3a12236d32e831892511858eb579bf7791e0de37bbd968425` / `a9638609f9a3ee8109a87f5c3a6ef7b49e17d5ae3cd1b8edeaa7c8b2940a3824` |
+| B | `evidence/scout-case-b-submission-20260916-v2` | `0cd2c539ba8b864a46b37b37044cf1a82e8e5b4ab33295e61a1041214a838070` / `92a0ff21eafbbf88386c5a394246b53ceebd4d89b8ae00ec272d9d49bcb39f61` / `cf2981956485e6149600e3e3e351c651a757de35486cb4505f38c6642253d221` / `baf63bf83997b010d4564983907504a6945ac11c9d0a82a9d7402dc09095a288` |
+| C | `evidence/scout-case-c-submission-20260916-v2` | `df3852cd896b291301987ee8cde3acfe629157ca2f06fd8168054643bc030548` / `aa3b4cb28c403a0d8599f13b2787f47e15b19231f55c09b2a710373a313e2f18` / `c2bd53e9fc4cc183b2889de789a558c07ea32b4184920aa2e5cfb27173fee970` / `75675a5028dc0ff6cded10bec411af6aa29275c0f429c4922a2cb19546fc8316` |
+
+Case C v1 preparation and bundle v1 remain preserved but unsubmitted. The copied
+wrapper gate rejected the missing explicit `online_causal_audit = false` plan
+field before any model/network call, scheduler submission or GPU use.
+`rejected.json` SHA-256
+`a855f99b0435770ead2442964164a43812f33fd24aac19cf7a9f01b4d82d092c`
+records those zeros and replacement job `9064142`. Commit `74c31d5` fixed the
+binding; the current-source focused Case C suite passed 81 tests, and corrected
+C v2 passed the same gate.
+
+| Job | Case | Current state | Latest provisional start |
+| --- | --- | --- | --- |
+| `9064136` | A v5 | PENDING `Priority`; runtime zero; no allocation/requests | Sep 16 14:14 |
+| `9064141` | B v3 | PENDING `Priority`; runtime zero; no allocation/requests | Sep 16 16:15 |
+| `9064142` | C v2 | PENDING `Priority`; runtime zero; no allocation/requests | Sep 16 18:15 |
+
+Slurm will start each job automatically. These moving projections are neither
+reservations nor experimental progress. The frozen-plan checklist item is now
+complete; live experimental deliverables remain 0/13.
 
 ### Offline paired-report verification — passed on 2026-09-15
 
@@ -308,8 +350,9 @@ The directory contains exactly `plan.json` and `preparation.json`; the latter ha
 SHA-256
 `b315d3ee67a338124a5b9c35825824dd058e89e25a56a077134fbd9456f3dbd4`.
 The clean-then-attacked order, one repetition per slot and 16-attempt Case A
-ceiling are unchanged. Current source hardening invalidates v4 as designed. Case
-A v5 remains pending final source freeze and has no plan or preparation hash.
+ceiling are unchanged. Current source hardening invalidates v4 as designed.
+Canonical v5 now binds 205 sources with the hashes recorded above and is queued
+as job `9064136`.
 
 Checkpoint **`7b5f1eb`** added `hpc/scout-smoke-case-a.sbatch` as a separate
 two-hour wrapper. It cannot reuse job `9039289` receipts because that job's
@@ -371,8 +414,8 @@ synthetic, native-smoke, or Case A requests. The `submitted.json` receipt has SH
 `770b8e9fc66590f968d1e0f6bbc7e731b70ff7db66c1c197366955b25a4744c9`.
 Its terminal log has SHA-256
 `7124e18c9729caa29124cd422819b407f800c58588f8262b05f66fc851a22af6`.
-The retained v2 bundle is not reused; the replacement must import a complete
-physical plan-bound source tree.
+The retained v2 bundle is not reused; active v5 imports a complete physical
+plan-bound source tree and passed request-free validation.
 
 ### Configured causal/replay and cross-session preparation — passed offline
 
@@ -460,8 +503,8 @@ changed the protocol inventory. The historical v2 directory is
 `69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`
 and `ba663d561892b614f7320be36a8fc9c4bf363c946c15837ac52e905fa1b45906`.
 The preparation status is `prepared_not_executed` and records zero model calls.
-Current source/config hardening also invalidates v2. Case B v3 remains pending
-final source freeze and has no plan or preparation hash.
+Current source/config hardening also invalidates v2. Canonical v3 now binds 164
+sources with the hashes recorded above and is queued as job `9064141`.
 
 ### Case B submission — job 9052477 — synthetic smoke passed, bundle failed
 
@@ -500,11 +543,11 @@ Retained `preflight.json`, `smoke.json`, `native-smoke.json` and
 `0ac6f32acd85009e9c61a3e749fcc31ff0b036c3069aa372b8ea6edf9c67f4f8`,
 `58a9ecf0da0da278d7678d3bc7553b12843390acdac7ec06e9b1eba6d09c22f8` and
 `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865`.
-No Case B result exists yet; the planned v3 bundle must bind and validate the
-missing config before vLLM startup.
+No Case B result exists yet; active v3 binds and validates the missing config
+before vLLM startup.
 
-The checklist is now **10/25 (40%)**, preparation/prerequisites are **10/12
-(83%)**, and live experimental deliverables remain **0/13**.
+The checklist is now **11/25 (44%)**, preparation/prerequisites are **11/12
+(92%)**, and live experimental deliverables remain **0/13**.
 
 ## Evidence locations and continuing work
 
@@ -515,18 +558,17 @@ and `reports/` are also ignored. A missing bundle on another device is not a
 new failed experiment.
 
 Inspect live jobs with `squeue -u dyu848`; inspect terminal outcomes with `sacct`.
-The current next action is to finish and retest the shared source hardening, rerun
-the noncanonical Case C fixture, and freeze request-free Case A v5, Case B v3 and
-Case C v1 plans and immutable bundles. Only then submit separately named jobs and
-analyze every terminal smoke, request-accounting, case and report artifact. A
-running or queued job has no percentage estimate unless its own instrumentation
-provides a measurable denominator. See [HPC_SETUP.md](HPC_SETUP.md) for pins,
-resources, historical job IDs, and the next deployment gate.
+The current next action is to monitor `9064136`, `9064141` and `9064142`. Slurm
+starts them automatically, so no manual launch or duplicate submission is needed.
+After each becomes terminal, analyze every smoke, request-accounting, case and
+report artifact. A running or queued job has no percentage estimate unless its
+own instrumentation provides a measurable denominator. See
+[HPC_SETUP.md](HPC_SETUP.md) for pins, resources and historical job IDs.
 
-Synchronization: Case A submission checkpoint
-**`228f7c2ce4255a8587921ef955c633868b1fb10d`** and the later pushed head
-**`a54f1e31c022005bfe2fa7ac9b83600eb4384c2b`** are on
-`origin/codex/agentdojo-lab`. The current Case A/B remediation and Case C files
-remain working-tree changes. Git excludes ignored preparations, fixture runs,
-reports and external submission bundles; scheduler receipts establish terminal
-job outcomes independently of Git.
+Synchronization: current head and `origin/codex/agentdojo-lab` both resolve to
+**`74c31d5e5ad5fc5bbb89a5eb4e1520b7787d3336`**. Active A/B submissions bind
+**`ebc619813a9c22bdb2eb3bed675213edfc83bc89`** and were revalidated after the
+C-only follow-up; active C v2 binds
+**`74c31d5e5ad5fc5bbb89a5eb4e1520b7787d3336`**. Git excludes ignored
+preparations, fixture runs, reports and external submission bundles; scheduler
+receipts establish job outcomes independently of Git.

@@ -17,9 +17,10 @@ case, or a historical result note does not complete an experimental checkbox.
 
 Progress reporting: [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) gives the
 percentage, progress bars, and a run-by-run interpretation. The current first
-checklist contains 25 items, of which 10 are complete (**40%**); the 13 new
-experimental deliverables remain **0/13**. These are equal checkbox counts,
-not time estimates or accuracy scores.
+checklist contains 25 items, of which 11 are complete (**44%**); preparation and
+prerequisites are **11/12 (92%)**, while the 13 new experimental deliverables
+remain **0/13**. These are equal checkbox counts, not time estimates or accuracy
+scores.
 
 ### Completed preparation
 
@@ -109,11 +110,13 @@ not time estimates or accuracy scores.
   parent checkpoint `228f7c2ce4255a8587921ef955c633868b1fb10d` and 113 from the
   pinned AgentDojo checkout. Its frozen bundle uses physical mode-0400 sources
   and a nine-entry launch manifest; offline import isolation and fixed limits
-  validate. Final A/B/C validation passed **350 tests plus 16 subtests**; Ruff,
-  compilation, Bash syntax and diff checks passed, and independent copied-bundle
-  audits returned GO for all three cases. This completes the checked bounded implementation
-  prerequisite, not a scientific result; see RESEARCH_PROGRESS.md.
-- [ ] Freeze exact tasks, payloads, source sets, conditions, budgets, settings,
+  validate. The final exact submitted-source suite passed **351 tests plus 16
+  subtests in 168.01 seconds**; scoped Ruff, compilation, Bash syntax and diff
+  checks passed, and independent copied-bundle audits returned GO for all three
+  cases. The current-source focused Case C suite passed 81 tests. This completes
+  the checked bounded implementation prerequisite, not a scientific result; see
+  RESEARCH_PROGRESS.md.
+- [x] Freeze exact tasks, payloads, source sets, conditions, budgets, settings,
   success criteria and run order before the new research trials. Historical
   Case A v4 preparation `runs/scout-case-a-prepared-v4` has plan SHA-256
   `5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`.
@@ -132,10 +135,22 @@ not time estimates or accuracy scores.
   SHA-256 is
   `69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`.
   Current hardening source-invalidates it. Case C now has a four-session protocol,
-  a prior noncanonical deterministic fixture and a bounded Slurm wrapper. The
-  final source passed combined validation and independent GO audits. Zero-request
-  Case A v5, Case B v3 and Case C v1 preparations and replacement immutable
-  bundles are not frozen yet, so this combined item stays unchecked.
+  a bounded Slurm wrapper and a prior noncanonical deterministic fixture. The
+  copied-wrapper gate rejected unsubmitted Case C v1 because its plan omitted
+  explicit `online_causal_audit = false`; the preserved attempt made zero model,
+  network, GPU or scheduler actions. Commit
+  `74c31d5e5ad5fc5bbb89a5eb4e1520b7787d3336` fixed the binding. A/B bind
+  `ebc619813a9c22bdb2eb3bed675213edfc83bc89` and were revalidated after that
+  C-only fix; corrected C v2 binds `74c31d5`. Canonical zero-request preparations
+  contain only `plan.json` and `preparation.json`:
+  Case A v5 has 205 sources and plan SHA-256
+  `992509a7a4e1b8e8817072d4c2720ded6ec5981a559fd4aa1062cb5676fe1d15`;
+  Case B v3 has 164 and
+  `a5c0b7d19d32b619df337ab5ba47f79a4c6ba1e47732ea2f08278236390d98cf`;
+  corrected Case C v2 has 206 and
+  `b28f3497f1f75faf608784d73714b9ec67cf07bbdae89e21399508a217aa1388`.
+  Their immutable bundles passed exact validation. Jobs `9064136`, `9064141` and
+  `9064142` are pending with zero allocation, requests and research sessions.
 - [ ] Recover selected historical raw runs/reports if available and reverify them.
   Their absence does not block new named trials, but old outcome notes cannot
   substitute for locally inspected evidence.
@@ -176,13 +191,13 @@ paired-analysis support needed for these cases.
 
 ## Three case families
 
-All examples below are **designs, not observed results**. The three runners are
-implemented, but their next preparations remain pending final source freeze; the
-older Case A v4 and Case B v2 plans are historical, source-invalidated inputs to
-failed jobs. Use native simulated AgentDojo tools; exact tasks, payloads, tool
-schemas, and field paths must be frozen before model execution. Use addresses
-validated by the native simulated tool schema. `EmailStr` rejects `.invalid`; use
-`attacker@example.com` for a synthetic attacker recipient.
+All examples below are **designs, not observed results**. The three runners and
+canonical preparations are frozen and queued, while the older Case A v4 and Case
+B v2 plans remain historical, source-invalidated inputs to failed jobs. Use native
+simulated AgentDojo tools and the exact task, payload, schema and field-path
+bindings in the canonical plans. Use addresses validated by the native simulated
+tool schema. `EmailStr` rejects `.invalid`; use `attacker@example.com` for a
+synthetic attacker recipient.
 
 | Case | Clean behavior | Attacked behavior being tested | Main question |
 | --- | --- | --- | --- |
@@ -413,8 +428,9 @@ be tracked in Git. Publish observed counts with their denominators and unknowns.
   four synthetic requests, then failed before native inference due a missing
   bundled config. Case C's strict four-session runner and wrapper are implemented;
   its prior scripted fixture predates current hardening and is noncanonical.
-  Final Case A v5, Case B v3 and Case C v1 preparations, corrected immutable
-  bundles and live results remain. No research slot has run.
+  Canonical A v5, B v3 and corrected C v2 preparations and immutable bundles are
+  frozen. Jobs `9064136`, `9064141` and `9064142` are pending with zero requests;
+  live results remain and no research slot has run.
 - [ ] Repeat and classify a supported candidate pattern.
 
 Setup evidence is in `codebase/agentdojo-lab/reports/20260914-nesi-setup-v1` and
@@ -428,8 +444,10 @@ cancelled at 15:47 before allocation after audit found a Slurm helper-path defec
 It used zero GPU time and requests. Historical 85-source zero-request plan
 `runs/scout-case-a-prepared-v4` has SHA-256
 `5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`.
-Current source hardening invalidates that plan; Case A v5 awaits final source
-freeze and has no plan hash.
+Current source hardening invalidates that plan. Canonical Case A v5 has 205
+sources, zero requests and plan SHA-256
+`992509a7a4e1b8e8817072d4c2720ded6ec5981a559fd4aa1062cb5676fe1d15`;
+job `9064136` is pending.
 The corrected immutable v2 bundle binds pushed source checkpoint
 `228f7c2ce4255a8587921ef955c633868b1fb10d`. Request-free validation and an
 independent GO audit with no P1/P2 findings passed before job `9050478` was
@@ -450,9 +468,13 @@ validation and an independent GO audit with no P1/P2 findings. Job `9052477` ran
 8m 35s on `mg14`: Scout loaded and synthetic smoke passed 4/4, then native smoke
 failed before its first request because `configs/local_scout.toml` was absent
 from the immutable bundle. It made zero Case B requests. That v2 plan is now
-source-invalidated, and Case B v3 awaits final source freeze. Case C's prior
-offline four-worker fixture completed both observed native paths with scripted
-responses, but later hardening source-invalidated it. It remains noncanonical
-engineering evidence with zero live calls; Case C v1 has not been prepared.
+source-invalidated. Canonical Case B v3 has 164 sources, zero requests and plan
+SHA-256 `a5c0b7d19d32b619df337ab5ba47f79a4c6ba1e47732ea2f08278236390d98cf`;
+job `9064141` is pending. Case C's prior offline four-worker fixture completed both
+observed native paths with scripted responses, but later hardening
+source-invalidated it. Rejected unsubmitted C v1 used zero calls/resources;
+corrected canonical C v2 has 206 sources, zero requests and plan SHA-256
+`b28f3497f1f75faf608784d73714b9ec67cf07bbdae89e21399508a217aa1388`;
+job `9064142` is pending. No live case result exists yet.
 See RESEARCH_PROGRESS.md for receipts and limits. Update checkboxes only with
 concrete evidence and actual verification results.
