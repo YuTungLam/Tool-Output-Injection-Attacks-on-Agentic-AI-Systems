@@ -86,15 +86,20 @@ not time estimates or accuracy scores.
   entry points still retain their Groq protocols. The new **single-episode offline
   exporter is implemented**: 38 selected tests (14 new) and a benign native fixture
   pass. The bounded **Case A local runner is also implemented**; its combined
-  runner/provider/report selection passes 84 tests and `prepare` makes zero model
-  requests. The first implementation attempt's platform flag and quarantined
+  runner/provider/report selection passes 84 tests. Its canonical plan is now
+  prepared with zero model requests, and the separate same-allocation batch
+  selection passes 109 tests plus 16 subtests. The first implementation attempt's
+  platform flag and quarantined
   draft remain recorded; a Daybreak Blue retry on the current Codex surface
   hash-verified and completed it. Cross-session alignment and joint/replay runners
   remain pending, so this combined prerequisite stays unchecked. Neither the
   platform event nor the offline verification is a scientific result; see
   RESEARCH_PROGRESS.md.
 - [ ] Freeze exact tasks, payloads, source sets, conditions, budgets, settings,
-  success criteria and run order before the new research trials.
+  success criteria and run order before the new research trials. Case A v1 is
+  frozen locally as `runs/scout-case-a-prepared-v1` with plan SHA-256
+  `e4311002046d7ce12c9a1729f169159cb4995609e63e4124ce1ecfdad5b40d76`;
+  the remaining case families are not frozen, so this combined item stays unchecked.
 - [ ] Recover selected historical raw runs/reports if available and reverify them.
   Their absence does not block new named trials, but old outcome notes cannot
   substitute for locally inspected evidence.
@@ -364,6 +369,7 @@ be tracked in Git. Publish observed counts with their denominators and unknowns.
   single-episode paired exporter and bounded Case A runner are verified, while
   joint/replay and cross-session work remain.
 - [ ] Freeze the new small protocol, run it, and produce actual case studies.
+  Case A v1 is frozen and its batch wrapper is verified offline; no live slot has run.
 - [ ] Repeat and classify a supported candidate pattern.
 
 Setup evidence is in `codebase/agentdojo-lab/reports/20260914-nesi-setup-v1` and
@@ -373,8 +379,9 @@ without starting. The new CPU container retry `9039259` passed in 6m 49s; GPU
 smoke `9039289` is pending scheduling priority. No Scout inference or new research
 experiment has completed. The 2026-09-14 full repository suite passed 2,056 tests;
 new 2026-09-15 checks passed 28 HPC tests plus 25 subtests, 38 paired/report tests,
-and the 84-test Case A runner/provider/report selection. The first Case A draft
-was platform-flagged and preserved; the Daybreak Blue retry is now active and
+the 84-test Case A runner/provider/report selection, and the final 109-test plus
+16-subtest same-allocation batch selection. The first Case A draft
+was platform-flagged and preserved; the Daybreak Blue retry completed and is
 verified offline, with zero live model requests.
 See RESEARCH_PROGRESS.md for receipts and limits. Update checkboxes only with
 concrete evidence and actual verification results.

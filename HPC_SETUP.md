@@ -6,7 +6,9 @@ Scout gated-file access are verified. Local transport is implemented; the pinned
 checkpoint is fully downloaded and verified. The first serving-container build
 failed; its dependent GPU smoke was cancelled before starting. The separately
 named retry has now passed, and a new GPU smoke is queued. No Scout inference
-has completed yet.
+has completed yet. A separate smoke-plus-Case-A wrapper and canonical Case A plan
+are verified offline but remain unsubmitted until that queued smoke passes and
+its timing is reviewed.
 
 ## Recovery in progress — 2026-09-15
 
@@ -19,6 +21,19 @@ count and the interpretation of every attempt.
 | --- | --- | --- |
 | `9039259` | COMPLETED on Genoa `g01`, Slurm elapsed 6m 49s, exit `0:0` | CPU container retry: 8 requested CPUs / 16 allocated logical CPUs, 32 GiB, local SSD, 2 hours maximum; no GPUs |
 | `9039289` | PENDING, Priority; `afterok:9039259` fulfilled | Four A100s, 48 requested CPUs, 320 GiB, 1 hour, at most eight synthetic/benign native generation requests |
+
+Do not modify `9039289`, its v2 site file or frozen submission bundle. Its script
+ends after smoke and cannot run Case A in the same allocation. Checkpoint
+`7b5f1eb` adds a separately named future wrapper,
+`codebase/agentdojo-lab/hpc/scout-smoke-case-a.sbatch`. The canonical ignored
+preparation is `runs/scout-case-a-prepared-v1`, with zero model requests and plan
+SHA-256 `e4311002046d7ce12c9a1729f169159cb4995609e63e4124ce1ecfdad5b40d76`.
+If `9039289` passes, use its measured timing to review the two-hour envelope,
+then create a new site file, frozen helper bundle, smoke directory and scheduler
+log before submitting the wrapper. That new job must repeat synthetic and benign
+native smoke in its own allocation before Case A; old receipts cannot authorize it.
+The final wrapper/Case/report/smoke selection passed 109 tests plus 16 subtests,
+Ruff, Bash syntax and Python compilation. These are offline checks only.
 
 The new protocol is `nesi-scout-container-prep-ssd-gzip1-v2`: same immutable OCI
 image, node-local SSD temporary files, gzip compression level 1, and a 6,600-second

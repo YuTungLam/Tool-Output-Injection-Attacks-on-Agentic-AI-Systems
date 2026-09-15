@@ -159,7 +159,7 @@ This continuation began from clean source checkpoint `3c71025` on
 | Model storage | Private scratch root `/nesi/nobackup/uoa04799/dyu848/tool-output-lab`; 10 TiB project scratch allocation |
 | NeSI offline smoke | Completed native fixture with a valid 15-event recording and HTML; no real LLM calls |
 | Git transport | SSH push and pull tested successfully on this device earlier in the session |
-| Scout Case A runner | Prepared protocol and bounded two-slot runner committed; 84 selected offline tests pass; zero live Case A requests |
+| Scout Case A runner | Canonical plan prepared with zero requests; separate two-hour same-allocation wrapper committed and verified offline; zero live Case A requests |
 | New case-study pilot | Planned in RESEARCH_PLAN.md; zero new trajectories |
 
 The read-only scheduler assessment found project association `uoa04799` and GPU
@@ -191,10 +191,11 @@ ledgers and result notes retain their historical values.
    inference remains unverified while the GPU job is queued.
 4. Use the new offline single-episode paired report for changed tool arguments,
    proposal divergence and configured sensitive-field divergence. The Case A
-   local runner is implemented; cross-session alignment and joint/replay runners
-   remain pending.
-5. Freeze and execute the small case-study protocol in RESEARCH_PLAN.md, then
-   examine repeatability only for a clearly specified candidate pattern.
+   local runner, canonical plan and unsubmitted same-allocation wrapper are ready;
+   cross-session alignment and joint/replay runners remain pending.
+5. If `9039289` passes, inspect its timing, freeze a new site file and immutable
+   helper bundle, then submit the separately named Case A wrapper. It must repeat
+   both smoke gates in its own allocation before the clean/attacked pair.
 
 The first 2026-09-15 Case A implementation subagent was stopped by a platform
 security-risk flag. Its four unfinished files remain preserved byte-for-byte in
@@ -208,6 +209,19 @@ restriction for this bounded implementation on the current Codex surface only;
 it does not establish access in a separate API project or product. The original
 flag and quarantine remain historical evidence. No live Case A request was made,
 so this is not a Scout refusal or an experimental finding.
+
+Continuation checkpoint `7b5f1eb` adds the separate two-hour smoke-plus-Case-A
+wrapper without changing the frozen pending smoke job. It requires current-job
+Slurm time evidence, at least 3,900 seconds remaining, a live authenticated
+loopback server, the exact plan-bound runner, and a recomputed preflight → smoke →
+native → execution → terminal evidence chain. The combined ceiling is 24 generation
+attempts: 4 synthetic, at most 4 benign native, and at most 16 Case A. Root's final
+selection passed **109 tests plus 16 subtests**, Ruff, Bash syntax and Python
+compilation. The ignored canonical preparation is
+`codebase/agentdojo-lab/runs/scout-case-a-prepared-v1`; its plan SHA-256 is
+`e4311002046d7ce12c9a1729f169159cb4995609e63e4124ce1ecfdad5b40d76`
+and records zero model requests. The wrapper remains unsubmitted until `9039289`
+finishes successfully and its timing is reviewed.
 
 The 2026-09-15 checklist review read Slurm accounting and retained job artifacts.
 It did not rerun tests or launch replacement jobs. Container failure and GPU
@@ -254,11 +268,16 @@ and benign native smoke receipts from the same four-A100 serving job before eith
 clean or attacked slot can make a request. These offline checks do not increase
 the experimental-deliverable count: no live Scout trajectory has run.
 
+The later same-allocation batch validation passed **109 tests and 16 subtests**.
+This validates orchestration, immutable receipt bindings, budgets and failure
+paths offline; it is not a Scout inference or attack result.
+
 Git synchronization: this continuation started from clean checkpoint **`3c71025`**,
 matching `origin/codex/agentdojo-lab`. SSH push and pull were already verified for
 repository owner `YuTungLam`. The Case A implementation checkpoint **`6071eb0`**
-was subsequently pushed to that branch. Git synchronization does not imply that
-the queued GPU job has finished; inspect its terminal receipts separately.
+and batch-preparation checkpoint **`7b5f1eb`** were subsequently pushed to that
+branch. Git synchronization does not imply that the queued GPU job has finished;
+inspect its terminal receipts separately.
 
 ## Moving between devices
 

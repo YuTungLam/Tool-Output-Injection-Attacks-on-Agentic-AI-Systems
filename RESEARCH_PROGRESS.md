@@ -29,8 +29,10 @@ That does not complete the supervisor's new experimental deliverables.
   synthetic function calls and one benign native AgentDojo task before research.
 - The offline single-episode comparison and bounded Case A runner are implemented
   and verified. The first Case A attempt's platform flag and quarantined draft
-  remain preserved; Daybreak Blue completed the retry on this Codex surface.
-  Proposed payloads and offline fixtures are not live results.
+  remain preserved; Daybreak Blue completed the retry on this Codex surface. The
+  canonical Case A plan and separate same-allocation wrapper are ready but remain
+  unsubmitted until the queued smoke passes. Proposed payloads and offline fixtures
+  are not live results.
 
 ## Run-by-run results
 
@@ -224,6 +226,34 @@ benign native smoke receipts; job `9039289` is still pending scheduling priority
 The checklist remains **8/25 (32%)** and new experimental deliverables remain
 **0/13**.
 
+### Case A same-allocation preparation — passed offline
+
+The canonical preparation now exists at
+`codebase/agentdojo-lab/runs/scout-case-a-prepared-v1`. Its `preparation.json`
+status is `prepared_not_executed`, its `real_llm_requests_started` value is zero,
+and `plan.json` has SHA-256
+`e4311002046d7ce12c9a1729f169159cb4995609e63e4124ce1ecfdad5b40d76`.
+The ignored plan binds 83 source files, the clean-then-attacked order, one repetition
+per slot and a 16-attempt Case A ceiling. Any bound-source drift makes it fail
+verification rather than silently preparing a replacement.
+
+Checkpoint **`7b5f1eb`** adds `hpc/scout-smoke-case-a.sbatch` as a separate,
+unsubmitted two-hour wrapper. It cannot reuse job `9039289` receipts because that
+job's frozen script shuts its server down. A future fresh allocation must repeat
+four synthetic requests and the at-most-four-request benign native smoke before
+the at-most-16-request Case A pair, for a 24-attempt combined ceiling. It also
+requires the exact plan-bound runner, an authenticated loopback server, matching
+Slurm and receipt chains, and at least 3,900 seconds of scheduler-reported time.
+
+After two independent Daybreak reviews and fixes, root verification passed **109
+tests plus 16 subtests**. Ruff, Bash syntax, Python compilation, source-plan
+verification and `git diff --check` passed. The active and pending-v2 smoke wrappers
+still match SHA-256 `8554d25dc2a9288111c578eae0b05fbd1fb0e837526f46de373f320705787420`.
+No new Case A job was submitted, no live model request ran, and the original
+pending job/site/submission bundle was not changed. A general review worker
+encountered the earlier platform filter again; Daybreak Blue completed the bounded
+implementation and reviews without an access block.
+
 ## Evidence locations and continuing work
 
 External evidence paths above are relative to
@@ -238,7 +268,7 @@ A running or queued job has no percentage estimate unless its own instrumentatio
 provides a measurable denominator. See [HPC_SETUP.md](HPC_SETUP.md) for pins,
 resources, current job IDs, and the next deployment gate.
 
-Synchronization: Case A implementation checkpoint **`6071eb0`** was pushed to
+Synchronization: Case A batch-preparation checkpoint **`7b5f1eb`** was pushed to
 `origin/codex/agentdojo-lab`; the documentation update follows it on the same
-branch. This synchronization does not include ignored raw artifacts or imply
+branch. This synchronization does not include the ignored canonical plan or imply
 completion of queued GPU job `9039289`.

@@ -49,6 +49,12 @@ This confirms Daybreak access only for the current Codex product surface. Read
 [RESEARCH_PROGRESS.md](../../RESEARCH_PROGRESS.md) for the original restriction,
 retry evidence, percentage and run-by-run outcomes. No Scout research call occurred.
 
+The canonical ignored preparation is `runs/scout-case-a-prepared-v1`; its plan
+SHA-256 is `e4311002046d7ce12c9a1729f169159cb4995609e63e4124ce1ecfdad5b40d76`
+and it records zero model requests. Checkpoint `7b5f1eb` adds the separate
+`hpc/scout-smoke-case-a.sbatch` wrapper. Its final selection passed 109 tests plus
+16 subtests, Ruff, Bash syntax and Python compilation. The wrapper is not submitted.
+
 ### Implemented local transport and usage
 
 `RunConfig` now supports `provider = "openai_compatible"` with an explicit
@@ -115,11 +121,13 @@ not leave a server available for a later native run.
   attribution accuracy, propagation failures, or end-to-end attack success.
 
 Next: inspect scheduled GPU smoke `9039289` and verify actual Scout tool calls.
-After the same serving job records passing synthetic and native smoke receipts,
-use [CASE-A-SCOUT-V1.md](CASE-A-SCOUT-V1.md) to bind and run the clean/attacked
-slots. Keep the original Case A platform restriction separate from infrastructure
-and research outcomes. Preserve failures and unavailable evidence, and update
-root progress from terminal receipts.
+That frozen job exits after smoke, so its receipts cannot authorize a later Case A
+allocation. If it passes, review its timing, then freeze a new site/helper bundle
+and submit the separately named wrapper described in
+[CASE-A-SCOUT-V1.md](CASE-A-SCOUT-V1.md). The new job repeats both smoke gates in
+the same allocation before the clean/attacked slots. Keep the original platform
+restriction separate from infrastructure and research outcomes. Preserve failures
+and unavailable evidence, and update root progress from terminal receipts.
 
 The dated sections below are historical context. Their former next steps and
 local-only/no-push notes do not override the new direction and cross-device
