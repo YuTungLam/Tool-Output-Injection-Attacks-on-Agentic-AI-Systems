@@ -10,7 +10,9 @@ and a benign native tool loop are verified. A separate smoke-plus-Case-A wrapper
 canonical plan, private site and immutable bundle were frozen. First Case A job
 `9043206` was cancelled before allocation after audit found a Slurm helper-path
 defect. Corrected job `9050478` is submitted and pending for Priority with zero
-runtime, no allocation and no model requests.
+runtime, no allocation and no model requests. The Case B v2 plan and immutable
+bundle also passed offline validation; job `9052477` is pending for Priority with
+zero runtime, no allocation and no model requests.
 
 ## Recovery in progress — 2026-09-15
 
@@ -26,6 +28,7 @@ count and the interpretation of every attempt.
 | `9039289` | COMPLETED on Milan `mg15`, Slurm elapsed 9m 54s, exit `0:0` | Four A100 SXM4 80 GB GPUs, 48 requested / 96 allocated logical CPUs, 320 GiB; synthetic 4/4 and benign native 9/9 checks passed with seven requests |
 | `9043206` | CANCELLED before allocation, elapsed 00:00:00 | First Case A submission; helper-path defect found by audit; zero GPU time and requests; preserve v1 bundle |
 | `9050478` | PENDING, reason `Priority`, runtime zero; no allocation | Corrected Case A submission; automatic start; Sep 15 22:35 NZST / `mg14` are provisional scheduler projections; zero requests so far |
+| `9052477` | PENDING, reason `Priority`, runtime zero; no allocation | Case B submission; automatic start; Sep 16 00:40 NZST / `mg14` are provisional scheduler projections; zero requests so far |
 
 Slurm eventually started `9039289` automatically on `mg15`; earlier queue
 estimates were provisional and did not predict its actual start. The model loaded
@@ -98,7 +101,7 @@ the job automatically. The bundle's `submitted.json` has SHA-256
 Monitor `9050478`; after it is terminal, inspect every smoke, request-accounting,
 Case A and report artifact before interpreting the experiment.
 
-### Prepared Case B launch implementation
+### Submitted Case B launch implementation
 
 The reviewed `nesi-scout-smoke-case-b-v1` wrapper requests four A100s for no more
 than two hours. Its maximum is 24 generation attempts: four synthetic, four
@@ -121,8 +124,32 @@ canonical v2 path is `runs/scout-case-b-prepared-v2`; it contains exactly
 `plan.json` and `preparation.json`, whose SHA-256 values are
 `69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`
 and `ba663d561892b614f7320be36a8fc9c4bf363c946c15837ac52e905fa1b45906`.
-It records zero model calls. It is not bundled or submitted, and no Case B job
-exists.
+The preparation itself records zero model calls.
+
+The immutable submission bundle is
+`/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-b-submission-20260915-v1`,
+using private site
+`/nesi/project/uoa04799/dyu848/tools/scout-case-b-site-20260915-v1.env`.
+All 163 plan-bound sources are physical mode-0400 files: 50 bind pushed parent
+checkpoint `228f7c2ce4255a8587921ef955c633868b1fb10d`, and 113 bind pinned
+AgentDojo checkpoint `089ed468cf3ed0322acc66b0211f26d9d90dbf60`. The combined
+physical source-tree SHA-256 is
+`8ecf7918e814b30989d5a4b94514895093998c897ad3fe2f4adcdaf64e147884`.
+The site, nine-entry root manifest, offline preflight, request-free validation
+and submission-plan SHA-256 values are
+`38c6ab9d6441cc55672efcccd434b4442e0dc12e5c0f4357aee26b6a567e5980`,
+`951a00e2cf1d00b255ee390feeebc43a35321cc7162363651bd6d9509b092eac`,
+`6c3b6b501733595985df9872fcca2eeca590e773176ca8333a5a866f3df1ea60`,
+`4e7748b77e204c5fcebfa95512b3a8b7df114e7607ce1942ca4965921440a424`
+and `938cb660d45586a3c5330ae105cbc139228dc567412f8ea715d065d619b9566e`.
+Import isolation, native/Case B preflight, request-free runner verification and
+fixed limits passed. Independent audit returned GO with no P1/P2 findings.
+
+Job `9052477` was submitted at scheduler display Sep 15 17:30. It is `PENDING`
+for `Priority`, with runtime zero, no allocation and zero model calls. Its
+displayed Sep 16 00:40 NZST start and prospective `mg14` node may change and do
+not prove allocation. It starts automatically. The `submitted.json` SHA-256 is
+`88b00e37fa87aa45755de4749aeaa6ae0a2ee81d62c84c9c36bd2c1bb3812408`.
 
 ### Successful GPU smoke — job 9039289
 
@@ -183,6 +210,7 @@ Read-only `sacct` and retained receipt/log inspection establish:
 | `9039289` GPU smoke | COMPLETED, 9m 54s, exit `0:0` | Four A100s on `mg15`; all four synthetic checks and all nine benign-native checks passed with seven requests |
 | `9043206` Case A | CANCELLED before allocation, elapsed 00:00:00 | Accepted at 15:36 and cancelled at 15:47 NZST after helper-path audit; zero GPU time and requests |
 | `9050478` Case A | PENDING for `Priority`, runtime zero, no allocation | Corrected v2 job submitted at scheduler display Sep 15 17:08; automatic start; displayed Sep 15 22:35 NZST / `mg14` are provisional; zero requests so far |
+| `9052477` Case B | PENDING for `Priority`, runtime zero, no allocation | Submitted at scheduler display Sep 15 17:30; automatic start; displayed Sep 16 00:40 NZST / `mg14` are provisional; zero requests so far |
 
 The 50-minute build timeout and 30-second kill grace match the observed failure
 timing, but the logs only report that the process was killed; timeout is an
@@ -420,7 +448,8 @@ must remain visible failures. None of these checks is an attack experiment.
 
 - A terminal Case A clean/attacked result from pending corrected job `9050478`;
   monitor it and analyze all terminal artifacts.
-- A frozen bundle/submission and live result for the prepared four-arm Case B v2 plan.
+- A terminal four-arm Case B result from pending job `9052477`; monitor it and
+  analyze all terminal artifacts.
 - A frozen transformed-memory live protocol for Case C.
 - Selected old raw run/report bundles from the personal computer; none restored.
 

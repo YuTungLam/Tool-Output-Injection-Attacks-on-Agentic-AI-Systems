@@ -137,7 +137,22 @@ it is source-invalidated. `runs/scout-case-b-prepared-v2` contains exactly
 `plan.json` and `preparation.json`; their SHA-256 values are
 `69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`
 and `ba663d561892b614f7320be36a8fc9c4bf363c946c15837ac52e905fa1b45906`.
-It records zero calls and is not bundled or submitted.
+It records zero calls.
+
+The immutable Case B bundle is
+`/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-b-submission-20260915-v1`.
+Its 163 physical mode-0400 sources split into 50 files from pushed parent commit
+`228f7c2ce4255a8587921ef955c633868b1fb10d` and 113 files from pinned AgentDojo
+commit `089ed468cf3ed0322acc66b0211f26d9d90dbf60`; their combined source-tree
+SHA-256 is `8ecf7918e814b30989d5a4b94514895093998c897ad3fe2f4adcdaf64e147884`.
+Offline preflight, request-free verification, import isolation, runner binding and
+fixed-limit checks passed. Independent audit returned GO with no P1/P2 findings.
+Job `9052477` was submitted at scheduler display Sep 15 17:30. It is pending for
+Priority with runtime zero, no allocation and no calls. Its displayed Sep 16
+00:40 NZST start and prospective `mg14` node are provisional; it starts
+automatically.
+The `submitted.json` SHA-256 is
+`88b00e37fa87aa45755de4749aeaa6ae0a2ee81d62c84c9c36bd2c1bb3812408`.
 
 ### Implemented local transport and usage
 
@@ -209,9 +224,9 @@ not leave a server available for a later native run.
 
 Next: monitor corrected Case A job `9050478` and, once terminal, analyze all smoke,
 request-accounting, clean/attacked and report artifacts. The job must repeat both
-smoke gates in its own allocation before the clean/attacked slots. In parallel,
-freeze the prepared Case B v2 plan into its
-reviewed four-arm bundle. Keep the original platform
+smoke gates in its own allocation before the clean/attacked slots. Also monitor
+Case B job `9052477` and analyze its four-arm terminal artifacts. Keep the original
+platform
 restriction, cancelled pre-allocation submission, infrastructure outcomes and
 research results separate. Preserve failures and unavailable evidence, and update
 root progress from terminal receipts.

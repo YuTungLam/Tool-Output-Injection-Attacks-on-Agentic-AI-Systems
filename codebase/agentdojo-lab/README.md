@@ -29,7 +29,8 @@ start automatically. The Case B four-arm runner and `nesi-scout-smoke-case-b-v1`
 same-allocation wrapper are reviewed and test-clean. The final Case A/B selection
 passed 191 tests plus 16 subtests; root's broader selection passed 214 plus 16
 subtests. Case B v2 is prepared with 163 bound files and zero model calls, but it
-is not bundled or submitted.
+is now frozen in an offline-validated immutable bundle. Job `9052477` is pending
+for Priority with zero runtime, no allocation and no calls; it starts automatically.
 See [progress/results](../../RESEARCH_PROGRESS.md) and [the supervisor checklist](../../RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15). Historical
 run/HTML bundles still need separate transfer. The large evaluation below remains
 deferred: its ledger records zero started native trajectories and no frozen native

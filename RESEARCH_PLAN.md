@@ -104,9 +104,11 @@ not time estimates or accuracy scores.
   identity. The strict Case B four-arm runner and two-hour same-allocation wrapper
   are also implemented. The independent final Case A/B selection passes 191 tests
   plus 16 subtests, while root's broader selection passes 214 plus 16 subtests.
-  The prepared Case B v2 inventory contains 163 source files,
-  including 113 pinned AgentDojo runtime/package-metadata files, with a nine-entry
-  launch manifest. This completes the checked bounded implementation
+  The prepared Case B v2 inventory contains 163 source files: 50 from pushed
+  parent checkpoint `228f7c2ce4255a8587921ef955c633868b1fb10d` and 113 from the
+  pinned AgentDojo checkout. Its frozen bundle uses physical mode-0400 sources
+  and a nine-entry launch manifest; offline import isolation and fixed limits
+  validate. This completes the checked bounded implementation
   prerequisite, not a scientific result; see RESEARCH_PROGRESS.md.
 - [ ] Freeze exact tasks, payloads, source sets, conditions, budgets, settings,
   success criteria and run order before the new research trials. The current
@@ -121,8 +123,9 @@ not time estimates or accuracy scores.
   `228f7c2ce4255a8587921ef955c633868b1fb10d` after request-free validation and a
   GO audit with no P1/P2 findings. It remains pending for Priority with zero
   runtime, no allocation and no requests; its displayed 22:35 NZST start is only
-  an estimate. Case B v2 is prepared with zero calls but not bundled or
-  submitted; its plan SHA-256 is
+  an estimate. Case B v2 is prepared and bundled with zero calls; job `9052477`
+  is pending for Priority with zero runtime, no allocation and no calls. Its plan
+  SHA-256 is
   `69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`.
   Case C remains unfinished, so this combined item stays unchecked.
 - [ ] Recover selected historical raw runs/reports if available and reverify them.
@@ -398,8 +401,9 @@ be tracked in Git. Publish observed counts with their denominators and unknowns.
   Case A v1 is frozen; first job `9043206` was cancelled before allocation after
   a wrapper-path audit. Corrected job `9050478` is submitted and pending for
   Priority with no allocation or requests. No research slot has run.
-  Case B's strict four-arm runner and live wrapper are reviewed and v2 is prepared
-  with zero calls, but it is not bundled or submitted.
+  Case B's strict four-arm runner and live wrapper are reviewed; v2 is frozen in
+  an immutable bundle, and job `9052477` is pending for Priority with no allocation
+  or calls.
 - [ ] Repeat and classify a supported candidate pattern.
 
 Setup evidence is in `codebase/agentdojo-lab/reports/20260914-nesi-setup-v1` and
@@ -428,7 +432,11 @@ review mutations. Its causal status is `not_assessed` and attack status is
 `unknown`. The first Case A draft was platform-flagged and preserved; the Daybreak
 Blue retry completed and is verified offline. The independent final Case A/B
 wrapper selection passed 191 tests plus 16 subtests; root's broader selection
-passed 214 plus 16 subtests. Case B v2 is prepared with zero calls and remains
-unbundled and unsubmitted.
+passed 214 plus 16 subtests. Case B v2 passed offline preflight, request-free
+validation and an independent GO audit with no P1/P2 findings. Job `9052477` was
+submitted at scheduler display Sep 15 17:30 and remains pending for Priority with
+runtime zero, no allocation and no calls. Its Sep 16 00:40 NZST start and `mg14`
+node are provisional scheduler projections. Case A job `9050478` also remains
+pending for Priority with its provisional Sep 15 22:35 NZST start.
 See RESEARCH_PROGRESS.md for receipts and limits. Update checkboxes only with
 concrete evidence and actual verification results.

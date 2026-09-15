@@ -319,8 +319,32 @@ it is now source-invalidated. `runs/scout-case-b-prepared-v2` contains exactly
 `plan.json` and `preparation.json`; their SHA-256 values are
 `69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`
 and `ba663d561892b614f7320be36a8fc9c4bf363c946c15837ac52e905fa1b45906`.
-It records zero model calls and is not bundled or submitted. No Case B job ID or
-live model result exists.
+It records zero model calls.
+
+The immutable submission bundle is
+`/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-b-submission-20260915-v1`,
+using private site
+`/nesi/project/uoa04799/dyu848/tools/scout-case-b-site-20260915-v1.env`.
+All 163 bound sources are physical mode-0400 files: 50 bind pushed parent commit
+`228f7c2ce4255a8587921ef955c633868b1fb10d`, and 113 bind pinned AgentDojo
+commit `089ed468cf3ed0322acc66b0211f26d9d90dbf60`. Their combined source-tree
+SHA-256 is `8ecf7918e814b30989d5a4b94514895093998c897ad3fe2f4adcdaf64e147884`.
+The site, nine-entry manifest, offline preflight, request-free validation and
+submission-plan SHA-256 values are
+`38c6ab9d6441cc55672efcccd434b4442e0dc12e5c0f4357aee26b6a567e5980`,
+`951a00e2cf1d00b255ee390feeebc43a35321cc7162363651bd6d9509b092eac`,
+`6c3b6b501733595985df9872fcca2eeca590e773176ca8333a5a866f3df1ea60`,
+`4e7748b77e204c5fcebfa95512b3a8b7df114e7607ce1942ca4965921440a424`
+and `938cb660d45586a3c5330ae105cbc139228dc567412f8ea715d065d619b9566e`.
+Import isolation and fixed limits validated; independent audit returned GO with
+no P1/P2 findings.
+
+Job `9052477` was submitted at scheduler display Sep 15 17:30. It is pending for
+Priority with runtime zero, no allocation and no model calls. Its displayed Sep
+16 00:40 NZST start and prospective `mg14` node are provisional. It starts
+automatically. The `submitted.json` SHA-256 is
+`88b00e37fa87aa45755de4749aeaa6ae0a2ee81d62c84c9c36bd2c1bb3812408`.
+No live Case B result exists yet.
 
 ## Separate CPU container preparation
 

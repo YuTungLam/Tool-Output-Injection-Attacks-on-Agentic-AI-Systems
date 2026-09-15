@@ -38,8 +38,9 @@ That does not complete the supervisor's new experimental deliverables.
   Configured joint/replay transport and the cross-session exporter are also
   verified offline. Proposed payloads and offline fixtures are not live results.
 - The strict Case B four-arm runner and same-allocation wrapper are reviewed and
-  test-clean. The v2 plan is prepared with zero calls but not bundled or submitted,
-  so no Case B job is claimed.
+  test-clean. Its v2 plan and immutable bundle passed offline validation. Job
+  **9052477** is pending for Priority with zero runtime, no allocation and no
+  model calls. Case A job **9050478** also remains pending for Priority.
 
 ## Run-by-run results
 
@@ -425,7 +426,39 @@ changed the protocol inventory. The canonical v2 directory is
 `69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`
 and `ba663d561892b614f7320be36a8fc9c4bf363c946c15837ac52e905fa1b45906`.
 The preparation status is `prepared_not_executed` and records zero model calls.
-There is no bundle, submission, job ID or live result.
+
+### Case B submission — job 9052477 — pending
+
+The immutable bundle is
+`evidence/scout-case-b-submission-20260915-v1`; the private site file is
+`/nesi/project/uoa04799/dyu848/tools/scout-case-b-site-20260915-v1.env`.
+All **163 / 163** plan-bound sources are physical mode-0400 files. Fifty bind
+pushed parent checkpoint `228f7c2ce4255a8587921ef955c633868b1fb10d`; 113 bind
+pinned AgentDojo checkpoint `089ed468cf3ed0322acc66b0211f26d9d90dbf60`.
+The combined physical source-tree SHA-256 is
+`8ecf7918e814b30989d5a4b94514895093998c897ad3fe2f4adcdaf64e147884`.
+The plan and preparation SHA-256 values remain
+`69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`
+and `ba663d561892b614f7320be36a8fc9c4bf363c946c15837ac52e905fa1b45906`.
+
+The site, nine-entry root manifest, offline preflight, request-free validation
+and submission-plan SHA-256 values are, respectively,
+`38c6ab9d6441cc55672efcccd434b4442e0dc12e5c0f4357aee26b6a567e5980`,
+`951a00e2cf1d00b255ee390feeebc43a35321cc7162363651bd6d9509b092eac`,
+`6c3b6b501733595985df9872fcca2eeca590e773176ca8333a5a866f3df1ea60`,
+`4e7748b77e204c5fcebfa95512b3a8b7df114e7607ce1942ca4965921440a424`
+and `938cb660d45586a3c5330ae105cbc139228dc567412f8ea715d065d619b9566e`.
+Offline native/Case B preflight, request-free verification, import isolation,
+runner binding and fixed-limit checks passed. Independent audit returned **GO**
+with no P1/P2 findings.
+
+Job **9052477** was submitted at scheduler display **Sep 15 17:30**. It is
+**PENDING** for **Priority**, with runtime zero, no allocation and no observed
+model calls. Its displayed **Sep 16 00:40 NZST** start and prospective `mg14`
+node are scheduler projections, not guarantees or allocation evidence. It will
+start automatically. The `submitted.json` SHA-256 is
+`88b00e37fa87aa45755de4749aeaa6ae0a2ee81d62c84c9c36bd2c1bb3812408`.
+No Case B result exists yet.
 
 The checklist is now **10/25 (40%)**, preparation/prerequisites are **10/12
 (83%)**, and live experimental deliverables remain **0/13**.
@@ -440,6 +473,8 @@ new failed experiment.
 
 Inspect live jobs with `squeue -u dyu848`; inspect terminal outcomes with `sacct`.
 Update this snapshot from receipts and accounting after each terminal attempt.
+A current next action is to monitor Case A `9050478` and Case B `9052477`, then
+analyze every terminal smoke, request-accounting, case and report artifact.
 A running or queued job has no percentage estimate unless its own instrumentation
 provides a measurable denominator. See [HPC_SETUP.md](HPC_SETUP.md) for pins,
 resources, current job IDs, and the next deployment gate.

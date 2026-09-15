@@ -29,8 +29,10 @@ and made zero requests. Its first submitted wrapper job, `9043206`, was cancelle
 before allocation after an audit found a Slurm helper-path defect. Corrected job
 `9050478` is pending for Priority with zero runtime, no allocation and no model
 requests; Slurm will start it automatically. The strict Case B runner and
-same-allocation wrapper are reviewed and test-clean; its 163-source v2 plan is prepared with zero
-calls but not bundled or submitted. No new research experiment has completed.
+same-allocation wrapper are reviewed and test-clean; its 163-source v2 plan is
+prepared with zero calls. Its immutable bundle passed offline validation, and job `9052477` is
+pending for Priority with no allocation or calls; it also starts automatically.
+No new research experiment has completed.
 The supervisor checklist is **10/25 (40%)** overall, **10/12 (83%)** for
 preparation, and **0/13** for new experimental deliverables.
 See [progress and per-run results](RESEARCH_PROGRESS.md), [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15)

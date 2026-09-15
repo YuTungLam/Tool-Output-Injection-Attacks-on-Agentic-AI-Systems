@@ -162,6 +162,7 @@ and the current Case A launch checkpoint
 | NeSI offline smoke | Completed native fixture with a valid 15-event recording and HTML; no real LLM calls |
 | Git transport | SSH push and pull tested successfully on this device earlier in the session |
 | Scout Case A runner | Hardened 85-source v4 plan prepared with zero requests. First job 9043206 was cancelled before allocation after audit found a Slurm helper-path defect. Corrected job 9050478 is pending for Priority with no allocation or model requests yet |
+| Scout Case B runner | Its 163-source v2 plan and immutable bundle passed offline validation. Job 9052477 is pending for Priority with no allocation or model requests yet |
 | New case-study pilot | Planned in RESEARCH_PLAN.md; zero new trajectories |
 
 The read-only scheduler assessment found project association `uoa04799` and GPU
@@ -199,10 +200,11 @@ ledgers and result notes retain their historical values.
    replay accept explicit configured OpenAI-compatible endpoints while preserving
    their legacy defaults. Causal influence remains unassessed and attack success
    unknown for the offline controls.
-5. Freeze the prepared Case B v2 plan into a same-allocation bundle/site, then
-   submit it after review. The strict four-arm runner and wrapper are implemented
-   but unsubmitted; they have made no live request. Case C still needs a frozen
-   transformed-memory live protocol.
+5. Monitor Case B job `9052477` alongside Case A job `9050478`; both start
+   automatically. The displayed Sep 16 00:40 NZST Case B start and prospective
+   `mg14` node are scheduler projections. After each job becomes terminal, analyze
+   all smoke, request-accounting, case and report artifacts. Case C still needs a
+   frozen transformed-memory live protocol.
 
 The first 2026-09-15 Case A implementation subagent was stopped by a platform
 security-risk flag. Its four unfinished files remain preserved byte-for-byte in
@@ -348,8 +350,24 @@ AgentDojo runtime/package-metadata files, and a nine-entry launch manifest.
 `preparation.json`; their SHA-256 values are
 `69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`
 and `ba663d561892b614f7320be36a8fc9c4bf363c946c15837ac52e905fa1b45906`.
-It records zero model calls. Preserved v1 is source-invalidated. No v2 bundle,
-submission or research request is claimed here.
+The preparation records zero model calls. Preserved v1 is source-invalidated.
+
+The immutable Case B bundle is
+`/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-b-submission-20260915-v1`.
+All 163 plan-bound sources are physical mode-0400 files: 50 come from pushed
+parent checkpoint `228f7c2ce4255a8587921ef955c633868b1fb10d`, and 113 from
+pinned AgentDojo checkpoint `089ed468cf3ed0322acc66b0211f26d9d90dbf60`.
+Their combined source-tree SHA-256 is
+`8ecf7918e814b30989d5a4b94514895093998c897ad3fe2f4adcdaf64e147884`.
+Offline preflight, request-free validation, bundle import isolation and fixed-limit
+checks passed. Independent audit returned GO with no P1/P2 findings.
+
+Job `9052477` was submitted at scheduler display Sep 15 17:30. At this snapshot
+it is `PENDING (Priority)` with runtime zero, no allocation and no model calls.
+The displayed Sep 16 00:40 NZST start and prospective `mg14` node may change;
+the job starts automatically. No Case B outcome is claimed.
+The bundle's `submitted.json` has SHA-256
+`88b00e37fa87aa45755de4749aeaa6ae0a2ee81d62c84c9c36bd2c1bb3812408`.
 
 Git synchronization: this continuation started from clean checkpoint **`3c71025`**,
 matching `origin/codex/agentdojo-lab`. SSH push and pull were already verified for
