@@ -2,12 +2,31 @@
 
 import hashlib
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import case_c_batch
 import pytest
 
 HPC = Path(__file__).resolve().parent
+
+
+def test_real_cli_preparation_matches_batch_plan_contract(tmp_path):
+    case_dir = tmp_path / "real-prepared"
+    runner = HPC.parent / "scripts/run_case_c_scout.py"
+    completed = subprocess.run(
+        [sys.executable, str(runner), "prepare", str(case_dir)],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    plan = case_c_batch.validate_plan_shape(case_dir, runner, run_verifier=False)
+    assert plan["config"]["online_causal_audit"] is False
 
 
 def dump(path: Path, value) -> None:

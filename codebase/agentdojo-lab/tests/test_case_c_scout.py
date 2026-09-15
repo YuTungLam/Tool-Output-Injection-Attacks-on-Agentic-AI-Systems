@@ -72,6 +72,7 @@ def test_design_freezes_order_intervention_oracles_and_bounds():
         "api_key_env": "LOCAL_LLM_API_KEY",
     }
     assert plan["endpoint_identity"]["fallback"] is None
+    assert plan["config"]["online_causal_audit"] is False
     assert plan["config"]["provenance_policy"] == "configs/workspace_policy_v1.yaml"
     assert Path(plan["config"]["semantic_model"]).is_absolute()
     assert Path(plan["config"]["semantic_model"]).name == "all-MiniLM-L6-v2-1110a243"

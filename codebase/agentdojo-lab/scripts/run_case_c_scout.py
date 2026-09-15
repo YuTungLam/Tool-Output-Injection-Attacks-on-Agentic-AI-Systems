@@ -506,6 +506,11 @@ def runtime_functions(stage: str) -> list:
 
 def design(base_url: str = "http://127.0.0.1:8000/v1", semantic_model: str | None = None) -> dict:
     config = config_for(base_url, semantic_model)
+    plan_config = config.model_dump()
+    # RunConfig omits this false default during serialization. The frozen plan
+    # records it explicitly so the batch gate can prove that no online auditor
+    # requests are enabled.
+    plan_config["online_causal_audit"] = False
     clean_env = _environment(_initial_drive("clean")).model_dump(mode="json")
     attacked_env = _environment(_initial_drive("attacked")).model_dump(mode="json")
     restored = copy.deepcopy(attacked_env)
@@ -525,7 +530,7 @@ def design(base_url: str = "http://127.0.0.1:8000/v1", semantic_model: str | Non
         "status": "prepared_design_only",
         "real_llm_requests_started": 0,
         "execution_binding": {"status": "pending_same_allocation_serving_receipt"},
-        "config": config.model_dump(),
+        "config": plan_config,
         "endpoint_identity": {
             "settings": config.primary_endpoint().model_dump(),
             "literal_loopback_required": True,
