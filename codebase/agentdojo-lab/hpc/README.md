@@ -205,6 +205,46 @@ a failed integration/utility check; it is not attack evidence. The wrapper hash,
 server command, synthetic receipt, and model/container/template pins are linked
 in `native-smoke.json`. The loopback client uses no proxies or redirects.
 
+### Prepared same-allocation Case A continuation
+
+The queued job `9039289` runs the frozen smoke wrapper and exits after smoke;
+it cannot append Case A in that allocation. Do not alter its site file or v2
+submission bundle. [`scout-smoke-case-a.sbatch`](scout-smoke-case-a.sbatch) is
+a separately named, unsubmitted protocol for a later fresh allocation. Set
+`SCOUT_RUN_DIR` to a new absolute smoke directory, `SCOUT_CASE_A_DIR` to a
+separate absolute directory containing only a verified `plan.json` and
+`preparation.json`, and `SCOUT_CASE_A_RUNNER` to the active absolute runner.
+Freeze this wrapper and all sibling HPC helpers together before submission.
+
+The wrapper repeats four synthetic requests and the bounded native smoke in the
+same job, then reserves `case-a-phase.json` before any Case A request. It reads
+the current job's `%i|%L|%l` fields from `squeue` and leaves Case A unstarted if
+the job ID or duration cannot be parsed, the job limit exceeds two hours, or
+less than 3,900 seconds remain. It rechecks the authenticated literal-loopback
+server and limits the whole Case A process group to 3,600 seconds with TERM and
+KILL cleanup. The combined ceilings are 24 generation attempts (4 synthetic,
+at most 4 native, at most 16 Case A), zero online auditors, and zero SDK retries.
+
+Use a new site file and fresh scheduler log parent. A future reviewed submission
+would invoke the wrapper directly; this command is an example and has not been
+run:
+
+```bash
+sbatch \
+  --export=HOME,PATH,LANG,SCOUT_SITE_FILE=/path/to/new-scout-case-a-site.env \
+  --output=/path/to/existing/log-directory/scout-case-a-%j.log \
+  codebase/agentdojo-lab/hpc/scout-smoke-case-a.sbatch
+```
+
+The sibling `${SCOUT_RUN_DIR}.case-a-pre-smoke.json` receipt binds the plan and
+runner before server startup. The smoke directory retains `preflight.json`,
+`smoke.json`,
+`native-smoke.json`, the pre-Case phase and server checks, helper hashes,
+separate Case wrapper and job exit codes, cleanup evidence, and the terminal
+`case-a-batch-summary.json`. The terminal receipt accounts for requests and
+framework completion. Scientific sink outcomes remain in the Case A summary
+and paired report, including unsuccessful and unconfirmed trials.
+
 For a synthetic-only check, omit `SCOUT_NATIVE_SMOKE=1` and retain the default
 45-minute batch limit. Neither mode starts research experiments. Native input
 prompts must fit the explicit 8,192-token context; there is no silent truncation.

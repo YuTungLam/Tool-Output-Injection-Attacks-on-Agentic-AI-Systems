@@ -1,9 +1,9 @@
 # Scout Case A: recipient change, version 1
 
-Status: prepared design; no Scout research trajectory has run under this protocol.
-The script's `prepare` command freezes scientific inputs and hashes without any
-model call. Container/SIF identity, measured GPU allocation and final operational
-walltime remain pending a successful live smoke and a separate execution binding.
+Status: canonical scientific plan prepared locally; no Scout research trajectory
+has run under this protocol. The script's `prepare` command freezes scientific
+inputs and hashes without any model call. The live container, measured GPU
+allocation and execution binding remain pending a successful smoke.
 
 The active implementation was recovered on 2026-09-15 only after the four
 preserved draft files matched `quarantine.json` byte hashes and an independent
@@ -40,8 +40,11 @@ suite retries. The native evaluator may restart its pipeline at most three times
 the same counter spans them. SDK retries, proxies, redirects, Groq fallback,
 online auditors and canary changes are disabled. Context overrun is a retained
 failure, with no automatic truncation. Slot processes have 1,800-second ceilings;
-the case has a 3,600-second worker ceiling. A future GPU job envelope of at most
-two hours is proposed, pending smoke timing; this document does not submit a job.
+the case has a 3,600-second worker ceiling. The separately named
+[same-allocation wrapper](hpc/scout-smoke-case-a.sbatch) fixes a two-hour maximum
+and 24 total generation attempts: four synthetic smoke, at most four benign native
+smoke, then at most 16 Case A attempts. It remains unsubmitted pending the terminal
+result and measured timing of smoke job `9039289`.
 
 The unchanged ordinary passive cascade, pinned MiniLM and file lineage are
 enabled. A whole native search response is one registered source even if it
@@ -67,22 +70,26 @@ From the lab, using its Python 3.12 environment:
 .venv/bin/python scripts/run_case_a_scout.py prepare runs/scout-case-a-prepared-v1
 ```
 
-Prepare the canonical plan after implementation settles: any later bound source,
-configuration, payload, tool schema or native environment change invalidates it.
-Use a new named preparation directory if a prospective change is needed; preserve
-the old one. `preparation.json` says `prepared_not_executed`, and execution
-bindings are explicitly pending. This command does not execute offline pretend
-research slots or create experimental outcomes.
+The canonical local preparation is `runs/scout-case-a-prepared-v1`. Any later
+bound source, configuration, payload, tool schema or native environment change
+invalidates it. Use a new named preparation directory if a prospective change is
+needed; preserve the old one. `preparation.json` says `prepared_not_executed`, and
+execution bindings are explicitly pending. This command does not execute offline
+pretend research slots or create experimental outcomes.
 
 Only inside an allocated job, after **that same serving job** has passing
-synthetic and native Scout smoke receipts, may the separate command run:
+synthetic and native Scout smoke receipts, may the wrapper invoke:
 
 ```bash
 .venv/bin/python scripts/run_case_a_scout.py run runs/scout-case-a-prepared-v1 \
   --serving-receipt /absolute/path/to/current-smoke/preflight.json
 ```
 
-The endpoint in the preparation must match that server's literal loopback port.
+Do not reuse receipts from `9039289`: its frozen wrapper exits after smoke and
+shuts its server down. After that job passes and its timing is reviewed, freeze a
+new site file and helper bundle for `hpc/scout-smoke-case-a.sbatch`; its own fresh
+allocation repeats both gates before invoking the command above. The endpoint in
+the preparation must match that server's literal loopback port.
 Execution refuses existing reservation or slot directories and writes a bound
 `execution.json` before workers make calls. It retains per-slot native artifacts,
 `case-a-outcome.json`, attempt reservations, worker logs and terminal receipts;
