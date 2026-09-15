@@ -91,25 +91,36 @@ not time estimates or accuracy scores.
   runner/provider/report selection passes 84 tests. Its canonical plan is now
   prepared with zero model requests, and the separate same-allocation batch
   selection passes 109 tests plus 16 subtests. The first implementation attempt's
-  platform flag and quarantined
-  draft remain recorded; a Daybreak Blue retry on the current Codex surface
+  platform flag and quarantined draft remain recorded; a Daybreak Blue retry on
+  the current Codex surface
   hash-verified and completed it. A separate bounded offline cross-session exporter
-  now aligns ordered A/B pairs and verifies typed session-boundary evidence; its
-  42-test targeted selection (20 new tests) passes against the existing four-process
-  memory fixture and negative cases. The joint no-tools auditor and observed
+  now validates eight typed propagation segments across ordered A/B pairs; the
+  v2 engineering-control report covers all 8/8 segments in each existing offline
+  control. Its 74-test selection passes, and independent review rejected or
+  downgraded 22 mutation classes. Causal influence remains unassessed and attack
+  success unknown. The joint no-tools auditor and observed
   one-step replay now accept an explicit configured OpenAI-compatible endpoint,
   preserve their legacy defaults, disable SDK retries and record endpoint/model
-  identity. The final combined root selection passed 217 tests. This completes
-  the bounded implementation prerequisite, not a scientific result; see
-  RESEARCH_PROGRESS.md.
+  identity. The strict Case B four-arm runner and two-hour same-allocation wrapper
+  are also implemented. The independent final Case A/B selection passes 191 tests
+  plus 16 subtests, while root's broader selection passes 214 plus 16 subtests.
+  The prepared Case B v2 inventory contains 163 source files,
+  including 113 pinned AgentDojo runtime/package-metadata files, with a nine-entry
+  launch manifest. This completes the checked bounded implementation
+  prerequisite, not a scientific result; see RESEARCH_PROGRESS.md.
 - [ ] Freeze exact tasks, payloads, source sets, conditions, budgets, settings,
   success criteria and run order before the new research trials. The current
-  Case A v1 source-refresh preparation is `runs/scout-case-a-prepared-v2`, with
+  Case A v1 source-refresh preparation is `runs/scout-case-a-prepared-v4`, with
   plan SHA-256
-  `1189cdd015d1eb6967d2c8b1e7724214fc5573e255b82e897a779b6058d36770`.
-  It supersedes but does not delete the source-invalidated first zero-request
-  preparation. The remaining case families are not frozen, so this combined item
-  stays unchecked.
+  `5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`.
+  It binds 85 source files including the runtime-read MiniLM pin, records zero
+  requests, and supersedes without deleting three source-invalidated preparations.
+  First submission `9043206` was cancelled
+  before allocation after audit found a Slurm helper-path defect; it used zero GPU
+  time and requests. Case B v2 is prepared with zero calls but not bundled or
+  submitted; its plan SHA-256 is
+  `69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`.
+  Case C remains unfinished, so this combined item stays unchecked.
 - [ ] Recover selected historical raw runs/reports if available and reverify them.
   Their absence does not block new named trials, but old outcome notes cannot
   substitute for locally inspected evidence.
@@ -380,7 +391,11 @@ be tracked in Git. Publish observed counts with their denominators and unknowns.
   single-episode and cross-session exporters, bounded Case A runner, configured
   joint auditor and configured one-step replay are verified offline.
 - [ ] Freeze the new small protocol, run it, and produce actual case studies.
-  Case A v1 is frozen and its batch wrapper is verified offline; no live slot has run.
+  Case A v1 is frozen; first job `9043206` was cancelled before allocation after
+  a wrapper-path audit, and its corrected replacement is pending preparation. No
+  research slot has run.
+  Case B's strict four-arm runner and live wrapper are reviewed and v2 is prepared
+  with zero calls, but it is not bundled or submitted.
 - [ ] Repeat and classify a supported candidate pattern.
 
 Setup evidence is in `codebase/agentdojo-lab/reports/20260914-nesi-setup-v1` and
@@ -388,14 +403,22 @@ Setup evidence is in `codebase/agentdojo-lab/reports/20260914-nesi-setup-v1` and
 container job 9029215 failed, and dependent GPU smoke 9029415 was cancelled
 without starting. The CPU container retry `9039259` passed in 6m 49s; GPU smoke
 `9039289` passed in 9m54s with seven bounded generation requests. Scout inference
-is now verified, while no new research experiment has completed. The 2026-09-14 full repository suite passed 2,056 tests;
+is now verified, while no new research experiment has completed. Case A job
+`9043206` was submitted at 15:36 NZST from pushed checkpoint `84fe7cc`, then
+cancelled at 15:47 before allocation after audit found a Slurm helper-path defect.
+It used zero GPU time and requests. The current 85-source zero-request plan is
+`runs/scout-case-a-prepared-v4`, SHA-256
+`5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`.
+The 2026-09-14 full repository suite passed 2,056 tests;
 new 2026-09-15 checks passed 28 HPC tests plus 25 subtests, 38 paired/report tests,
 the 84-test Case A runner/provider/report selection, and the final 109-test plus
-16-subtest same-allocation batch selection. The configured causal/replay and
-cross-session reporting selection passed 217 tests, with 20 dedicated
-cross-session tests including negative evidence-integrity cases. The first Case A
-draft
-was platform-flagged and preserved; the Daybreak Blue retry completed and is
-verified offline, with zero live model requests.
+16-subtest same-allocation batch selection. The hardened cross-session v2 report
+has all 8/8 segments in both offline controls, backed by 74 selected tests and 22
+review mutations. Its causal status is `not_assessed` and attack status is
+`unknown`. The first Case A draft was platform-flagged and preserved; the Daybreak
+Blue retry completed and is verified offline. The independent final Case A/B
+wrapper selection passed 191 tests plus 16 subtests; root's broader selection
+passed 214 plus 16 subtests. Case B v2 is prepared with zero calls and remains
+unbundled and unsubmitted.
 See RESEARCH_PROGRESS.md for receipts and limits. Update checkboxes only with
 concrete evidence and actual verification results.

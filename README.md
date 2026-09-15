@@ -21,11 +21,18 @@ implementation, and interactive experiment reports.
 **Current phase, 2026-09-15:** prepare local inference on NeSI and a few concrete
 propagation case studies. Historical large evaluation plans are deferred. The
 local endpoint adapter is tested, and Scout is authenticated, downloaded and
-checksum-verified. The container retry passed; GPU smoke `9039289` is queued.
-The single- and cross-session exporters, configured joint/replay transport,
-bounded Case A runner, refreshed plan and future same-allocation wrapper are
-verified offline. The wrapper remains unsubmitted; Scout inference and the new
-pilot have not run. See [progress and per-run results](RESEARCH_PROGRESS.md), [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15)
+checksum-verified. The container retry and four-A100 GPU smoke `9039289` passed;
+synthetic 4/4 and all nine benign-native checks passed with seven requests. The
+single- and cross-session exporters, configured joint/replay transport and
+bounded Case A runner are verified. The current Case A plan binds 85 source files
+and made zero requests. Its first submitted wrapper job, `9043206`, was cancelled
+before allocation after an audit found a Slurm helper-path defect; the corrected
+replacement is being prepared. The strict Case B runner and same-allocation
+wrapper are reviewed and test-clean; its 163-source v2 plan is prepared with zero
+calls but not bundled or submitted. No new research experiment has completed.
+The supervisor checklist is **10/25 (40%)** overall, **10/12 (83%)** for
+preparation, and **0/13** for new experimental deliverables.
+See [progress and per-run results](RESEARCH_PROGRESS.md), [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15)
 and HPC_SETUP.md for the remaining work and retained job outcomes.
 
 ## Continuing on another device

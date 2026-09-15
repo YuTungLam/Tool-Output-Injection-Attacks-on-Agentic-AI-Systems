@@ -1,7 +1,7 @@
 # Scout Case A: recipient change, version 1
 
 Status: the current source-refresh preparation is
-`runs/scout-case-a-prepared-v3`; no Scout research trajectory has run under this
+`runs/scout-case-a-prepared-v4`; no Scout research trajectory has run under this
 protocol. The script's `prepare` command freezes scientific inputs and hashes
 without any model call. GPU smoke job `9039289` passed in 9m54s. A fresh
 same-allocation smoke and execution binding remain mandatory for the Case A job.
@@ -68,14 +68,16 @@ A single pair establishes neither repeatability nor a systematic method limitati
 From the lab, using its Python 3.12 environment:
 
 ```bash
-.venv/bin/python scripts/run_case_a_scout.py prepare runs/scout-case-a-prepared-v3
+.venv/bin/python scripts/run_case_a_scout.py prepare runs/scout-case-a-prepared-v4
 ```
 
 The first zero-request preparation, `runs/scout-case-a-prepared-v1`, is preserved.
 Later joint/replay transport and cross-session reporting work invalidated its broad
 source snapshot. The completed propagation-validator work then invalidated
-`runs/scout-case-a-prepared-v2`; both old preparations remain preserved. The
-current canonical preparation is `runs/scout-case-a-prepared-v3`. Any later bound
+`runs/scout-case-a-prepared-v2`. A launch audit then found that v3 omitted the
+runtime-read MiniLM revision pin from its source inventory. The old preparations
+remain preserved and source-invalidated. The current canonical preparation is
+`runs/scout-case-a-prepared-v4`. Any later bound
 source, configuration, payload, tool schema or native environment change
 invalidates it. Use another new named preparation directory if a prospective
 change is needed. `preparation.json` says `prepared_not_executed`, and execution
@@ -86,7 +88,7 @@ Only inside an allocated job, after **that same serving job** has passing
 synthetic and native Scout smoke receipts, may the wrapper invoke:
 
 ```bash
-.venv/bin/python scripts/run_case_a_scout.py run runs/scout-case-a-prepared-v3 \
+.venv/bin/python scripts/run_case_a_scout.py run runs/scout-case-a-prepared-v4 \
   --serving-receipt /absolute/path/to/current-smoke/preflight.json
 ```
 
@@ -103,6 +105,15 @@ an absent key and a deliberately wrong key are rejected. The receipt contains
 status codes and process hashes, never the key or a key-derived value. The runner
 repeats those live checks before each slot; terminal finalization reconstructs the
 recorded binding after the wrapper has intentionally stopped the server.
+
+The first submitted continuation, job `9043206`, was cancelled while still
+pending after review found that its wrapper derived helper paths from Slurm's
+spooled script location. Accounting records zero elapsed allocation time and no
+model requests. The corrected wrapper reads an absolute frozen helper directory
+from a submission-hash-bound private site file, verifies a separately hash-bound
+checksum manifest for every helper, and requires the spooled script bytes to
+match the canonical wrapper before any helper runs. Preserve the cancelled v1
+bundle and prepare a new bundle/site rather than editing it in place.
 Execution refuses existing reservation or slot directories and writes a bound
 `execution.json` before workers make calls. It retains per-slot native artifacts,
 `case-a-outcome.json`, attempt reservations, worker logs and terminal receipts;

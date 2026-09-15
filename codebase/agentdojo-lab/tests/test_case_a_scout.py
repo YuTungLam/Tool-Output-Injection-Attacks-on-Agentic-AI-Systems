@@ -40,6 +40,7 @@ def test_design_fixes_slots_local_provider_budget_and_native_environment_delta()
     assert plan["limits"]["online_auditor_requests"] == 0
     assert plan["oracle"]["argument_path"] == "/recipients/0"
     assert plan["source_hashes"]["src/agentdojo_lab/paired_report.py"]
+    assert plan["source_hashes"]["src/agentdojo_lab/model_pins/minilm-v1.json"]
     assert plan["environment_sha256"]["clean"] != plan["environment_sha256"]["attacked"]
 
     clean = case_a_scout.environment("clean").model_dump(mode="json")
@@ -72,6 +73,21 @@ def test_prepare_is_request_free_and_plan_verification_detects_change(tmp_path, 
     changed["slots"].reverse()
     (output / "plan.json").write_text(json.dumps(changed))
     with pytest.raises(ValueError, match="Changed or missing bound evidence"):
+        case_a_scout.verify_plan(output)
+
+
+def test_plan_verification_detects_semantic_revision_pin_drift(tmp_path, monkeypatch):
+    output = tmp_path / "case"
+    case_a_scout.prepare(output)
+    actual_digest = case_a_scout.digest
+
+    def drifted_digest(path):
+        if Path(path).name == "minilm-v1.json":
+            return "0" * 64
+        return actual_digest(path)
+
+    monkeypatch.setattr(case_a_scout, "digest", drifted_digest)
+    with pytest.raises(ValueError, match="source/configuration/environment inputs changed"):
         case_a_scout.verify_plan(output)
 
 

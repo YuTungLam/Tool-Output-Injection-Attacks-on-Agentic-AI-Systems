@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import time
 from pathlib import Path
 
@@ -25,6 +26,20 @@ UNSTARTED_STATUSES = {
     "unstarted_insufficient_remaining_time",
     "unstarted_invalid_current_job_time_evidence",
 }
+MANIFEST_PAYLOAD_NAMES = frozenset(
+    {
+        "case_a_batch.py",
+        "native_smoke.py",
+        "preflight.py",
+        "run_case_a_scout.py",
+        "scout-smoke-case-a.sbatch",
+        "scout-smoke.sbatch",
+        "smoke.py",
+        "tool_chat_template_llama4_pythonic_typed_v1.jinja",
+    }
+)
+EXPECTED_HELPER_NAMES = MANIFEST_PAYLOAD_NAMES | {"submission-sha256.txt"}
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 def receipt(path: Path) -> dict:
@@ -32,6 +47,199 @@ def receipt(path: Path) -> dict:
         "path": str(path.resolve()),
         "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
     }
+
+
+def fixed_limits() -> dict:
+    return {
+        "walltime_seconds": WALLTIME_SECONDS,
+        "minimum_remaining_seconds": MINIMUM_REMAINING_SECONDS,
+        "case_command_timeout_seconds": CASE_COMMAND_TIMEOUT_SECONDS,
+        "synthetic_requests": SYNTHETIC_REQUEST_LIMIT,
+        "native_requests": NATIVE_REQUEST_LIMIT,
+        "case_requests": CASE_REQUEST_LIMIT,
+        "total_generation_requests": TOTAL_REQUEST_LIMIT,
+        "online_auditor_requests": 0,
+        "sdk_retries": 0,
+    }
+
+
+def fixed_preflight_limits() -> tuple[dict, dict]:
+    smoke = {
+        "scope": "smoke_phase_only",
+        "gpus": 4,
+        "intended_walltime_minutes": 60,
+        "ready_seconds": 1500,
+        "generative_requests": 8,
+        "synthetic_requests": 4,
+        "synthetic_request_timeout_seconds": 120,
+        "synthetic_max_completion_tokens_per_request": 512,
+        "native_requests": 4,
+        "native_request_timeout_seconds": 180,
+        "native_max_completion_tokens_per_request": 2048,
+    }
+    enclosing = {
+        "scope": "smoke_plus_case_a_job",
+        "walltime_seconds": WALLTIME_SECONDS,
+        "total_generation_requests": TOTAL_REQUEST_LIMIT,
+        "case_requests": CASE_REQUEST_LIMIT,
+        "online_auditor_requests": 0,
+    }
+    return smoke, enclosing
+
+
+def validate_preflight_limit_records(preflight: dict) -> None:
+    smoke, enclosing = fixed_preflight_limits()
+    if (
+        preflight.get("limits") != smoke
+        or preflight.get("enclosing_case_a_limits") != enclosing
+    ):
+        raise ValueError("Preflight does not record the fixed smoke and Case A limits")
+
+
+def require_absolute_regular(path: Path, label: str) -> Path:
+    if not path.is_absolute() or path.is_symlink() or not path.is_file():
+        raise ValueError(f"{label} must be an absolute, existing, non-symlink file")
+    return path.resolve()
+
+
+def helper_receipts(helper_paths: list[Path]) -> dict:
+    helpers: dict[str, dict] = {}
+    for path in helper_paths:
+        resolved = require_absolute_regular(path, "Submission helper")
+        if resolved.name in helpers:
+            raise ValueError("Submission helper names must be unique")
+        helpers[resolved.name] = receipt(resolved)
+    if set(helpers) != EXPECTED_HELPER_NAMES:
+        raise ValueError("Submission helper set differs from the fixed Case A set")
+    parents = {str(Path(item["path"]).parent) for item in helpers.values()}
+    if len(parents) != 1:
+        raise ValueError("All frozen Case A helpers must share one directory")
+    return helpers
+
+
+def manifest_entries(path: Path, helpers: dict) -> dict[str, str]:
+    entries: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        match = re.fullmatch(r"([0-9a-f]{64})  ([^/\x00]+)", line)
+        if match is None or match.group(2) in entries:
+            raise ValueError("Malformed or duplicate Case A checksum manifest entry")
+        entries[match.group(2)] = match.group(1)
+    expected = {
+        name: item["sha256"]
+        for name, item in helpers.items()
+        if name != "submission-sha256.txt"
+    }
+    if set(entries) != MANIFEST_PAYLOAD_NAMES or entries != expected:
+        raise ValueError("Case A checksum manifest does not exactly bind every payload")
+    return entries
+
+
+def submission_binding(
+    *,
+    site_path: Path,
+    site_sha256: str,
+    manifest_path: Path,
+    manifest_sha256: str,
+    executed_wrapper_path: Path,
+    canonical_wrapper_path: Path,
+    helper_paths: list[Path],
+) -> tuple[dict, dict]:
+    if not SHA256_RE.fullmatch(site_sha256) or not SHA256_RE.fullmatch(manifest_sha256):
+        raise ValueError("Submission hashes must be lowercase SHA-256 values")
+    site = require_absolute_regular(site_path, "Case A site file")
+    manifest = require_absolute_regular(manifest_path, "Case A manifest")
+    executed = require_absolute_regular(executed_wrapper_path, "Executed Case A wrapper")
+    canonical = require_absolute_regular(canonical_wrapper_path, "Canonical Case A wrapper")
+    helpers = helper_receipts(helper_paths)
+    helper_dir = Path(next(iter(helpers.values()))["path"]).parent
+    if (
+        manifest != helper_dir / "submission-sha256.txt"
+        or canonical != helper_dir / "scout-smoke-case-a.sbatch"
+    ):
+        raise ValueError("Submission binding paths differ from the frozen helper directory")
+    site_receipt = receipt(site)
+    manifest_receipt = receipt(manifest)
+    executed_receipt = receipt(executed)
+    canonical_receipt = receipt(canonical)
+    if site_receipt["sha256"] != site_sha256:
+        raise ValueError("Case A site file differs from its submission hash")
+    if manifest_receipt["sha256"] != manifest_sha256:
+        raise ValueError("Case A manifest differs from its submission hash")
+    if executed_receipt["sha256"] != canonical_receipt["sha256"]:
+        raise ValueError("Slurm-spooled Case A wrapper differs from the canonical wrapper")
+    if helpers["submission-sha256.txt"] != manifest_receipt:
+        raise ValueError("Helper receipts do not bind the submitted manifest")
+    if helpers["scout-smoke-case-a.sbatch"] != canonical_receipt:
+        raise ValueError("Helper receipts do not bind the canonical wrapper")
+    manifest_entries(manifest, helpers)
+    return (
+        {
+            "site": site_receipt,
+            "site_sha256_at_submission": site_sha256,
+            "manifest": manifest_receipt,
+            "manifest_sha256_at_submission": manifest_sha256,
+            "executed_wrapper": executed_receipt,
+            "canonical_wrapper": canonical_receipt,
+            "executed_wrapper_matches_canonical": True,
+        },
+        helpers,
+    )
+
+
+def validate_recorded_submission(binding: dict, helpers: dict) -> None:
+    if set(helpers) != EXPECTED_HELPER_NAMES:
+        raise ValueError("Recorded helper set differs from the fixed Case A set")
+    for item in helpers.values():
+        if receipt(Path(item["path"])) != item:
+            raise ValueError("A frozen Case A helper changed")
+    manifest = helpers["submission-sha256.txt"]
+    canonical = helpers["scout-smoke-case-a.sbatch"]
+    required = {
+        "site",
+        "site_sha256_at_submission",
+        "manifest",
+        "manifest_sha256_at_submission",
+        "executed_wrapper",
+        "canonical_wrapper",
+        "executed_wrapper_matches_canonical",
+    }
+    if set(binding) != required:
+        raise ValueError("Recorded Case A submission binding has unexpected fields")
+    for name in ("site", "manifest", "executed_wrapper", "canonical_wrapper"):
+        if receipt(Path(binding[name]["path"])) != binding[name]:
+            raise ValueError("A submission-bound Case A file changed")
+    if (
+        binding["site"]["sha256"] != binding["site_sha256_at_submission"]
+        or binding["manifest"]["sha256"] != binding["manifest_sha256_at_submission"]
+        or binding["manifest"] != manifest
+        or binding["canonical_wrapper"] != canonical
+        or binding["executed_wrapper"]["sha256"] != canonical["sha256"]
+        or binding["executed_wrapper_matches_canonical"] is not True
+    ):
+        raise ValueError("Recorded Case A submission hashes are inconsistent")
+    manifest_entries(Path(manifest["path"]), helpers)
+
+
+def validate_wrapper_checksums(path: Path, binding: dict, helpers: dict) -> None:
+    recorded: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        match = re.fullmatch(r"([0-9a-f]{64})  (/.+)", line)
+        if match is None:
+            raise ValueError("Malformed Case A wrapper checksum entry")
+        resolved = str(Path(match.group(2)).resolve())
+        if resolved in recorded:
+            raise ValueError("Duplicate Case A wrapper checksum path")
+        recorded[resolved] = match.group(1)
+    expected = {
+        item["path"]: item["sha256"]
+        for item in (
+            binding["executed_wrapper"],
+            binding["site"],
+            *helpers.values(),
+        )
+    }
+    if recorded != expected:
+        raise ValueError("Case A wrapper checksum record differs from bound inputs")
 
 
 def read(path: Path) -> dict:
@@ -90,6 +298,13 @@ def validate_before_smoke(
     case_dir: Path,
     smoke_dir: Path,
     runner_path: Path,
+    site_path: Path,
+    site_sha256: str,
+    manifest_path: Path,
+    manifest_sha256: str,
+    executed_wrapper_path: Path,
+    canonical_wrapper_path: Path,
+    helper_paths: list[Path],
     *,
     verifier=None,
 ) -> dict:
@@ -102,6 +317,17 @@ def validate_before_smoke(
     expected = plan.get("source_hashes", {}).get("scripts/run_case_a_scout.py")
     if not isinstance(expected, str) or receipt(runner_path)["sha256"] != expected:
         raise ValueError("Case A runner differs from its prepared source hash")
+    binding, helpers = submission_binding(
+        site_path=site_path,
+        site_sha256=site_sha256,
+        manifest_path=manifest_path,
+        manifest_sha256=manifest_sha256,
+        executed_wrapper_path=executed_wrapper_path,
+        canonical_wrapper_path=canonical_wrapper_path,
+        helper_paths=helper_paths,
+    )
+    if helpers["run_case_a_scout.py"] != receipt(runner_path):
+        raise ValueError("Case A runner is not the frozen submitted runner")
     value = {
         "protocol": PROTOCOL,
         "status": "prepared_inputs_validated_before_smoke",
@@ -109,6 +335,8 @@ def validate_before_smoke(
         "smoke_dir": str(smoke_dir.resolve()),
         "plan": receipt(case_dir / "plan.json"),
         "runner": receipt(runner_path),
+        "submission_binding": binding,
+        "helpers": helpers,
     }
     write_exclusive(output, value)
     return value
@@ -197,12 +425,16 @@ def reserve_phase(
     remaining: str,
     time_limit: str,
     case_dir: Path,
+    server_pid: int,
+    wrapper_sha256_path: Path,
     pre_smoke_path: Path | None = None,
     runner_path: Path | None = None,
     helper_paths: list[Path] = (),
 ) -> dict:
     if not job_id:
         raise ValueError("A Slurm job ID is required")
+    if type(server_pid) is not int or server_pid <= 1:
+        raise ValueError("A live server PID is required before Case A reservation")
     decision = scheduler_decision(
         job_id=job_id,
         reported_job_id=reported_job_id,
@@ -221,27 +453,31 @@ def reserve_phase(
         or pre_smoke.get("runner") != current_runner
     ):
         raise ValueError("Pre-smoke Case A binding changed before phase reservation")
+    current_helpers = helper_receipts(helper_paths)
+    if pre_smoke is None or pre_smoke.get("helpers") != current_helpers:
+        raise ValueError("Frozen Case A helpers changed before phase reservation")
+    binding = pre_smoke.get("submission_binding")
+    if not isinstance(binding, dict):
+        raise ValueError("Missing Case A submission binding")
+    validate_recorded_submission(binding, current_helpers)
+    wrapper_sha256_path = require_absolute_regular(
+        wrapper_sha256_path, "Case A wrapper checksum record"
+    )
+    validate_wrapper_checksums(wrapper_sha256_path, binding, current_helpers)
     value = {
         "protocol": PROTOCOL,
         "status": decision["status"],
         "slurm_job_id": job_id,
+        "server_pid": server_pid,
         "time_decision": decision["time_decision"],
         "case_dir": str(case_dir),
         "plan": current_plan,
         "runner": current_runner,
         "pre_smoke": receipt(pre_smoke_path) if pre_smoke_path is not None else None,
-        "helpers": {path.name: receipt(path) for path in helper_paths},
-        "limits": {
-            "walltime_seconds": WALLTIME_SECONDS,
-            "minimum_remaining_seconds": MINIMUM_REMAINING_SECONDS,
-            "case_command_timeout_seconds": CASE_COMMAND_TIMEOUT_SECONDS,
-            "synthetic_requests": SYNTHETIC_REQUEST_LIMIT,
-            "native_requests": NATIVE_REQUEST_LIMIT,
-            "case_requests": CASE_REQUEST_LIMIT,
-            "total_generation_requests": TOTAL_REQUEST_LIMIT,
-            "online_auditor_requests": 0,
-            "sdk_retries": 0,
-        },
+        "submission_binding": binding,
+        "helpers": current_helpers,
+        "wrapper_checksums": receipt(wrapper_sha256_path),
+        "limits": fixed_limits(),
     }
     if "error_type" in decision:
         value["error_type"] = decision["error_type"]
@@ -356,6 +592,32 @@ def count_slot_attempts(path: Path) -> int:
     return len(lines)
 
 
+def validate_phase_sources(
+    *,
+    phase: dict,
+    pre_smoke: dict,
+    smoke_root: Path,
+    wrapper_sha256_path: Path,
+) -> None:
+    """Recompute every helper and submission binding used by both terminal paths."""
+    require_path(wrapper_sha256_path, smoke_root, "case-a-wrapper-sha256.txt")
+    helpers = phase.get("helpers")
+    binding = phase.get("submission_binding")
+    if (
+        type(phase.get("server_pid")) is not int
+        or phase["server_pid"] <= 1
+        or phase.get("limits") != fixed_limits()
+        or not isinstance(helpers, dict)
+        or not isinstance(binding, dict)
+        or helpers != pre_smoke.get("helpers")
+        or binding != pre_smoke.get("submission_binding")
+        or phase.get("wrapper_checksums") != receipt(wrapper_sha256_path)
+    ):
+        raise ValueError("Case A phase source, PID, checksum, or limit binding differs")
+    validate_recorded_submission(binding, helpers)
+    validate_wrapper_checksums(wrapper_sha256_path, binding, helpers)
+
+
 def validate_unstarted_chain(
     *,
     phase: dict,
@@ -365,6 +627,7 @@ def validate_unstarted_chain(
     smoke_path: Path,
     native_path: Path,
     cleanup_path: Path,
+    wrapper_sha256_path: Path,
     case_plan_path: Path,
     binding_validator=None,
 ) -> dict:
@@ -403,6 +666,12 @@ def validate_unstarted_chain(
         or pre_smoke.get("runner") != runner_receipt
     ):
         raise ValueError("Unstarted pre-smoke binding differs")
+    validate_phase_sources(
+        phase=phase,
+        pre_smoke=pre_smoke,
+        smoke_root=smoke_root,
+        wrapper_sha256_path=wrapper_sha256_path,
+    )
     plan = read(case_plan_path)
     if (
         plan.get("protocol") != CASE_PROTOCOL
@@ -415,6 +684,7 @@ def validate_unstarted_chain(
     smoke = read(smoke_path)
     native = read(native_path)
     cleanup = read(cleanup_path)
+    validate_preflight_limit_records(preflight)
     if (
         preflight.get("protocol") != SMOKE_PROTOCOL
         or preflight.get("slurm_job_id") != job_id
@@ -423,6 +693,8 @@ def validate_unstarted_chain(
         or native.get("slurm_job_id") != job_id
         or cleanup.get("protocol") != PROTOCOL
         or cleanup.get("slurm_job_id") != job_id
+        or cleanup.get("server_pid") != phase.get("server_pid")
+        or cleanup.get("case_process", {}).get("pid") != 0
     ):
         raise ValueError("Unstarted smoke or cleanup allocation binding differs")
     if binding_validator is None:
@@ -448,6 +720,7 @@ def validate_case_chain(
     native_path: Path,
     server_check_path: Path,
     cleanup_path: Path,
+    wrapper_sha256_path: Path,
     case_plan_path: Path,
     execution_path: Path,
     case_summary_path: Path,
@@ -491,6 +764,12 @@ def validate_case_chain(
         or pre_smoke.get("runner") != runner_receipt
     ):
         raise ValueError("Pre-smoke source binding differs")
+    validate_phase_sources(
+        phase=phase,
+        pre_smoke=pre_smoke,
+        smoke_root=smoke_root,
+        wrapper_sha256_path=wrapper_sha256_path,
+    )
     plan = read(case_plan_path)
     if (
         plan.get("protocol") != CASE_PROTOCOL
@@ -504,6 +783,7 @@ def validate_case_chain(
     native = read(native_path)
     server_check = read(server_check_path)
     cleanup = read(cleanup_path)
+    validate_preflight_limit_records(preflight)
     if (
         preflight.get("protocol") != SMOKE_PROTOCOL
         or preflight.get("slurm_job_id") != job_id
@@ -512,9 +792,13 @@ def validate_case_chain(
         or native.get("slurm_job_id") != job_id
         or server_check.get("protocol") != PROTOCOL
         or server_check.get("slurm_job_id") != job_id
+        or server_check.get("server_pid") != phase.get("server_pid")
         or server_check.get("endpoint") != plan.get("config", {}).get("base_url")
         or cleanup.get("protocol") != PROTOCOL
         or cleanup.get("slurm_job_id") != job_id
+        or cleanup.get("server_pid") != phase.get("server_pid")
+        or type(cleanup.get("case_process", {}).get("pid")) is not int
+        or cleanup["case_process"]["pid"] <= 1
     ):
         raise ValueError("Smoke, server, cleanup, or allocation binding differs")
     if binding_validator is None:
@@ -577,6 +861,7 @@ def finalize(
     case_plan_path: Path,
     execution_path: Path,
     wrapper_exit_path: Path,
+    wrapper_sha256_path: Path,
     server_check_path: Path,
     cleanup_path: Path,
     binding_validator=None,
@@ -596,6 +881,7 @@ def finalize(
             "case_plan": str(case_plan_path.resolve()),
             "execution": str(execution_path.resolve()),
             "wrapper_exit": str(wrapper_exit_path.resolve()),
+            "wrapper_checksums": str(wrapper_sha256_path.resolve()),
             "server_check": str(server_check_path.resolve()),
             "cleanup": str(cleanup_path.resolve()),
         },
@@ -605,6 +891,7 @@ def finalize(
         require_path(output, smoke_root, "case-a-batch-summary.json")
         require_path(phase_path, smoke_root, "case-a-phase.json")
         require_path(wrapper_exit_path, smoke_root, "case-a-wrapper-exit-code.txt")
+        require_path(wrapper_sha256_path, smoke_root, "case-a-wrapper-sha256.txt")
         case_root = case_plan_path.parent.resolve()
         if (
             case_root == smoke_root
@@ -630,6 +917,9 @@ def finalize(
             and cleanup.get("status") == "server_stopped"
             and cleanup.get("protocol") == PROTOCOL
             and cleanup.get("slurm_job_id") == phase.get("slurm_job_id")
+            and cleanup.get("server_pid") == phase.get("server_pid")
+            and type(phase.get("server_pid")) is int
+            and phase["server_pid"] > 1
             and cleanup.get("case_process", {}).get("stopped") is True
             and smoke.get("protocol") == SMOKE_PROTOCOL
             and smoke.get("status") == "passed"
@@ -650,6 +940,7 @@ def finalize(
                 smoke_path=smoke_path,
                 native_path=native_path,
                 cleanup_path=cleanup_path,
+                wrapper_sha256_path=wrapper_sha256_path,
                 case_plan_path=case_plan_path,
                 binding_validator=binding_validator,
             )
@@ -677,6 +968,7 @@ def finalize(
                     "plan": receipt(case_plan_path),
                     "smoke": receipt(smoke_path),
                     "native_smoke": receipt(native_path),
+                    "wrapper_checksums": receipt(wrapper_sha256_path),
                 },
             )
             write_exclusive(output, value)
@@ -693,6 +985,7 @@ def finalize(
             native_path=native_path,
             server_check_path=server_check_path,
             cleanup_path=cleanup_path,
+            wrapper_sha256_path=wrapper_sha256_path,
             case_plan_path=case_plan_path,
             execution_path=execution_path,
             case_summary_path=case_summary_path,
@@ -736,6 +1029,7 @@ def finalize(
                 "preflight": receipt(preflight_path),
                 "smoke": receipt(smoke_path),
                 "native_smoke": receipt(native_path),
+                "wrapper_checksums": receipt(wrapper_sha256_path),
                 "execution": receipt(execution_path),
                 "case_summary": receipt(case_summary_path),
                 "case_plan": receipt(case_plan_path),
@@ -769,6 +1063,13 @@ def main(argv=None) -> int:
     validate.add_argument("--case-dir", type=Path, required=True)
     validate.add_argument("--smoke-dir", type=Path, required=True)
     validate.add_argument("--runner-path", type=Path, required=True)
+    validate.add_argument("--site-path", type=Path, required=True)
+    validate.add_argument("--site-sha256", required=True)
+    validate.add_argument("--manifest-path", type=Path, required=True)
+    validate.add_argument("--manifest-sha256", required=True)
+    validate.add_argument("--executed-wrapper-path", type=Path, required=True)
+    validate.add_argument("--canonical-wrapper-path", type=Path, required=True)
+    validate.add_argument("--helper-path", type=Path, action="append", default=[])
     reserve = commands.add_parser("reserve")
     reserve.add_argument("--output", type=Path, required=True)
     reserve.add_argument("--job-id", required=True)
@@ -776,6 +1077,8 @@ def main(argv=None) -> int:
     reserve.add_argument("--remaining", required=True)
     reserve.add_argument("--time-limit", required=True)
     reserve.add_argument("--case-dir", type=Path, required=True)
+    reserve.add_argument("--server-pid", type=int, required=True)
+    reserve.add_argument("--wrapper-sha256-path", type=Path, required=True)
     reserve.add_argument("--pre-smoke-path", type=Path, required=True)
     reserve.add_argument("--runner-path", type=Path, required=True)
     reserve.add_argument("--helper-path", type=Path, action="append", default=[])
@@ -808,6 +1111,7 @@ def main(argv=None) -> int:
         "case-plan-path",
         "execution-path",
         "wrapper-exit-path",
+        "wrapper-sha256-path",
         "server-check-path",
         "cleanup-path",
     ):
@@ -815,7 +1119,17 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     if args.command == "validate":
         validate_before_smoke(
-            args.output, args.case_dir, args.smoke_dir, args.runner_path
+            args.output,
+            args.case_dir,
+            args.smoke_dir,
+            args.runner_path,
+            args.site_path,
+            args.site_sha256,
+            args.manifest_path,
+            args.manifest_sha256,
+            args.executed_wrapper_path,
+            args.canonical_wrapper_path,
+            args.helper_path,
         )
         return 0
     if args.command == "reserve":
@@ -826,6 +1140,8 @@ def main(argv=None) -> int:
             remaining=args.remaining,
             time_limit=args.time_limit,
             case_dir=args.case_dir,
+            server_pid=args.server_pid,
+            wrapper_sha256_path=args.wrapper_sha256_path,
             pre_smoke_path=args.pre_smoke_path,
             runner_path=args.runner_path,
             helper_paths=args.helper_path,
@@ -866,6 +1182,7 @@ def main(argv=None) -> int:
         case_plan_path=args.case_plan_path,
         execution_path=args.execution_path,
         wrapper_exit_path=args.wrapper_exit_path,
+        wrapper_sha256_path=args.wrapper_sha256_path,
         server_check_path=args.server_check_path,
         cleanup_path=args.cleanup_path,
     )

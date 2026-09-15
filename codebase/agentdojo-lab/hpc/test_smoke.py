@@ -8,6 +8,7 @@ import urllib.error
 from pathlib import Path
 from unittest.mock import patch
 
+import case_a_batch
 import preflight
 import smoke
 
@@ -150,6 +151,43 @@ class SmokeTests(unittest.TestCase):
 
 
 class PreflightTests(unittest.TestCase):
+    def test_limits_distinguish_smoke_phase_from_case_a_job(self):
+        smoke_only = preflight.limit_records(native=False, case_a_mode=False)
+        self.assertEqual(smoke_only["limits"]["scope"], "smoke_phase_only")
+        self.assertEqual(smoke_only["limits"]["intended_walltime_minutes"], 45)
+        self.assertEqual(smoke_only["limits"]["generative_requests"], 4)
+        self.assertNotIn("enclosing_case_a_limits", smoke_only)
+
+        case_a = preflight.limit_records(native=True, case_a_mode=True)
+        self.assertEqual(case_a["limits"]["scope"], "smoke_phase_only")
+        self.assertEqual(case_a["limits"]["intended_walltime_minutes"], 60)
+        self.assertEqual(case_a["limits"]["generative_requests"], 8)
+        self.assertEqual(case_a["enclosing_case_a_limits"], {
+            "scope": "smoke_plus_case_a_job",
+            "walltime_seconds": 7200,
+            "total_generation_requests": 24,
+            "case_requests": 16,
+            "online_auditor_requests": 0,
+        })
+
+        case_b = preflight.limit_records(native=True, case_a_mode=False, case_b_mode=True)
+        self.assertEqual(case_b["limits"]["scope"], "smoke_phase_only")
+        self.assertEqual(case_b["enclosing_case_b_limits"], {
+            "scope": "smoke_plus_case_b_job",
+            "walltime_seconds": 7200,
+            "total_generation_requests": 24,
+            "case_requests": 16,
+            "case_slots": 4,
+            "requests_per_case_slot": 4,
+            "online_auditor_requests": 0,
+        })
+        with self.assertRaises(ValueError):
+            preflight.limit_records(native=True, case_a_mode=True, case_b_mode=True)
+        self.assertEqual(
+            (case_a["limits"], case_a["enclosing_case_a_limits"]),
+            case_a_batch.fixed_preflight_limits(),
+        )
+
     def test_missing_shard_and_external_symlink_are_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "model"

@@ -16,12 +16,37 @@
 # the same authenticated loopback server and Slurm allocation are still live.
 set -euo pipefail
 umask 077
-CASE_A_HPC_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
-readonly CASE_A_HPC_DIR
-
 [[ -n ${SLURM_JOB_ID:-} ]] || { echo 'Use a Slurm allocation.' >&2; exit 2; }
 [[ ${SLURM_JOB_NUM_NODES:-0} == 1 ]] || { echo 'One node is required.' >&2; exit 2; }
-if [[ -n ${SCOUT_SITE_FILE:-} ]]; then source "$SCOUT_SITE_FILE"; fi
+: "${SCOUT_SITE_FILE:?Set the absolute private Case A site file}"
+: "${SCOUT_SITE_SHA256:?Export the reviewed site-file SHA-256 at submission}"
+[[ "$SCOUT_SITE_FILE" == /* && -f "$SCOUT_SITE_FILE" && ! -L "$SCOUT_SITE_FILE" ]] || exit 2
+[[ "$SCOUT_SITE_SHA256" =~ ^[0-9a-f]{64}$ ]] || exit 2
+CASE_A_SITE_FILE="$SCOUT_SITE_FILE"
+CASE_A_SITE_SHA256="$SCOUT_SITE_SHA256"
+readonly CASE_A_SITE_FILE CASE_A_SITE_SHA256
+read -r ACTUAL_SITE_SHA256 _ < <(sha256sum -- "$CASE_A_SITE_FILE")
+[[ "$ACTUAL_SITE_SHA256" == "$CASE_A_SITE_SHA256" ]] || exit 2
+source "$CASE_A_SITE_FILE"
+
+: "${SCOUT_HPC_DIR:?Set the absolute frozen helper directory in the site file}"
+: "${SCOUT_HPC_MANIFEST:?Set the frozen helper checksum manifest in the site file}"
+: "${SCOUT_HPC_MANIFEST_SHA256:?Set its reviewed SHA-256 in the site file}"
+[[ "$SCOUT_HPC_DIR" == /* && "$SCOUT_HPC_MANIFEST" == /* ]] || exit 2
+[[ "$SCOUT_HPC_MANIFEST_SHA256" =~ ^[0-9a-f]{64}$ ]] || exit 2
+CASE_A_HPC_DIR=$(realpath -e -- "$SCOUT_HPC_DIR")
+CASE_A_HPC_MANIFEST=$(realpath -e -- "$SCOUT_HPC_MANIFEST")
+CASE_A_EXECUTED_WRAPPER=$(realpath -e -- "${BASH_SOURCE[0]}")
+CASE_A_CANONICAL_WRAPPER="$CASE_A_HPC_DIR/scout-smoke-case-a.sbatch"
+CASE_A_MANIFEST_SHA256="$SCOUT_HPC_MANIFEST_SHA256"
+readonly CASE_A_HPC_DIR CASE_A_HPC_MANIFEST CASE_A_EXECUTED_WRAPPER
+readonly CASE_A_CANONICAL_WRAPPER CASE_A_MANIFEST_SHA256
+[[ "$CASE_A_HPC_MANIFEST" == "$CASE_A_HPC_DIR/submission-sha256.txt" ]] || exit 2
+read -r ACTUAL_MANIFEST_SHA256 _ < <(sha256sum -- "$CASE_A_HPC_MANIFEST")
+[[ "$ACTUAL_MANIFEST_SHA256" == "$SCOUT_HPC_MANIFEST_SHA256" ]] || exit 2
+(cd -- "$CASE_A_HPC_DIR" && sha256sum --check --strict --status submission-sha256.txt)
+cmp --silent -- "$CASE_A_EXECUTED_WRAPPER" "$CASE_A_CANONICAL_WRAPPER" || exit 2
+
 : "${SCOUT_RUN_DIR:?Set a fresh smoke evidence directory in the new site file}"
 : "${SCOUT_CASE_A_DIR:?Set an existing pristine Case A preparation directory}"
 : "${SCOUT_CASE_A_RUNNER:?Set the absolute active run_case_a_scout.py path}"
@@ -29,7 +54,12 @@ if [[ -n ${SCOUT_SITE_FILE:-} ]]; then source "$SCOUT_SITE_FILE"; fi
 [[ "$SCOUT_RUN_DIR" == /* && "$SCOUT_CASE_A_DIR" == /* && "$SCOUT_CASE_A_RUNNER" == /* ]] || exit 2
 [[ "$SCOUT_LAB_PYTHON" == /* ]] || exit 2
 [[ -x "$SCOUT_LAB_PYTHON" && -f "$SCOUT_CASE_A_RUNNER" ]] || exit 2
-for helper in scout-smoke.sbatch case_a_batch.py preflight.py smoke.py native_smoke.py; do
+[[ "$(realpath -e -- "$SCOUT_CASE_A_RUNNER")" == "$CASE_A_HPC_DIR/run_case_a_scout.py" ]] || exit 2
+[[ "$(realpath -e -- "$SCOUT_CHAT_TEMPLATE")" == \
+    "$CASE_A_HPC_DIR/tool_chat_template_llama4_pythonic_typed_v1.jinja" ]] || exit 2
+for helper in scout-smoke-case-a.sbatch scout-smoke.sbatch case_a_batch.py \
+    preflight.py smoke.py native_smoke.py run_case_a_scout.py \
+    tool_chat_template_llama4_pythonic_typed_v1.jinja submission-sha256.txt; do
     [[ -f "$CASE_A_HPC_DIR/$helper" ]] || exit 2
 done
 
@@ -38,7 +68,21 @@ SCOUT_CASE_A_PRE_SMOKE="${SCOUT_RUN_DIR}.case-a-pre-smoke.json"
 [[ "$SCOUT_CASE_A_PRE_SMOKE" == /* && ! -e "$SCOUT_CASE_A_PRE_SMOKE" ]] || exit 2
 "$SCOUT_LAB_PYTHON" "$CASE_A_HPC_DIR/case_a_batch.py" validate \
     --output "$SCOUT_CASE_A_PRE_SMOKE" --case-dir "$SCOUT_CASE_A_DIR" \
-    --smoke-dir "$SCOUT_RUN_DIR" --runner-path "$SCOUT_CASE_A_RUNNER"
+    --smoke-dir "$SCOUT_RUN_DIR" --runner-path "$SCOUT_CASE_A_RUNNER" \
+    --site-path "$CASE_A_SITE_FILE" --site-sha256 "$CASE_A_SITE_SHA256" \
+    --manifest-path "$CASE_A_HPC_MANIFEST" \
+    --manifest-sha256 "$CASE_A_MANIFEST_SHA256" \
+    --executed-wrapper-path "$CASE_A_EXECUTED_WRAPPER" \
+    --canonical-wrapper-path "$CASE_A_CANONICAL_WRAPPER" \
+    --helper-path "$CASE_A_CANONICAL_WRAPPER" \
+    --helper-path "$CASE_A_HPC_DIR/scout-smoke.sbatch" \
+    --helper-path "$CASE_A_HPC_DIR/case_a_batch.py" \
+    --helper-path "$CASE_A_HPC_DIR/preflight.py" \
+    --helper-path "$CASE_A_HPC_DIR/smoke.py" \
+    --helper-path "$CASE_A_HPC_DIR/native_smoke.py" \
+    --helper-path "$SCOUT_CASE_A_RUNNER" \
+    --helper-path "$SCOUT_CHAT_TEMPLATE" \
+    --helper-path "$CASE_A_HPC_MANIFEST"
 
 # Force the sourced wrapper to use this wrapper's sibling, frozen helpers.
 # Its successful EOF returns here without firing its EXIT trap, keeping vLLM live.
@@ -46,10 +90,15 @@ SCOUT_PORT=${SCOUT_PORT:-8000}
 [[ "$SCOUT_PORT" == 8000 ]] || exit 2
 export SCOUT_HPC_DIR="$CASE_A_HPC_DIR"
 export SCOUT_NATIVE_SMOKE=1
-unset SCOUT_SITE_FILE
+export SCOUT_CASE_A_MODE=1
+unset SCOUT_SITE_FILE SCOUT_SITE_SHA256
 source "$CASE_A_HPC_DIR/scout-smoke.sbatch"
-[[ "$SCOUT_HPC_DIR" == "$CASE_A_HPC_DIR" && "$SCOUT_NATIVE_SMOKE" == 1 && "$SCOUT_PORT" == 8000 ]] || exit 2
-[[ ${SCOUT_SERVER_PID:-} =~ ^[1-9][0-9]*$ ]] || exit 2
+if [[ ! ${SCOUT_SERVER_PID:-} =~ ^[0-9]+$ ]] || (( SCOUT_SERVER_PID <= 1 )); then
+    SCOUT_SERVER_PID=''
+    exit 2
+fi
+[[ "$SCOUT_HPC_DIR" == "$CASE_A_HPC_DIR" && "$SCOUT_NATIVE_SMOKE" == 1 \
+    && "$SCOUT_CASE_A_MODE" == 1 && "$SCOUT_PORT" == 8000 ]] || exit 2
 export SCOUT_SERVER_PID
 
 CASE_A_PROCESS_PID=''
@@ -61,25 +110,29 @@ CASE_A_KILL_MARKER="$SCOUT_RUN_DIR/case-a-kill-sent"
 
 stop_case_process() {
     if [[ -n "$CASE_A_PROCESS_PID" ]]; then
-        if kill -0 -- "-$CASE_A_PROCESS_PID" 2>/dev/null; then
-            if kill -TERM -- "-$CASE_A_PROCESS_PID" 2>/dev/null; then
-                : > "$CASE_A_TERM_MARKER"
-            fi
-            for _ in {1..10}; do
-                kill -0 -- "-$CASE_A_PROCESS_PID" 2>/dev/null || break
-                sleep 1
-            done
+        if [[ "$CASE_A_PROCESS_PID" =~ ^[0-9]+$ ]] && (( CASE_A_PROCESS_PID > 1 )); then
             if kill -0 -- "-$CASE_A_PROCESS_PID" 2>/dev/null; then
-                if kill -KILL -- "-$CASE_A_PROCESS_PID" 2>/dev/null; then
-                    : > "$CASE_A_KILL_MARKER"
+                if kill -TERM -- "-$CASE_A_PROCESS_PID" 2>/dev/null; then
+                    : > "$CASE_A_TERM_MARKER"
+                fi
+                for _ in {1..10}; do
+                    kill -0 -- "-$CASE_A_PROCESS_PID" 2>/dev/null || break
+                    sleep 1
+                done
+                if kill -0 -- "-$CASE_A_PROCESS_PID" 2>/dev/null; then
+                    if kill -KILL -- "-$CASE_A_PROCESS_PID" 2>/dev/null; then
+                        : > "$CASE_A_KILL_MARKER"
+                    fi
                 fi
             fi
-        fi
-        wait "$CASE_A_PROCESS_PID" 2>/dev/null || true
-        if kill -0 -- "-$CASE_A_PROCESS_PID" 2>/dev/null; then
-            CASE_A_PROCESS_STOPPED=false
+            wait "$CASE_A_PROCESS_PID" 2>/dev/null || true
+            if kill -0 -- "-$CASE_A_PROCESS_PID" 2>/dev/null; then
+                CASE_A_PROCESS_STOPPED=false
+            else
+                CASE_A_PROCESS_STOPPED=true
+            fi
         else
-            CASE_A_PROCESS_STOPPED=true
+            CASE_A_PROCESS_STOPPED=false
         fi
         CASE_A_PROCESS_PID=''
     fi
@@ -89,7 +142,11 @@ stop_server_and_record() {
     [[ -e "$SCOUT_RUN_DIR/case-a-cleanup.json" ]] && return
     local server_term=false server_kill=false server_stopped=true
     local recorded_server_pid=${SCOUT_SERVER_PID:-0}
-    if [[ -n ${SCOUT_SERVER_PID:-} ]] && kill -0 -- "-$SCOUT_SERVER_PID" 2>/dev/null; then
+    local valid_server_pid=false
+    if [[ ${SCOUT_SERVER_PID:-} =~ ^[0-9]+$ ]] && (( SCOUT_SERVER_PID > 1 )); then
+        valid_server_pid=true
+    fi
+    if $valid_server_pid && kill -0 -- "-$SCOUT_SERVER_PID" 2>/dev/null; then
         if kill -TERM -- "-$SCOUT_SERVER_PID" 2>/dev/null; then
             server_term=true
         fi
@@ -104,7 +161,9 @@ stop_server_and_record() {
         fi
         wait "$SCOUT_SERVER_PID" 2>/dev/null || true
     fi
-    if [[ -n ${SCOUT_SERVER_PID:-} ]] && kill -0 -- "-$SCOUT_SERVER_PID" 2>/dev/null; then
+    if $valid_server_pid && kill -0 -- "-$SCOUT_SERVER_PID" 2>/dev/null; then
+        server_stopped=false
+    elif ! $valid_server_pid; then
         server_stopped=false
     fi
     SCOUT_SERVER_PID=''
@@ -137,6 +196,7 @@ finalize_terminal() {
         --case-plan-path "$SCOUT_CASE_A_DIR/plan.json" \
         --execution-path "$SCOUT_CASE_A_DIR/execution.json" \
         --wrapper-exit-path "$SCOUT_RUN_DIR/case-a-wrapper-exit-code.txt" \
+        --wrapper-sha256-path "$SCOUT_RUN_DIR/case-a-wrapper-sha256.txt" \
         --server-check-path "$SCOUT_RUN_DIR/case-a-server-check.json" \
         --cleanup-path "$SCOUT_RUN_DIR/case-a-cleanup.json"
     CASE_A_FINALIZE_STATUS=$?
@@ -164,11 +224,19 @@ trap case_batch_cleanup EXIT
 trap 'exit 143' TERM
 trap 'exit 130' INT
 
-sha256sum "$CASE_A_HPC_DIR/scout-smoke-case-a.sbatch" \
-    "$CASE_A_HPC_DIR/scout-smoke.sbatch" "$CASE_A_HPC_DIR/case_a_batch.py" \
-    "$CASE_A_HPC_DIR/preflight.py" "$CASE_A_HPC_DIR/smoke.py" \
-    "$CASE_A_HPC_DIR/native_smoke.py" "$SCOUT_CASE_A_RUNNER" \
-    > "$SCOUT_RUN_DIR/case-a-wrapper-sha256.txt"
+CASE_A_WRAPPER_SHA256="$SCOUT_RUN_DIR/case-a-wrapper-sha256.txt"
+declare -A CASE_A_HASHED_PATHS=()
+for input in "$CASE_A_EXECUTED_WRAPPER" "$CASE_A_SITE_FILE" \
+    "$CASE_A_CANONICAL_WRAPPER" "$CASE_A_HPC_DIR/scout-smoke.sbatch" \
+    "$CASE_A_HPC_DIR/case_a_batch.py" "$CASE_A_HPC_DIR/preflight.py" \
+    "$CASE_A_HPC_DIR/smoke.py" "$CASE_A_HPC_DIR/native_smoke.py" \
+    "$SCOUT_CASE_A_RUNNER" "$SCOUT_CHAT_TEMPLATE" "$CASE_A_HPC_MANIFEST"; do
+    input=$(realpath -e -- "$input")
+    [[ -v 'CASE_A_HASHED_PATHS[$input]' ]] && continue
+    sha256sum -- "$input" >> "$CASE_A_WRAPPER_SHA256"
+    CASE_A_HASHED_PATHS[$input]=1
+done
+readonly CASE_A_WRAPPER_SHA256
 
 # Query the scheduler's current-job record after both smoke phases. Missing,
 # malformed, mismatched, over-2h, or <3900s evidence leaves Case A unstarted.
@@ -188,7 +256,8 @@ set +e
     --output "$SCOUT_RUN_DIR/case-a-phase.json" \
     --job-id "$SLURM_JOB_ID" --reported-job-id "$REPORTED_JOB_ID" \
     --remaining "$REMAINING_TIME" --time-limit "$TIME_LIMIT" \
-    --case-dir "$SCOUT_CASE_A_DIR" \
+    --case-dir "$SCOUT_CASE_A_DIR" --server-pid "$SCOUT_SERVER_PID" \
+    --wrapper-sha256-path "$CASE_A_WRAPPER_SHA256" \
     --pre-smoke-path "$SCOUT_CASE_A_PRE_SMOKE" \
     --runner-path "$SCOUT_CASE_A_RUNNER" \
     --helper-path "$CASE_A_HPC_DIR/scout-smoke-case-a.sbatch" \
@@ -197,7 +266,9 @@ set +e
     --helper-path "$CASE_A_HPC_DIR/preflight.py" \
     --helper-path "$CASE_A_HPC_DIR/smoke.py" \
     --helper-path "$CASE_A_HPC_DIR/native_smoke.py" \
-    --helper-path "$SCOUT_CASE_A_RUNNER"
+    --helper-path "$SCOUT_CASE_A_RUNNER" \
+    --helper-path "$SCOUT_CHAT_TEMPLATE" \
+    --helper-path "$CASE_A_HPC_MANIFEST"
 CASE_A_GATE_STATUS=$?
 set -e
 if [[ "$CASE_A_GATE_STATUS" == 3 ]]; then
@@ -225,7 +296,8 @@ CASE_A_PROCESS_PID=$!
 CASE_A_LAUNCHED_PID=$CASE_A_PROCESS_PID
 (
     sleep 3600
-    if kill -TERM -- "-$CASE_A_PROCESS_PID" 2>/dev/null; then
+    if [[ "$CASE_A_PROCESS_PID" =~ ^[0-9]+$ ]] && (( CASE_A_PROCESS_PID > 1 )) \
+        && kill -TERM -- "-$CASE_A_PROCESS_PID" 2>/dev/null; then
         : > "$CASE_A_TERM_MARKER"
         sleep 10
         if kill -KILL -- "-$CASE_A_PROCESS_PID" 2>/dev/null; then

@@ -5,50 +5,123 @@ restored, and the offline native-tool fixture passes. Hugging Face login and
 Scout gated-file access are verified. Local transport is implemented; the pinned
 checkpoint is fully downloaded and verified. The first serving-container build
 failed; its dependent GPU smoke was cancelled before starting. The separately
-named retry has now passed, and a new GPU smoke is queued. No Scout inference
-has completed yet. A separate smoke-plus-Case-A wrapper and canonical Case A plan
-are verified offline but remain unsubmitted until that queued smoke passes and
-its timing is reviewed.
+named retry passed, followed by a successful four-A100 GPU smoke. Scout inference
+and a benign native tool loop are verified. A separate smoke-plus-Case-A wrapper,
+canonical plan, private site and immutable bundle were frozen. First Case A job
+`9043206` was cancelled before allocation after audit found a Slurm helper-path
+defect; a corrected replacement is pending preparation.
 
 ## Recovery in progress — 2026-09-15
 
 The user requested continued runs with percentages and explanations. The fresh
-container retry **passed**, and its GPU smoke is now waiting for scheduling
-priority with its build dependency fulfilled. See [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) for the checklist
+container retry and its GPU smoke **passed**. The first separately frozen Case A
+job was cancelled before allocation after audit; its corrected replacement is
+being prepared. See [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) for the checklist
 count and the interpretation of every attempt.
 
 | Job | Latest observed state | Bounded scope |
 | --- | --- | --- |
 | `9039259` | COMPLETED on Genoa `g01`, Slurm elapsed 6m 49s, exit `0:0` | CPU container retry: 8 requested CPUs / 16 allocated logical CPUs, 32 GiB, local SSD, 2 hours maximum; no GPUs |
-| `9039289` | PENDING, Priority; `afterok:9039259` fulfilled | Four A100s, 48 requested CPUs, 320 GiB, 1 hour, at most eight synthetic/benign native generation requests |
+| `9039289` | COMPLETED on Milan `mg15`, Slurm elapsed 9m 54s, exit `0:0` | Four A100 SXM4 80 GB GPUs, 48 requested / 96 allocated logical CPUs, 320 GiB; synthetic 4/4 and benign native 9/9 checks passed with seven requests |
+| `9043206` | CANCELLED before allocation, elapsed 00:00:00 | First Case A submission; helper-path defect found by audit; zero GPU time and requests; preserve v1 bundle |
 
-The 2026-09-15 13:35 NZST live scheduler check confirmed that `9039289` is
-eligible, has no remaining dependency, and is waiting only for priority. Slurm
-now plans it on `mg15` at 21:30 NZST, 65 minutes earlier than the 12:40 estimate;
-the projection is not guaranteed. At the later check, three of `mg15`'s four
-A100s were allocated and the node was marked planned. The longest visible GPU
-occupant reaches its time limit at 21:30, while the single currently unallocated
-GPU is insufficient for this four-GPU request. Test-only equivalent requests
-projected a later start, even with shorter walltime or fewer CPUs and memory, so
-cancelling or replacing `9039289` would probably lose the earlier reservation.
-Two-GPU queues cannot hold the 203 GiB BF16 checkpoint without offload and a new
-model protocol.
+Slurm eventually started `9039289` automatically on `mg15`; earlier queue
+estimates were provisional and did not predict its actual start. The model loaded
+across all four GPUs and both smoke phases passed. The job's server stopped at
+completion. Those receipts cannot authorize a later allocation because the
+same-allocation gate must observe its own serving process and smoke results.
 
 Do not modify `9039289`, its v2 site file or frozen submission bundle. Its script
-ends after smoke and cannot run Case A in the same allocation. Checkpoint
-`7b5f1eb` adds a separately named future wrapper,
-`codebase/agentdojo-lab/hpc/scout-smoke-case-a.sbatch`. The current ignored
-preparation is `runs/scout-case-a-prepared-v2`, with zero model requests, 84
+ended after smoke and cannot run Case A. Checkpoint `7b5f1eb` added a separately
+named wrapper, `codebase/agentdojo-lab/hpc/scout-smoke-case-a.sbatch`. The current
+ignored preparation is `runs/scout-case-a-prepared-v4`, with zero model requests, 85
 bound source files and plan SHA-256
-`1189cdd015d1eb6967d2c8b1e7724214fc5573e255b82e897a779b6058d36770`.
-The first preparation remains preserved; later joint/replay and cross-session
-source changes correctly invalidate its old 83-file snapshot.
-If `9039289` passes, use its measured timing to review the two-hour envelope,
-then create a new site file, frozen helper bundle, smoke directory and scheduler
-log before submitting the wrapper. That new job must repeat synthetic and benign
-native smoke in its own allocation before Case A; old receipts cannot authorize it.
+`5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`.
+It contains exactly `plan.json` and `preparation.json`; the preparation receipt
+has SHA-256
+`b315d3ee67a338124a5b9c35825824dd058e89e25a56a077134fbd9456f3dbd4`.
+The first three preparations remain preserved and source-invalidated; v3 omitted
+the runtime-read MiniLM revision pin from its inventory. Smoke timing
+supported the existing two-hour envelope, so a new private site and immutable
+helper bundle were frozen and job `9043206` was submitted. Audit found a relative
+helper-path defect before allocation, and the job was cancelled. Its corrected
+replacement must repeat synthetic and benign native smoke in its own allocation
+before Case A; old receipts cannot authorize it.
 The final wrapper/Case/report/smoke selection passed 109 tests plus 16 subtests,
 Ruff, Bash syntax and Python compilation. These are offline checks only.
+
+The Case A submission uses private site
+`/nesi/project/uoa04799/dyu848/tools/scout-case-a-site-20260915-v1.env`, immutable
+bundle `evidence/scout-case-a-submission-20260915-v1`, run evidence
+`evidence/scout-case-a-20260915-v1`, and scheduler log
+`evidence/case-a-logs/scout-case-a-9043206.log`. It binds pushed source checkpoint
+`84fe7cc` and passed input preflight. Slurm accepted it at 15:36 NZST. It was
+cancelled at 15:47 before allocation after audit found that a relative helper path
+would resolve from Slurm's spool directory. Accounting records 00:00:00 elapsed,
+zero GPU time and zero requests. Preserve the v1 bundle. A corrected v2 bundle and
+replacement submission are pending.
+
+The preserved mode-0400 cancellation receipt is
+`evidence/scout-case-a-submission-20260915-v1/cancelled.json`, SHA-256
+`35bfde30958b8ecb49aafcb31c448e69c0c0e71fe57ce8387f8c535b6d6a9e5a`.
+It records `CANCELLED by 200426`, exit `0:0`, 00:00:00 elapsed and no assigned
+node.
+
+The corrected wrapper uses an absolute frozen helper directory, verifies its
+submission-bound checksum manifest, and confirms that Slurm's spooled wrapper is
+byte-identical to the frozen canonical copy. `SCOUT_CASE_A_MODE=1` also makes the
+preflight distinguish smoke-only limits from the enclosing 7,200-second,
+24-total-request, 16-Case-A-request and zero-online-auditor envelope. The
+remediation selection passed 108 tests plus 16 subtests, Ruff, Python compilation,
+Bash syntax and diff checks. ShellCheck was unavailable.
+
+### Prepared Case B launch implementation
+
+The reviewed `nesi-scout-smoke-case-b-v1` wrapper requests four A100s for no more
+than two hours. Its maximum is 24 generation attempts: four synthetic, four
+benign-native and 16 Case B. It requires one current `squeue` record and at least
+3,900 seconds remaining before Case B, applies a 3,600-second process-group
+watchdog, binds server PID/phase/cleanup evidence and runs a full request-free
+source verification at terminal close. The prepared v2 plan inventory contains
+163 source files, including all 113 AgentDojo runtime/package-metadata files from
+pinned commit `089ed468cf3ed0322acc66b0211f26d9d90dbf60`, and its launch manifest
+has exactly nine entries. The upstream runtime-tree SHA-256 is
+`4c58924aeb917f1daf29a4fcb11d79e716af8baf7266b73c592b39aa93a4edd7`.
+
+The independent final Case A/B wrapper selection passed 191 tests plus 16
+subtests; root's broader selection passed 214 tests plus 16 subtests. Ruff, Bash
+syntax, Python compilation and diff checks passed. Preserved
+Case B v1 has 41 sources, zero model calls and plan SHA-256
+`4b8bc845437ce557fe6bbe589dd90d6ccc5b083d92955ef0fb1324f4df52c036`.
+It is source-invalidated and fails request-free verification as designed. The
+canonical v2 path is `runs/scout-case-b-prepared-v2`; it contains exactly
+`plan.json` and `preparation.json`, whose SHA-256 values are
+`69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`
+and `ba663d561892b614f7320be36a8fc9c4bf363c946c15837ac52e905fa1b45906`.
+It records zero model calls. It is not bundled or submitted, and no Case B job
+exists.
+
+### Successful GPU smoke — job 9039289
+
+Slurm ran the smoke on Milan node `mg15` with four A100 SXM4 80 GB GPUs, 96
+allocated logical CPUs and 320 GiB host RAM. It completed in 9m 54s with exit
+`0:0`. vLLM `0.29.0+cu129` with CUDA 12.9 loaded all 50 shards; the slowest
+worker took 375.30 seconds and reported 52.72 GiB loaded. All four synthetic
+checks passed. The benign native task used three requests, recorded 24 events and
+passed all nine integration checks. Total usage was seven of eight allowed
+generation requests. This is serving/tool integration evidence, not an attack or
+attribution result.
+
+Evidence is in
+`/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-smoke-20260915-v2`.
+The terminal SHA-256 values are:
+
+- `preflight.json`: `cf6ac029df212ce19a9ab171b0e841e26b13423fa9d86a29588d2ff3c79465ea`
+- `container-runtime.json`: `f239a98ceb184be2ff63eaafe68f5e40f46965b38b17b9cb49749d9237bd3f34`
+- `smoke.json`: `d7c2b167ab7c1ebd014b16c6fb0cb195323535db2620a5ae921376dd2a287a48`
+- `native-smoke.json`: `283361a3e17c8e98f0d71a28fc624be6910243f92e7b01cad5d7c7ac2c8d3192`
+- `job-exit-code.txt`: `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`
+- scheduler log: `31cf94502677f83157cfb228ec7ba7cb0dd33623d2aa0975b0ba844c2311fcca`
 
 The new protocol is `nesi-scout-container-prep-ssd-gzip1-v2`: same immutable OCI
 image, node-local SSD temporary files, gzip compression level 1, and a 6,600-second
@@ -62,7 +135,7 @@ The original site file remains unchanged. New evidence directories under
 
 - `scout-recovery-submission-20260915-v2/`: submission plan and frozen helper copies.
 - `container-prep-20260915-v2/`: CPU plan, build log, stages and terminal receipts.
-- `scout-smoke-20260915-v2/`: GPU receipts, created only when that phase starts.
+- `scout-smoke-20260915-v2/`: terminal GPU smoke receipts and native HTML/run.
 
 The new SIF destination is
 `/nesi/nobackup/uoa04799/dyu848/tool-output-lab/containers/vllm-openai-v0.29.0-cu129-ssd-gzip1-v2.sif`.
@@ -70,10 +143,9 @@ The published image is **11,042,500,608 bytes**, SHA-256
 `2e34131f9ef3257b67e628e735fa76dee506449152f3882bf50204c92e38b6c2`.
 `completed.json` confirms inspection/publication and the private site checksum
 update. Build time was 391.20 seconds; hashing/publication took another 10.15
-seconds. The receipt explicitly says GPU validation has not run. The queued
-GPU job includes no research experiment. Scheduler test-only probes predicted a much
-later start, but backfilling started the CPU job immediately. Treat queue estimates
-as provisional and recheck actual state before reporting results or submitting work.
+seconds. That CPU receipt predates GPU validation; job `9039289` subsequently
+verified the image. Neither job contains a research attack experiment. Treat
+queue estimates as provisional and recheck actual state before reporting results.
 
 ## Status recheck on 2026-09-15
 
@@ -84,6 +156,9 @@ Read-only `sacct` and retained receipt/log inspection establish:
 | `9029207` model download | COMPLETED, 27m 05s, exit `0:0` | All 63 pinned files verified; reusable model snapshot is present |
 | `9029215` container preparation | FAILED, 50m 31s, Slurm exit `9:0` | Build log ends at SIF creation; wrapper exit is `137`; no `completed.json` or successful SIF-finalization receipt |
 | `9029415` GPU smoke | CANCELLED, zero runtime, no start time | Its successful-preparation dependency was not met; no synthetic/native Scout smoke directory or receipt |
+| `9039259` container recovery | COMPLETED, 6m 49s, exit `0:0` | Published and checksum-verified the v2 SIF using Genoa local SSD and gzip level 1 |
+| `9039289` GPU smoke | COMPLETED, 9m 54s, exit `0:0` | Four A100s on `mg15`; all four synthetic checks and all nine benign-native checks passed with seven requests |
+| `9043206` Case A | CANCELLED before allocation, elapsed 00:00:00 | Accepted at 15:36 and cancelled at 15:47 NZST after helper-path audit; zero GPU time and requests |
 
 The 50-minute build timeout and 30-second kill grace match the observed failure
 timing, but the logs only report that the process was killed; timeout is an
@@ -97,8 +172,7 @@ Evidence directory:
 (`build.log`, `job-exit-code.txt`, `plan.json`), plus scheduler log
 `evidence/prep-logs/container-9029215.log`. Preserve these failed-attempt records.
 That review identified container recovery and a newly named smoke as the next
-steps. The recovery outcome and new queued job are recorded above; the cancelled
-first attempt remains terminal.
+steps. Both later attempts passed; the cancelled first attempt remains terminal.
 For research deliverables, see [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15).
 
 ## Selected storage and sign-in
@@ -211,10 +285,10 @@ Default Groq configuration serialization remains compatible with frozen runs.
 
 Migration is deliberately scoped. Historical batch/memory/panel scripts and
 aggregate `dojo-lab report` remain Groq-specific. Per-run HTML works with the local
-run path. The old completed-trace joint composer and replay entry points reject
-local manifests that would otherwise choose Groq implicitly; they need explicit
-local migration before those case-study diagnostics. Starter configs are not
-frozen research protocols. No live Scout capability follows from mock tests.
+run path. The completed-trace joint composer and replay entry points now have
+separately named, explicitly configured OpenAI-compatible modes while preserving
+their legacy defaults. Starter configs are not frozen research protocols. Live
+Scout capability is established only by the terminal smoke receipts below.
 
 ## Pinned preparation and smoke tooling
 
@@ -319,9 +393,9 @@ must remain visible failures. None of these checks is an attack experiment.
 
 ## Inputs and evidence still missing
 
-- A successful GPU capability result for the now-published SIF; its checksum and CPU completion receipt are present.
-- Actual GPU driver compatibility and measured Scout memory/startup/tool behavior.
-- Successful synthetic and native Scout smoke receipts, followed by a new small frozen research protocol.
+- A terminal Case A clean/attacked result from a corrected same-allocation wrapper.
+- A frozen bundle/submission and live result for the prepared four-arm Case B v2 plan.
+- A frozen transformed-memory live protocol for Case C.
 - Selected old raw run/report bundles from the personal computer; none restored.
 
 The starter primary and judge both use local Scout, with independent endpoint

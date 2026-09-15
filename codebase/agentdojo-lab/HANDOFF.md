@@ -27,8 +27,10 @@ Hugging Face authentication and access to Scout's gated configuration are verifi
 All 63 pinned Scout files are downloaded and checksum-verified (CPU job 9029207
 completed). Rechecked 2026-09-15: container job 9029215 failed; dependent GPU
 smoke 9029415 was cancelled without starting. Recovery `9039259` then passed in
-6m 49s; its SIF and input preflight are verified, and GPU smoke `9039289` is queued.
-No Scout inference or new attack trajectory has run. See the root setup document for the latest
+6m 49s; its SIF and input preflight are verified. GPU smoke `9039289` then
+completed `0:0` in 9m 54s on four A100s. All four synthetic checks and all nine
+benign-native checks passed with seven requests. This verifies Scout integration;
+no new attack trajectory has completed. See the root setup document for the latest
 download/job status rather than treating preparation as a deployment receipt.
 
 The new offline single-episode exporter (`scripts/report_trace_pair.py`) passed
@@ -50,16 +52,28 @@ This confirms Daybreak access only for the current Codex product surface. Read
 [RESEARCH_PROGRESS.md](../../RESEARCH_PROGRESS.md) for the original restriction,
 retry evidence, percentage and run-by-run outcomes. No Scout research call occurred.
 
-The first ignored preparation, `runs/scout-case-a-prepared-v1`, remains preserved.
-Later causal-transport and reporting changes modified files in its broad source
-snapshot, so its verification now fails as designed; it must not be executed or
-relabelled. The refreshed canonical preparation is
-`runs/scout-case-a-prepared-v2`. It binds 84 source files, records zero model
-requests, and has plan SHA-256
-`1189cdd015d1eb6967d2c8b1e7724214fc5573e255b82e897a779b6058d36770`.
+The ignored preparations `runs/scout-case-a-prepared-v1`,
+`runs/scout-case-a-prepared-v2` and `runs/scout-case-a-prepared-v3` remain
+preserved. Later source changes made them fail verification as designed; v3
+omitted the runtime-read MiniLM revision pin from its source inventory. They must
+not be executed or relabelled. The current canonical preparation is
+`runs/scout-case-a-prepared-v4`. It binds 85
+source files, records zero model requests, and has plan SHA-256
+`5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`.
+The directory contains exactly `plan.json` and `preparation.json`; the preparation
+receipt SHA-256 is
+`b315d3ee67a338124a5b9c35825824dd058e89e25a56a077134fbd9456f3dbd4`.
 Checkpoint `7b5f1eb` adds the separate `hpc/scout-smoke-case-a.sbatch` wrapper.
 Its final selection passed 109 tests plus 16 subtests, Ruff, Bash syntax and Python
-compilation. The wrapper is not submitted.
+compilation. Pushed checkpoint `84fe7cc` contains the hardened execution and
+propagation bindings. The first submission, job `9043206`, was cancelled before
+allocation after audit found that a helper path would resolve to Slurm's spool
+directory. It used zero GPU time and made zero requests. A corrected immutable
+bundle and replacement submission are pending.
+The corrected helper-path and preflight-envelope selection passed 108 tests plus
+16 subtests, Ruff, Python compilation, Bash syntax and diff checks. ShellCheck was
+unavailable. The replacement wrapper verifies an absolute frozen helper directory,
+its checksum manifest and the spooled wrapper bytes before any helper runs.
 
 The joint no-tools causal auditor and observed one-step replay now accept an
 explicit OpenAI-compatible `--endpoint-config` under separately named protocols.
@@ -77,16 +91,39 @@ exposure, version evidence and restored reads. The named fixture source at
 processes** and **12 MockTransport requests**, with **zero real model calls**. The
 original-marker branch retained its marker through session B; the neutralized
 branch did not. The checkpoint's canonical state digest and bound evidence row are
-verified, while full lineage-graph connectivity remains explicitly unknown. This
-is exact-copy control evidence, not a transformed attack, causal effect, or Scout
-result. The dedicated cross-session suite passed **20 tests**; the final combined
-causal/provider/paired/memory selection passed **217 tests**, with Ruff, Python
-compilation and diff checks passing.
+verified. The hardened v2 report validates eight typed recorded/candidate path
+segments from the session-A source read through the session-B native sink state.
+Both controls cover **8/8** segments. A **74-test** selection passed and
+independent review rejected or downgraded **22 mutation classes**, with Ruff,
+Python compilation and diff checks passing. The report is
+`reports/20260915-cross-session-propagation-v2`. This remains exact-copy offline
+engineering-control evidence: causal influence is `not_assessed`, attack success
+is `unknown`, and it is not a transformed attack or Scout result.
 
 Against the supervisor checklist, completed preparation/prerequisites are now
-**9/12 (75%)** and overall completion is **9/25 (36%)**. All **13** experimental
+**10/12 (83%)** and overall completion is **10/25 (40%)**. All **13** experimental
 deliverables remain incomplete (**0/13**); none of the offline work changes that
 denominator or supplies a live trajectory outcome.
+
+The strict Case B four-arm runner requires separate processes and exact proposal,
+runtime, visible result and native-state evidence. The reviewed
+`nesi-scout-smoke-case-b-v1` wrapper uses four A100s for at most two hours and 24
+total attempts, with a current-job/time gate, process-group watchdog, PID/phase/
+cleanup binding and terminal full-source verification. Its launch manifest has
+nine entries. The independent final Case A/B suite passed 191 tests plus 16
+subtests; root's broader selection passed 214 tests plus 16 subtests. Ruff, Bash
+syntax, compilation and diff checks passed. The prepared v2 inventory has 163
+sources, including all 113 runtime/package-metadata files
+from pinned AgentDojo commit `089ed468cf3ed0322acc66b0211f26d9d90dbf60`.
+Its upstream runtime-tree SHA-256 is
+`4c58924aeb917f1daf29a4fcb11d79e716af8baf7266b73c592b39aa93a4edd7`.
+Preserved v1 has 41 sources, zero calls and plan hash
+`4b8bc845437ce557fe6bbe589dd90d6ccc5b083d92955ef0fb1324f4df52c036`;
+it is source-invalidated. `runs/scout-case-b-prepared-v2` contains exactly
+`plan.json` and `preparation.json`; their SHA-256 values are
+`69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`
+and `ba663d561892b614f7320be36a8fc9c4bf363c946c15837ac52e905fa1b45906`.
+It records zero calls and is not bundled or submitted.
 
 ### Implemented local transport and usage
 
@@ -118,8 +155,9 @@ namespace, pinned semantic model/revision, and online flags. Keep the explicit
 variable. Local primary configurations cannot enable online causal auditing
 without an explicitly selected judge. Primary and judge requests retain disabled
 SDK retries; local judge requests omit `reasoning_effort` and executable tools.
-Server tool-call formatting, context limits, and actual model behavior still need
-live validation. A zero temperature does not establish repeatability.
+The terminal GPU smoke validated server tool-call formatting and one benign native
+loop at the fixed context limit. It did not test attack behavior, attribution
+accuracy or repeatability. A zero temperature does not establish repeatability.
 
 For deferred single-source auditing of a run with provenance and a DCPG checkpoint:
 
@@ -155,14 +193,13 @@ not leave a server available for a later native run.
   credential redaction. These checks do not measure Scout's tool-use quality,
   attribution accuracy, propagation failures, or end-to-end attack success.
 
-Next: inspect scheduled GPU smoke `9039289` and verify actual Scout tool calls.
-That frozen job exits after smoke, so its receipts cannot authorize a later Case A
-allocation. If it passes, review its timing, then freeze a new site/helper bundle
-and submit the separately named wrapper described in
-[CASE-A-SCOUT-V1.md](CASE-A-SCOUT-V1.md). The new job repeats both smoke gates in
-the same allocation before the clean/attacked slots. Keep the original platform
-restriction separate from infrastructure and research outcomes. Preserve failures
-and unavailable evidence, and update root progress from terminal receipts.
+Next: freeze and submit a corrected Case A bundle from the current v4 plan. The
+new job must repeat both smoke gates in the same allocation before the
+clean/attacked slots. In parallel, freeze the prepared Case B v2 plan into its
+reviewed four-arm bundle. Keep the original platform
+restriction, cancelled pre-allocation submission, infrastructure outcomes and
+research results separate. Preserve failures and unavailable evidence, and update
+root progress from terminal receipts.
 
 The dated sections below are historical context. Their former next steps and
 local-only/no-push notes do not override the new direction and cross-device

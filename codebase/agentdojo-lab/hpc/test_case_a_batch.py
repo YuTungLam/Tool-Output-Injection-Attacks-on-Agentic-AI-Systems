@@ -10,6 +10,52 @@ import pytest
 HPC = Path(__file__).resolve().parent
 
 
+def frozen_submission(tmp_path):
+    frozen = tmp_path / "frozen-hpc"
+    frozen.mkdir(exist_ok=True)
+    for name in sorted(case_a_batch.MANIFEST_PAYLOAD_NAMES):
+        path = frozen / name
+        if not path.exists():
+            path.write_text(f"# frozen {name}\n")
+    executed = tmp_path / "slurm-spooled-case-a"
+    executed.write_bytes((frozen / "scout-smoke-case-a.sbatch").read_bytes())
+    manifest = frozen / "submission-sha256.txt"
+    manifest.write_text(
+        "".join(
+            f"{case_a_batch.receipt(frozen / name)['sha256']}  {name}\n"
+            for name in sorted(case_a_batch.MANIFEST_PAYLOAD_NAMES)
+        )
+    )
+    site = tmp_path / "case-a-site.env"
+    site.write_text("# private site fixture\n")
+    helpers = [frozen / name for name in sorted(case_a_batch.EXPECTED_HELPER_NAMES)]
+    return {
+        "runner": frozen / "run_case_a_scout.py",
+        "site": site,
+        "manifest": manifest,
+        "executed": executed,
+        "canonical": frozen / "scout-smoke-case-a.sbatch",
+        "helpers": helpers,
+    }
+
+
+def validate_submission_args(submission):
+    return {
+        "site_path": submission["site"],
+        "site_sha256": case_a_batch.receipt(submission["site"])["sha256"],
+        "manifest_path": submission["manifest"],
+        "manifest_sha256": case_a_batch.receipt(submission["manifest"])["sha256"],
+        "executed_wrapper_path": submission["executed"],
+        "canonical_wrapper_path": submission["canonical"],
+        "helper_paths": submission["helpers"],
+    }
+
+
+def write_wrapper_checksums(path, submission):
+    inputs = {item.resolve() for item in [submission["executed"], submission["site"], *submission["helpers"]]}
+    path.write_text("".join(f"{case_a_batch.receipt(item)['sha256']}  {item}\n" for item in sorted(inputs)))
+
+
 def prepared_plan(**changes):
     plan = {
         "protocol": "scout-case-a-recipient-v1",
@@ -78,14 +124,19 @@ def test_pre_smoke_validation_binds_runner_to_plan_source_hash(tmp_path):
     case.mkdir()
     (case / "plan.json").write_text("{}")
     (case / "preparation.json").write_text("{}")
-    runner = tmp_path / "run_case_a_scout.py"
-    runner.write_text("# fixed runner\n")
+    submission = frozen_submission(tmp_path)
+    runner = submission["runner"]
     plan = prepared_plan(
         source_hashes={"scripts/run_case_a_scout.py": case_a_batch.receipt(runner)["sha256"]}
     )
     output = tmp_path / "pre-smoke.json"
     result = case_a_batch.validate_before_smoke(
-        output, case, tmp_path / "smoke", runner, verifier=lambda _path: plan
+        output,
+        case,
+        tmp_path / "smoke",
+        runner,
+        verifier=lambda _path: plan,
+        **validate_submission_args(submission),
     )
     assert result["runner"] == case_a_batch.receipt(runner)
     runner.write_text("# drifted runner\n")
@@ -96,6 +147,45 @@ def test_pre_smoke_validation_binds_runner_to_plan_source_hash(tmp_path):
             tmp_path / "smoke",
             runner,
             verifier=lambda _path: plan,
+            **validate_submission_args(submission),
+        )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["site_hash", "manifest_hash", "spooled_wrapper", "manifest_entry", "missing_helper"],
+)
+def test_pre_smoke_rejects_unbound_submission_inputs(tmp_path, mutation):
+    case = tmp_path / "case"
+    case.mkdir()
+    submission = frozen_submission(tmp_path)
+    runner = submission["runner"]
+    plan = prepared_plan(
+        source_hashes={"scripts/run_case_a_scout.py": case_a_batch.receipt(runner)["sha256"]}
+    )
+    (case / "plan.json").write_text(json.dumps(plan))
+    (case / "preparation.json").write_text("{}")
+    arguments = validate_submission_args(submission)
+    if mutation == "site_hash":
+        arguments["site_sha256"] = "0" * 64
+    elif mutation == "manifest_hash":
+        arguments["manifest_sha256"] = "0" * 64
+    elif mutation == "spooled_wrapper":
+        submission["executed"].write_text("# changed in spool\n")
+    elif mutation == "manifest_entry":
+        lines = submission["manifest"].read_text().splitlines()
+        submission["manifest"].write_text("\n".join(lines[:-1]) + "\n")
+        arguments["manifest_sha256"] = case_a_batch.receipt(submission["manifest"])["sha256"]
+    else:
+        arguments["helper_paths"] = arguments["helper_paths"][:-1]
+    with pytest.raises(ValueError):
+        case_a_batch.validate_before_smoke(
+            tmp_path / "pre-smoke.json",
+            case,
+            tmp_path / "smoke",
+            runner,
+            verifier=lambda _path: plan,
+            **arguments,
         )
 
 
@@ -114,15 +204,11 @@ def test_parse_slurm_duration_rejects_malformed_values(raw):
 
 
 def reserve(tmp_path, **changes):
-    helper = tmp_path / "helper.py"
-    if not helper.exists():
-        helper.write_text("# fixed helper\n")
+    submission = frozen_submission(tmp_path)
     case = tmp_path / "case"
     case.mkdir(exist_ok=True)
     smoke_dir = tmp_path / "smoke"
-    runner = tmp_path / "run_case_a_scout.py"
-    if not runner.exists():
-        runner.write_text("# fixed runner\n")
+    runner = submission["runner"]
     plan = prepared_plan(
         source_hashes={"scripts/run_case_a_scout.py": case_a_batch.receipt(runner)["sha256"]}
     )
@@ -137,17 +223,23 @@ def reserve(tmp_path, **changes):
             smoke_dir,
             runner,
             verifier=lambda _path: plan,
+            **validate_submission_args(submission),
         )
     smoke_dir.mkdir(exist_ok=True)
+    wrapper_checksums = smoke_dir / "case-a-wrapper-sha256.txt"
+    if not wrapper_checksums.exists():
+        write_wrapper_checksums(wrapper_checksums, submission)
     values = {
         "job_id": "42",
         "reported_job_id": "42",
         "remaining": "01:05:00",
         "time_limit": "02:00:00",
         "case_dir": case,
+        "server_pid": 123,
+        "wrapper_sha256_path": wrapper_checksums,
         "pre_smoke_path": pre_smoke,
         "runner_path": runner,
-        "helper_paths": [helper],
+        "helper_paths": submission["helpers"],
     }
     values.update(changes)
     return case_a_batch.reserve_phase(smoke_dir / "case-a-phase.json", **values)
@@ -158,7 +250,8 @@ def test_phase_gate_reserves_at_boundary_hashes_helpers_and_is_exclusive(tmp_pat
     assert result["status"] == "reserved_before_case_calls"
     assert result["time_decision"]["remaining_seconds"] == 3900
     assert result["limits"]["total_generation_requests"] == 24
-    assert result["helpers"]["helper.py"]["sha256"]
+    assert set(result["helpers"]) == case_a_batch.EXPECTED_HELPER_NAMES
+    assert result["wrapper_checksums"]["sha256"]
     before = (tmp_path / "smoke" / "case-a-phase.json").read_bytes()
     with pytest.raises(FileExistsError):
         reserve(tmp_path)
@@ -308,7 +401,7 @@ def completion_fixture(
     smoke_dir = tmp_path / "smoke"
     case_dir = tmp_path / "case"
     phase = smoke_dir / "case-a-phase.json"
-    runner = tmp_path / "run_case_a_scout.py"
+    runner = tmp_path / "frozen-hpc" / "run_case_a_scout.py"
     pre_smoke = Path(str(smoke_dir) + ".case-a-pre-smoke.json")
     plan_path = case_dir / "plan.json"
     plan = json.loads(plan_path.read_text())
@@ -335,12 +428,20 @@ def completion_fixture(
         "case_plan_path": plan_path,
         "execution_path": case_dir / "execution.json",
         "wrapper_exit_path": smoke_dir / "case-a-wrapper-exit-code.txt",
+        "wrapper_sha256_path": smoke_dir / "case-a-wrapper-sha256.txt",
         "server_check_path": smoke_dir / "case-a-server-check.json",
         "cleanup_path": smoke_dir / "case-a-cleanup.json",
         "binding_validator": validate_binding,
     }
     paths["preflight_path"].write_text(
-        json.dumps({"protocol": case_a_batch.SMOKE_PROTOCOL, "slurm_job_id": "42"})
+        json.dumps(
+            {
+                "protocol": case_a_batch.SMOKE_PROTOCOL,
+                "slurm_job_id": "42",
+                "limits": case_a_batch.fixed_preflight_limits()[0],
+                "enclosing_case_a_limits": case_a_batch.fixed_preflight_limits()[1],
+            }
+        )
     )
     paths["smoke_path"].write_text(
         json.dumps(
@@ -414,6 +515,7 @@ def completion_fixture(
                 "status": "passed",
                 "slurm_job_id": "42",
                 "endpoint": plan["config"]["base_url"],
+                "server_pid": 123,
             }
         )
     )
@@ -423,7 +525,11 @@ def completion_fixture(
                 "protocol": case_a_batch.PROTOCOL,
                 "status": "server_stopped",
                 "slurm_job_id": "42",
-                "case_process": {"stopped": True},
+                "server_pid": 123,
+                "case_process": {
+                    "pid": 456 if phase_remaining == "01:05:00" else 0,
+                    "stopped": True,
+                },
             }
         )
     )
@@ -492,9 +598,15 @@ def test_unstarted_terminal_preserves_smoke_counts_and_cleanup(tmp_path):
         "plan_drift",
         "pre_smoke_drift",
         "native_job",
+        "preflight_limits",
         "cleanup_path",
         "status_time_mismatch",
         "parsed_time_mismatch",
+        "phase_helpers",
+        "phase_limits",
+        "wrapper_checksums",
+        "cleanup_server_pid",
+        "cleanup_case_pid",
     ],
 )
 def test_unstarted_terminal_rejects_mutated_pre_case_chain(tmp_path, mutation):
@@ -517,6 +629,11 @@ def test_unstarted_terminal_rejects_mutated_pre_case_chain(tmp_path, mutation):
         change(paths["pre_smoke_path"], lambda value: value.update(status="forged"))
     elif mutation == "native_job":
         change(paths["native_path"], lambda value: value.update(slurm_job_id="other"))
+    elif mutation == "preflight_limits":
+        change(
+            paths["preflight_path"],
+            lambda value: value["enclosing_case_a_limits"].update(case_requests=17),
+        )
     elif mutation == "cleanup_path":
         wrong = paths["cleanup_path"].parent / "wrong-cleanup.json"
         wrong.write_bytes(paths["cleanup_path"].read_bytes())
@@ -526,11 +643,24 @@ def test_unstarted_terminal_rejects_mutated_pre_case_chain(tmp_path, mutation):
             paths["phase_path"],
             lambda value: value.update(status="unstarted_walltime_limit_exceeded"),
         )
-    else:
+    elif mutation == "parsed_time_mismatch":
         change(
             paths["phase_path"],
             lambda value: value["time_decision"].update(remaining_seconds=3900),
         )
+    elif mutation == "phase_helpers":
+        change(paths["phase_path"], lambda value: value["helpers"].pop("smoke.py"))
+    elif mutation == "phase_limits":
+        change(
+            paths["phase_path"],
+            lambda value: value["limits"].update(total_generation_requests=25),
+        )
+    elif mutation == "wrapper_checksums":
+        paths["wrapper_sha256_path"].write_text("0" * 64 + "  /forged\n")
+    elif mutation == "cleanup_server_pid":
+        change(paths["cleanup_path"], lambda value: value.update(server_pid=999))
+    else:
+        change(paths["cleanup_path"], lambda value: value["case_process"].update(pid=456))
     result = case_a_batch.finalize(
         paths["smoke_path"].parent / "case-a-batch-summary.json", **paths
     )
@@ -571,6 +701,7 @@ def test_started_failure_still_writes_terminal_infrastructure_receipts(tmp_path)
         "phase_case_path",
         "phase_plan",
         "preflight_job",
+        "preflight_limits",
         "execution_binding",
         "summary_plan",
         "terminal_file",
@@ -580,6 +711,12 @@ def test_started_failure_still_writes_terminal_infrastructure_receipts(tmp_path)
         "server_endpoint",
         "cleanup_job",
         "wrong_smoke_path",
+        "phase_helpers",
+        "phase_limits",
+        "wrapper_checksums",
+        "server_pid",
+        "cleanup_server_pid",
+        "cleanup_case_pid",
     ],
 )
 def test_complete_receipt_rejects_mutated_chain_edges(tmp_path, mutation):
@@ -596,6 +733,11 @@ def test_complete_receipt_rejects_mutated_chain_edges(tmp_path, mutation):
         change(paths["phase_path"], lambda value: value.update(plan={"sha256": "forged"}))
     elif mutation == "preflight_job":
         change(paths["preflight_path"], lambda value: value.update(slurm_job_id="other"))
+    elif mutation == "preflight_limits":
+        change(
+            paths["preflight_path"],
+            lambda value: value["enclosing_case_a_limits"].update(case_requests=17),
+        )
     elif mutation == "execution_binding":
         change(paths["execution_path"], lambda value: value.update(serving={"status": "forged"}))
     elif mutation == "summary_plan":
@@ -622,10 +764,25 @@ def test_complete_receipt_rejects_mutated_chain_edges(tmp_path, mutation):
         )
     elif mutation == "cleanup_job":
         change(paths["cleanup_path"], lambda value: value.update(slurm_job_id="other"))
-    else:
+    elif mutation == "wrong_smoke_path":
         wrong = paths["smoke_path"].parent / "wrong-smoke.json"
         wrong.write_bytes(paths["smoke_path"].read_bytes())
         paths["smoke_path"] = wrong
+    elif mutation == "phase_helpers":
+        change(paths["phase_path"], lambda value: value["helpers"].pop("smoke.py"))
+    elif mutation == "phase_limits":
+        change(
+            paths["phase_path"],
+            lambda value: value["limits"].update(total_generation_requests=25),
+        )
+    elif mutation == "wrapper_checksums":
+        paths["wrapper_sha256_path"].write_text("0" * 64 + "  /forged\n")
+    elif mutation == "server_pid":
+        change(paths["server_check_path"], lambda value: value.update(server_pid=999))
+    elif mutation == "cleanup_server_pid":
+        change(paths["cleanup_path"], lambda value: value.update(server_pid=999))
+    else:
+        change(paths["cleanup_path"], lambda value: value["case_process"].update(pid=0))
     result = case_a_batch.finalize(
         paths["smoke_path"].parent / "case-a-batch-summary.json", **paths
     )
@@ -633,46 +790,69 @@ def test_complete_receipt_rejects_mutated_chain_edges(tmp_path, mutation):
     assert result["error_type"] == "ValueError"
 
 
-def test_wrapper_is_separate_bounded_and_leaves_original_smoke_unchanged():
+def test_wrapper_is_separate_bounded_and_hardens_shared_smoke_cleanup():
     original = (HPC / "scout-smoke.sbatch").read_bytes()
     wrapper = (HPC / "scout-smoke-case-a.sbatch").read_text()
     assert hashlib.sha256(original).hexdigest() == (
-        "8554d25dc2a9288111c578eae0b05fbd1fb0e837526f46de373f320705787420"
+        "1e2caa7bd21310f7ce04af46607ad0e077abb56f2ba117691f5ee466a584ee1a"
     )
     for fragment in (
         "#SBATCH --time=02:00:00",
         "export SCOUT_NATIVE_SMOKE=1",
+        "export SCOUT_CASE_A_MODE=1",
         "squeue -h -j \"$SLURM_JOB_ID\" -o '%i|%L|%l'",
-        "--remaining \"$REMAINING_TIME\" --time-limit \"$TIME_LIMIT\"",
+        '--remaining "$REMAINING_TIME" --time-limit "$TIME_LIMIT"',
         "sleep 3600",
-        "kill -TERM -- \"-$CASE_A_PROCESS_PID\"",
-        "kill -KILL -- \"-$CASE_A_PROCESS_PID\"",
+        'kill -TERM -- "-$CASE_A_PROCESS_PID"',
+        'kill -KILL -- "-$CASE_A_PROCESS_PID"',
         "case-a-server-check.json",
         "case-a-cleanup.json",
         "case-a-batch-summary.json",
         "export SCOUT_SERVER_PID",
+        "SCOUT_SITE_SHA256:?Export the reviewed site-file SHA-256 at submission",
+        "SCOUT_HPC_MANIFEST_SHA256:?Set its reviewed SHA-256 in the site file",
+        "sha256sum --check --strict --status submission-sha256.txt",
+        'cmp --silent -- "$CASE_A_EXECUTED_WRAPPER" "$CASE_A_CANONICAL_WRAPPER"',
         '[[ "$SCOUT_LAB_PYTHON" == /* ]]',
         "readonly CASE_A_HPC_DIR",
-        'unset SCOUT_SITE_FILE',
+        "unset SCOUT_SITE_FILE",
         '--pre-smoke-path "$SCOUT_CASE_A_PRE_SMOKE"',
         '--runner-path "$SCOUT_CASE_A_RUNNER"',
-        'if kill -TERM -- "-$CASE_A_PROCESS_PID"',
+        '--wrapper-sha256-path "$CASE_A_WRAPPER_SHA256"',
+        '--server-pid "$SCOUT_SERVER_PID"',
+        '&& kill -TERM -- "-$CASE_A_PROCESS_PID"',
         'if kill -KILL -- "-$CASE_A_PROCESS_PID"',
+        "(( SCOUT_SERVER_PID <= 1 ))",
+        "(( CASE_A_PROCESS_PID > 1 ))",
+        "valid_server_pid=true",
     ):
         assert fragment in wrapper
-    assert wrapper.index("unset SCOUT_SITE_FILE") < wrapper.index(
+    assert 'dirname -- "${BASH_SOURCE[0]}"' not in wrapper
+    assert wrapper.index('source "$CASE_A_SITE_FILE"') < wrapper.index(
+        'CASE_A_HPC_DIR=$(realpath -e -- "$SCOUT_HPC_DIR")'
+    )
+    assert wrapper.index("unset SCOUT_SITE_FILE SCOUT_SITE_SHA256") < wrapper.index(
         'source "$CASE_A_HPC_DIR/scout-smoke.sbatch"'
     )
-    assert wrapper.count('source "$SCOUT_SITE_FILE"') == 1
+    assert wrapper.count('source "$CASE_A_SITE_FILE"') == 1
     assert 'kill -TERM -- "-$CASE_A_PROCESS_PID" 2>/dev/null || true' not in wrapper
     assert 'kill -KILL -- "-$CASE_A_PROCESS_PID" 2>/dev/null || true' not in wrapper
+    assert "[[ ${SCOUT_SERVER_PID:-} =~ ^[1-9][0-9]*$ ]] || exit 2" not in wrapper
+    pid_guard = "if [[ ! ${SCOUT_SERVER_PID:-} =~ ^[0-9]+$ ]] || (( SCOUT_SERVER_PID <= 1 )); then"
+    smoke_source = 'source "$CASE_A_HPC_DIR/scout-smoke.sbatch"'
+    post_smoke_guard = '[[ "$SCOUT_HPC_DIR" == "$CASE_A_HPC_DIR"'
+    assert wrapper.index(smoke_source) < wrapper.index(pid_guard) < wrapper.index(post_smoke_guard)
+    assert wrapper.index("SCOUT_SERVER_PID=''") < wrapper.index("exit 2", wrapper.index(pid_guard))
     assert wrapper.index('source "$CASE_A_HPC_DIR/scout-smoke.sbatch"') < wrapper.index(
         '"$SCOUT_CASE_A_RUNNER" run'
     )
-    assert wrapper.index('source "$CASE_A_HPC_DIR/scout-smoke.sbatch"') < wrapper.index(
-        "export SCOUT_SERVER_PID"
-    ) < wrapper.index("case-a-server-check.json")
+    assert (
+        wrapper.index('source "$CASE_A_HPC_DIR/scout-smoke.sbatch"')
+        < wrapper.index("export SCOUT_SERVER_PID")
+        < wrapper.index("case-a-server-check.json")
+    )
     assert "http://127.0.0.1:$SCOUT_PORT/v1" in original.decode()
+    assert 'if [[ "$SCOUT_SERVER_PID" =~ ^[0-9]+$ ]] && (( SCOUT_SERVER_PID > 1 )); then' in original.decode()
     assert case_a_batch.TOTAL_REQUEST_LIMIT == 24
     assert case_a_batch.WALLTIME_SECONDS == 7200
     assert case_a_batch.CASE_REQUEST_LIMIT == 16

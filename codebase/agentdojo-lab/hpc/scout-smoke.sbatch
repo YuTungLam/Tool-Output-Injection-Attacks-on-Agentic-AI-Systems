@@ -56,7 +56,7 @@ SCOUT_SERVER_PID=''
 cleanup() {
     local status=$?
     trap - EXIT TERM INT
-    if [[ -n "$SCOUT_SERVER_PID" ]]; then
+    if [[ "$SCOUT_SERVER_PID" =~ ^[0-9]+$ ]] && (( SCOUT_SERVER_PID > 1 )); then
         kill -TERM -- "-$SCOUT_SERVER_PID" 2>/dev/null || true
         for _ in {1..10}; do
             kill -0 -- "-$SCOUT_SERVER_PID" 2>/dev/null || break

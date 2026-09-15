@@ -10,15 +10,25 @@ The Python 3.12.14 lab and pinned AgentDojo checkout have been restored. Scout
 access is authenticated and its gated configuration was read successfully;
 all 63 pinned model files passed their checksums. Rechecked 2026-09-15:
 the first container/GPU attempts failed or were cancelled; retry `9039259` passed
-and GPU smoke `9039289` is queued. Scout inference remains unverified. The offline
+and GPU smoke `9039289` completed `0:0` in 9m 54s on four A100s. Synthetic
+requests passed 4/4 and the three-request benign native run passed all nine checks.
+This verifies Scout integration, not an attack result. The offline
 single-episode pair exporter passed 38 tests; use `scripts/report_trace_pair.py`.
 The bounded Case C preparation exporter compares two ordered A/B session pairs
-offline with explicit boundary evidence; its 20 dedicated tests pass. Use
+offline with explicit boundary evidence. Its v2 report covers all 8/8 typed path
+segments in both controls; 74 tests and 22 review mutations passed. Causal
+influence remains unassessed and attack success unknown. Use
 `scripts/report_cross_session_pair.py`.
 The bounded [Scout Case A v1](CASE-A-SCOUT-V1.md) runner is also implemented and
-its refreshed `runs/scout-case-a-prepared-v2` plan records zero live model
-requests. A separately named future
-same-allocation wrapper is verified offline and unsubmitted pending job `9039289`.
+its current `runs/scout-case-a-prepared-v4` plan binds 85 source files, has SHA-256
+`5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`, and
+records zero live model requests. Submitted job `9043206` was cancelled before
+allocation after audit found a Slurm helper-path defect; a corrected replacement
+is being prepared. The Case B four-arm runner and `nesi-scout-smoke-case-b-v1`
+same-allocation wrapper are reviewed and test-clean. The final Case A/B selection
+passed 191 tests plus 16 subtests; root's broader selection passed 214 plus 16
+subtests. Case B v2 is prepared with 163 bound files and zero model calls, but it
+is not bundled or submitted.
 See [progress/results](../../RESEARCH_PROGRESS.md) and [the supervisor checklist](../../RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15). Historical
 run/HTML bundles still need separate transfer. The large evaluation below remains
 deferred: its ledger records zero started native trajectories and no frozen native
@@ -111,8 +121,10 @@ transport checks were followed by a complete rerun with both semantic and
 plotting extras installed: **2,056 repository tests passed**, plus **26 HPC
 tests** and 25 HPC subtests. Ruff and shell syntax checks passed. See
 `reports/20260914-nesi-setup-v1/pytest-full-final.txt` and `pytest-hpc.txt`.
-These checks establish implementation behavior, not Scout capability or new
-research outcomes; live status belongs in [the root handoff](../../PROJECT_CONTEXT.md).
+Those offline checks establish implementation behavior. The later terminal GPU
+smoke establishes Scout capability for the bounded transport/native integration;
+it is still not a research outcome. Live status belongs in
+[the root handoff](../../PROJECT_CONTEXT.md).
 
 **Active evaluation — NT-AgentDojo-Eval-v1, 2026-09-10:** SafeTool, CTTA,
 model-weight updates and action blocking are outside the current phase. M1–M7 of

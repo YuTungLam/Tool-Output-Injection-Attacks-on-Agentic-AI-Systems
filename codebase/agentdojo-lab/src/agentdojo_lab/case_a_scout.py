@@ -283,6 +283,7 @@ def design(base_url: str) -> dict:
     files = [ROOT / "uv.lock", ROOT / "upstream.json", ROOT / "configs/case_a_scout_v1.toml",
              ROOT / "configs/workspace_policy_v1.yaml", ROOT / "CASE-A-SCOUT-V1.md",
              ROOT / "scripts/run_case_a_scout.py", ROOT / "hpc/tool_chat_template_llama4_pythonic_typed_v1.jinja"]
+    files.append(ROOT / "src/agentdojo_lab/model_pins/minilm-v1.json")
     files += sorted((ROOT / "src/agentdojo_lab").rglob("*.py"))
     files += sorted((ROOT / "src/agentdojo_lab/templates").rglob("*"))
     return {

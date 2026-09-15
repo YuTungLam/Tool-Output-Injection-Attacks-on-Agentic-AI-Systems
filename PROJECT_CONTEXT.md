@@ -143,8 +143,9 @@ Bare module filenames in this map refer to `src/agentdojo_lab/`.
 ## Current state on NeSI — 2026-09-15
 
 This continuation began from clean source checkpoint `3c71025` on
-`codex/agentdojo-lab`. The active Case A implementation was then committed as
-`6071eb0`. Recheck these facts on a later visit.
+`codex/agentdojo-lab`. The current hardened execution and propagation checkpoint
+is `84fe7cc`, pushed to `origin/codex/agentdojo-lab`. Recheck these facts on a
+later visit.
 
 | Item | Observed state |
 | --- | --- |
@@ -154,12 +155,12 @@ This continuation began from clean source checkpoint `3c71025` on
 | Semantic weights | Pinned MiniLM snapshot downloaded and file hashes verified; locked semantic dependencies installed and 53 dependent regressions passed |
 | Default Python / lab Python | System 3.9.25; restored lab `.venv` 3.12.14 |
 | Local LLM integration | Explicit primary, online, deferred, joint-audit and one-step replay endpoints plus provider-aware doctor coverage implemented; legacy defaults remain unchanged |
-| Scout weights/server | All 63 pinned files verified. First container 9029215 FAILED and GPU 9029415 CANCELLED. CPU retry 9039259 COMPLETED in 6m 49s; SIF/input preflight passed. GPU smoke 9039289 waits for scheduling priority; inference unverified |
+| Scout weights/server | All 63 pinned files verified. First container 9029215 FAILED and GPU 9029415 CANCELLED. CPU retry 9039259 COMPLETED in 6m 49s. GPU smoke 9039289 then COMPLETED `0:0` in 9m 54s on `mg15` with four A100 80 GB GPUs; synthetic 4/4 and all nine benign-native checks passed |
 | Hugging Face access | Browser login complete; saved identity and authenticated pinned Scout config download verified |
 | Model storage | Private scratch root `/nesi/nobackup/uoa04799/dyu848/tool-output-lab`; 10 TiB project scratch allocation |
 | NeSI offline smoke | Completed native fixture with a valid 15-event recording and HTML; no real LLM calls |
 | Git transport | SSH push and pull tested successfully on this device earlier in the session |
-| Scout Case A runner | Canonical plan prepared with zero requests; separate two-hour same-allocation wrapper committed and verified offline; zero live Case A requests |
+| Scout Case A runner | Hardened 85-source v4 plan prepared with zero requests. First submitted wrapper job 9043206 was cancelled before allocation after audit found a Slurm helper-path defect; zero live Case A requests |
 | New case-study pilot | Planned in RESEARCH_PLAN.md; zero new trajectories |
 
 The read-only scheduler assessment found project association `uoa04799` and GPU
@@ -183,23 +184,23 @@ ledgers and result notes retain their historical values.
 
 1. Use [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15)
    to track delivered results separately from existing code and preparation.
-2. Inspect queued GPU smoke `9039289`; do not submit duplicates. Container retry
-   `9039259` completed successfully, with published SIF and passing input
-   preflight. It reused model job `9029207`'s verified snapshot and preserved the
-   original failed/cancelled attempts.
-3. Verify the new synthetic/native GPU smoke's terminal receipts. Live Scout
-   inference remains unverified while the GPU job is queued.
+2. Finish the corrected Case A helper-path binding, freeze a v2 bundle/site and
+   submit one replacement job. Preserve cancelled job `9043206`, which used no
+   GPU time or requests.
+3. When the replacement becomes terminal, verify its same-allocation synthetic/native
+   smoke chain, request accounting and clean/attacked evidence before interpreting
+   any recipient or sink result.
 4. Use the offline single-episode paired report for changed tool arguments,
    proposal divergence and configured sensitive-field divergence. The separate
-   offline cross-session exporter now aligns caller-labelled A/B pairs and reports
-   checkpoint, native-state, exposure, write/version and restored-read boundary
-   evidence. The joint auditor and one-step replay now accept explicit configured
-   OpenAI-compatible endpoints while preserving their legacy defaults. The Case A
-   local runner, refreshed canonical plan and unsubmitted same-allocation wrapper
-   are ready.
-5. If `9039289` passes, inspect its timing, freeze a new site file and immutable
-   helper bundle, then submit the separately named Case A wrapper. It must repeat
-   both smoke gates in its own allocation before the clean/attacked pair.
+   `offline-cross-session-propagation-v2` exporter validates eight typed path
+   segments in each existing offline control. The joint auditor and one-step
+   replay accept explicit configured OpenAI-compatible endpoints while preserving
+   their legacy defaults. Causal influence remains unassessed and attack success
+   unknown for the offline controls.
+5. Freeze the prepared Case B v2 plan into a same-allocation bundle/site, then
+   submit it after review. The strict four-arm runner and wrapper are implemented
+   but unsubmitted; they have made no live request. Case C still needs a frozen
+   transformed-memory live protocol.
 
 The first 2026-09-15 Case A implementation subagent was stopped by a platform
 security-risk flag. Its four unfinished files remain preserved byte-for-byte in
@@ -214,20 +215,28 @@ it does not establish access in a separate API project or product. The original
 flag and quarantine remain historical evidence. No live Case A request was made,
 so this is not a Scout refusal or an experimental finding.
 
-Continuation checkpoint `7b5f1eb` adds the separate two-hour smoke-plus-Case-A
-wrapper without changing the frozen pending smoke job. It requires current-job
+Continuation checkpoint `7b5f1eb` added the separate two-hour smoke-plus-Case-A
+wrapper without changing the then-pending smoke job. It requires current-job
 Slurm time evidence, at least 3,900 seconds remaining, a live authenticated
 loopback server, the exact plan-bound runner, and a recomputed preflight → smoke →
 native → execution → terminal evidence chain. The combined ceiling is 24 generation
 attempts: 4 synthetic, at most 4 benign native, and at most 16 Case A. Root's final
 selection passed **109 tests plus 16 subtests**, Ruff, Bash syntax and Python
-compilation. Later causal-transport and reporting source changes correctly
-invalidated the first zero-request preparation. The refreshed ignored preparation
-is `codebase/agentdojo-lab/runs/scout-case-a-prepared-v2`; it binds 84 source
-files, has plan SHA-256
-`1189cdd015d1eb6967d2c8b1e7724214fc5573e255b82e897a779b6058d36770`
-and records zero model requests. The wrapper remains unsubmitted until `9039289`
-finishes successfully and its timing is reviewed.
+compilation. Later source changes correctly invalidated the first three
+zero-request preparations. The v3 audit specifically found a missing runtime-read
+MiniLM revision pin in its source inventory. The current ignored preparation is
+`codebase/agentdojo-lab/runs/scout-case-a-prepared-v4`; it binds 85 source files,
+has plan SHA-256
+`5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`
+and records zero model requests. After smoke `9039289` passed, the exact source at
+pushed checkpoint `84fe7cc` was copied into immutable bundle
+`evidence/scout-case-a-submission-20260915-v1`, with private site file
+`/nesi/project/uoa04799/dyu848/tools/scout-case-a-site-20260915-v1.env`.
+Case A job `9043206` was submitted at 15:36 NZST, then cancelled at 15:47 before
+allocation when audit found a relative helper path that would resolve from
+Slurm's spool directory. Accounting records 00:00:00 elapsed, zero GPU time and
+zero requests. Preserve that failed submission record. A corrected v2 bundle and
+replacement job are pending; the limits remain 24 requests and eight GPU-hours.
 
 The 2026-09-15 checklist review read Slurm accounting and retained job artifacts.
 It did not rerun tests or launch replacement jobs. Container failure and GPU
@@ -240,7 +249,7 @@ Previous run/report bundle locations remain unknown.
 
 Continuation on 2026-09-15: [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) now
 provides progress bars and per-run explanations. The first supervisor checklist
-is **9/25 complete (36%)**, including preparation; its 13 new experimental
+is **10/25 complete (40%)**, including preparation; its 13 new experimental
 deliverables remain **0/13**. This counts completed items, not elapsed time or
 detector accuracy. The new CPU/GPU attempt uses private, separately named
 evidence and site files described in HPC_SETUP.md.
@@ -255,8 +264,8 @@ Logs are `pytest-full-final.txt` and `pytest-hpc.txt` in the setup receipt direc
 The initial full run's six failures are retained in `pytest-full.txt`: four were
 missing plotting dependencies; two exposed a plan-only auditor guard bug, which
 was fixed without changing frozen protocols. The final full rerun passes.
-No Scout inference or new research trajectory has occurred. Preparation job
-evidence is retained in
+Live Scout integration inference has now succeeded, but no new research
+trajectory has completed. Preparation and smoke evidence is retained in
 `/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/` outside Git.
 
 New 2026-09-15 verification passed **28 HPC tests plus 25 subtests**, and **38
@@ -268,40 +277,65 @@ This demonstrates the exporter, not a Scout attack. It compares tool proposals
 within a single episode; assistant prose and cross-session alignment are outside
 that component. Detailed receipts and limitations are in RESEARCH_PROGRESS.md.
 
-The separate bounded cross-session exporter was added on 2026-09-15 for Case C
-preparation. It accepts two ordered A/B run pairs with caller-supplied condition
-labels, preserves run-local IDs and ambiguous/inserted/omitted action alignments,
-and reports each session-boundary link as observed, mismatched, absent, or unknown.
-The existing four-process offline memory fixture and negative boundary cases pass
-in a 42-test targeted selection (20 new tests), with Ruff, compilation and diff
-checks passing. This is derived-report preparation with zero live calls or jobs;
-it does not turn the exact-copy control into a cross-session attack result.
+The separate bounded cross-session exporter was hardened on 2026-09-15 for Case C
+preparation. The new `reports/20260915-cross-session-propagation-v2` report
+validates all eight recorded/candidate path segments in both existing offline
+controls, including the source read, memory write/version, checkpoint, fresh
+session-B restoration and proposed/runtime/result/native sink chain. A 74-test
+selection passed, and independent review exercised 22 mutation classes; every
+mutation was rejected or downgraded. This is derived engineering-control evidence
+with zero live calls. Causal influence was not assessed and attack success remains
+unknown.
 
 The joint no-tools auditor and observed one-step replay now have separately named
 configured OpenAI-compatible protocols and `--endpoint-config`. They require
 explicit `--live`, an environment-only key, zero SDK retries and truthful endpoint/
 model receipts; replay preserves the recorded request and rejects a model mismatch.
-The final combined root selection passed **217 tests**. The ignored named fixture
-is `reports/20260915-cross-session-report-fixture-v1`; both session alignments are
-unique under the documented rule, both A→B checkpoint hashes and successful reads
-match, and graph connectivity remains explicitly unknown rather than inferred.
+The earlier 217-test combined selection remains historical verification. The
+current ignored report is `reports/20260915-cross-session-propagation-v2`; both
+session alignments and graph halves are validated against content-derived IDs and
+strict input hashes. The earlier v1 report remains preserved.
 
 The completed Case A runner and its report/provider regressions passed **84
 selected tests** on 2026-09-15. Its execution gate requires successful synthetic
 and benign native smoke receipts from the same four-A100 serving job before either
-clean or attacked slot can make a request. These offline checks do not increase
-the experimental-deliverable count: no live Scout trajectory has run.
+clean or attacked slot can make a request. The first submitted job, `9043206`, was
+cancelled before allocation after the helper-path audit; it made zero requests
+and does not increase the experimental-deliverable count.
 
 The later same-allocation batch validation passed **109 tests and 16 subtests**.
-This validates orchestration, immutable receipt bindings, budgets and failure
-paths offline; it is not a Scout inference or attack result.
+Checkpoint `84fe7cc` strengthens exact runtime, tool-result, native-state and
+serving bindings and is pushed. This validates orchestration and evidence
+integrity; it is not a Case A result.
+
+After the submission audit, the corrected helper-path and preflight-envelope
+selection passed **108 tests plus 16 subtests**, Ruff, Python compilation, Bash
+syntax and diff checks. ShellCheck was unavailable. This remediation invalidated
+v3 and produced the 85-source v4 plan above; no replacement job is claimed yet.
+
+The Case B four-arm runner is strict about distinct worker processes and exact
+proposal → runtime start → runtime return → visible tool result → native state
+change evidence. Its reviewed `nesi-scout-smoke-case-b-v1` wrapper requests at
+most two hours on four A100s and permits at most 24 total requests: four synthetic,
+four benign-native and 16 Case B. The independent final Case A/B selection passed
+191 tests plus 16 subtests; root's broader selection passed 214 tests plus 16
+subtests. Ruff, Bash syntax, compilation and diff checks passed.
+The prepared v2 design inventory has 163 source files, including 113 pinned
+AgentDojo runtime/package-metadata files, and a nine-entry launch manifest.
+`runs/scout-case-b-prepared-v2` contains exactly `plan.json` and
+`preparation.json`; their SHA-256 values are
+`69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`
+and `ba663d561892b614f7320be36a8fc9c4bf363c946c15837ac52e905fa1b45906`.
+It records zero model calls. Preserved v1 is source-invalidated. No v2 bundle,
+submission or research request is claimed here.
 
 Git synchronization: this continuation started from clean checkpoint **`3c71025`**,
 matching `origin/codex/agentdojo-lab`. SSH push and pull were already verified for
-repository owner `YuTungLam`. The Case A implementation checkpoint **`6071eb0`**
-and batch-preparation checkpoint **`7b5f1eb`** were subsequently pushed to that
-branch. Git synchronization does not imply that the queued GPU job has finished;
-inspect its terminal receipts separately.
+repository owner `YuTungLam`. The Case A implementation checkpoint **`6071eb0`**,
+batch-preparation checkpoint **`7b5f1eb`**, and hardened execution/propagation
+checkpoint **`84fe7cc`** were subsequently pushed to that branch. Git
+synchronization does not imply that a corrected Case A job has been submitted;
+inspect scheduler and submission receipts separately.
 
 ## Moving between devices
 

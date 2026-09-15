@@ -9,6 +9,13 @@ import os
 import re
 from pathlib import Path
 
+CASE_A_WALLTIME_SECONDS = 7200
+CASE_A_REQUEST_LIMIT = 16
+CASE_A_TOTAL_REQUEST_LIMIT = 24
+CASE_B_WALLTIME_SECONDS = 7200
+CASE_B_REQUEST_LIMIT = 16
+CASE_B_TOTAL_REQUEST_LIMIT = 24
+
 
 def sha256(path: Path) -> str:
     value = hashlib.sha256()
@@ -93,6 +100,46 @@ def verify_download_receipt(path: Path, model: dict) -> dict:
             "weight_hashes_rechecked_in_gpu_job": False}
 
 
+def limit_records(*, native: bool, case_a_mode: bool, case_b_mode: bool = False) -> dict:
+    """Describe smoke separately from an optional enclosing case-study job."""
+    if case_a_mode and case_b_mode:
+        raise ValueError("A smoke job cannot enclose both Case A and Case B")
+    records = {
+        "limits": {
+            "scope": "smoke_phase_only",
+            "gpus": 4,
+            "intended_walltime_minutes": 60 if native else 45,
+            "ready_seconds": 1500,
+            "generative_requests": 8 if native else 4,
+            "synthetic_requests": 4,
+            "synthetic_request_timeout_seconds": 120,
+            "synthetic_max_completion_tokens_per_request": 512,
+            "native_requests": 4 if native else 0,
+            "native_request_timeout_seconds": 180 if native else None,
+            "native_max_completion_tokens_per_request": 2048 if native else None,
+        }
+    }
+    if case_a_mode:
+        records["enclosing_case_a_limits"] = {
+            "scope": "smoke_plus_case_a_job",
+            "walltime_seconds": CASE_A_WALLTIME_SECONDS,
+            "total_generation_requests": CASE_A_TOTAL_REQUEST_LIMIT,
+            "case_requests": CASE_A_REQUEST_LIMIT,
+            "online_auditor_requests": 0,
+        }
+    if case_b_mode:
+        records["enclosing_case_b_limits"] = {
+            "scope": "smoke_plus_case_b_job",
+            "walltime_seconds": CASE_B_WALLTIME_SECONDS,
+            "total_generation_requests": CASE_B_TOTAL_REQUEST_LIMIT,
+            "case_requests": CASE_B_REQUEST_LIMIT,
+            "case_slots": 4,
+            "requests_per_case_slot": 4,
+            "online_auditor_requests": 0,
+        }
+    return records
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
@@ -104,6 +151,8 @@ def main() -> int:
             if not value.startswith("/") or any(ch in value for ch in "\n\r,:"):
                 raise ValueError("Set absolute local paths without bind delimiters")
         native = os.environ.get("SCOUT_NATIVE_SMOKE", "0") == "1"
+        case_a_mode = os.environ.get("SCOUT_CASE_A_MODE", "0") == "1"
+        case_b_mode = os.environ.get("SCOUT_CASE_B_MODE", "0") == "1"
         model = inspect_snapshot(Path(os.environ["SCOUT_SNAPSHOT"]), os.environ["SCOUT_REVISION"])
         receipt = {
             "protocol": "nesi-scout-smoke-v1",
@@ -113,13 +162,11 @@ def main() -> int:
                                      os.environ["SCOUT_TEMPLATE_SHA256"]),
             "container": checked_file(Path(os.environ["VLLM_SIF"]), os.environ["VLLM_SIF_SHA256"]),
             "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
-            "limits": {"gpus": 4, "intended_walltime_minutes": 60 if native else 45,
-                       "ready_seconds": 1500, "generative_requests": 8 if native else 4,
-                       "synthetic_requests": 4, "synthetic_request_timeout_seconds": 120,
-                       "synthetic_max_completion_tokens_per_request": 512,
-                       "native_requests": 4 if native else 0,
-                       "native_request_timeout_seconds": 180 if native else None,
-                       "native_max_completion_tokens_per_request": 2048 if native else None},
+            **limit_records(
+                native=native,
+                case_a_mode=case_a_mode,
+                case_b_mode=case_b_mode,
+            ),
         }
         with args.output.open("x", encoding="utf-8") as stream:
             json.dump(receipt, stream, ensure_ascii=False, indent=2)

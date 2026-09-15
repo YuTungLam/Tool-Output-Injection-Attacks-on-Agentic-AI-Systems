@@ -1,21 +1,23 @@
 # Bounded Scout serving smoke test
 
-Prepared 2026-09-14. This tooling has **not deployed Scout**. The shell and
-synthetic transport tests run without a scheduler or model. The batch script
-requires an already prepared local model, chat template, and Apptainer image.
-It never downloads them, submits another job, or runs research attacks.
+Prepared 2026-09-14. The bounded serving smoke has now deployed Scout for one
+terminal scheduled integration run. The batch script requires an already prepared
+local model, chat template, and Apptainer image. It never downloads them, submits
+another job, or runs research attacks.
 
 Status rechecked 2026-09-15: model download/verification job `9029207` completed,
 container job `9029215` failed during SIF creation after 50m 31s, and dependent
-GPU job `9029415` was cancelled without starting. No live Scout smoke passed.
+GPU job `9029415` was cancelled without starting.
 See [the current setup status](../../../HPC_SETUP.md#status-recheck-on-2026-09-15).
 
 Continuation on 2026-09-15 submitted the separately named SSD/gzip-level-1
 container attempt **9039259**, followed by the dependent synthetic/native smoke
 **9039289**. The CPU job completed on `g01` in **6m 49s**, publishing the verified
-SIF. The GPU job then became pending for priority after its dependency
-was fulfilled. Live Scout inference remains unverified. Inspect the current
-receipts before submitting another attempt. The original model download is reused.
+SIF. The GPU job then ran on `mg15` and completed in **9m 54s**, exit `0:0`.
+Synthetic requests passed 4/4; the three-request benign native run passed all nine
+checks. This verifies the bounded Scout integration, not an attack or attribution
+result. Inspect the terminal receipts before submitting another attempt. The
+original model download is reused.
 
 ## Resource and software choice
 
@@ -41,7 +43,7 @@ Registry inspection resolved `vllm/vllm-openai:v0.29.0-cu129` on 2026-09-14:
 The manifest reference is in `site.env.example`; image preparation is a separate
 step. Record the resulting **SIF file's own SHA-256** after preparation. The
 registry digest and SIF checksum are different artifacts; do not interchange
-them. GPU driver compatibility remains unverified until a scheduled job runs.
+them. GPU driver compatibility was verified by terminal job `9039289`.
 The runtime precheck requires vLLM 0.29.0 (including its `+cu129` package suffix),
 PyTorch CUDA 12.9, and four visible A100 GPUs.
 
@@ -98,8 +100,8 @@ quotes, backslashes and newlines. No function call or payload is executed.
 They also compare unaffected prompt regions and exercise the production
 Transformers compiler when installed. vLLM normalizes empty assistant content
 and parses serialized tool arguments before template rendering; the fixture
-uses that normalized input shape. A live Scout tool round trip remains a
-separate GPU smoke requirement.
+uses that normalized input shape. Job `9039289` subsequently passed the live
+Scout tool round trip.
 
 On 2026-09-14, all 28 template tests passed in the restored lab environment.
 The separately downloaded, pinned Scout tokenizer also passed real
@@ -207,10 +209,10 @@ in `native-smoke.json`. The loopback client uses no proxies or redirects.
 
 ### Prepared same-allocation Case A continuation
 
-The queued job `9039289` runs the frozen smoke wrapper and exits after smoke;
-it cannot append Case A in that allocation. Do not alter its site file or v2
-submission bundle. [`scout-smoke-case-a.sbatch`](scout-smoke-case-a.sbatch) is
-a separately named, unsubmitted protocol for a later fresh allocation. Set
+Completed job `9039289` ran the frozen smoke wrapper and exited after smoke; it
+cannot append Case A. Do not alter its site file or v2 submission bundle.
+[`scout-smoke-case-a.sbatch`](scout-smoke-case-a.sbatch) is a separately named
+protocol for a fresh allocation. Set
 `SCOUT_RUN_DIR` to a new absolute smoke directory, `SCOUT_CASE_A_DIR` to a
 separate absolute directory containing only a verified `plan.json` and
 `preparation.json`, and `SCOUT_CASE_A_RUNNER` to the active absolute runner.
@@ -225,9 +227,8 @@ server and limits the whole Case A process group to 3,600 seconds with TERM and
 KILL cleanup. The combined ceilings are 24 generation attempts (4 synthetic,
 at most 4 native, at most 16 Case A), zero online auditors, and zero SDK retries.
 
-Use a new site file and fresh scheduler log parent. A future reviewed submission
-would invoke the wrapper directly; this command is an example and has not been
-run:
+Use a new site file and fresh scheduler log parent. A reviewed submission invokes
+the wrapper directly:
 
 ```bash
 sbatch \
@@ -245,6 +246,21 @@ separate Case wrapper and job exit codes, cleanup evidence, and the terminal
 framework completion. Scientific sink outcomes remain in the Case A summary
 and paired report, including unsuccessful and unconfirmed trials.
 
+The current plan is `runs/scout-case-a-prepared-v4`, with 85 bound source files,
+zero requests and plan SHA-256
+`5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`.
+It is bound to pushed source checkpoint `84fe7cc`. The first submitted bundle was
+`evidence/scout-case-a-submission-20260915-v1`, using private site
+`/nesi/project/uoa04799/dyu848/tools/scout-case-a-site-20260915-v1.env`.
+Job `9043206` was submitted at 15:36 NZST, then cancelled at 15:47 before
+allocation after audit found that one relative helper path would resolve from
+Slurm's spool directory. Accounting records 00:00:00 elapsed, zero GPU time and
+zero requests. Preserve that submission record. A corrected v2 bundle and
+replacement submission are required.
+The mode-0400 `cancelled.json` in that bundle has SHA-256
+`35bfde30958b8ecb49aafcb31c448e69c0c0e71fe57ce8387f8c535b6d6a9e5a` and
+records no assigned node.
+
 For a synthetic-only check, omit `SCOUT_NATIVE_SMOKE=1` and retain the default
 45-minute batch limit. Neither mode starts research experiments. Native input
 prompts must fit the explicit 8,192-token context; there is no silent truncation.
@@ -257,6 +273,33 @@ failed. The command above records that historical submission. A new attempt
 needs successful preparation dependencies and a fresh evidence directory. The job and smoke client use the stdlib
 features available in Python 3.9+, so the host Python suffices; the AgentDojo lab
 itself still requires its separate Python 3.12 environment.
+
+### Case B same-allocation wrapper
+
+[`scout-smoke-case-b.sbatch`](scout-smoke-case-b.sbatch) implements protocol
+`nesi-scout-smoke-case-b-v1`. It requests four A100s for at most two hours and
+permits at most 24 generation attempts: four synthetic smoke, four benign-native
+smoke and 16 Case B attempts. It requires at least 3,900 scheduler-reported
+seconds before Case B, limits the Case B process group to 3,600 seconds, binds
+server PID/phase/cleanup evidence and repeats the full request-free source verifier
+at terminal close. Its frozen launch manifest must contain exactly nine entries.
+See [the Case B protocol](../CASE-B-SCOUT-V1.md).
+
+The independent final Case A/B selection passed 191 tests plus 16 subtests;
+root's broader selection passed 214 tests plus 16 subtests. Ruff, Bash syntax,
+Python compilation and diff checks passed. The prepared Case B v2 design
+inventory contains 163 source files, including all
+113 runtime/package-metadata files from pinned AgentDojo commit
+`089ed468cf3ed0322acc66b0211f26d9d90dbf60`. Its upstream runtime-tree SHA-256 is
+`4c58924aeb917f1daf29a4fcb11d79e716af8baf7266b73c592b39aa93a4edd7`.
+Preserved v1 has 41 sources, zero model requests and plan SHA-256
+`4b8bc845437ce557fe6bbe589dd90d6ccc5b083d92955ef0fb1324f4df52c036`;
+it is now source-invalidated. `runs/scout-case-b-prepared-v2` contains exactly
+`plan.json` and `preparation.json`; their SHA-256 values are
+`69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`
+and `ba663d561892b614f7320be36a8fc9c4bf363c946c15837ac52e905fa1b45906`.
+It records zero model calls and is not bundled or submitted. No Case B job ID or
+live model result exists.
 
 ## Separate CPU container preparation
 
@@ -331,7 +374,7 @@ The submission bundle is
 `/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-recovery-submission-20260915-v2`.
 It contains copied helper scripts/template, `submission-plan.json`,
 `submitted.json`, hashes and initial Slurm status. `SCOUT_HPC_DIR` points to this
-bundle's `hpc` directory so subsequent repository edits cannot change the queued
+bundle's `hpc` directory so subsequent repository edits cannot change the frozen
 HPC helpers. The native client uses the existing lab Python explicitly.
 The copied CPU script SHA-256 is
 `0d03b0ad215a0439ed5b33afd284083a555560d436cabb974c800c57c8ea62c7`;
@@ -341,13 +384,12 @@ the unchanged GPU script is
 CPU job **9039259** completed and writes `evidence/container-prep-20260915-v2`, including
 `stages.jsonl` with preparation, build, inspection and publication timestamps.
 The scheduler log is `evidence/prep-logs/container-v2-9039259.log`.
-GPU job **9039289** has `afterok:9039259` and `--kill-on-invalid-dep=yes`;
-it writes the fresh `evidence/scout-smoke-20260915-v2` directory and scheduler
-log `evidence/prep-logs/scout-smoke-v2-9039289.log` if it starts.
+GPU job **9039289** used `afterok:9039259` and `--kill-on-invalid-dep=yes`;
+it wrote the fresh `evidence/scout-smoke-20260915-v2` directory and scheduler
+log `evidence/prep-logs/scout-smoke-v2-9039289.log`.
 The GPU limits remain four A100s, 48 requested CPUs, 320 GiB, one hour and at most
-eight generation requests. No research trials were submitted. Pre-submission
-queue estimates were later than the actual CPU backfill start and are not
-completion/start-time guarantees.
+eight generation requests. It completed on `mg15` in 9m 54s with exit `0:0`.
+No research trial was included.
 
 Its terminal receipt records **11,042,500,608 bytes** and SIF SHA-256
 `2e34131f9ef3257b67e628e735fa76dee506449152f3882bf50204c92e38b6c2`, with
@@ -359,17 +401,28 @@ These timestamps establish completion of this preparation attempt, not an
 isolated speed comparison between compressors or filesystems. The original
 failure and its remaining extracted files are preserved.
 
-`completed-input-preflight.json` in the submission bundle subsequently passed
-the complete input preflight, including the new SIF hash, template hash and
-binding to the verified model receipt. At 13:35 NZST, GPU job `9039289` was still
-pending only for priority; the scheduler planned `mg15` and displayed
-`Sep 15 21:30` in its local timezone as an estimated start, which can change.
-No generation requests have run.
+`completed-input-preflight.json` in the submission bundle passed the complete
+input preflight, including the new SIF hash, template hash and binding to the
+verified model receipt. The running container reported vLLM `0.29.0+cu129`, CUDA
+12.9 and four visible A100 SXM4 80 GB devices. All 50 shards loaded; the slowest
+worker took 375.30 seconds and reported 52.72 GiB loaded. Synthetic requests
+passed 4/4. The benign native task used three requests and passed all nine checks,
+including utility, recording/link integrity, tool round trips and HTML export.
+Total use was 7/8 allowed requests.
+
+Terminal hashes are:
+
+- `preflight.json`: `cf6ac029df212ce19a9ab171b0e841e26b13423fa9d86a29588d2ff3c79465ea`
+- `container-runtime.json`: `f239a98ceb184be2ff63eaafe68f5e40f46965b38b17b9cb49749d9237bd3f34`
+- `smoke.json`: `d7c2b167ab7c1ebd014b16c6fb0cb195323535db2620a5ae921376dd2a287a48`
+- `native-smoke.json`: `283361a3e17c8e98f0d71a28fc624be6910243f92e7b01cad5d7c7ac2c8d3192`
+- `job-exit-code.txt`: `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`
+- scheduler log: `31cf94502677f83157cfb228ec7ba7cb0dd33623d2aa0975b0ba844c2311fcca`
 
 On 2026-09-15, the HPC pytest suite passed **28 tests and 25 subtests**;
 Ruff, the new script's `bash -n`, and `git diff --check` passed. New finalizer
 checks verify explicit v2 receipt identity and refusal to publish an unknown
-protocol. These are offline checks; inspect the scheduled results separately.
+protocol. These checks are separate from the live smoke results above.
 
 ## Bounds, isolation, and receipts
 
