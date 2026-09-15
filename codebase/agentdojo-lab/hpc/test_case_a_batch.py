@@ -11,31 +11,30 @@ HPC = Path(__file__).resolve().parent
 
 
 def frozen_submission(tmp_path):
-    frozen = tmp_path / "frozen-hpc"
-    frozen.mkdir(exist_ok=True)
-    for name in sorted(case_a_batch.MANIFEST_PAYLOAD_NAMES):
-        path = frozen / name
-        if not path.exists():
-            path.write_text(f"# frozen {name}\n")
+    frozen = tmp_path / "bundle"
+    sources = {}
+    for key in case_a_batch.REQUIRED_RUNTIME_KEYS:
+        path = frozen / key
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"# frozen {key}\n")
+        sources[key] = path.resolve()
     executed = tmp_path / "slurm-spooled-case-a"
-    executed.write_bytes((frozen / "scout-smoke-case-a.sbatch").read_bytes())
+    executed.write_bytes(sources["hpc/scout-smoke-case-a.sbatch"].read_bytes())
     manifest = frozen / "submission-sha256.txt"
     manifest.write_text(
         "".join(
-            f"{case_a_batch.receipt(frozen / name)['sha256']}  {name}\n"
-            for name in sorted(case_a_batch.MANIFEST_PAYLOAD_NAMES)
+            f"{case_a_batch.receipt(path)['sha256']}  {key}\n"
+            for key, path in sources.items()
         )
     )
     site = tmp_path / "case-a-site.env"
     site.write_text("# private site fixture\n")
-    helpers = [frozen / name for name in sorted(case_a_batch.EXPECTED_HELPER_NAMES)]
     return {
-        "runner": frozen / "run_case_a_scout.py",
+        "runner": sources["scripts/run_case_a_scout.py"],
         "site": site,
         "manifest": manifest,
         "executed": executed,
-        "canonical": frozen / "scout-smoke-case-a.sbatch",
-        "helpers": helpers,
+        "sources": sources,
     }
 
 
@@ -46,20 +45,31 @@ def validate_submission_args(submission):
         "manifest_path": submission["manifest"],
         "manifest_sha256": case_a_batch.receipt(submission["manifest"])["sha256"],
         "executed_wrapper_path": submission["executed"],
-        "canonical_wrapper_path": submission["canonical"],
-        "helper_paths": submission["helpers"],
+        "runtime_sources": submission["sources"],
     }
 
 
 def write_wrapper_checksums(path, submission):
-    inputs = {item.resolve() for item in [submission["executed"], submission["site"], *submission["helpers"]]}
+    inputs = {
+        item.resolve()
+        for item in [
+            submission["executed"],
+            submission["site"],
+            submission["manifest"],
+            *submission["sources"].values(),
+        ]
+    }
     path.write_text("".join(f"{case_a_batch.receipt(item)['sha256']}  {item}\n" for item in sorted(inputs)))
 
 
 def prepared_plan(**changes):
     plan = {
         "protocol": "scout-case-a-recipient-v1",
+        "status": "prepared_design_only",
+        "real_llm_requests_started": 0,
+        "slots": [{"condition": "clean"}, {"condition": "attacked"}],
         "limits": {
+            "sdk_attempts_per_slot": 8,
             "primary_sdk_attempts_total": 16,
             "online_auditor_requests": 0,
             "sdk_max_retries": 0,
@@ -67,6 +77,7 @@ def prepared_plan(**changes):
         "config": {
             "provider": "openai_compatible",
             "base_url": "http://127.0.0.1:8000/v1",
+            "provenance_policy": "configs/workspace_policy_v1.yaml",
         },
         "source_hashes": {},
     }
@@ -127,7 +138,10 @@ def test_pre_smoke_validation_binds_runner_to_plan_source_hash(tmp_path):
     submission = frozen_submission(tmp_path)
     runner = submission["runner"]
     plan = prepared_plan(
-        source_hashes={"scripts/run_case_a_scout.py": case_a_batch.receipt(runner)["sha256"]}
+        source_hashes={
+            key: case_a_batch.receipt(path)["sha256"]
+            for key, path in submission["sources"].items()
+        }
     )
     output = tmp_path / "pre-smoke.json"
     result = case_a_batch.validate_before_smoke(
@@ -153,7 +167,7 @@ def test_pre_smoke_validation_binds_runner_to_plan_source_hash(tmp_path):
 
 @pytest.mark.parametrize(
     "mutation",
-    ["site_hash", "manifest_hash", "spooled_wrapper", "manifest_entry", "missing_helper"],
+    ["site_hash", "manifest_hash", "spooled_wrapper", "manifest_entry", "missing_native_config"],
 )
 def test_pre_smoke_rejects_unbound_submission_inputs(tmp_path, mutation):
     case = tmp_path / "case"
@@ -161,7 +175,10 @@ def test_pre_smoke_rejects_unbound_submission_inputs(tmp_path, mutation):
     submission = frozen_submission(tmp_path)
     runner = submission["runner"]
     plan = prepared_plan(
-        source_hashes={"scripts/run_case_a_scout.py": case_a_batch.receipt(runner)["sha256"]}
+        source_hashes={
+            key: case_a_batch.receipt(path)["sha256"]
+            for key, path in submission["sources"].items()
+        }
     )
     (case / "plan.json").write_text(json.dumps(plan))
     (case / "preparation.json").write_text("{}")
@@ -177,7 +194,8 @@ def test_pre_smoke_rejects_unbound_submission_inputs(tmp_path, mutation):
         submission["manifest"].write_text("\n".join(lines[:-1]) + "\n")
         arguments["manifest_sha256"] = case_a_batch.receipt(submission["manifest"])["sha256"]
     else:
-        arguments["helper_paths"] = arguments["helper_paths"][:-1]
+        arguments["runtime_sources"] = dict(arguments["runtime_sources"])
+        arguments["runtime_sources"].pop("configs/local_scout.toml")
     with pytest.raises(ValueError):
         case_a_batch.validate_before_smoke(
             tmp_path / "pre-smoke.json",
@@ -187,6 +205,155 @@ def test_pre_smoke_rejects_unbound_submission_inputs(tmp_path, mutation):
             verifier=lambda _path: plan,
             **arguments,
         )
+
+
+def test_runtime_source_parser_requires_exact_absolute_unique_mapping(tmp_path):
+    submission = frozen_submission(tmp_path)
+    rows = [[key, str(path)] for key, path in submission["sources"].items()]
+    assert case_a_batch.parse_runtime_sources(rows) == submission["sources"]
+    with pytest.raises(ValueError, match="Duplicate"):
+        case_a_batch.parse_runtime_sources(rows + [rows[0]])
+    with pytest.raises(ValueError, match="incomplete"):
+        case_a_batch.parse_runtime_sources(rows[:-1])
+
+
+def test_validation_rejects_symlinked_launch_inputs_before_verification(tmp_path):
+    submission = frozen_submission(tmp_path)
+    plan = prepared_plan(
+        source_hashes={
+            key: case_a_batch.receipt(path)["sha256"]
+            for key, path in submission["sources"].items()
+        }
+    )
+    config_alias = tmp_path / "local-scout-alias.toml"
+    config_alias.symlink_to(submission["sources"]["configs/local_scout.toml"])
+    aliased_sources = dict(submission["sources"])
+    aliased_sources["configs/local_scout.toml"] = config_alias
+    rows = [[key, str(path)] for key, path in aliased_sources.items()]
+    with pytest.raises(ValueError, match="Invalid Case A runtime source"):
+        case_a_batch.parse_runtime_sources(rows)
+    with pytest.raises(ValueError, match="physical and canonical"):
+        case_a_batch.validate_runtime_sources(plan, aliased_sources)
+
+    case = tmp_path / "case"
+    case.mkdir()
+    (case / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
+    (case / "preparation.json").write_text(
+        json.dumps(
+            {
+                "protocol": case_a_batch.CASE_PROTOCOL,
+                "status": "prepared_not_executed",
+                "real_llm_requests_started": 0,
+                "plan": case_a_batch.receipt(case / "plan.json"),
+            }
+        ),
+        encoding="utf-8",
+    )
+    runner_alias = tmp_path / "run-case-a-alias.py"
+    runner_alias.symlink_to(submission["runner"])
+    with pytest.raises(ValueError, match="runner must be.*physical canonical"):
+        case_a_batch.validate_plan_shape(case, runner_alias, run_verifier=False)
+
+    case_alias = tmp_path / "case-alias"
+    case_alias.symlink_to(case, target_is_directory=True)
+    verifier_calls = []
+    with pytest.raises(ValueError, match="directory must be physical and canonical"):
+        case_a_batch.validate_prepared_case(
+            case_alias,
+            tmp_path / "smoke",
+            verifier=lambda path: verifier_calls.append(path) or plan,
+        )
+    assert verifier_calls == []
+
+
+@pytest.mark.parametrize("filename", ["plan.json", "preparation.json"])
+def test_validate_cli_rejects_symlinked_preparation_input(tmp_path, filename):
+    submission = frozen_submission(tmp_path)
+    case = tmp_path / "case"
+    case.mkdir()
+    (case / "plan.json").write_text("{}\n", encoding="utf-8")
+    (case / "preparation.json").write_text("{}\n", encoding="utf-8")
+    detached = tmp_path / f"detached-{filename}"
+    (case / filename).replace(detached)
+    (case / filename).symlink_to(detached)
+    output = tmp_path / "pre-smoke.json"
+    arguments = [
+        "validate",
+        "--output",
+        str(output),
+        "--case-dir",
+        str(case),
+        "--smoke-dir",
+        str(tmp_path / "smoke"),
+        "--runner-path",
+        str(submission["runner"]),
+        "--site-path",
+        str(submission["site"]),
+        "--site-sha256",
+        case_a_batch.receipt(submission["site"])["sha256"],
+        "--manifest-path",
+        str(submission["manifest"]),
+        "--manifest-sha256",
+        case_a_batch.receipt(submission["manifest"])["sha256"],
+        "--executed-wrapper-path",
+        str(submission["executed"]),
+    ]
+    for key, path in submission["sources"].items():
+        arguments.extend(("--runtime-source", key, str(path)))
+    with pytest.raises(ValueError, match="non-symlink regular files"):
+        case_a_batch.main(arguments)
+    assert not output.exists()
+
+
+def test_request_free_verifier_uses_bundle_only_and_strips_credentials(
+    tmp_path, monkeypatch
+):
+    submission = frozen_submission(tmp_path)
+    case = tmp_path / "case"
+    case.mkdir()
+    plan = prepared_plan(
+        source_hashes={
+            key: case_a_batch.receipt(path)["sha256"]
+            for key, path in submission["sources"].items()
+        }
+    )
+    (case / "plan.json").write_text(json.dumps(plan))
+    (case / "preparation.json").write_text(
+        json.dumps(
+            {
+                "protocol": case_a_batch.CASE_PROTOCOL,
+                "status": "prepared_not_executed",
+                "real_llm_requests_started": 0,
+                "plan": case_a_batch.receipt(case / "plan.json"),
+            }
+        )
+    )
+    monkeypatch.setenv("LOCAL_LLM_API_KEY", "local-secret")
+    monkeypatch.setenv("GROQ_API_KEY", "remote-secret")
+    seen = {}
+
+    def run(command, **kwargs):
+        seen.update(command=command, kwargs=kwargs)
+        return type("Result", (), {"returncode": 0})()
+
+    monkeypatch.setattr(case_a_batch.subprocess, "run", run)
+    runner = submission["runner"]
+    assert case_a_batch.validate_plan_shape(case, runner, run_verifier=True) == plan
+    assert seen["command"] == [
+        case_a_batch.sys.executable,
+        str(runner),
+        "verify",
+        str(case),
+    ]
+    assert seen["kwargs"]["stdin"] is case_a_batch.subprocess.DEVNULL
+    assert seen["kwargs"]["env"]["HF_HUB_OFFLINE"] == "1"
+    assert seen["kwargs"]["env"]["PYTHONPATH"].split(case_a_batch.os.pathsep) == [
+        str(runner.parents[1] / "vendor/agentdojo/src"),
+        str(runner.parents[1] / "src"),
+        str(runner.parents[1] / "scripts"),
+    ]
+    assert "LOCAL_LLM_API_KEY" not in seen["kwargs"]["env"]
+    assert "GROQ_API_KEY" not in seen["kwargs"]["env"]
 
 
 @pytest.mark.parametrize(
@@ -203,14 +370,17 @@ def test_parse_slurm_duration_rejects_malformed_values(raw):
         case_a_batch.parse_slurm_duration(raw)
 
 
-def reserve(tmp_path, **changes):
+def reserve(tmp_path, *, symlink_case_input=None, **changes):
     submission = frozen_submission(tmp_path)
     case = tmp_path / "case"
     case.mkdir(exist_ok=True)
     smoke_dir = tmp_path / "smoke"
     runner = submission["runner"]
     plan = prepared_plan(
-        source_hashes={"scripts/run_case_a_scout.py": case_a_batch.receipt(runner)["sha256"]}
+        source_hashes={
+            key: case_a_batch.receipt(path)["sha256"]
+            for key, path in submission["sources"].items()
+        }
     )
     if not (case / "plan.json").exists():
         (case / "plan.json").write_text(json.dumps(plan))
@@ -229,6 +399,10 @@ def reserve(tmp_path, **changes):
     wrapper_checksums = smoke_dir / "case-a-wrapper-sha256.txt"
     if not wrapper_checksums.exists():
         write_wrapper_checksums(wrapper_checksums, submission)
+    if symlink_case_input is not None:
+        detached = tmp_path / f"detached-{symlink_case_input}"
+        (case / symlink_case_input).replace(detached)
+        (case / symlink_case_input).symlink_to(detached)
     values = {
         "job_id": "42",
         "reported_job_id": "42",
@@ -239,23 +413,30 @@ def reserve(tmp_path, **changes):
         "wrapper_sha256_path": wrapper_checksums,
         "pre_smoke_path": pre_smoke,
         "runner_path": runner,
-        "helper_paths": submission["helpers"],
+        "runtime_sources": submission["sources"],
     }
     values.update(changes)
     return case_a_batch.reserve_phase(smoke_dir / "case-a-phase.json", **values)
 
 
-def test_phase_gate_reserves_at_boundary_hashes_helpers_and_is_exclusive(tmp_path):
+def test_phase_gate_reserves_at_boundary_hashes_runtime_sources_and_is_exclusive(tmp_path):
     result = reserve(tmp_path)
     assert result["status"] == "reserved_before_case_calls"
     assert result["time_decision"]["remaining_seconds"] == 3900
     assert result["limits"]["total_generation_requests"] == 24
-    assert set(result["helpers"]) == case_a_batch.EXPECTED_HELPER_NAMES
+    assert set(result["runtime_sources"]) == set(case_a_batch.REQUIRED_RUNTIME_KEYS)
     assert result["wrapper_checksums"]["sha256"]
     before = (tmp_path / "smoke" / "case-a-phase.json").read_bytes()
     with pytest.raises(FileExistsError):
         reserve(tmp_path)
     assert (tmp_path / "smoke" / "case-a-phase.json").read_bytes() == before
+
+
+@pytest.mark.parametrize("filename", ["plan.json", "preparation.json"])
+def test_phase_gate_rejects_symlinked_preparation_input(tmp_path, filename):
+    with pytest.raises(ValueError, match="non-symlink regular files"):
+        reserve(tmp_path, symlink_case_input=filename)
+    assert not (tmp_path / "smoke" / "case-a-phase.json").exists()
 
 
 @pytest.mark.parametrize(
@@ -401,7 +582,7 @@ def completion_fixture(
     smoke_dir = tmp_path / "smoke"
     case_dir = tmp_path / "case"
     phase = smoke_dir / "case-a-phase.json"
-    runner = tmp_path / "frozen-hpc" / "run_case_a_scout.py"
+    runner = tmp_path / "bundle" / "scripts" / "run_case_a_scout.py"
     pre_smoke = Path(str(smoke_dir) + ".case-a-pre-smoke.json")
     plan_path = case_dir / "plan.json"
     plan = json.loads(plan_path.read_text())
@@ -649,7 +830,10 @@ def test_unstarted_terminal_rejects_mutated_pre_case_chain(tmp_path, mutation):
             lambda value: value["time_decision"].update(remaining_seconds=3900),
         )
     elif mutation == "phase_helpers":
-        change(paths["phase_path"], lambda value: value["helpers"].pop("smoke.py"))
+        change(
+            paths["phase_path"],
+            lambda value: value["runtime_sources"].pop("hpc/smoke.py"),
+        )
     elif mutation == "phase_limits":
         change(
             paths["phase_path"],
@@ -769,7 +953,10 @@ def test_complete_receipt_rejects_mutated_chain_edges(tmp_path, mutation):
         wrong.write_bytes(paths["smoke_path"].read_bytes())
         paths["smoke_path"] = wrong
     elif mutation == "phase_helpers":
-        change(paths["phase_path"], lambda value: value["helpers"].pop("smoke.py"))
+        change(
+            paths["phase_path"],
+            lambda value: value["runtime_sources"].pop("hpc/smoke.py"),
+        )
     elif mutation == "phase_limits":
         change(
             paths["phase_path"],
@@ -813,11 +1000,24 @@ def test_wrapper_is_separate_bounded_and_hardens_shared_smoke_cleanup():
         "SCOUT_HPC_MANIFEST_SHA256:?Set its reviewed SHA-256 in the site file",
         "sha256sum --check --strict --status submission-sha256.txt",
         'cmp --silent -- "$CASE_A_EXECUTED_WRAPPER" "$CASE_A_CANONICAL_WRAPPER"',
+        '[[ "$CASE_A_HPC_DIR" == "$CASE_A_BUNDLE_ROOT/hpc" ]]',
+        '[[ -d "$directory" && ! -L "$directory" ]]',
+        '[[ "$(realpath -e -- "$directory")" == "$directory" ]]',
+        'CASE_A_RUNNER="$CASE_A_BUNDLE_ROOT/scripts/run_case_a_scout.py"',
+        'CASE_A_CHAT_TEMPLATE="$CASE_A_HPC_DIR/tool_chat_template_llama4_pythonic_typed_v1.jinja"',
+        '[[ "$SCOUT_CASE_A_RUNNER" == "$CASE_A_RUNNER" && -f "$CASE_A_RUNNER"',
+        '[[ "$SCOUT_CHAT_TEMPLATE" == "$CASE_A_CHAT_TEMPLATE" && -f "$CASE_A_CHAT_TEMPLATE"',
+        '[[ -d "$SCOUT_CASE_A_DIR" && ! -L "$SCOUT_CASE_A_DIR"',
+        "export SCOUT_CASE_A_DIR",
+        'export SCOUT_CHAT_TEMPLATE="$CASE_A_CHAT_TEMPLATE"',
+        'export PYTHONPATH="$CASE_A_BUNDLE_ROOT/vendor/agentdojo/src:$CASE_A_BUNDLE_ROOT/src:$CASE_A_BUNDLE_ROOT/scripts"',
+        '--runtime-source configs/local_scout.toml "$CASE_A_BUNDLE_ROOT/configs/local_scout.toml"',
+        "--runtime-source scripts/run_case_a_scout.py",
         '[[ "$SCOUT_LAB_PYTHON" == /* ]]',
         "readonly CASE_A_HPC_DIR",
         "unset SCOUT_SITE_FILE",
         '--pre-smoke-path "$SCOUT_CASE_A_PRE_SMOKE"',
-        '--runner-path "$SCOUT_CASE_A_RUNNER"',
+        '--runner-path "$CASE_A_RUNNER"',
         '--wrapper-sha256-path "$CASE_A_WRAPPER_SHA256"',
         '--server-pid "$SCOUT_SERVER_PID"',
         '&& kill -TERM -- "-$CASE_A_PROCESS_PID"',
@@ -835,6 +1035,11 @@ def test_wrapper_is_separate_bounded_and_hardens_shared_smoke_cleanup():
         'source "$CASE_A_HPC_DIR/scout-smoke.sbatch"'
     )
     assert wrapper.count('source "$CASE_A_SITE_FILE"') == 1
+    assert (
+        wrapper.index("--runtime-source configs/local_scout.toml")
+        < wrapper.index('"$CASE_A_HPC_DIR/case_a_batch.py" validate')
+        < wrapper.index('source "$CASE_A_HPC_DIR/scout-smoke.sbatch"')
+    )
     assert 'kill -TERM -- "-$CASE_A_PROCESS_PID" 2>/dev/null || true' not in wrapper
     assert 'kill -KILL -- "-$CASE_A_PROCESS_PID" 2>/dev/null || true' not in wrapper
     assert "[[ ${SCOUT_SERVER_PID:-} =~ ^[1-9][0-9]*$ ]] || exit 2" not in wrapper
@@ -844,7 +1049,12 @@ def test_wrapper_is_separate_bounded_and_hardens_shared_smoke_cleanup():
     assert wrapper.index(smoke_source) < wrapper.index(pid_guard) < wrapper.index(post_smoke_guard)
     assert wrapper.index("SCOUT_SERVER_PID=''") < wrapper.index("exit 2", wrapper.index(pid_guard))
     assert wrapper.index('source "$CASE_A_HPC_DIR/scout-smoke.sbatch"') < wrapper.index(
-        '"$SCOUT_CASE_A_RUNNER" run'
+        '"$CASE_A_RUNNER" run'
+    )
+    assert '"$SCOUT_CASE_A_RUNNER" run' not in wrapper
+    assert (
+        wrapper.index('export SCOUT_CASE_A_DIR')
+        < wrapper.index('source "$CASE_A_HPC_DIR/scout-smoke.sbatch"')
     )
     assert (
         wrapper.index('source "$CASE_A_HPC_DIR/scout-smoke.sbatch"')

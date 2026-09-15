@@ -7,6 +7,8 @@ import hashlib
 import json
 import os
 import re
+import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -26,19 +28,17 @@ UNSTARTED_STATUSES = {
     "unstarted_insufficient_remaining_time",
     "unstarted_invalid_current_job_time_evidence",
 }
-MANIFEST_PAYLOAD_NAMES = frozenset(
-    {
-        "case_a_batch.py",
-        "native_smoke.py",
-        "preflight.py",
-        "run_case_a_scout.py",
-        "scout-smoke-case-a.sbatch",
-        "scout-smoke.sbatch",
-        "smoke.py",
-        "tool_chat_template_llama4_pythonic_typed_v1.jinja",
-    }
+REQUIRED_RUNTIME_KEYS = (
+    "configs/local_scout.toml",
+    "hpc/scout-smoke-case-a.sbatch",
+    "hpc/scout-smoke.sbatch",
+    "hpc/case_a_batch.py",
+    "hpc/preflight.py",
+    "hpc/smoke.py",
+    "hpc/native_smoke.py",
+    "hpc/tool_chat_template_llama4_pythonic_typed_v1.jinja",
+    "scripts/run_case_a_scout.py",
 )
-EXPECTED_HELPER_NAMES = MANIFEST_PAYLOAD_NAMES | {"submission-sha256.txt"}
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -97,40 +97,64 @@ def validate_preflight_limit_records(preflight: dict) -> None:
 
 
 def require_absolute_regular(path: Path, label: str) -> Path:
-    if not path.is_absolute() or path.is_symlink() or not path.is_file():
-        raise ValueError(f"{label} must be an absolute, existing, non-symlink file")
-    return path.resolve()
+    if (
+        not path.is_absolute()
+        or path.is_symlink()
+        or not path.is_file()
+        or path.resolve() != path
+    ):
+        raise ValueError(f"{label} must be an absolute physical canonical file")
+    return path
 
 
-def helper_receipts(helper_paths: list[Path]) -> dict:
-    helpers: dict[str, dict] = {}
-    for path in helper_paths:
-        resolved = require_absolute_regular(path, "Submission helper")
-        if resolved.name in helpers:
-            raise ValueError("Submission helper names must be unique")
-        helpers[resolved.name] = receipt(resolved)
-    if set(helpers) != EXPECTED_HELPER_NAMES:
-        raise ValueError("Submission helper set differs from the fixed Case A set")
-    parents = {str(Path(item["path"]).parent) for item in helpers.values()}
-    if len(parents) != 1:
-        raise ValueError("All frozen Case A helpers must share one directory")
-    return helpers
+def parse_runtime_sources(rows: list[list[str]]) -> dict[str, Path]:
+    sources: dict[str, Path] = {}
+    for key, raw_path in rows:
+        if key in sources:
+            raise ValueError("Duplicate Case A runtime source key")
+        path = Path(raw_path)
+        if (
+            key not in REQUIRED_RUNTIME_KEYS
+            or not path.is_absolute()
+            or path.is_symlink()
+            or not path.is_file()
+            or path.resolve() != path
+        ):
+            raise ValueError("Invalid Case A runtime source mapping")
+        sources[key] = path
+    if tuple(sorted(sources)) != tuple(sorted(REQUIRED_RUNTIME_KEYS)):
+        raise ValueError("Case A runtime source mapping is incomplete")
+    return sources
 
 
-def manifest_entries(path: Path, helpers: dict) -> dict[str, str]:
+def validate_runtime_sources(plan: dict, sources: dict[str, Path]) -> dict[str, dict]:
+    if set(sources) != set(REQUIRED_RUNTIME_KEYS):
+        raise ValueError("Case A runtime source mapping is incomplete")
+    if any(
+        not path.is_absolute()
+        or path.is_symlink()
+        or not path.is_file()
+        or path.resolve() != path
+        for path in sources.values()
+    ):
+        raise ValueError("Case A runtime source mapping is not physical and canonical")
+    hashes = plan.get("source_hashes", {})
+    values = {key: receipt(path) for key, path in sources.items()}
+    if any(hashes.get(key) != value["sha256"] for key, value in values.items()):
+        raise ValueError("Case A launch source differs from its prepared source hash")
+    return values
+
+
+def manifest_entries(path: Path, runtime: dict[str, dict]) -> dict[str, str]:
     entries: dict[str, str] = {}
     for line in path.read_text(encoding="utf-8").splitlines():
-        match = re.fullmatch(r"([0-9a-f]{64})  ([^/\x00]+)", line)
+        match = re.fullmatch(r"([0-9a-f]{64})  ([^\x00]+)", line)
         if match is None or match.group(2) in entries:
             raise ValueError("Malformed or duplicate Case A checksum manifest entry")
         entries[match.group(2)] = match.group(1)
-    expected = {
-        name: item["sha256"]
-        for name, item in helpers.items()
-        if name != "submission-sha256.txt"
-    }
-    if set(entries) != MANIFEST_PAYLOAD_NAMES or entries != expected:
-        raise ValueError("Case A checksum manifest does not exactly bind every payload")
+    expected = {key: item["sha256"] for key, item in runtime.items()}
+    if entries != expected:
+        raise ValueError("Case A checksum manifest does not exactly bind every launch payload")
     return entries
 
 
@@ -141,59 +165,46 @@ def submission_binding(
     manifest_path: Path,
     manifest_sha256: str,
     executed_wrapper_path: Path,
-    canonical_wrapper_path: Path,
-    helper_paths: list[Path],
-) -> tuple[dict, dict]:
+    runtime: dict[str, dict],
+) -> dict:
     if not SHA256_RE.fullmatch(site_sha256) or not SHA256_RE.fullmatch(manifest_sha256):
         raise ValueError("Submission hashes must be lowercase SHA-256 values")
     site = require_absolute_regular(site_path, "Case A site file")
     manifest = require_absolute_regular(manifest_path, "Case A manifest")
     executed = require_absolute_regular(executed_wrapper_path, "Executed Case A wrapper")
-    canonical = require_absolute_regular(canonical_wrapper_path, "Canonical Case A wrapper")
-    helpers = helper_receipts(helper_paths)
-    helper_dir = Path(next(iter(helpers.values()))["path"]).parent
-    if (
-        manifest != helper_dir / "submission-sha256.txt"
-        or canonical != helper_dir / "scout-smoke-case-a.sbatch"
+    canonical = require_absolute_regular(
+        Path(runtime["hpc/scout-smoke-case-a.sbatch"]["path"]),
+        "Canonical Case A wrapper",
+    )
+    bundle_root = canonical.parent.parent
+    if manifest != bundle_root / "submission-sha256.txt" or any(
+        Path(item["path"]) != bundle_root / key for key, item in runtime.items()
     ):
-        raise ValueError("Submission binding paths differ from the frozen helper directory")
+        raise ValueError("Case A launch payloads must use their frozen bundle paths")
     site_receipt = receipt(site)
     manifest_receipt = receipt(manifest)
     executed_receipt = receipt(executed)
     canonical_receipt = receipt(canonical)
-    if site_receipt["sha256"] != site_sha256:
-        raise ValueError("Case A site file differs from its submission hash")
-    if manifest_receipt["sha256"] != manifest_sha256:
-        raise ValueError("Case A manifest differs from its submission hash")
-    if executed_receipt["sha256"] != canonical_receipt["sha256"]:
-        raise ValueError("Slurm-spooled Case A wrapper differs from the canonical wrapper")
-    if helpers["submission-sha256.txt"] != manifest_receipt:
-        raise ValueError("Helper receipts do not bind the submitted manifest")
-    if helpers["scout-smoke-case-a.sbatch"] != canonical_receipt:
-        raise ValueError("Helper receipts do not bind the canonical wrapper")
-    manifest_entries(manifest, helpers)
-    return (
-        {
-            "site": site_receipt,
-            "site_sha256_at_submission": site_sha256,
-            "manifest": manifest_receipt,
-            "manifest_sha256_at_submission": manifest_sha256,
-            "executed_wrapper": executed_receipt,
-            "canonical_wrapper": canonical_receipt,
-            "executed_wrapper_matches_canonical": True,
-        },
-        helpers,
-    )
+    if (
+        site_receipt["sha256"] != site_sha256
+        or manifest_receipt["sha256"] != manifest_sha256
+        or executed_receipt["sha256"] != canonical_receipt["sha256"]
+        or canonical_receipt != runtime["hpc/scout-smoke-case-a.sbatch"]
+    ):
+        raise ValueError("Case A submitted site, manifest, or spool wrapper differs")
+    manifest_entries(manifest, runtime)
+    return {
+        "site": site_receipt,
+        "site_sha256_at_submission": site_sha256,
+        "manifest": manifest_receipt,
+        "manifest_sha256_at_submission": manifest_sha256,
+        "executed_wrapper": executed_receipt,
+        "canonical_wrapper": canonical_receipt,
+        "executed_wrapper_matches_canonical": True,
+    }
 
 
-def validate_recorded_submission(binding: dict, helpers: dict) -> None:
-    if set(helpers) != EXPECTED_HELPER_NAMES:
-        raise ValueError("Recorded helper set differs from the fixed Case A set")
-    for item in helpers.values():
-        if receipt(Path(item["path"])) != item:
-            raise ValueError("A frozen Case A helper changed")
-    manifest = helpers["submission-sha256.txt"]
-    canonical = helpers["scout-smoke-case-a.sbatch"]
+def validate_recorded_submission(binding: dict, runtime: dict[str, dict]) -> None:
     required = {
         "site",
         "site_sha256_at_submission",
@@ -211,16 +222,16 @@ def validate_recorded_submission(binding: dict, helpers: dict) -> None:
     if (
         binding["site"]["sha256"] != binding["site_sha256_at_submission"]
         or binding["manifest"]["sha256"] != binding["manifest_sha256_at_submission"]
-        or binding["manifest"] != manifest
-        or binding["canonical_wrapper"] != canonical
-        or binding["executed_wrapper"]["sha256"] != canonical["sha256"]
+        or binding["canonical_wrapper"] != runtime["hpc/scout-smoke-case-a.sbatch"]
+        or binding["executed_wrapper"]["sha256"]
+        != runtime["hpc/scout-smoke-case-a.sbatch"]["sha256"]
         or binding["executed_wrapper_matches_canonical"] is not True
     ):
         raise ValueError("Recorded Case A submission hashes are inconsistent")
-    manifest_entries(Path(manifest["path"]), helpers)
+    manifest_entries(Path(binding["manifest"]["path"]), runtime)
 
 
-def validate_wrapper_checksums(path: Path, binding: dict, helpers: dict) -> None:
+def validate_wrapper_checksums(path: Path, binding: dict, runtime: dict[str, dict]) -> None:
     recorded: dict[str, str] = {}
     for line in path.read_text(encoding="utf-8").splitlines():
         match = re.fullmatch(r"([0-9a-f]{64})  (/.+)", line)
@@ -235,7 +246,8 @@ def validate_wrapper_checksums(path: Path, binding: dict, helpers: dict) -> None
         for item in (
             binding["executed_wrapper"],
             binding["site"],
-            *helpers.values(),
+            binding["manifest"],
+            *runtime.values(),
         )
     }
     if recorded != expected:
@@ -257,11 +269,112 @@ def write_exclusive(path: Path, value: dict) -> None:
         os.fsync(stream.fileno())
 
 
-def validate_prepared_case(case_dir: Path, smoke_dir: Path, *, verifier=None) -> dict:
+def require_preparation_inputs(case_dir: Path) -> tuple[Path, Path]:
+    paths = (case_dir / "plan.json", case_dir / "preparation.json")
+    if any(
+        not path.is_absolute()
+        or path.is_symlink()
+        or not path.is_file()
+        or path.resolve() != path
+        for path in paths
+    ):
+        raise ValueError(
+            "Case A plan.json and preparation.json must be absolute physical canonical "
+            "non-symlink regular files"
+        )
+    return paths
+
+
+def validate_plan_shape(case_dir: Path, runner_path: Path, *, run_verifier: bool) -> dict:
+    plan_path, preparation_path = require_preparation_inputs(case_dir)
+    preparation = read(preparation_path)
+    if (
+        preparation.get("protocol") != CASE_PROTOCOL
+        or preparation.get("status") != "prepared_not_executed"
+        or preparation.get("real_llm_requests_started") != 0
+        or preparation.get("plan") != receipt(plan_path)
+        or Path(preparation.get("plan", {}).get("path", "")).resolve() != plan_path.resolve()
+    ):
+        raise ValueError("Invalid Case A preparation receipt")
+    plan = read(plan_path)
+    limits = plan.get("limits", {})
+    config = plan.get("config", {})
+    if (
+        plan.get("protocol") != CASE_PROTOCOL
+        or plan.get("status") != "prepared_design_only"
+        or plan.get("real_llm_requests_started") != 0
+        or [slot.get("condition") for slot in plan.get("slots", [])] != ["clean", "attacked"]
+        or limits.get("sdk_attempts_per_slot") != 8
+        or limits.get("primary_sdk_attempts_total") != CASE_REQUEST_LIMIT
+        or limits.get("online_auditor_requests") != 0
+        or limits.get("sdk_max_retries") != 0
+        or config.get("provider") != "openai_compatible"
+        or config.get("base_url") != "http://127.0.0.1:8000/v1"
+        or config.get("online_causal_audit", False) is not False
+        or config.get("provenance_policy") != "configs/workspace_policy_v1.yaml"
+    ):
+        raise ValueError("Prepared plan violates the fixed local Case A schedule or request bounds")
+    if (
+        not runner_path.is_absolute()
+        or runner_path.is_symlink()
+        or not runner_path.is_file()
+        or runner_path.resolve() != runner_path
+    ):
+        raise ValueError("Case A runner must be an absolute physical canonical file")
+    if receipt(runner_path)["sha256"] != plan.get("source_hashes", {}).get(
+        "scripts/run_case_a_scout.py"
+    ):
+        raise ValueError("Case A runner differs from its prepared source hash")
+    if run_verifier:
+        verification_env = {
+            key: value
+            for key, value in os.environ.items()
+            if key
+            not in {
+                "LOCAL_LLM_API_KEY",
+                "GROQ_API_KEY",
+                "HF_TOKEN",
+                "HUGGING_FACE_HUB_TOKEN",
+            }
+        }
+        verification_env.update(HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1")
+        bundle_root = runner_path.resolve().parents[1]
+        verification_env["PYTHONPATH"] = os.pathsep.join(
+            (
+                str(bundle_root / "vendor/agentdojo/src"),
+                str(bundle_root / "src"),
+                str(bundle_root / "scripts"),
+            )
+        )
+        checked = subprocess.run(
+            [sys.executable, str(runner_path), "verify", str(case_dir)],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=120,
+            check=False,
+            env=verification_env,
+        )
+        if checked.returncode != 0:
+            raise ValueError("Case A request-free bundled plan verification failed")
+    return plan
+
+
+def validate_prepared_case(
+    case_dir: Path,
+    smoke_dir: Path,
+    runner_path: Path | None = None,
+    *,
+    verifier=None,
+) -> dict:
     """Require a pristine prepared directory and revalidate all plan-bound sources."""
     if not case_dir.is_absolute() or not smoke_dir.is_absolute():
         raise ValueError("Case and smoke evidence paths must be absolute")
+    if case_dir.is_symlink() or not case_dir.is_dir() or case_dir.resolve() != case_dir:
+        raise ValueError("Prepared Case A directory must be physical and canonical")
     case_dir = case_dir.resolve()
+    require_preparation_inputs(case_dir)
     smoke_dir = smoke_dir.resolve()
     if not case_dir.is_dir():
         raise ValueError("The prepared Case A directory must exist")
@@ -273,10 +386,11 @@ def validate_prepared_case(case_dir: Path, smoke_dir: Path, *, verifier=None) ->
     if smoke_dir.exists():
         raise FileExistsError("Smoke evidence directory must be fresh")
     if verifier is None:
-        from agentdojo_lab.case_a_scout import verify_plan
-
-        verifier = verify_plan
-    plan = verifier(case_dir)
+        if runner_path is None:
+            raise ValueError("Case A verification requires the frozen runner")
+        plan = validate_plan_shape(case_dir, runner_path, run_verifier=True)
+    else:
+        plan = verifier(case_dir)
     if plan.get("protocol") != CASE_PROTOCOL:
         raise ValueError("Prepared plan is not Case A v1")
     limits = plan.get("limits", {})
@@ -303,30 +417,24 @@ def validate_before_smoke(
     manifest_path: Path,
     manifest_sha256: str,
     executed_wrapper_path: Path,
-    canonical_wrapper_path: Path,
-    helper_paths: list[Path],
+    runtime_sources: dict[str, Path],
     *,
     verifier=None,
 ) -> dict:
     """Bind the prepared plan and exact active runner before smoke starts."""
     if not output.is_absolute() or not runner_path.is_absolute():
         raise ValueError("Pre-smoke receipt and Case A runner paths must be absolute")
-    plan = validate_prepared_case(case_dir, smoke_dir, verifier=verifier)
-    if not runner_path.is_file():
-        raise ValueError("Case A runner must be an existing file")
-    expected = plan.get("source_hashes", {}).get("scripts/run_case_a_scout.py")
-    if not isinstance(expected, str) or receipt(runner_path)["sha256"] != expected:
-        raise ValueError("Case A runner differs from its prepared source hash")
-    binding, helpers = submission_binding(
+    plan = validate_prepared_case(case_dir, smoke_dir, runner_path, verifier=verifier)
+    runtime = validate_runtime_sources(plan, runtime_sources)
+    binding = submission_binding(
         site_path=site_path,
         site_sha256=site_sha256,
         manifest_path=manifest_path,
         manifest_sha256=manifest_sha256,
         executed_wrapper_path=executed_wrapper_path,
-        canonical_wrapper_path=canonical_wrapper_path,
-        helper_paths=helper_paths,
+        runtime=runtime,
     )
-    if helpers["run_case_a_scout.py"] != receipt(runner_path):
+    if runtime["scripts/run_case_a_scout.py"] != receipt(runner_path):
         raise ValueError("Case A runner is not the frozen submitted runner")
     value = {
         "protocol": PROTOCOL,
@@ -336,7 +444,11 @@ def validate_before_smoke(
         "plan": receipt(case_dir / "plan.json"),
         "runner": receipt(runner_path),
         "submission_binding": binding,
-        "helpers": helpers,
+        "runtime_sources": runtime,
+        "verification": {
+            "request_free_runner_verify": True,
+            "real_llm_requests_started": 0,
+        },
     }
     write_exclusive(output, value)
     return value
@@ -429,7 +541,7 @@ def reserve_phase(
     wrapper_sha256_path: Path,
     pre_smoke_path: Path | None = None,
     runner_path: Path | None = None,
-    helper_paths: list[Path] = (),
+    runtime_sources: dict[str, Path] | None = None,
 ) -> dict:
     if not job_id:
         raise ValueError("A Slurm job ID is required")
@@ -441,9 +553,12 @@ def reserve_phase(
         remaining=remaining,
         time_limit=time_limit,
     )
+    if case_dir.is_symlink() or not case_dir.is_dir() or case_dir.resolve() != case_dir:
+        raise ValueError("Prepared Case A directory must remain physical and canonical")
     case_dir = case_dir.resolve()
+    plan_path, _ = require_preparation_inputs(case_dir)
     pre_smoke = read(pre_smoke_path) if pre_smoke_path is not None else None
-    current_plan = receipt(case_dir / "plan.json")
+    current_plan = receipt(plan_path)
     current_runner = receipt(runner_path) if runner_path is not None else None
     if pre_smoke is not None and (
         pre_smoke.get("protocol") != PROTOCOL
@@ -453,17 +568,19 @@ def reserve_phase(
         or pre_smoke.get("runner") != current_runner
     ):
         raise ValueError("Pre-smoke Case A binding changed before phase reservation")
-    current_helpers = helper_receipts(helper_paths)
-    if pre_smoke is None or pre_smoke.get("helpers") != current_helpers:
-        raise ValueError("Frozen Case A helpers changed before phase reservation")
+    if runtime_sources is None:
+        raise ValueError("Case A runtime source mapping is required")
+    current_runtime = validate_runtime_sources(read(plan_path), runtime_sources)
+    if pre_smoke is None or pre_smoke.get("runtime_sources") != current_runtime:
+        raise ValueError("Frozen Case A runtime sources changed before phase reservation")
     binding = pre_smoke.get("submission_binding")
     if not isinstance(binding, dict):
         raise ValueError("Missing Case A submission binding")
-    validate_recorded_submission(binding, current_helpers)
+    validate_recorded_submission(binding, current_runtime)
     wrapper_sha256_path = require_absolute_regular(
         wrapper_sha256_path, "Case A wrapper checksum record"
     )
-    validate_wrapper_checksums(wrapper_sha256_path, binding, current_helpers)
+    validate_wrapper_checksums(wrapper_sha256_path, binding, current_runtime)
     value = {
         "protocol": PROTOCOL,
         "status": decision["status"],
@@ -475,7 +592,7 @@ def reserve_phase(
         "runner": current_runner,
         "pre_smoke": receipt(pre_smoke_path) if pre_smoke_path is not None else None,
         "submission_binding": binding,
-        "helpers": current_helpers,
+        "runtime_sources": current_runtime,
         "wrapper_checksums": receipt(wrapper_sha256_path),
         "limits": fixed_limits(),
     }
@@ -599,23 +716,23 @@ def validate_phase_sources(
     smoke_root: Path,
     wrapper_sha256_path: Path,
 ) -> None:
-    """Recompute every helper and submission binding used by both terminal paths."""
+    """Recompute every launch source and submission binding used by both terminal paths."""
     require_path(wrapper_sha256_path, smoke_root, "case-a-wrapper-sha256.txt")
-    helpers = phase.get("helpers")
+    runtime = phase.get("runtime_sources")
     binding = phase.get("submission_binding")
     if (
         type(phase.get("server_pid")) is not int
         or phase["server_pid"] <= 1
         or phase.get("limits") != fixed_limits()
-        or not isinstance(helpers, dict)
+        or not isinstance(runtime, dict)
         or not isinstance(binding, dict)
-        or helpers != pre_smoke.get("helpers")
+        or runtime != pre_smoke.get("runtime_sources")
         or binding != pre_smoke.get("submission_binding")
         or phase.get("wrapper_checksums") != receipt(wrapper_sha256_path)
     ):
         raise ValueError("Case A phase source, PID, checksum, or limit binding differs")
-    validate_recorded_submission(binding, helpers)
-    validate_wrapper_checksums(wrapper_sha256_path, binding, helpers)
+    validate_recorded_submission(binding, runtime)
+    validate_wrapper_checksums(wrapper_sha256_path, binding, runtime)
 
 
 def validate_unstarted_chain(
@@ -1055,6 +1172,16 @@ def finalize(
     return value
 
 
+def add_runtime_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--runtime-source",
+        nargs=2,
+        action="append",
+        default=[],
+        metavar=("PLAN_KEY", "ABSOLUTE_PATH"),
+    )
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -1068,8 +1195,7 @@ def main(argv=None) -> int:
     validate.add_argument("--manifest-path", type=Path, required=True)
     validate.add_argument("--manifest-sha256", required=True)
     validate.add_argument("--executed-wrapper-path", type=Path, required=True)
-    validate.add_argument("--canonical-wrapper-path", type=Path, required=True)
-    validate.add_argument("--helper-path", type=Path, action="append", default=[])
+    add_runtime_arguments(validate)
     reserve = commands.add_parser("reserve")
     reserve.add_argument("--output", type=Path, required=True)
     reserve.add_argument("--job-id", required=True)
@@ -1081,7 +1207,7 @@ def main(argv=None) -> int:
     reserve.add_argument("--wrapper-sha256-path", type=Path, required=True)
     reserve.add_argument("--pre-smoke-path", type=Path, required=True)
     reserve.add_argument("--runner-path", type=Path, required=True)
-    reserve.add_argument("--helper-path", type=Path, action="append", default=[])
+    add_runtime_arguments(reserve)
     server = commands.add_parser("server-check")
     server.add_argument("--output", type=Path, required=True)
     server.add_argument("--base-url", required=True)
@@ -1128,8 +1254,7 @@ def main(argv=None) -> int:
             args.manifest_path,
             args.manifest_sha256,
             args.executed_wrapper_path,
-            args.canonical_wrapper_path,
-            args.helper_path,
+            parse_runtime_sources(args.runtime_source),
         )
         return 0
     if args.command == "reserve":
@@ -1144,7 +1269,7 @@ def main(argv=None) -> int:
             wrapper_sha256_path=args.wrapper_sha256_path,
             pre_smoke_path=args.pre_smoke_path,
             runner_path=args.runner_path,
-            helper_paths=args.helper_path,
+            runtime_sources=parse_runtime_sources(args.runtime_source),
         )
         return 0 if result["status"] == "reserved_before_case_calls" else 3
     if args.command == "server-check":

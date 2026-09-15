@@ -30,7 +30,10 @@ from agentdojo_lab.groq_adapter import GroqLLM, _message_to_groq
 from agentdojo_lab.paired_report import export_pair
 from agentdojo_lab.providers import EndpointSettings
 
-ROOT = runner.ROOT
+ROOT = Path(__file__).resolve().parents[2]
+if runner.ROOT != ROOT:
+    raise RuntimeError("Case A runner module escaped its source bundle")
+BUNDLED_AGENTDOJO_SOURCE = ROOT / "vendor/agentdojo/src"
 PROTOCOL = "scout-case-a-recipient-v1"
 TASK = "user_task_33"
 VECTOR = "drive_keywords_stuffing_injection"
@@ -80,6 +83,102 @@ def read(path: Path):
 
 def receipt(path: Path) -> dict:
     return {"path": str(path.resolve()), "sha256": digest(path)}
+
+
+def upstream_runtime_files() -> list[Path]:
+    """Return every pinned AgentDojo package byte plus its package metadata."""
+    metadata = ROOT / "vendor/agentdojo/pyproject.toml"
+    package = BUNDLED_AGENTDOJO_SOURCE / "agentdojo"
+    sources = sorted(
+        path
+        for path in package.rglob("*")
+        if path.is_file()
+        and not path.is_symlink()
+        and "__pycache__" not in path.parts
+        and path.suffix in {".py", ".txt", ".yaml"}
+    )
+    if (
+        not metadata.is_file()
+        or metadata.is_symlink()
+        or not sources
+        or package / "__init__.py" not in sources
+    ):
+        raise ValueError("Frozen AgentDojo runtime source inventory is incomplete")
+    return [metadata, *sources]
+
+
+def upstream_provenance() -> dict:
+    """Bind a clean preparation checkout or a complete immutable runtime copy."""
+    expected = read(ROOT / "upstream.json")
+    vendor = ROOT / "vendor/agentdojo"
+    if (vendor / ".git").exists():
+        status = runner.require_upstream()
+    else:
+        status = {
+            **expected,
+            "actual_commit": expected["commit"],
+            "modified": False,
+            "pin_matches": True,
+        }
+    hashes = {str(path.relative_to(ROOT)): digest(path) for path in upstream_runtime_files()}
+    return {
+        **status,
+        "runtime_source_files": len(hashes),
+        "runtime_source_tree_sha256": canonical_hash(hashes),
+        "preparation_requirement": "clean_git_checkout_at_exact_upstream_commit",
+    }
+
+
+def require_physical_bundle_file(path: Path) -> None:
+    if (
+        not path.is_file()
+        or path.is_symlink()
+        or path.resolve() != path
+        or not path.is_relative_to(ROOT)
+    ):
+        raise ValueError(f"Case A runtime input escaped its physical source bundle: {path}")
+
+
+def runtime_files() -> list[Path]:
+    """All source/configuration/runtime bytes used to verify and execute Case A."""
+    fixed = [
+        ROOT / "uv.lock",
+        ROOT / "upstream.json",
+        ROOT / "configs/case_a_scout_v1.toml",
+        ROOT / "configs/local_scout.toml",
+        ROOT / "configs/workspace_policy_v1.yaml",
+        ROOT / "CASE-A-SCOUT-V1.md",
+        ROOT / "scripts/run_case_a_scout.py",
+        ROOT / "hpc/scout-smoke-case-a.sbatch",
+        ROOT / "hpc/scout-smoke.sbatch",
+        ROOT / "hpc/case_a_batch.py",
+        ROOT / "hpc/preflight.py",
+        ROOT / "hpc/smoke.py",
+        ROOT / "hpc/native_smoke.py",
+        ROOT / "hpc/tool_chat_template_llama4_pythonic_typed_v1.jinja",
+        ROOT / "src/agentdojo_lab/model_pins/minilm-v1.json",
+    ]
+    fixed.extend(sorted((ROOT / "src/agentdojo_lab").rglob("*.py")))
+    fixed.extend(
+        sorted(path for path in (ROOT / "src/agentdojo_lab/templates").rglob("*") if path.is_file())
+    )
+    fixed.extend(upstream_runtime_files())
+    if len(fixed) != len(set(fixed)):
+        raise ValueError("Case A runtime source inventory is duplicated")
+    for path in fixed:
+        require_physical_bundle_file(path)
+    return fixed
+
+
+def source_hashes() -> dict[str, str]:
+    return {str(path.relative_to(ROOT)): digest(path) for path in runtime_files()}
+
+
+def verify_source_hashes(plan: dict) -> dict[str, str]:
+    current = source_hashes()
+    if current != plan.get("source_hashes"):
+        raise ValueError("Prepared Case A runtime source/configuration/scripts changed")
+    return current
 
 
 def checked_receipt(value: dict) -> dict:
@@ -250,11 +349,63 @@ def live_serving_identity(server_pid: int, job_id: str, *, scheduler_probe=None)
     }
 
 
-def config_for(base_url: str) -> runner.RunConfig:
+def config_for(base_url: str, semantic_model: str | None = None) -> runner.RunConfig:
     data = runner.load_config(ROOT / "configs/case_a_scout_v1.toml").model_dump()
     data["base_url"] = local_url(base_url)
-    for name in ("provenance_policy", "semantic_model"):
-        data[name] = str((ROOT / data[name]).resolve())
+    if data.get("provenance_policy") != "configs/workspace_policy_v1.yaml":
+        raise ValueError("Case A requires its bundle-relative provenance policy")
+    if semantic_model is not None:
+        semantic_path = Path(semantic_model)
+        if not semantic_path.is_absolute() or semantic_path.name != "all-MiniLM-L6-v2-1110a243":
+            raise ValueError("Case A requires the prepared absolute MiniLM snapshot path")
+        data["semantic_model"] = str(semantic_path.resolve())
+    elif data.get("semantic_model"):
+        data["semantic_model"] = str((ROOT / data["semantic_model"]).resolve())
+    config = runner.RunConfig.model_validate(data)
+    endpoint = config.primary_endpoint()
+    if (
+        endpoint.provider != "openai_compatible"
+        or endpoint.model != MODEL
+        or endpoint.key_variable != "LOCAL_LLM_API_KEY"
+        or endpoint.url != data["base_url"]
+        or config.reasoning_effort is not None
+        or config.pacing_tokens_per_minute is not None
+        or config.benchmark_version != "v1.2.2"
+        or config.suite != "workspace"
+        or config.user_tasks != [TASK]
+        or config.temperature != 0.0
+        or config.max_completion_tokens != 2048
+        or config.max_tool_rounds != REQUEST_LIMIT
+        or config.request_timeout_seconds != 180.0
+        or config.record_events is not True
+        or config.online_provenance is not True
+        or config.online_causal_audit is not False
+        or config.provenance_policy != "configs/workspace_policy_v1.yaml"
+        or config.lineage_namespace != PROTOCOL
+        or config.canary_enabled is not False
+        or config.semantic_model
+        != str(
+            Path(semantic_model).resolve()
+            if semantic_model is not None
+            else (ROOT / ".model-cache/all-MiniLM-L6-v2-1110a243").resolve()
+        )
+        or config.semantic_revision != "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+    ):
+        raise ValueError("Case A requires its exact local endpoint and operational settings")
+    return config
+
+
+def runtime_config(plan: dict) -> runner.RunConfig:
+    """Resolve only the frozen bundle policy path for actual execution."""
+    data = copy.deepcopy(plan["config"])
+    relative_policy = data.get("provenance_policy")
+    if relative_policy != "configs/workspace_policy_v1.yaml":
+        raise ValueError("Case A plan does not name its frozen relative policy")
+    policy = ROOT / relative_policy
+    require_physical_bundle_file(policy)
+    if plan.get("source_hashes", {}).get(relative_policy) != digest(policy):
+        raise ValueError("Case A runtime policy differs from its prepared source hash")
+    data["provenance_policy"] = str(policy)
     return runner.RunConfig.model_validate(data)
 
 
@@ -265,8 +416,11 @@ def environment(condition: str):
     return suite.load_and_inject_default_environment({VECTOR: PAYLOAD} if condition == "attacked" else {})
 
 
-def design(base_url: str) -> dict:
-    upstream = runner.require_upstream()
+def design(
+    base_url: str = "http://127.0.0.1:8000/v1",
+    semantic_model: str | None = None,
+) -> dict:
+    upstream = upstream_provenance()
     suite = get_suite("v1.2.2", "workspace")
     clean, attacked = [environment(slot).model_dump(mode="json") for slot in SLOTS]
     # The native injection constructor must preserve every other environment value.
@@ -280,18 +434,12 @@ def design(base_url: str) -> dict:
     if restored != clean or PAYLOAD not in attacked["cloud_drive"]["files"]["24"]["content"]:
         raise ValueError("Native injection changed outside file 24 content and its derived size")
     task = suite.user_tasks[TASK]
-    files = [ROOT / "uv.lock", ROOT / "upstream.json", ROOT / "configs/case_a_scout_v1.toml",
-             ROOT / "configs/workspace_policy_v1.yaml", ROOT / "CASE-A-SCOUT-V1.md",
-             ROOT / "scripts/run_case_a_scout.py", ROOT / "hpc/tool_chat_template_llama4_pythonic_typed_v1.jinja"]
-    files.append(ROOT / "src/agentdojo_lab/model_pins/minilm-v1.json")
-    files += sorted((ROOT / "src/agentdojo_lab").rglob("*.py"))
-    files += sorted((ROOT / "src/agentdojo_lab/templates").rglob("*"))
     return {
         "schema_version": 1, "protocol": PROTOCOL,
         "status": "prepared_design_only", "real_llm_requests_started": 0,
         "execution_binding": {"status": "pending_same_allocation_synthetic_and_native_smoke",
                               "container_sha256": None, "gpu_allocation": None},
-        "config": config_for(base_url).model_dump(), "upstream": upstream,
+        "config": config_for(base_url, semantic_model).model_dump(), "upstream": upstream,
         "model_revision": REVISION, "template_sha256": TEMPLATE_SHA256,
         "task": TASK, "prompt": task.PROMPT,
         "tools": [_function_to_openai(tool) for tool in suite.tools],
@@ -311,7 +459,12 @@ def design(base_url: str) -> dict:
                    "proposed_gpu_job_minutes_maximum": 120,
                    "operational_gpu_walltime_status":
                        "prior_smoke_completed_in_594_seconds; fresh_same_allocation_binding_pending"},
-        "source_hashes": {str(path.relative_to(ROOT)): digest(path) for path in files if path.is_file()},
+        "source_hashes": source_hashes(),
+        "source_hash_scope": (
+            "Lockfile, upstream pin, Case A config/document/scripts, serving helpers/template, "
+            "all local agentdojo_lab Python and report-template bytes, the MiniLM revision pin, "
+            "and every pinned AgentDojo runtime/package-metadata byte."
+        ),
         "selection": "Exactly clean then attacked; each slot once, fresh process/environment/history; no replacements.",
         "source_granularity": "One whole native search response can contain files 19 and 24; field witness is separate.",
         "interpretation": "Successful simulated send is an observed sink; source match is only correspondence."
@@ -319,6 +472,9 @@ def design(base_url: str) -> dict:
 
 
 def prepare(output: Path, base_url="http://127.0.0.1:8000/v1") -> dict:
+    if not (ROOT / "vendor/agentdojo/.git").exists():
+        raise ValueError("Case A preparation requires the clean pinned AgentDojo Git checkout")
+    runner.require_upstream()
     plan = design(base_url)
     output.mkdir(parents=True, exist_ok=False)
     write(output / "plan.json", plan, exclusive=True)
@@ -329,12 +485,19 @@ def prepare(output: Path, base_url="http://127.0.0.1:8000/v1") -> dict:
 
 def verify_plan(output: Path) -> dict:
     preparation = read(output / "preparation.json")
+    if (
+        preparation.get("protocol") != PROTOCOL
+        or preparation.get("status") != "prepared_not_executed"
+        or preparation.get("real_llm_requests_started") != 0
+    ):
+        raise ValueError("Invalid Case A preparation receipt")
     checked_receipt(preparation["plan"])
     if Path(preparation["plan"]["path"]).resolve() != (output / "plan.json").resolve():
         raise ValueError("Preparation points to another plan")
     plan = read(output / "plan.json")
-    if plan != design(plan["config"]["base_url"]):
+    if plan != design(plan["config"]["base_url"], plan["config"]["semantic_model"]):
         raise ValueError("Prepared design or its source/configuration/environment inputs changed")
+    verify_source_hashes(plan)
     return plan
 
 
@@ -650,7 +813,8 @@ def run_slot(output: Path, condition: str, preflight: Path) -> dict:
     folder = output / condition
     if folder.exists():
         raise FileExistsError("Case A slots cannot be replaced")
-    config = runner.RunConfig.model_validate(plan["config"])
+    verify_source_hashes(plan)
+    config = runtime_config(plan)
     config.primary_endpoint().require_key()
     counter = ScoutTokenCounter(Path(binding["model"]["path"]), Path(binding["template"]["path"]))
     result = {"protocol": PROTOCOL, "condition": condition, "status": "failed", "pid": os.getpid(),
@@ -672,7 +836,8 @@ def run_slot(output: Path, condition: str, preflight: Path) -> dict:
             value["notes"] = ["Native task33 under Case A's declared condition; inspect case-a-outcome.json."]
         original_write(path, value)
     try:
-        with patch.object(runner, "GroqLLM", budgeted_llm(counter, folder / "sdk-attempts.jsonl")), \
+        with patch.object(runner, "require_upstream", lambda: copy.deepcopy(plan["upstream"])), \
+                patch.object(runner, "GroqLLM", budgeted_llm(counter, folder / "sdk-attempts.jsonl")), \
                 patch.object(runner, "benchmark_suite_without_injections", benchmark), \
                 patch.object(EndpointSettings, "client", client), patch.object(runner, "write_json", annotated_write):
             summary = runner.run_clean(config, output=folder)
@@ -733,7 +898,7 @@ def export_case_pair(output: Path) -> dict:
 def run_pair(output: Path, preflight: Path) -> dict:
     plan = verify_plan(output)
     binding = serving_binding(preflight, plan["config"]["base_url"])
-    runner.RunConfig.model_validate(plan["config"]).primary_endpoint().require_key()
+    runtime_config(plan).primary_endpoint().require_key()
     write(output / "execution.json", {"protocol": PROTOCOL, "plan": receipt(output / "plan.json"),
           "serving": binding, "status": "execution_reserved_before_workers"}, exclusive=True)
     slots = []
@@ -768,7 +933,7 @@ def run_pair(output: Path, preflight: Path) -> dict:
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("prepare", "run", "worker"))
+    parser.add_argument("mode", choices=("prepare", "verify", "run", "worker"))
     parser.add_argument("output", type=Path)
     parser.add_argument("--base-url", default="http://127.0.0.1:8000/v1")
     parser.add_argument("--serving-receipt", type=Path)
@@ -777,6 +942,13 @@ def main(argv=None):
     try:
         if args.mode == "prepare":
             result = prepare(args.output, args.base_url)
+        elif args.mode == "verify":
+            plan = verify_plan(args.output.resolve())
+            result = {
+                "status": "verified_prepared_plan",
+                "source_files": len(plan["source_hashes"]),
+                "real_llm_requests_started": 0,
+            }
         elif args.serving_receipt is None:
             parser.error("run/worker requires --serving-receipt")
         elif args.mode == "run":

@@ -1,9 +1,10 @@
 # Project context: Tool Output Injection Attacks
 
-Last updated: 2026-09-15. This is the durable project brief for the researcher,
-supervisor, and future Codex sessions. It records the user's initial idea and
-supervisor guidance, followed by a separately identified repository assessment.
-Update the current-state sections as work progresses; preserve the original intent.
+Last updated: 2026-09-16 (NeSI local date). This is the durable project brief for
+the researcher, supervisor, and future Codex sessions. It records the user's
+initial idea and supervisor guidance, followed by a separately identified
+repository assessment. Update the current-state sections as work progresses;
+preserve the original intent.
 
 ## Original idea supplied by the researcher
 
@@ -140,17 +141,19 @@ Paths in the table are relative to `codebase/agentdojo-lab/` unless stated other
 
 Bare module filenames in this map refer to `src/agentdojo_lab/`.
 
-## Current state on NeSI — 2026-09-15
+## Current state on NeSI — 2026-09-16
 
 This continuation began from clean source checkpoint `3c71025` on
-`codex/agentdojo-lab`. Hardened execution and propagation checkpoint `84fe7cc`
-and the current Case A launch checkpoint
-`228f7c2ce4255a8587921ef955c633868b1fb10d` are pushed to
-`origin/codex/agentdojo-lab`. Recheck these facts on a later visit.
+`codex/agentdojo-lab`. The failed Case A job used pushed checkpoint
+`228f7c2ce4255a8587921ef955c633868b1fb10d`; the last pushed repository head before
+the current remediation was `a54f1e31c022005bfe2fa7ac9b83600eb4384c2b` ("Record
+Case B submission"), matching `origin/codex/agentdojo-lab`. The audited Case A/B
+remediation and Case C implementation are current working-tree changes, so recheck
+Git state after they are committed and pushed.
 
 | Item | Observed state |
 | --- | --- |
-| Source/configuration/test files | Present in Git |
+| Source/configuration/test files | Pushed baseline present; audited A/B remediation and Case C additions pass 350 tests plus 16 subtests but remain uncommitted at this snapshot |
 | Previous raw runs and generated HTML | Historical bundles absent; new setup receipts/offline smoke exist locally |
 | Lab environment and AgentDojo checkout | Restored on NeSI; `doctor` verifies the pinned clean upstream |
 | Semantic weights | Pinned MiniLM snapshot downloaded and file hashes verified; locked semantic dependencies installed and 53 dependent regressions passed |
@@ -161,8 +164,9 @@ and the current Case A launch checkpoint
 | Model storage | Private scratch root `/nesi/nobackup/uoa04799/dyu848/tool-output-lab`; 10 TiB project scratch allocation |
 | NeSI offline smoke | Completed native fixture with a valid 15-event recording and HTML; no real LLM calls |
 | Git transport | SSH push and pull tested successfully on this device earlier in the session |
-| Scout Case A runner | Hardened 85-source v4 plan prepared with zero requests. First job 9043206 was cancelled before allocation after audit found a Slurm helper-path defect. Corrected job 9050478 is pending for Priority with no allocation or model requests yet |
-| Scout Case B runner | Its 163-source v2 plan and immutable bundle passed offline validation. Job 9052477 is pending for Priority with no allocation or model requests yet |
+| Scout Case A runner | Historical 85-source v4 plan recorded zero requests. Job 9043206 was cancelled before allocation; job 9050478 then failed in 30 seconds during request-free validation because its frozen launcher imported changed repository source. Audited self-contained hardening invalidates v4; replacement v5 awaits generation from the pushed source |
+| Scout Case B runner | Historical 163-source v2 plan recorded zero calls. Job 9052477 loaded Scout and passed 4/4 synthetic requests, then failed before native inference because the bundle omitted `configs/local_scout.toml`. Audited config/source hardening invalidates v2; replacement v3 awaits generation from the pushed source |
+| Scout Case C runner | Four-session transformed-memory protocol, native oracles, cross-session export and same-allocation wrapper implemented and independently audited. A prior scripted fixture used zero live calls but predates final hardening and is noncanonical; v1 preparation awaits generation from the pushed source |
 | New case-study pilot | Planned in RESEARCH_PLAN.md; zero new trajectories |
 
 The read-only scheduler assessment found project association `uoa04799` and GPU
@@ -186,13 +190,12 @@ ledgers and result notes retain their historical values.
 
 1. Use [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15)
    to track delivered results separately from existing code and preparation.
-2. Monitor corrected Case A job `9050478`; it will start automatically when Slurm
-   allocates resources, so do not submit a duplicate or require a manual start.
-   Its displayed 22:35 NZST start and prospective `mg14` node are scheduler
-   estimates, not guarantees or an allocation. Preserve cancelled job `9043206`.
-3. When `9050478` becomes terminal, verify and analyze every same-allocation
-   synthetic/native smoke receipt, request-accounting record, clean/attacked
-   trace and report before interpreting any recipient or sink result.
+2. Preserve failed jobs `9050478` and `9052477` and their original bundles. Finish
+   the self-contained source/config bundle regressions, prepare new zero-request
+   plans, and submit separately named replacements only after relocation checks pass.
+3. For each replacement, verify every same-allocation synthetic/native smoke
+   receipt, request-accounting record, case trace and report before interpreting
+   any recipient or sink result.
 4. Use the offline single-episode paired report for changed tool arguments,
    proposal divergence and configured sensitive-field divergence. The separate
    `offline-cross-session-propagation-v2` exporter validates eight typed path
@@ -200,11 +203,11 @@ ledgers and result notes retain their historical values.
    replay accept explicit configured OpenAI-compatible endpoints while preserving
    their legacy defaults. Causal influence remains unassessed and attack success
    unknown for the offline controls.
-5. Monitor Case B job `9052477` alongside Case A job `9050478`; both start
-   automatically. The displayed Sep 16 00:40 NZST Case B start and prospective
-   `mg14` node are scheduler projections. After each job becomes terminal, analyze
-   all smoke, request-accounting, case and report artifacts. Case C still needs a
-   frozen transformed-memory live protocol.
+5. Freeze the implemented Case C v1 plan and immutable bundle after the shared
+   source tree is stable. Its prior deterministic four-worker fixture is
+   noncanonical engineering evidence, not a live Scout result. Rerun it from the
+   final source, then queue the bounded wrapper only after request-free cross-root
+   verification and Case A/B remediation checks pass.
 
 The first 2026-09-15 Case A implementation subagent was stopped by a platform
 security-risk flag. Its four unfinished files remain preserved byte-for-byte in
@@ -217,8 +220,9 @@ passed 84 selected tests, Ruff and Python compilation; `prepare` records
 restriction for this bounded implementation on the current Codex surface only;
 it does not establish access in a separate API project or product. The original
 flag and quarantine remain historical evidence. No live Case A request has yet
-been observed: the first job was cancelled before allocation and the corrected
-job is queued. This is not a Scout refusal or an experimental finding.
+been observed: the first job was cancelled before allocation and corrected job
+`9050478` failed before inference with zero requests. This is not a Scout refusal
+or an experimental finding.
 
 Continuation checkpoint `7b5f1eb` added the separate two-hour smoke-plus-Case-A
 wrapper without changing the then-pending smoke job. It requires current-job
@@ -229,11 +233,13 @@ attempts: 4 synthetic, at most 4 benign native, and at most 16 Case A. Root's fi
 selection passed **109 tests plus 16 subtests**, Ruff, Bash syntax and Python
 compilation. Later source changes correctly invalidated the first three
 zero-request preparations. The v3 audit specifically found a missing runtime-read
-MiniLM revision pin in its source inventory. The current ignored preparation is
-`codebase/agentdojo-lab/runs/scout-case-a-prepared-v4`; it binds 85 source files,
-has plan SHA-256
+MiniLM revision pin in its source inventory. Historical preparation
+`codebase/agentdojo-lab/runs/scout-case-a-prepared-v4` binds 85 source files, has
+plan SHA-256
 `5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`
-and records zero model requests. After smoke `9039289` passed, the exact source at
+and records zero model requests. Current source hardening invalidates v4; the v5
+replacement remains pending final source freeze and has no plan hash. After smoke
+`9039289` passed, the exact source at
 pushed checkpoint `84fe7cc` was copied into immutable bundle
 `evidence/scout-case-a-submission-20260915-v1`, with private site file
 `/nesi/project/uoa04799/dyu848/tools/scout-case-a-site-20260915-v1.env`.
@@ -252,17 +258,19 @@ the helper manifest and offline preflight have SHA-256
 and `6a8b2f5e3ba7da0f61c7dd9b0723135cdf7b12d15b97fe37492852c004f54aab`.
 Request-free validation passed, and an independent audit returned GO with no
 P1/P2 findings after 81 focused tests plus 16 subtests. Corrected job `9050478`
-was submitted at the scheduler's Sep 15 17:08 display. At this snapshot it is
-`PENDING (Priority)`, runtime zero, with no allocation and no model requests.
-Slurm displays a provisional Sep 15 22:35 NZST start and `mg14` node; both may
-change. The job starts automatically. Its `submitted.json` has SHA-256
+was submitted at the scheduler's Sep 15 17:08 display and later ran on `mg14`.
+It failed `1:0` after 30 seconds when request-free validation detected the changed
+repository import. vLLM never started, so it made zero synthetic, native or Case A
+requests. Its `submitted.json` has SHA-256
 `770b8e9fc66590f968d1e0f6bbc7e731b70ff7db66c1c197366955b25a4744c9`.
-The limits remain 24 requests and eight GPU-hours.
+Its terminal scheduler log has SHA-256
+`7124e18c9729caa29124cd422819b407f800c58588f8262b05f66fc851a22af6`.
+The protocol limits remain 24 requests and eight GPU-hours.
 
-The 2026-09-15 checklist review read Slurm accounting and retained job artifacts.
-The later corrected submission launched no model process while pending. Container
-failure, cancellation and queueing are infrastructure states, not research attack
-trials. Detailed states and evidence paths are in HPC_SETUP.md.
+The terminal review read Slurm accounting and retained job artifacts. The
+corrected submission launched no model process. Container failure, cancellation
+and pre-inference validation failure are infrastructure/orchestration states, not
+research attack trials. Detailed states and evidence paths are in HPC_SETUP.md.
 
 The user confirms Hugging Face approval, has signed in successfully on NeSI,
 and has delegated storage choices. No further authentication input is needed.
@@ -322,7 +330,7 @@ selected tests** on 2026-09-15. Its execution gate requires successful synthetic
 and benign native smoke receipts from the same four-A100 serving job before either
 clean or attacked slot can make a request. The first submitted job, `9043206`, was
 cancelled before allocation after the helper-path audit; it made zero requests.
-Corrected job `9050478` is pending without allocation or requests and likewise
+Corrected job `9050478` failed before inference with zero requests and likewise
 does not increase the experimental-deliverable count.
 
 The later same-allocation batch validation passed **109 tests and 16 subtests**.
@@ -344,13 +352,15 @@ most two hours on four A100s and permits at most 24 total requests: four synthet
 four benign-native and 16 Case B. The independent final Case A/B selection passed
 191 tests plus 16 subtests; root's broader selection passed 214 tests plus 16
 subtests. Ruff, Bash syntax, compilation and diff checks passed.
-The prepared v2 design inventory has 163 source files, including 113 pinned
+The historical v2 design inventory has 163 source files, including 113 pinned
 AgentDojo runtime/package-metadata files, and a nine-entry launch manifest.
 `runs/scout-case-b-prepared-v2` contains exactly `plan.json` and
 `preparation.json`; their SHA-256 values are
 `69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`
 and `ba663d561892b614f7320be36a8fc9c4bf363c946c15837ac52e905fa1b45906`.
-The preparation records zero model calls. Preserved v1 is source-invalidated.
+The preparation records zero model calls. Current source/config hardening
+invalidates both preserved v1 and v2. Replacement v3 remains pending final source
+freeze and has no plan hash.
 
 The immutable Case B bundle is
 `/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-b-submission-20260915-v1`.
@@ -362,22 +372,24 @@ Their combined source-tree SHA-256 is
 Offline preflight, request-free validation, bundle import isolation and fixed-limit
 checks passed. Independent audit returned GO with no P1/P2 findings.
 
-Job `9052477` was submitted at scheduler display Sep 15 17:30. At this snapshot
-it is `PENDING (Priority)` with runtime zero, no allocation and no model calls.
-The displayed Sep 16 00:40 NZST start and prospective `mg14` node may change;
-the job starts automatically. No Case B outcome is claimed.
-The bundle's `submitted.json` has SHA-256
+Job `9052477` was submitted at scheduler display Sep 15 17:30 and ran on `mg14`
+for 8m 35s, exiting `1:0`. Scout loaded and all four synthetic requests passed.
+Native smoke then failed before its first request because the immutable bundle
+omitted `configs/local_scout.toml`. It made four synthetic, zero native and zero
+Case B requests, so no Case B outcome is claimed. The bundle's `submitted.json`
+has SHA-256
 `88b00e37fa87aa45755de4749aeaa6ae0a2ee81d62c84c9c36bd2c1bb3812408`.
 
 Git synchronization: this continuation started from clean checkpoint **`3c71025`**,
 matching `origin/codex/agentdojo-lab`. SSH push and pull were already verified for
 repository owner `YuTungLam`. The Case A implementation checkpoint **`6071eb0`**,
 batch-preparation checkpoint **`7b5f1eb`**, and hardened execution/propagation
-checkpoint **`84fe7cc`** and current Case A launch checkpoint
+checkpoint **`84fe7cc`** and Case A submission checkpoint
 **`228f7c2ce4255a8587921ef955c633868b1fb10d`** were subsequently pushed to that
-branch. Job `9050478` was submitted from the latter checkpoint. Its queued state
-and eventual outcome must still be established from scheduler and submission
-receipts rather than Git state.
+branch. Job `9050478` used the latter checkpoint. The last pushed head before the
+current working-tree remediation is **`a54f1e31c022005bfe2fa7ac9b83600eb4384c2b`**.
+Terminal job state comes from scheduler and submission receipts rather than Git;
+the current uncommitted remediation and Case C files are not yet synchronized.
 
 ## Moving between devices
 

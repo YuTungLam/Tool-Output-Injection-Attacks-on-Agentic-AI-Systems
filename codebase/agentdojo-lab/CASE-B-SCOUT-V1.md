@@ -115,7 +115,9 @@ requires a pristine Case B directory containing only `plan.json` and
 `preparation.json`, and checks each launch byte against the plan. The plan hashes
 the Case B wrapper and batch helper, the shared server-check helper, the sourced
 smoke wrapper, all three smoke Python helpers, the chat template, and the Case B
-runner. The submission-time site hash, bundle-manifest hash, spool comparison,
+runner. It also binds `configs/local_scout.toml`, which the native smoke reads
+through the bundled `agentdojo_lab.runner` root. The submission-time site hash,
+bundle-manifest hash, spool comparison,
 and request-free plan recomputation form a separate recorded chain. Drift stops
 the job before a generation request.
 
@@ -130,6 +132,9 @@ are cleared before the inherited smoke cleanup trap can run, and every negative
 process-group signal is guarded by the same lower bound. Terminal validation requires
 the phase, shared server check, and cleanup receipt to identify the same server,
 including when the time gate leaves Case B unstarted.
+Immediately before native execution, the smoke helper rechecks the pristine Case B
+preparation and every plan-bound source byte. A bundle without copied Git metadata
+may use the plan's upstream provenance only after that complete recheck succeeds.
 
 After smoke, one exact `squeue` record must identify the current job, show a time
 limit no greater than two hours, and show at least 3,900 seconds remaining. Only
@@ -140,7 +145,7 @@ change the endpoint, or fall back to another model.
 
 After cleanup, the terminal finalizer runs the complete request-free plan
 verifier again. This rechecks every plan-bound bundled source, configuration,
-script, template, and lock/pin input in addition to the nine launch-manifest
+script, template, and lock/pin input in addition to the ten launch-manifest
 entries. Drift after phase reservation makes the final receipt incomplete for
 both started and unstarted paths.
 

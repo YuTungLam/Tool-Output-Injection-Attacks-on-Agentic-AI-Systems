@@ -1,6 +1,6 @@
 # NeSI setup and local inference plan
 
-Last updated: **2026-09-15 UTC**. The CPU lab and pinned MiniLM files have been
+Last updated: **2026-09-16 UTC**. The CPU lab and pinned MiniLM files have been
 restored, and the offline native-tool fixture passes. Hugging Face login and
 Scout gated-file access are verified. Local transport is implemented; the pinned
 checkpoint is fully downloaded and verified. The first serving-container build
@@ -9,26 +9,34 @@ named retry passed, followed by a successful four-A100 GPU smoke. Scout inferenc
 and a benign native tool loop are verified. A separate smoke-plus-Case-A wrapper,
 canonical plan, private site and immutable bundle were frozen. First Case A job
 `9043206` was cancelled before allocation after audit found a Slurm helper-path
-defect. Corrected job `9050478` is submitted and pending for Priority with zero
-runtime, no allocation and no model requests. The Case B v2 plan and immutable
-bundle also passed offline validation; job `9052477` is pending for Priority with
-zero runtime, no allocation and no model requests.
+defect. Corrected job `9050478` later failed before inference because its frozen
+launcher imported a changed repository module. Case B job `9052477` loaded Scout
+and passed 4/4 synthetic requests, then failed before native inference because
+its bundle omitted `configs/local_scout.toml`. Both made zero research requests.
+Self-contained A/B remediation and the new Case C implementation passed a combined
+**350 tests plus 16 subtests**, Ruff, compilation, Bash syntax and diff checks.
+Independent final audits returned GO for all three cases after copied-bundle and
+path-mutation checks. Replacement Case A v5, Case B v3 and Case C v1 plans and
+bundles have not yet been frozen.
 
-## Recovery in progress — 2026-09-15
+## Recovery in progress — 2026-09-16
 
 The user requested continued runs with percentages and explanations. The fresh
 container retry and its GPU smoke **passed**. The first separately frozen Case A
-job was cancelled before allocation after audit; its corrected replacement is
-now queued. See [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) for the checklist
-count and the interpretation of every attempt.
+job was cancelled before allocation; corrected Case A job `9050478` and Case B
+job `9052477` are now terminal failures with zero research requests. Replacement
+The repaired source is frozen and audited; Case A v5, Case B v3 and Case C v1
+preparations remain to be generated from its pushed checkpoint. See
+[RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) for the checklist count and the
+interpretation of every attempt.
 
 | Job | Latest observed state | Bounded scope |
 | --- | --- | --- |
 | `9039259` | COMPLETED on Genoa `g01`, Slurm elapsed 6m 49s, exit `0:0` | CPU container retry: 8 requested CPUs / 16 allocated logical CPUs, 32 GiB, local SSD, 2 hours maximum; no GPUs |
 | `9039289` | COMPLETED on Milan `mg15`, Slurm elapsed 9m 54s, exit `0:0` | Four A100 SXM4 80 GB GPUs, 48 requested / 96 allocated logical CPUs, 320 GiB; synthetic 4/4 and benign native 9/9 checks passed with seven requests |
 | `9043206` | CANCELLED before allocation, elapsed 00:00:00 | First Case A submission; helper-path defect found by audit; zero GPU time and requests; preserve v1 bundle |
-| `9050478` | PENDING, reason `Priority`, runtime zero; no allocation | Corrected Case A submission; automatic start; Sep 15 22:35 NZST / `mg14` are provisional scheduler projections; zero requests so far |
-| `9052477` | PENDING, reason `Priority`, runtime zero; no allocation | Case B submission; automatic start; Sep 16 00:40 NZST / `mg14` are provisional scheduler projections; zero requests so far |
+| `9050478` | FAILED `1:0` on `mg14`, elapsed 00:00:30 | Request-free Case A validation rejected source drift before vLLM; zero generation requests and zero research sessions |
+| `9052477` | FAILED `1:0` on `mg14`, elapsed 00:08:35 | Scout loaded and synthetic smoke passed 4/4; missing bundled local config stopped native smoke before its first request; zero Case B sessions |
 
 Slurm eventually started `9039289` automatically on `mg15`; earlier queue
 estimates were provisional and did not predict its actual start. The model loaded
@@ -38,20 +46,21 @@ same-allocation gate must observe its own serving process and smoke results.
 
 Do not modify `9039289`, its v2 site file or frozen submission bundle. Its script
 ended after smoke and cannot run Case A. Checkpoint `7b5f1eb` added a separately
-named wrapper, `codebase/agentdojo-lab/hpc/scout-smoke-case-a.sbatch`. The current
-ignored preparation is `runs/scout-case-a-prepared-v4`, with zero model requests, 85
-bound source files and plan SHA-256
+named wrapper, `codebase/agentdojo-lab/hpc/scout-smoke-case-a.sbatch`. Historical
+preparation `runs/scout-case-a-prepared-v4` recorded zero model requests, 85 bound
+source files and plan SHA-256
 `5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`.
 It contains exactly `plan.json` and `preparation.json`; the preparation receipt
 has SHA-256
 `b315d3ee67a338124a5b9c35825824dd058e89e25a56a077134fbd9456f3dbd4`.
-The first three preparations remain preserved and source-invalidated; v3 omitted
-the runtime-read MiniLM revision pin from its inventory. Smoke timing
-supported the existing two-hour envelope, so a new private site and immutable
-helper bundle were frozen and job `9043206` was submitted. Audit found a relative
-helper-path defect before allocation, and the job was cancelled. Corrected job
-`9050478` must repeat synthetic and benign native smoke in its own allocation
-before Case A; old receipts cannot authorize it.
+Current source hardening also invalidates v4, while the first three preparations
+remain preserved and source-invalidated; v3 omitted the runtime-read MiniLM
+revision pin from its inventory. Smoke timing supported the existing two-hour
+envelope, so a new private site and immutable helper bundle were frozen and job
+`9043206` was submitted. Audit found a relative helper-path defect before
+allocation, and the job was cancelled. Job `9050478` was required to repeat
+synthetic and benign native smoke in its own allocation but failed before them.
+Any v5 replacement must repeat those gates; old receipts cannot authorize it.
 The final wrapper/Case/report/smoke selection passed 109 tests plus 16 subtests,
 Ruff, Bash syntax and Python compilation. These are offline checks only.
 
@@ -92,14 +101,14 @@ and `6a8b2f5e3ba7da0f61c7dd9b0723135cdf7b12d15b97fe37492852c004f54aab`.
 Request-free validation passed, and the independent launch audit returned GO
 with no P1/P2 findings after 81 focused tests plus 16 subtests.
 
-Job `9050478` was submitted at the scheduler's Sep 15 17:08 display. It is
-currently `PENDING` for `Priority`, with runtime zero, no allocation and zero
-observed model requests. Slurm's Sep 15 22:35 NZST estimate and prospective
-`mg14` node may change and are not proof of allocation. The scheduler will start
-the job automatically. The bundle's `submitted.json` has SHA-256
+Job `9050478` was submitted at the scheduler's Sep 15 17:08 display. Slurm later
+ran it on `mg14`; it failed `1:0` after 30 seconds during request-free validation.
+The frozen launcher imported the mutable repository's Case A module, whose bytes
+no longer matched the prepared plan. vLLM never started, so synthetic, native and
+Case A request counts were all zero. The bundle's `submitted.json` has SHA-256
 `770b8e9fc66590f968d1e0f6bbc7e731b70ff7db66c1c197366955b25a4744c9`.
-Monitor `9050478`; after it is terminal, inspect every smoke, request-accounting,
-Case A and report artifact before interpreting the experiment.
+The terminal scheduler log SHA-256 is
+`7124e18c9729caa29124cd422819b407f800c58588f8262b05f66fc851a22af6`.
 
 ### Submitted Case B launch implementation
 
@@ -116,15 +125,16 @@ has exactly nine entries. The upstream runtime-tree SHA-256 is
 
 The independent final Case A/B wrapper selection passed 191 tests plus 16
 subtests; root's broader selection passed 214 tests plus 16 subtests. Ruff, Bash
-syntax, Python compilation and diff checks passed. Preserved
-Case B v1 has 41 sources, zero model calls and plan SHA-256
+syntax, Python compilation and diff checks passed. Preserved Case B v1 has 41
+sources, zero model calls and plan SHA-256
 `4b8bc845437ce557fe6bbe589dd90d6ccc5b083d92955ef0fb1324f4df52c036`.
-It is source-invalidated and fails request-free verification as designed. The
-canonical v2 path is `runs/scout-case-b-prepared-v2`; it contains exactly
-`plan.json` and `preparation.json`, whose SHA-256 values are
+It is source-invalidated and fails request-free verification as designed.
+Historical v2 path `runs/scout-case-b-prepared-v2` contains exactly `plan.json`
+and `preparation.json`, whose SHA-256 values are
 `69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`
 and `ba663d561892b614f7320be36a8fc9c4bf363c946c15837ac52e905fa1b45906`.
-The preparation itself records zero model calls.
+The preparation itself records zero model calls. Current source/config hardening
+invalidates v2; Case B v3 remains pending final source freeze and has no plan hash.
 
 The immutable submission bundle is
 `/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-b-submission-20260915-v1`,
@@ -145,10 +155,12 @@ and `938cb660d45586a3c5330ae105cbc139228dc567412f8ea715d065d619b9566e`.
 Import isolation, native/Case B preflight, request-free runner verification and
 fixed limits passed. Independent audit returned GO with no P1/P2 findings.
 
-Job `9052477` was submitted at scheduler display Sep 15 17:30. It is `PENDING`
-for `Priority`, with runtime zero, no allocation and zero model calls. Its
-displayed Sep 16 00:40 NZST start and prospective `mg14` node may change and do
-not prove allocation. It starts automatically. The `submitted.json` SHA-256 is
+Job `9052477` was submitted at scheduler display Sep 15 17:30. Slurm ran it on
+`mg14` for 8m 35s; it exited `1:0`. The server loaded and all four synthetic
+smoke requests passed. Native smoke then failed with `FileNotFoundError` before
+its first request because the frozen bundle lacked `configs/local_scout.toml`.
+Thus the job made four synthetic, zero native and zero Case B requests. The
+`submitted.json` SHA-256 is
 `88b00e37fa87aa45755de4749aeaa6ae0a2ee81d62c84c9c36bd2c1bb3812408`.
 
 ### Successful GPU smoke — job 9039289
@@ -209,15 +221,15 @@ Read-only `sacct` and retained receipt/log inspection establish:
 | `9039259` container recovery | COMPLETED, 6m 49s, exit `0:0` | Published and checksum-verified the v2 SIF using Genoa local SSD and gzip level 1 |
 | `9039289` GPU smoke | COMPLETED, 9m 54s, exit `0:0` | Four A100s on `mg15`; all four synthetic checks and all nine benign-native checks passed with seven requests |
 | `9043206` Case A | CANCELLED before allocation, elapsed 00:00:00 | Accepted at 15:36 and cancelled at 15:47 NZST after helper-path audit; zero GPU time and requests |
-| `9050478` Case A | PENDING for `Priority`, runtime zero, no allocation | Corrected v2 job submitted at scheduler display Sep 15 17:08; automatic start; displayed Sep 15 22:35 NZST / `mg14` are provisional; zero requests so far |
-| `9052477` Case B | PENDING for `Priority`, runtime zero, no allocation | Submitted at scheduler display Sep 15 17:30; automatic start; displayed Sep 16 00:40 NZST / `mg14` are provisional; zero requests so far |
+| `9050478` Case A | FAILED `1:0`, 30 seconds on `mg14` | Frozen runner imported changed repository source; request-free validation stopped before vLLM and made zero requests |
+| `9052477` Case B | FAILED `1:0`, 8m 35s on `mg14` | Scout loaded and synthetic smoke passed 4/4; missing bundled `configs/local_scout.toml` stopped native smoke at zero native and Case B requests |
 
 The 50-minute build timeout and 30-second kill grace match the observed failure
 timing, but the logs only report that the process was killed; timeout is an
 inference, not a conclusively recorded cause. Inspect the retained build/partial
 artifacts before choosing a new bounded preparation attempt. No retry was
 submitted during the earlier checklist review. Corrected job `9050478` was
-submitted later and remains pending at this snapshot. The passing software checks
+submitted later and failed before inference as recorded above. The passing software checks
 below are the 2026-09-14 verification results.
 
 Evidence directory:
@@ -446,11 +458,14 @@ must remain visible failures. None of these checks is an attack experiment.
 
 ## Inputs and evidence still missing
 
-- A terminal Case A clean/attacked result from pending corrected job `9050478`;
-  monitor it and analyze all terminal artifacts.
-- A terminal four-arm Case B result from pending job `9052477`; monitor it and
-  analyze all terminal artifacts.
-- A frozen transformed-memory live protocol for Case C.
+- A terminal Case A clean/attacked result; job `9050478` failed before inference,
+  so a new self-contained bundle and preparation are required.
+- A terminal four-arm Case B result; job `9052477` stopped after synthetic smoke,
+  so a corrected bundle must rerun the same-allocation gates.
+- A live transformed-memory Case C result. Its protocol, prior deterministic
+  fixture and wrapper exist, but the fixture predates current hardening and is
+  noncanonical. Case C v1 preparation and immutable-bundle verification remain
+  before submission.
 - Selected old raw run/report bundles from the personal computer; none restored.
 
 The starter primary and judge both use local Scout, with independent endpoint

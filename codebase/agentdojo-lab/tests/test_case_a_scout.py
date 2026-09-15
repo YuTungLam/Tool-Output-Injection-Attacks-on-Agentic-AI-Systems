@@ -1,12 +1,24 @@
 """Offline Case A protocol checks; these tests never contact a model endpoint."""
 
+import importlib.util
 import json
+import os
+import shutil
+import subprocess
+import sys
 import time
 from pathlib import Path
 
 import pytest
 
 from agentdojo_lab import case_a_scout
+
+ROOT = Path(__file__).resolve().parents[1]
+BATCH_SPEC = importlib.util.spec_from_file_location(
+    "case_a_batch_bundle_test", ROOT / "hpc/case_a_batch.py"
+)
+case_a_batch = importlib.util.module_from_spec(BATCH_SPEC)
+BATCH_SPEC.loader.exec_module(case_a_batch)
 
 
 @pytest.mark.parametrize(
@@ -41,6 +53,12 @@ def test_design_fixes_slots_local_provider_budget_and_native_environment_delta()
     assert plan["oracle"]["argument_path"] == "/recipients/0"
     assert plan["source_hashes"]["src/agentdojo_lab/paired_report.py"]
     assert plan["source_hashes"]["src/agentdojo_lab/model_pins/minilm-v1.json"]
+    assert plan["source_hashes"]["configs/local_scout.toml"]
+    assert plan["source_hashes"]["hpc/native_smoke.py"]
+    assert plan["source_hashes"]["vendor/agentdojo/src/agentdojo/__init__.py"]
+    assert plan["config"]["provenance_policy"] == "configs/workspace_policy_v1.yaml"
+    assert plan["upstream"]["runtime_source_files"] > 0
+    assert plan["upstream"]["runtime_source_tree_sha256"]
     assert plan["environment_sha256"]["clean"] != plan["environment_sha256"]["attacked"]
 
     clean = case_a_scout.environment("clean").model_dump(mode="json")
@@ -74,6 +92,148 @@ def test_prepare_is_request_free_and_plan_verification_detects_change(tmp_path, 
     (output / "plan.json").write_text(json.dumps(changed))
     with pytest.raises(ValueError, match="Changed or missing bound evidence"):
         case_a_scout.verify_plan(output)
+
+
+def test_frozen_bundle_verifies_without_live_repo_or_vendor_git(tmp_path):
+    prepared = tmp_path / "prepared"
+    plan = case_a_scout.prepare(prepared)
+    bundle = tmp_path / "bundle"
+    for source in case_a_scout.runtime_files():
+        destination = bundle / source.relative_to(ROOT)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+    assert not (bundle / "vendor/agentdojo/.git").exists()
+    assert plan["source_hashes"]["configs/local_scout.toml"]
+
+    runtime_sources = {
+        key: bundle / key for key in case_a_batch.REQUIRED_RUNTIME_KEYS
+    }
+    manifest = bundle / "submission-sha256.txt"
+    manifest.write_text(
+        "".join(
+            f"{case_a_scout.digest(path)}  {key}\n"
+            for key, path in runtime_sources.items()
+        ),
+        encoding="utf-8",
+    )
+    site = tmp_path / "case-a-site.env"
+    site.write_text("# fixed test site\n", encoding="utf-8")
+    executed = tmp_path / "slurm-script"
+    executed.write_bytes(
+        runtime_sources["hpc/scout-smoke-case-a.sbatch"].read_bytes()
+    )
+    smoke = tmp_path / "smoke"
+    result = case_a_batch.validate_before_smoke(
+        tmp_path / "smoke.case-a-pre-smoke.json",
+        prepared,
+        smoke,
+        bundle / "scripts/run_case_a_scout.py",
+        site,
+        case_a_scout.digest(site),
+        manifest,
+        case_a_scout.digest(manifest),
+        executed,
+        runtime_sources,
+    )
+    assert result["verification"] == {
+        "request_free_runner_verify": True,
+        "real_llm_requests_started": 0,
+    }
+    assert set(result["runtime_sources"]) == set(case_a_batch.REQUIRED_RUNTIME_KEYS)
+
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if key
+        not in {
+            "LOCAL_LLM_API_KEY",
+            "GROQ_API_KEY",
+            "HF_TOKEN",
+            "HUGGING_FACE_HUB_TOKEN",
+        }
+    }
+    environment["PYTHONPATH"] = os.pathsep.join(
+        (str(ROOT / "src"), str(bundle / "src"), str(bundle / "vendor/agentdojo/src"))
+    )
+    probe = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import json, runpy, sys; "
+                "module = runpy.run_path(sys.argv[1]); "
+                "print(json.dumps(module['BOUND_IMPORT_PATHS']))"
+            ),
+            str(bundle / "scripts/run_case_a_scout.py"),
+        ],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=120,
+        check=True,
+        env=environment,
+    )
+    paths = json.loads(probe.stdout)
+    assert Path(paths["agentdojo"]).is_relative_to(
+        bundle / "vendor/agentdojo/src/agentdojo"
+    )
+    assert Path(paths["agentdojo_lab"]).is_relative_to(bundle / "src/agentdojo_lab")
+
+    native_environment = dict(environment)
+    native_environment.update(
+        PYTHONPATH=os.pathsep.join(
+            (
+                str(bundle / "hpc"),
+                str(bundle / "vendor/agentdojo/src"),
+                str(bundle / "src"),
+            )
+        ),
+        SCOUT_CASE_A_MODE="1",
+        SCOUT_CASE_A_DIR=str(prepared),
+    )
+    native_binding = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import json; from native_smoke import frozen_upstream_binding; "
+                "print(json.dumps(frozen_upstream_binding()[0]))"
+            ),
+        ],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=120,
+        check=True,
+        env=native_environment,
+    )
+    frozen_binding = json.loads(native_binding.stdout)
+    assert frozen_binding["mode"] == "case_a"
+    assert frozen_binding["source_files"] == len(plan["source_hashes"])
+    assert frozen_binding["upstream"] == plan["upstream"]
+
+    linked = bundle / "src/agentdojo_lab/runner.py"
+    linked.unlink()
+    linked.symlink_to(ROOT / "src/agentdojo_lab/runner.py")
+    rejected = subprocess.run(
+        [
+            sys.executable,
+            str(bundle / "scripts/run_case_a_scout.py"),
+            "verify",
+            str(prepared),
+        ],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=120,
+        check=False,
+        env=environment,
+    )
+    assert rejected.returncode == 1
+    assert "escaped its source bundle" in rejected.stderr
 
 
 def test_plan_verification_detects_semantic_revision_pin_drift(tmp_path, monkeypatch):

@@ -78,17 +78,44 @@ from agentdojo_lab.semantic import LocalMiniLMEncoder, SemanticMatcher
 
 
 def bound_import_paths() -> dict[str, str]:
-    """Require both experiment packages to resolve inside this source bundle."""
+    """Require every loaded experiment module to resolve inside this source bundle."""
     paths = {
         "agentdojo": Path(agentdojo.__file__).resolve(),
         "agentdojo_lab": Path(agentdojo_lab.__file__).resolve(),
+        "agentdojo_lab.runner": Path(runner.__file__).resolve(),
+        "run_attack_factorial": Path(legacy_runtime.__file__).resolve(),
     }
     expected = {
-        "agentdojo": (BUNDLED_AGENTDOJO_SOURCE / "agentdojo").resolve(),
-        "agentdojo_lab": (BUNDLED_SOURCE / "agentdojo_lab").resolve(),
+        "agentdojo": (BUNDLED_AGENTDOJO_SOURCE / "agentdojo/__init__.py").resolve(),
+        "agentdojo_lab": (BUNDLED_SOURCE / "agentdojo_lab/__init__.py").resolve(),
+        "agentdojo_lab.runner": (BUNDLED_SOURCE / "agentdojo_lab/runner.py").resolve(),
+        "run_attack_factorial": (ROOT / "scripts/run_attack_factorial.py").resolve(),
     }
-    if any(not paths[name].is_relative_to(expected[name]) for name in paths):
+    if paths != expected:
         raise RuntimeError("Case B imports escaped the frozen source bundle")
+    package_roots = {
+        "agentdojo": BUNDLED_AGENTDOJO_SOURCE / "agentdojo",
+        "agentdojo_lab": BUNDLED_SOURCE / "agentdojo_lab",
+    }
+    for module_name, module in tuple(sys.modules.items()):
+        package = next(
+            (
+                name
+                for name in package_roots
+                if module_name == name or module_name.startswith(name + ".")
+            ),
+            None,
+        )
+        raw_path = getattr(module, "__file__", None)
+        if package is None or raw_path is None:
+            continue
+        module_path = Path(raw_path)
+        if (
+            module_path.is_symlink()
+            or module_path.resolve() != module_path
+            or not module_path.is_relative_to(package_roots[package])
+        ):
+            raise RuntimeError("Case B imports escaped the frozen source bundle")
     return {name: str(path) for name, path in paths.items()}
 
 
@@ -238,6 +265,7 @@ def runtime_files() -> list[Path]:
     fixed = [
         ROOT / "uv.lock",
         ROOT / "upstream.json",
+        ROOT / "configs/local_scout.toml",
         CONFIG_PATH,
         DOCUMENT_PATH,
         ROOT / "configs/workspace_policy_v1.yaml",

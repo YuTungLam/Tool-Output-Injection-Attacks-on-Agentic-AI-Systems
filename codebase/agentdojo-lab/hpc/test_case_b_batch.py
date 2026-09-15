@@ -129,7 +129,7 @@ def pre_smoke_fixture(tmp_path: Path):
     return case_dir, runner, sources, plan, smoke_dir, pre_smoke
 
 
-def reserve(tmp_path: Path, **changes):
+def reserve(tmp_path: Path, *, symlink_case_input=None, **changes):
     case_dir, runner, sources, plan, smoke_dir, pre_smoke = pre_smoke_fixture(tmp_path)
     values = {
         "job_id": "42",
@@ -144,6 +144,10 @@ def reserve(tmp_path: Path, **changes):
         "server_pid": 500,
         "verifier": lambda _path: plan,
     }
+    if symlink_case_input is not None:
+        detached = tmp_path / f"detached-{symlink_case_input}"
+        (case_dir / symlink_case_input).replace(detached)
+        (case_dir / symlink_case_input).symlink_to(detached)
     values.update(changes)
     phase = case_b_batch.reserve_phase(smoke_dir / "case-b-phase.json", **values)
     return case_dir, runner, sources, plan, smoke_dir, pre_smoke, phase
@@ -208,9 +212,30 @@ def test_pre_smoke_rejects_prior_case_output_existing_smoke_and_missing_mapping(
             verifier=lambda _path: plan,
         )
     incomplete = dict(sources)
-    incomplete.pop("hpc/smoke.py")
+    incomplete.pop("configs/local_scout.toml")
     with pytest.raises(ValueError, match="incomplete"):
         case_b_batch.validate_runtime_sources(plan, incomplete)
+
+
+def test_missing_native_config_fails_before_smoke_or_pre_smoke_receipt(tmp_path):
+    case_dir, runner, sources, plan, submission = prepared(tmp_path)
+    sources.pop("configs/local_scout.toml")
+    output = tmp_path / "smoke.case-b-pre-smoke.json"
+    smoke_dir = tmp_path / "smoke"
+
+    with pytest.raises(ValueError, match="incomplete"):
+        case_b_batch.validate_before_smoke(
+            output,
+            case_dir,
+            smoke_dir,
+            runner,
+            sources,
+            **submission,
+            verifier=lambda _path: plan,
+        )
+
+    assert not output.exists()
+    assert not smoke_dir.exists()
 
 
 def test_parse_runtime_sources_requires_exact_absolute_unique_mapping(tmp_path):
@@ -221,6 +246,74 @@ def test_parse_runtime_sources_requires_exact_absolute_unique_mapping(tmp_path):
         case_b_batch.parse_runtime_sources(rows + [rows[0]])
     with pytest.raises(ValueError, match="incomplete"):
         case_b_batch.parse_runtime_sources(rows[:-1])
+
+
+def test_validation_rejects_symlinked_launch_inputs_before_verification(tmp_path):
+    case_dir, runner, sources, plan, submission = prepared(tmp_path)
+    config_alias = tmp_path / "local-scout-alias.toml"
+    config_alias.symlink_to(sources["configs/local_scout.toml"])
+    aliased_sources = dict(sources)
+    aliased_sources["configs/local_scout.toml"] = config_alias
+    rows = [[key, str(path)] for key, path in aliased_sources.items()]
+    with pytest.raises(ValueError, match="Invalid Case B runtime source"):
+        case_b_batch.parse_runtime_sources(rows)
+    with pytest.raises(ValueError, match="physical and canonical"):
+        case_b_batch.validate_runtime_sources(plan, aliased_sources)
+
+    runner_alias = tmp_path / "run-case-b-alias.py"
+    runner_alias.symlink_to(runner)
+    with pytest.raises(ValueError, match="runner must be.*physical canonical"):
+        case_b_batch.validate_plan_shape(case_dir, runner_alias, run_verifier=False)
+
+    case_alias = tmp_path / "case-alias"
+    case_alias.symlink_to(case_dir, target_is_directory=True)
+    verifier_calls = []
+    with pytest.raises(ValueError, match="directory must be physical and canonical"):
+        case_b_batch.validate_before_smoke(
+            tmp_path / "smoke.case-b-pre-smoke.json",
+            case_alias,
+            tmp_path / "smoke",
+            runner,
+            sources,
+            **submission,
+            verifier=lambda path: verifier_calls.append(path) or plan,
+        )
+    assert verifier_calls == []
+
+
+@pytest.mark.parametrize("filename", ["plan.json", "preparation.json"])
+def test_validate_cli_rejects_symlinked_preparation_input(tmp_path, filename):
+    case_dir, runner, sources, _plan, submission = prepared(tmp_path)
+    detached = tmp_path / f"detached-{filename}"
+    (case_dir / filename).replace(detached)
+    (case_dir / filename).symlink_to(detached)
+    output = tmp_path / "smoke.case-b-pre-smoke.json"
+    arguments = [
+        "validate",
+        "--output",
+        str(output),
+        "--case-dir",
+        str(case_dir),
+        "--smoke-dir",
+        str(tmp_path / "smoke"),
+        "--runner-path",
+        str(runner),
+        "--site-path",
+        str(submission["site_path"]),
+        "--site-sha256",
+        submission["site_sha256"],
+        "--manifest-path",
+        str(submission["manifest_path"]),
+        "--manifest-sha256",
+        submission["manifest_sha256"],
+        "--executed-wrapper-path",
+        str(submission["executed_wrapper_path"]),
+    ]
+    for key, path in sources.items():
+        arguments.extend(("--runtime-source", key, str(path)))
+    with pytest.raises(ValueError, match="non-symlink regular files"):
+        case_b_batch.main(arguments)
+    assert not output.exists()
 
 
 def test_request_free_verifier_subprocess_receives_no_credentials(tmp_path, monkeypatch):
@@ -283,6 +376,13 @@ def test_scheduler_gate_reserves_boundary_and_hashes_all_runtime_inputs(tmp_path
         "sdk_retries": 0,
     }
     assert set(phase["runtime_sources"]) == set(case_b_batch.REQUIRED_RUNTIME_KEYS)
+
+
+@pytest.mark.parametrize("filename", ["plan.json", "preparation.json"])
+def test_scheduler_gate_rejects_symlinked_preparation_input(tmp_path, filename):
+    with pytest.raises(ValueError, match="non-symlink regular files"):
+        reserve(tmp_path, symlink_case_input=filename)
+    assert not (tmp_path / "smoke" / "case-b-phase.json").exists()
 
 
 @pytest.mark.parametrize("server_pid", [True, 1, 0, -1])
@@ -599,12 +699,29 @@ def test_wrapper_uses_canonical_site_helpers_and_binds_slurm_spool_copy():
         '[[ "$(realpath -e -- "$SCOUT_HPC_DIR")" == "$SCOUT_HPC_DIR" ]]',
         '[[ -d "$directory" && ! -L "$directory" ]]',
         '[[ "$(realpath -e -- "$directory")" == "$directory" ]]',
+        'CASE_B_RUNNER="$CASE_B_BUNDLE_ROOT/scripts/run_case_b_scout.py"',
+        'CASE_B_CHAT_TEMPLATE="$CASE_B_HPC_DIR/tool_chat_template_llama4_pythonic_typed_v1.jinja"',
+        '[[ "$SCOUT_CASE_B_RUNNER" == "$CASE_B_RUNNER" && -f "$CASE_B_RUNNER"',
+        '[[ "$SCOUT_CHAT_TEMPLATE" == "$CASE_B_CHAT_TEMPLATE" && -f "$CASE_B_CHAT_TEMPLATE"',
+        '[[ -d "$SCOUT_CASE_B_DIR" && ! -L "$SCOUT_CASE_B_DIR"',
+        "export SCOUT_CASE_B_DIR",
+        'export SCOUT_CHAT_TEMPLATE="$CASE_B_CHAT_TEMPLATE"',
         '--executed-wrapper-path "$CASE_B_EXECUTED_WRAPPER"',
         '--wrapper-sha256-path "$CASE_B_WRAPPER_SHA256"',
         '--server-pid "$SCOUT_SERVER_PID"',
         'export PYTHONPATH="$CASE_B_BUNDLE_ROOT/vendor/agentdojo/src:$CASE_B_BUNDLE_ROOT/src:$CASE_B_BUNDLE_ROOT/scripts"',
+        '--runtime-source configs/local_scout.toml "$CASE_B_BUNDLE_ROOT/configs/local_scout.toml"',
+        '"$CASE_B_BUNDLE_ROOT/configs/local_scout.toml"',
     ):
         assert fragment in wrapper
+    native_config = '--runtime-source configs/local_scout.toml'
+    pre_smoke_validation = '"$CASE_B_HPC_DIR/case_b_batch.py" validate'
+    server_start = 'source "$CASE_B_HPC_DIR/scout-smoke.sbatch"'
+    assert (
+        wrapper.index(native_config)
+        < wrapper.index(pre_smoke_validation)
+        < wrapper.index(server_start)
+    )
 
 
 def test_wrapper_is_bounded_same_allocation_and_uses_shared_server_check():
@@ -642,7 +759,12 @@ def test_wrapper_is_bounded_same_allocation_and_uses_shared_server_check():
     assert (
         wrapper.index('source "$CASE_B_HPC_DIR/scout-smoke.sbatch"')
         < wrapper.index('"$CASE_B_HPC_DIR/case_a_batch.py" server-check')
-        < wrapper.index('"$SCOUT_CASE_B_RUNNER" run')
+        < wrapper.index('"$CASE_B_RUNNER" run')
+    )
+    assert '"$SCOUT_CASE_B_RUNNER" run' not in wrapper
+    assert (
+        wrapper.index("export SCOUT_CASE_B_DIR")
+        < wrapper.index('source "$CASE_B_HPC_DIR/scout-smoke.sbatch"')
     )
     assert case_b_batch.TOTAL_REQUEST_LIMIT == 24
     assert case_b_batch.CASE_REQUEST_LIMIT == 16

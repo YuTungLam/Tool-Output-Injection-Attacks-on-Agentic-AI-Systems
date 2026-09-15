@@ -181,8 +181,37 @@ class PreflightTests(unittest.TestCase):
             "requests_per_case_slot": 4,
             "online_auditor_requests": 0,
         })
+        case_c = preflight.limit_records(
+            native=True,
+            case_a_mode=False,
+            case_c_mode=True,
+        )
+        self.assertEqual(case_c["limits"]["scope"], "smoke_phase_only")
+        self.assertEqual(case_c["enclosing_case_c_limits"], {
+            "scope": "smoke_plus_case_c_job",
+            "walltime_seconds": 7200,
+            "total_generation_requests": 24,
+            "case_requests": 16,
+            "case_sessions": 4,
+            "requests_per_case_session": 4,
+            "online_auditor_requests": 0,
+        })
         with self.assertRaises(ValueError):
             preflight.limit_records(native=True, case_a_mode=True, case_b_mode=True)
+        with self.assertRaises(ValueError):
+            preflight.limit_records(
+                native=True,
+                case_a_mode=False,
+                case_b_mode=True,
+                case_c_mode=True,
+            )
+        with self.assertRaises(ValueError):
+            preflight.limit_records(
+                native=True,
+                case_a_mode=True,
+                case_b_mode=False,
+                case_c_mode=True,
+            )
         self.assertEqual(
             (case_a["limits"], case_a["enclosing_case_a_limits"]),
             case_a_batch.fixed_preflight_limits(),

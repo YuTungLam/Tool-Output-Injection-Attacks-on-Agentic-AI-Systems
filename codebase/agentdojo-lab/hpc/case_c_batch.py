@@ -1,4 +1,4 @@
-"""Fail-closed gates and terminal receipts for the Scout smoke-plus-Case-B job."""
+"""Fail-closed gates and terminal receipts for the Scout smoke-plus-Case-C job."""
 
 from __future__ import annotations
 
@@ -11,9 +11,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-PROTOCOL = "nesi-scout-smoke-case-b-v1"
+PROTOCOL = "nesi-scout-smoke-case-c-v1"
 SERVER_CHECK_PROTOCOL = "nesi-scout-smoke-case-a-v1"
-CASE_PROTOCOL = "scout-case-b-joint-source-v1"
+CASE_PROTOCOL = "scout-case-c-transformed-memory-v1"
 SMOKE_PROTOCOL = "nesi-scout-smoke-v1"
 NATIVE_PROTOCOL = "nesi-scout-native-clean-smoke-v1"
 WALLTIME_SECONDS = 7200
@@ -24,18 +24,21 @@ NATIVE_REQUEST_LIMIT = 4
 CASE_REQUEST_LIMIT = 16
 CASE_SLOT_REQUEST_LIMIT = 4
 TOTAL_REQUEST_LIMIT = 24
-CONDITIONS = ("both", "a_only", "b_only", "neither")
+CONDITIONS = ("clean", "attacked")
+SESSION_ORDER = ("A", "B")
+SLOTS = tuple((condition, stage) for condition in CONDITIONS for stage in SESSION_ORDER)
+SLOT_IDS = tuple(f"{condition}/{stage}" for condition, stage in SLOTS)
 REQUIRED_RUNTIME_KEYS = (
     "configs/local_scout.toml",
-    "hpc/scout-smoke-case-b.sbatch",
+    "hpc/scout-smoke-case-c.sbatch",
     "hpc/scout-smoke.sbatch",
-    "hpc/case_b_batch.py",
+    "hpc/case_c_batch.py",
     "hpc/case_a_batch.py",
     "hpc/preflight.py",
     "hpc/smoke.py",
     "hpc/native_smoke.py",
     "hpc/tool_chat_template_llama4_pythonic_typed_v1.jinja",
-    "scripts/run_case_b_scout.py",
+    "scripts/run_case_c_scout.py",
 )
 UNSTARTED_STATUSES = {
     "unstarted_walltime_limit_exceeded",
@@ -74,12 +77,12 @@ def expected_preflight_limits() -> tuple[dict, dict]:
         "native_max_completion_tokens_per_request": 2048,
     }
     enclosing = {
-        "scope": "smoke_plus_case_b_job",
+        "scope": "smoke_plus_case_c_job",
         "walltime_seconds": WALLTIME_SECONDS,
         "total_generation_requests": TOTAL_REQUEST_LIMIT,
         "case_requests": CASE_REQUEST_LIMIT,
-        "case_slots": len(CONDITIONS),
-        "requests_per_case_slot": CASE_SLOT_REQUEST_LIMIT,
+        "case_sessions": len(SLOTS),
+        "requests_per_case_session": CASE_SLOT_REQUEST_LIMIT,
         "online_auditor_requests": 0,
     }
     return smoke, enclosing
@@ -111,7 +114,7 @@ def parse_runtime_sources(rows: list[list[str]]) -> dict[str, Path]:
     sources: dict[str, Path] = {}
     for key, raw_path in rows:
         if key in sources:
-            raise ValueError("Duplicate Case B runtime source key")
+            raise ValueError("Duplicate Case C runtime source key")
         path = Path(raw_path)
         if (
             key not in REQUIRED_RUNTIME_KEYS
@@ -120,28 +123,22 @@ def parse_runtime_sources(rows: list[list[str]]) -> dict[str, Path]:
             or not path.is_file()
             or path.resolve() != path
         ):
-            raise ValueError("Invalid Case B runtime source mapping")
+            raise ValueError("Invalid Case C runtime source mapping")
         sources[key] = path
     if tuple(sorted(sources)) != tuple(sorted(REQUIRED_RUNTIME_KEYS)):
-        raise ValueError("Case B runtime source mapping is incomplete")
+        raise ValueError("Case C runtime source mapping is incomplete")
     return sources
 
 
 def validate_runtime_sources(plan: dict, sources: dict[str, Path]) -> dict[str, dict]:
     if set(sources) != set(REQUIRED_RUNTIME_KEYS):
-        raise ValueError("Case B runtime source mapping is incomplete")
-    if any(
-        not path.is_absolute()
-        or path.is_symlink()
-        or not path.is_file()
-        or path.resolve() != path
-        for path in sources.values()
-    ):
-        raise ValueError("Case B runtime source mapping is not physical and canonical")
+        raise ValueError("Case C runtime source mapping is incomplete")
+    for path in sources.values():
+        require_absolute_regular(path, "Case C runtime source")
     hashes = plan.get("source_hashes", {})
     values = {key: receipt(path) for key, path in sources.items()}
     if any(hashes.get(key) != value["sha256"] for key, value in values.items()):
-        raise ValueError("Case B launch source differs from its prepared source hash")
+        raise ValueError("Case C launch source differs from its prepared source hash")
     return values
 
 
@@ -152,7 +149,18 @@ def require_absolute_regular(path: Path, label: str) -> Path:
         or not path.is_file()
         or path.resolve() != path
     ):
-        raise ValueError(f"{label} must be an absolute physical canonical file")
+        raise ValueError(f"{label} must be an absolute, physical canonical file")
+    return path
+
+
+def require_absolute_directory(path: Path, label: str) -> Path:
+    if (
+        not path.is_absolute()
+        or path.is_symlink()
+        or not path.is_dir()
+        or path.resolve() != path
+    ):
+        raise ValueError(f"{label} must be an absolute, physical canonical directory")
     return path
 
 
@@ -161,11 +169,11 @@ def manifest_entries(path: Path, runtime: dict[str, dict]) -> dict[str, str]:
     for line in path.read_text(encoding="utf-8").splitlines():
         match = re.fullmatch(r"([0-9a-f]{64})  ([^\x00]+)", line)
         if match is None or match.group(2) in entries:
-            raise ValueError("Malformed or duplicate Case B checksum manifest entry")
+            raise ValueError("Malformed or duplicate Case C checksum manifest entry")
         entries[match.group(2)] = match.group(1)
     expected = {key: item["sha256"] for key, item in runtime.items()}
     if entries != expected:
-        raise ValueError("Case B checksum manifest does not exactly bind every launch payload")
+        raise ValueError("Case C checksum manifest does not exactly bind every launch payload")
     return entries
 
 
@@ -179,19 +187,19 @@ def submission_binding(
     runtime: dict[str, dict],
 ) -> dict:
     if not SHA256_RE.fullmatch(site_sha256) or not SHA256_RE.fullmatch(manifest_sha256):
-        raise ValueError("Case B submission hashes must be lowercase SHA-256 values")
-    site = require_absolute_regular(site_path, "Case B site file")
-    manifest = require_absolute_regular(manifest_path, "Case B manifest")
-    executed = require_absolute_regular(executed_wrapper_path, "Executed Case B wrapper")
+        raise ValueError("Case C submission hashes must be lowercase SHA-256 values")
+    site = require_absolute_regular(site_path, "Case C site file")
+    manifest = require_absolute_regular(manifest_path, "Case C manifest")
+    executed = require_absolute_regular(executed_wrapper_path, "Executed Case C wrapper")
     canonical = require_absolute_regular(
-        Path(runtime["hpc/scout-smoke-case-b.sbatch"]["path"]),
-        "Canonical Case B wrapper",
+        Path(runtime["hpc/scout-smoke-case-c.sbatch"]["path"]),
+        "Canonical Case C wrapper",
     )
     bundle_root = canonical.parent.parent
     if manifest != bundle_root / "submission-sha256.txt" or any(
         Path(item["path"]) != bundle_root / key for key, item in runtime.items()
     ):
-        raise ValueError("Case B launch payloads must use their frozen bundle paths")
+        raise ValueError("Case C launch payloads must use their frozen bundle paths")
     site_receipt = receipt(site)
     manifest_receipt = receipt(manifest)
     executed_receipt = receipt(executed)
@@ -200,9 +208,9 @@ def submission_binding(
         site_receipt["sha256"] != site_sha256
         or manifest_receipt["sha256"] != manifest_sha256
         or executed_receipt["sha256"] != canonical_receipt["sha256"]
-        or canonical_receipt != runtime["hpc/scout-smoke-case-b.sbatch"]
+        or canonical_receipt != runtime["hpc/scout-smoke-case-c.sbatch"]
     ):
-        raise ValueError("Case B submitted site, manifest, or spool wrapper differs")
+        raise ValueError("Case C submitted site, manifest, or spool wrapper differs")
     manifest_entries(manifest, runtime)
     return {
         "site": site_receipt,
@@ -226,11 +234,11 @@ def validate_recorded_submission(binding: dict, runtime: dict[str, dict]) -> Non
         "executed_wrapper_matches_canonical",
     }
     if set(binding) != required:
-        raise ValueError("Recorded Case B submission binding has unexpected fields")
+        raise ValueError("Recorded Case C submission binding has unexpected fields")
     for name in ("site", "manifest", "executed_wrapper", "canonical_wrapper"):
         if receipt(Path(binding[name]["path"])) != binding[name]:
-            raise ValueError("A submission-bound Case B file changed")
-    canonical = runtime["hpc/scout-smoke-case-b.sbatch"]
+            raise ValueError("A submission-bound Case C file changed")
+    canonical = runtime["hpc/scout-smoke-case-c.sbatch"]
     if (
         binding["site"]["sha256"] != binding["site_sha256_at_submission"]
         or binding["manifest"]["sha256"] != binding["manifest_sha256_at_submission"]
@@ -238,7 +246,7 @@ def validate_recorded_submission(binding: dict, runtime: dict[str, dict]) -> Non
         or binding["executed_wrapper"]["sha256"] != canonical["sha256"]
         or binding["executed_wrapper_matches_canonical"] is not True
     ):
-        raise ValueError("Recorded Case B submission hashes are inconsistent")
+        raise ValueError("Recorded Case C submission hashes are inconsistent")
     manifest_entries(Path(binding["manifest"]["path"]), runtime)
 
 
@@ -247,10 +255,10 @@ def validate_wrapper_checksums(path: Path, binding: dict, runtime: dict[str, dic
     for line in path.read_text(encoding="utf-8").splitlines():
         match = re.fullmatch(r"([0-9a-f]{64})  (/.+)", line)
         if match is None:
-            raise ValueError("Malformed Case B wrapper checksum entry")
+            raise ValueError("Malformed Case C wrapper checksum entry")
         resolved = str(Path(match.group(2)).resolve())
         if resolved in recorded:
-            raise ValueError("Duplicate Case B wrapper checksum path")
+            raise ValueError("Duplicate Case C wrapper checksum path")
         recorded[resolved] = match.group(1)
     expected = {
         item["path"]: item["sha256"]
@@ -262,27 +270,14 @@ def validate_wrapper_checksums(path: Path, binding: dict, runtime: dict[str, dic
         )
     }
     if recorded != expected:
-        raise ValueError("Case B wrapper checksum record differs from bound inputs")
-
-
-def require_preparation_inputs(case_dir: Path) -> tuple[Path, Path]:
-    paths = (case_dir / "plan.json", case_dir / "preparation.json")
-    if any(
-        not path.is_absolute()
-        or path.is_symlink()
-        or not path.is_file()
-        or path.resolve() != path
-        for path in paths
-    ):
-        raise ValueError(
-            "Case B plan.json and preparation.json must be absolute physical canonical "
-            "non-symlink regular files"
-        )
-    return paths
+        raise ValueError("Case C wrapper checksum record differs from bound inputs")
 
 
 def validate_plan_shape(case_dir: Path, runner_path: Path, *, run_verifier: bool) -> dict:
-    plan_path, preparation_path = require_preparation_inputs(case_dir)
+    plan_path = require_absolute_regular(case_dir / "plan.json", "Case C plan")
+    preparation_path = require_absolute_regular(
+        case_dir / "preparation.json", "Case C preparation receipt"
+    )
     preparation = read(preparation_path)
     if (
         preparation.get("protocol") != CASE_PROTOCOL
@@ -291,36 +286,78 @@ def validate_plan_shape(case_dir: Path, runner_path: Path, *, run_verifier: bool
         or preparation.get("plan") != receipt(plan_path)
         or Path(preparation.get("plan", {}).get("path", "")).resolve() != plan_path.resolve()
     ):
-        raise ValueError("Invalid Case B preparation receipt")
+        raise ValueError("Invalid Case C preparation receipt")
     plan = read(plan_path)
     limits = plan.get("limits", {})
     config = plan.get("config", {})
     endpoint = plan.get("endpoint_identity", {})
+    semantic_model = config.get("semantic_model")
+    semantic_model_valid = (
+        isinstance(semantic_model, str)
+        and Path(semantic_model).is_absolute()
+        and Path(semantic_model).name == "all-MiniLM-L6-v2-1110a243"
+    )
+    expected_slots = [
+        {"slot_id": slot_id, "condition": condition, "stage": stage, "order": order}
+        for order, (slot_id, (condition, stage)) in enumerate(zip(SLOT_IDS, SLOTS, strict=True), 1)
+    ]
+    expected_endpoint = {
+        "settings": {
+            "provider": "openai_compatible",
+            "model": "llama-4-scout-local",
+            "base_url": "http://127.0.0.1:8000/v1",
+            "api_key_env": "LOCAL_LLM_API_KEY",
+        },
+        "literal_loopback_required": True,
+        "credentials": "environment_variable_only",
+        "fallback": None,
+    }
     if (
         plan.get("protocol") != CASE_PROTOCOL
         or plan.get("status") != "prepared_design_only"
         or plan.get("real_llm_requests_started") != 0
         or plan.get("conditions") != list(CONDITIONS)
-        or limits.get("sdk_attempts_per_slot") != CASE_SLOT_REQUEST_LIMIT
+        or plan.get("session_order") != list(SESSION_ORDER)
+        or plan.get("slots") != expected_slots
+        or plan.get("execution_binding")
+        != {"status": "pending_same_allocation_serving_receipt"}
+        or limits.get("sdk_attempts_per_session") != CASE_SLOT_REQUEST_LIMIT
         or limits.get("primary_sdk_attempts_total") != CASE_REQUEST_LIMIT
+        or limits.get("completion_tokens_per_request") != 2048
+        or limits.get("context_tokens") != 8192
         or limits.get("online_auditor_requests") != 0
         or limits.get("sdk_max_retries") != 0
+        or limits.get("request_pacing") is not False
+        or limits.get("worker_processes") != len(SLOTS)
+        or limits.get("session_timeout_seconds") != 900
         or config.get("provider") != "openai_compatible"
+        or config.get("model") != "llama-4-scout-local"
         or config.get("base_url") != "http://127.0.0.1:8000/v1"
-        or config.get("online_causal_audit", False) is not False
-        or endpoint.get("fallback") is not None
+        or config.get("api_key_env") != "LOCAL_LLM_API_KEY"
+        or config.get("benchmark_version") != "v1.2.2"
+        or config.get("suite") != "workspace"
+        or config.get("user_tasks") != ["case_c_transformed_memory"]
+        or config.get("temperature") != 0.0
+        or config.get("max_completion_tokens") != 2048
+        or config.get("max_tool_rounds") != CASE_SLOT_REQUEST_LIMIT
+        or config.get("request_timeout_seconds") != 180.0
+        or config.get("online_causal_audit") is not False
+        or config.get("reasoning_effort") is not None
+        or config.get("pacing_tokens_per_minute") is not None
+        or config.get("record_events") is not True
+        or config.get("online_provenance") is not True
+        or config.get("canary_enabled") is not False
+        or config.get("lineage_namespace") != CASE_PROTOCOL
+        or config.get("provenance_policy") != "configs/workspace_policy_v1.yaml"
+        or not semantic_model_valid
+        or config.get("semantic_revision") != "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+        or endpoint != expected_endpoint
     ):
-        raise ValueError("Prepared plan violates the fixed local Case B schedule or request bounds")
-    if (
-        not runner_path.is_absolute()
-        or runner_path.is_symlink()
-        or not runner_path.is_file()
-        or runner_path.resolve() != runner_path
-    ):
-        raise ValueError("Case B runner must be an absolute physical canonical file")
-    expected_runner = plan.get("source_hashes", {}).get("scripts/run_case_b_scout.py")
+        raise ValueError("Prepared plan violates the fixed local Case C schedule or request bounds")
+    runner_path = require_absolute_regular(runner_path, "Case C runner")
+    expected_runner = plan.get("source_hashes", {}).get("scripts/run_case_c_scout.py")
     if receipt(runner_path)["sha256"] != expected_runner:
-        raise ValueError("Case B runner differs from its prepared source hash")
+        raise ValueError("Case C runner differs from its prepared source hash")
     if run_verifier:
         verification_env = {
             key: value
@@ -353,7 +390,7 @@ def validate_plan_shape(case_dir: Path, runner_path: Path, *, run_verifier: bool
             env=verification_env,
         )
         if checked.returncode != 0:
-            raise ValueError("Case B request-free plan verification failed")
+            raise ValueError("Case C request-free plan verification failed")
     return plan
 
 
@@ -373,18 +410,16 @@ def validate_before_smoke(
 ) -> dict:
     """Verify a pristine preparation and every launch byte before starting vLLM."""
     if not all(path.is_absolute() for path in (output, case_dir, smoke_dir, runner_path)):
-        raise ValueError("Case B launch paths must be absolute")
-    if case_dir.is_symlink() or not case_dir.is_dir() or case_dir.resolve() != case_dir:
-        raise ValueError("Prepared Case B directory must be physical and canonical")
-    case_dir = case_dir.resolve()
-    require_preparation_inputs(case_dir)
-    smoke_dir = smoke_dir.resolve()
+        raise ValueError("Case C launch paths must be absolute")
+    case_dir = require_absolute_directory(case_dir, "Prepared Case C directory")
+    if smoke_dir.is_symlink() or smoke_dir.resolve() != smoke_dir:
+        raise ValueError("Case C smoke path must be physical and canonical")
     if case_dir == smoke_dir or case_dir.is_relative_to(smoke_dir) or smoke_dir.is_relative_to(case_dir):
-        raise ValueError("Case B and smoke evidence directories must be separate")
-    if output.resolve() != Path(str(smoke_dir) + ".case-b-pre-smoke.json"):
+        raise ValueError("Case C and smoke evidence directories must be separate")
+    if output.resolve() != Path(str(smoke_dir) + ".case-c-pre-smoke.json"):
         raise ValueError("Pre-smoke receipt must be the fresh smoke directory sibling")
     if {path.name for path in case_dir.iterdir()} != {"plan.json", "preparation.json"}:
-        raise ValueError("Prepared Case B directory must contain only plan.json and preparation.json")
+        raise ValueError("Prepared Case C directory must contain only plan.json and preparation.json")
     if smoke_dir.exists():
         raise FileExistsError("Smoke evidence directory must be fresh")
     plan = (
@@ -485,7 +520,7 @@ def validate_scheduler_decision(phase: dict) -> None:
         or phase.get("error_type") != expected.get("error_type")
         or ("error_type" in phase) != ("error_type" in expected)
     ):
-        raise ValueError("Recorded Case B scheduler decision is inconsistent")
+        raise ValueError("Recorded Case C scheduler decision is inconsistent")
 
 
 def reserve_phase(
@@ -506,14 +541,12 @@ def reserve_phase(
     if not all(
         path.is_absolute() for path in (output, case_dir, pre_smoke_path, runner_path, wrapper_sha256_path)
     ):
-        raise ValueError("Case B phase paths must be absolute")
-    if case_dir.is_symlink() or not case_dir.is_dir() or case_dir.resolve() != case_dir:
-        raise ValueError("Prepared Case B directory must remain physical and canonical")
-    require_preparation_inputs(case_dir)
-    if output.name != "case-b-phase.json" or output.parent.resolve() == case_dir.resolve():
-        raise ValueError("Case B phase must be in its separate smoke directory")
+        raise ValueError("Case C phase paths must be absolute")
+    case_dir = require_absolute_directory(case_dir, "Prepared Case C directory")
+    if output.name != "case-c-phase.json" or output.parent.resolve() == case_dir.resolve():
+        raise ValueError("Case C phase must be in its separate smoke directory")
     if type(server_pid) is not int or server_pid <= 1:
-        raise ValueError("Case B server PID must identify the live smoke server")
+        raise ValueError("Case C server PID must identify the live smoke server")
     decision = scheduler_decision(
         job_id=job_id,
         reported_job_id=reported_job_id,
@@ -530,12 +563,12 @@ def reserve_phase(
     runtime = validate_runtime_sources(plan, runtime_sources)
     pre_smoke = read(pre_smoke_path)
     if output.parent.resolve() != Path(pre_smoke.get("smoke_dir", "")).resolve():
-        raise ValueError("Case B phase path differs from the pre-smoke binding")
+        raise ValueError("Case C phase path differs from the pre-smoke binding")
     binding = pre_smoke.get("submission_binding")
     if not isinstance(binding, dict):
-        raise ValueError("Missing Case B submission binding")
+        raise ValueError("Missing Case C submission binding")
     validate_recorded_submission(binding, runtime)
-    require_path(wrapper_sha256_path, output.parent, "case-b-wrapper-sha256.txt")
+    require_path(wrapper_sha256_path, output.parent, "case-c-wrapper-sha256.txt")
     validate_wrapper_checksums(wrapper_sha256_path, binding, runtime)
     expected_pre_smoke = {
         "protocol": PROTOCOL,
@@ -552,7 +585,7 @@ def reserve_phase(
         },
     }
     if pre_smoke != expected_pre_smoke:
-        raise ValueError("Pre-smoke Case B binding changed before phase reservation")
+        raise ValueError("Pre-smoke Case C binding changed before phase reservation")
     value = {
         "protocol": PROTOCOL,
         "status": decision["status"],
@@ -588,7 +621,7 @@ def record_cleanup(
     job_id: str,
 ) -> dict:
     if type(server_pid) is not int or server_pid <= 1 or type(case_pid) is not int or case_pid < 0:
-        raise ValueError("Case B cleanup process identities are invalid")
+        raise ValueError("Case C cleanup process identities are invalid")
     value = {
         "protocol": PROTOCOL,
         "slurm_job_id": job_id,
@@ -617,7 +650,7 @@ def count_slot_attempts(path: Path) -> int:
         return 0
     lines = path.read_text(encoding="utf-8").splitlines()
     if len(lines) > CASE_SLOT_REQUEST_LIMIT:
-        raise ValueError("Case B slot exceeded four SDK attempts")
+        raise ValueError("Case C slot exceeded four SDK attempts")
     for expected, line in enumerate(lines, 1):
         row = json.loads(line)
         if (
@@ -625,7 +658,7 @@ def count_slot_attempts(path: Path) -> int:
             or type(row.get("sdk_attempt")) is not int
             or row["sdk_attempt"] != expected
         ):
-            raise ValueError("Case B SDK attempts must be sequential JSON objects")
+            raise ValueError("Case C SDK attempts must be sequential JSON objects")
     return len(lines)
 
 
@@ -643,13 +676,13 @@ def validate_common_chain(
     plan_verifier=None,
 ) -> tuple[dict, dict, dict, dict, dict]:
     smoke_root = smoke_path.parent.resolve()
-    if pre_smoke_path.resolve() != Path(str(smoke_root) + ".case-b-pre-smoke.json"):
+    if pre_smoke_path.resolve() != Path(str(smoke_root) + ".case-c-pre-smoke.json"):
         raise ValueError("Pre-smoke receipt path differs from the bound smoke directory")
     for path, name in (
         (preflight_path, "preflight.json"),
         (smoke_path, "smoke.json"),
         (native_path, "native-smoke.json"),
-        (cleanup_path, "case-b-cleanup.json"),
+        (cleanup_path, "case-c-cleanup.json"),
     ):
         require_path(path, smoke_root, name)
     case_root = case_plan_path.parent.resolve()
@@ -659,7 +692,7 @@ def validate_common_chain(
         or case_root.is_relative_to(smoke_root)
         or smoke_root.is_relative_to(case_root)
     ):
-        raise ValueError("Case B and smoke terminal evidence paths must be separate")
+        raise ValueError("Case C and smoke terminal evidence paths must be separate")
     plan = read(case_plan_path)
     verified_plan = (
         plan_verifier(case_root)
@@ -669,7 +702,7 @@ def validate_common_chain(
     if plan_verifier is not None:
         validate_plan_shape(case_root, runner_path, run_verifier=False)
     if verified_plan != plan:
-        raise ValueError("Terminal Case B request-free plan verification differs")
+        raise ValueError("Terminal Case C request-free plan verification differs")
     plan_receipt = receipt(case_plan_path)
     runner_receipt = receipt(runner_path)
     pre_smoke = read(pre_smoke_path)
@@ -693,23 +726,23 @@ def validate_common_chain(
         != {"request_free_runner_verify": True, "real_llm_requests_started": 0}
         or phase.get("limits") != expected_limits()
         or plan.get("protocol") != CASE_PROTOCOL
-        or plan.get("source_hashes", {}).get("scripts/run_case_b_scout.py") != runner_receipt["sha256"]
+        or plan.get("source_hashes", {}).get("scripts/run_case_c_scout.py") != runner_receipt["sha256"]
     ):
-        raise ValueError("Case B pre-call source, plan, or path binding differs")
+        raise ValueError("Case C pre-call source, plan, or path binding differs")
     for key, bound in phase.get("runtime_sources", {}).items():
         if key not in REQUIRED_RUNTIME_KEYS or receipt(Path(bound.get("path", ""))) != bound:
-            raise ValueError("Case B launch source changed after phase reservation")
+            raise ValueError("Case C launch source changed after phase reservation")
         if plan.get("source_hashes", {}).get(key) != bound.get("sha256"):
-            raise ValueError("Case B plan no longer binds a launch source")
+            raise ValueError("Case C plan no longer binds a launch source")
     if set(phase.get("runtime_sources", {})) != set(REQUIRED_RUNTIME_KEYS):
-        raise ValueError("Case B terminal runtime source inventory is incomplete")
+        raise ValueError("Case C terminal runtime source inventory is incomplete")
     binding = phase.get("submission_binding")
     if not isinstance(binding, dict):
-        raise ValueError("Case B terminal submission binding is missing")
+        raise ValueError("Case C terminal submission binding is missing")
     validate_recorded_submission(binding, phase["runtime_sources"])
-    require_path(wrapper_sha256_path, smoke_root, "case-b-wrapper-sha256.txt")
+    require_path(wrapper_sha256_path, smoke_root, "case-c-wrapper-sha256.txt")
     if phase.get("wrapper_checksums") != receipt(wrapper_sha256_path):
-        raise ValueError("Case B wrapper checksum receipt changed")
+        raise ValueError("Case C wrapper checksum receipt changed")
     validate_wrapper_checksums(wrapper_sha256_path, binding, phase["runtime_sources"])
     preflight = read(preflight_path)
     smoke = read(smoke_path)
@@ -721,7 +754,7 @@ def validate_common_chain(
         preflight.get("protocol") != SMOKE_PROTOCOL
         or preflight.get("slurm_job_id") != job_id
         or preflight.get("limits") != smoke_limits
-        or preflight.get("enclosing_case_b_limits") != enclosing_limits
+        or preflight.get("enclosing_case_c_limits") != enclosing_limits
         or "enclosing_case_a_limits" in preflight
         or smoke.get("protocol") != SMOKE_PROTOCOL
         or native.get("protocol") != NATIVE_PROTOCOL
@@ -730,7 +763,7 @@ def validate_common_chain(
         or cleanup.get("slurm_job_id") != job_id
         or cleanup.get("server_pid") != phase.get("server_pid")
     ):
-        raise ValueError("Case B smoke, cleanup, or allocation binding differs")
+        raise ValueError("Case C smoke, cleanup, or allocation binding differs")
     return plan, preflight, smoke, native, cleanup
 
 
@@ -758,116 +791,218 @@ def validate_started_case(
         or server_check.get("server_pid") != phase.get("server_pid")
         or server_check.get("endpoint") != plan.get("config", {}).get("base_url")
     ):
-        raise ValueError("Case B server check differs from its shared checked receipt")
+        raise ValueError("Case C server check differs from its shared checked receipt")
     if binding_validator is None:
         from agentdojo_lab.case_a_scout import recorded_serving_binding
 
         binding_validator = recorded_serving_binding
     binding = binding_validator(preflight_path, plan["config"]["base_url"])
     if binding.get("status") != "bound_before_case_calls" or binding.get("slurm_job_id") != job_id:
-        raise ValueError("Recomputed Case B serving binding differs")
+        raise ValueError("Recomputed Case C serving binding differs")
     plan_receipt = receipt(case_root / "plan.json")
     execution = read(execution_path)
     if execution != {
+        "schema_version": 1,
         "protocol": CASE_PROTOCOL,
         "mode": "live_scout",
         "plan": plan_receipt,
         "serving": binding,
+        "preflight": receipt(preflight_path),
         "status": "reserved_before_workers",
+        "fixed_slot_order": list(SLOT_IDS),
     }:
-        raise ValueError("Case B execution receipt differs from its serving binding")
+        raise ValueError("Case C execution receipt differs from its serving binding")
     summary = read(case_summary_path)
     slots = summary.get("slots", [])
     if (
-        summary.get("protocol") != CASE_PROTOCOL
+        summary.get("schema_version") != 1
+        or summary.get("protocol") != CASE_PROTOCOL
+        or summary.get("mode") != "live_scout"
+        or summary.get("evidence_class") != "live_scout_research"
         or summary.get("real_llm") is not True
+        or summary.get("fixture_is_research_result") is not None
+        or summary.get("fixture_validation_complete") is not None
+        or summary.get("research_outcome") != "inspect_observed_native_evidence"
         or summary.get("plan") != plan_receipt
-        or summary.get("conditions") != list(CONDITIONS)
-        or len(slots) != len(CONDITIONS)
-        or [row.get("condition") for row in slots] != list(CONDITIONS)
+        or summary.get("fixed_slot_order") != list(SLOT_IDS)
+        or len(slots) != len(SLOTS)
+        or [row.get("slot_id") for row in slots] != list(SLOT_IDS)
+        or [(row.get("condition"), row.get("stage")) for row in slots] != list(SLOTS)
+        or summary.get("source_snapshot_unchanged") is not True
+        or summary.get("failures_replaced") is not False
+        or summary.get("cross_session_export_is_native_oracle") is not False
     ):
-        raise ValueError("Case B terminal summary protocol, plan, or schedule differs")
+        raise ValueError("Case C terminal summary protocol, plan, or schedule differs")
     counts = []
-    for condition, row in zip(CONDITIONS, slots, strict=True):
-        terminal_path = case_root / f"{condition}-terminal.json"
+    for (condition, stage), row in zip(SLOTS, slots, strict=True):
+        terminal_path = case_root / f"{condition}-{stage}-terminal.json"
         if not terminal_path.is_file():
-            raise ValueError("Case B worker terminal receipt is missing")
+            raise ValueError("Case C worker terminal receipt is missing")
         terminal = read(terminal_path)
         if (
             row.get("terminal") != terminal
             or terminal.get("protocol") != CASE_PROTOCOL
-            or terminal.get("condition") != condition
+            or row.get("replacement_attempted") is not False
         ):
-            raise ValueError("Case B embedded and on-disk terminal evidence differs")
-        count = count_slot_attempts(case_root / "runs" / condition / "sdk-attempts.jsonl")
+            raise ValueError("Case C embedded and on-disk terminal evidence differs")
+        if terminal.get("status") == "completed" and (
+            terminal.get("schema_version") != 1
+            or terminal.get("condition") != condition
+            or terminal.get("stage") != stage
+            or terminal.get("slot_id") != f"{condition}/{stage}"
+            or terminal.get("run_id") != f"{CASE_PROTOCOL}-{condition}-{stage}"
+            or terminal.get("session_id") != terminal.get("run_id")
+            or terminal.get("real_llm") is not True
+            or terminal.get("evidence_class") != "live_scout_research"
+            or terminal.get("fixture_is_research_result") is not None
+            or terminal.get("source_snapshot_unchanged_after_calls") is not True
+            or terminal.get("input_hashes_unchanged") is not True
+        ):
+            raise ValueError("Completed Case C terminal is not bound to its exact session")
+        count = count_slot_attempts(case_root / condition / stage / "sdk-attempts.jsonl")
         if row.get("captured_sdk_attempts") != count:
-            raise ValueError("Case B summary SDK count differs from its attempt ledger")
+            raise ValueError("Case C summary SDK count differs from its attempt ledger")
         counts.append(count)
     if summary.get("captured_primary_sdk_attempts") != sum(counts):
-        raise ValueError("Case B total SDK count differs from its slot ledgers")
-    worker_pids = [row.get("worker_pid") for row in slots]
-    actual_pids = [pid for pid in worker_pids if type(pid) is int and pid > 0]
-    verified = [
-        row
-        for row in slots
-        if row.get("process_identity_status") == "verified_distinct_worker"
-        and type(row.get("worker_pid")) is int
-        and row["worker_pid"] > 0
-        and row.get("terminal", {}).get("pid") == row["worker_pid"]
-    ]
-    all_distinct = (
-        len(actual_pids) == len(CONDITIONS)
-        and len(set(actual_pids)) == len(CONDITIONS)
-        and len(verified) == len(CONDITIONS)
-    )
-    primary_complete = all(
-        row.get("terminal", {}).get("primary_trajectory_complete", row.get("terminal", {}).get("complete"))
-        is True
-        for row in slots
-    )
-    workers_complete = all(
+        raise ValueError("Case C total SDK count differs from its slot ledgers")
+    verified_pids = []
+    for row in slots:
+        pid = row.get("worker_pid")
+        identity_verified = bool(
+            type(pid) is int and pid > 1 and row.get("terminal", {}).get("pid") == pid
+        )
+        if row.get("process_identity_verified") is not identity_verified:
+            raise ValueError("Case C process identity flag differs from terminal evidence")
+        if identity_verified:
+            verified_pids.append(pid)
+    run_ids = [row.get("terminal", {}).get("run_id") for row in slots]
+    all_distinct = len(verified_pids) == len(SLOTS) and len(set(verified_pids)) == len(SLOTS)
+    distinct_runs = all(isinstance(value, str) and value for value in run_ids) and len(
+        set(run_ids)
+    ) == len(SLOTS)
+    all_terminal = all(
         row.get("process_status") == "terminal" and row.get("returncode") == 0 for row in slots
     )
-    determinate = sum(row.get("terminal", {}).get("outcome_analysis_complete") is True for row in slots)
-    exports = sum(
-        row.get("causal_v2", {}).get("status") == "exported_request_free"
-        and row.get("causal_v2", {}).get("model_requests") == 0
-        for row in slots
+    all_primary = all(
+        row.get("terminal", {}).get("primary_trajectory_complete") is True for row in slots
     )
-    batch_complete = (
-        all_distinct
-        and primary_complete
-        and workers_complete
-        and determinate == len(CONDITIONS)
-        and exports == len(CONDITIONS)
+    all_analyses = all(
+        row.get("terminal", {}).get("outcome_analysis_complete") is True for row in slots
     )
+    handoffs = summary.get("handoffs")
+    if not isinstance(handoffs, dict) or set(handoffs) != set(CONDITIONS):
+        raise ValueError("Case C summary lacks the two branch handoff receipts")
+    handoffs_ready = True
+    for condition in CONDITIONS:
+        handoff_path = case_root / condition / "handoff.json"
+        handoff = read(handoff_path)
+        if handoffs.get(condition) != handoff:
+            raise ValueError("Case C embedded handoff differs from its on-disk receipt")
+        if handoff.get("status") != "ready_for_session_b":
+            handoffs_ready = False
+            continue
+        a_terminal = slots[list(SLOTS).index((condition, "A"))]["terminal"]
+        b_terminal = slots[list(SLOTS).index((condition, "B"))]["terminal"]
+        a_root = case_root / condition / "A"
+        session_a = handoff.get("session_a", {})
+        memory = handoff.get("memory", {})
+        expected_files = {
+            "summary": a_root / "summary.json",
+            "outcome": a_root / "case-c-outcome.json",
+            "native_state": a_root / "native-memory.json",
+            "dcpg_state": a_root / "lineage-state.json",
+        }
+        if (
+            handoff.get("schema_version") != 1
+            or handoff.get("protocol") != CASE_PROTOCOL
+            or handoff.get("condition") != condition
+            or handoff.get("advancement_basis")
+            != "observed_successful_native_memory_write_only"
+            or handoff.get("dcpg_candidate_match_can_advance") is not False
+            or handoff.get("plan") != plan_receipt
+            or handoff.get("checkpoint_hashes_distinctly_bound") is not True
+            or session_a.get("worker_pid") != a_terminal.get("pid")
+            or session_a.get("run_id") != a_terminal.get("run_id")
+            or session_a.get("summary") != receipt(expected_files["summary"])
+            or session_a.get("outcome") != receipt(expected_files["outcome"])
+            or handoff.get("native_state") != receipt(expected_files["native_state"])
+            or handoff.get("dcpg_state") != receipt(expected_files["dcpg_state"])
+            or handoff.get("native_state") == handoff.get("dcpg_state")
+            or read(expected_files["summary"]) != a_terminal
+            or read(expected_files["outcome"]) != a_terminal.get("outcome")
+            or memory.get("file_id") != a_terminal.get("created_file_id")
+            or memory.get("content") != a_terminal.get("created_content")
+            or not isinstance(memory.get("content"), str)
+            or hashlib.sha256(memory["content"].encode()).hexdigest()
+            != memory.get("content_sha256")
+            or b_terminal.get("source_id") != memory.get("file_id")
+            or b_terminal.get("source_content") != memory.get("content")
+            or b_terminal.get("input_hashes")
+            != {
+                "handoff": receipt(handoff_path)["sha256"],
+                "native_input": handoff["native_state"]["sha256"],
+                "lineage_input": handoff["dcpg_state"]["sha256"],
+            }
+        ):
+            raise ValueError("Case C ready handoff is not bound to the exact A and B evidence")
+    request_bound = sum(counts) <= CASE_REQUEST_LIMIT and all(
+        count <= CASE_SLOT_REQUEST_LIMIT for count in counts
+    )
+    protocol_complete = bool(
+        all_terminal
+        and all_primary
+        and all_analyses
+        and all_distinct
+        and distinct_runs
+        and request_bound
+        and handoffs_ready
+    )
+    cross_session = summary.get("cross_session_export")
+    if not isinstance(cross_session, dict) or cross_session.get("model_requests_started") != 0:
+        raise ValueError("Case C cross-session export is not request-free")
+    report_native_complete = cross_session.get("observed_native_path_complete") is True
+    if cross_session.get("status") == "exported_request_free":
+        native_status = cross_session.get("observed_native_path_status")
+        if (
+            cross_session.get("native_oracle_affected") is not False
+            or native_status
+            != {condition: "all_native_observations_covered" for condition in CONDITIONS}
+            or report_native_complete is not True
+            or cross_session.get("cross_session_json")
+            != receipt(case_root / "cross-session-report/cross-session.json")
+            or cross_session.get("index_html")
+            != receipt(case_root / "cross-session-report/index.html")
+        ):
+            raise ValueError("Case C request-free export lacks both complete observed native paths")
+    elif report_native_complete:
+        raise ValueError("A failed Case C export cannot claim a complete native path")
+    outcomes = {row["slot_id"]: row["terminal"].get("outcome") for row in slots}
+    candidates = {
+        row["slot_id"]: row["terminal"].get("dcpg_candidate_evidence") for row in slots
+    }
+    research_complete = protocol_complete and report_native_complete
     derived = {
         "all_assignments_accounted": True,
-        "all_assigned_processes_terminal": all(row.get("process_status") == "terminal" for row in slots),
-        "planned_slots": len(CONDITIONS),
-        "terminal_slots": sum(row.get("process_status") == "terminal" for row in slots),
-        "primary_trajectory_batch_complete": all_distinct and primary_complete,
-        "worker_processing_complete": workers_complete,
-        "completed_primary_trajectories": sum(
-            row.get("terminal", {}).get(
-                "primary_trajectory_complete", row.get("terminal", {}).get("complete")
-            )
-            is True
-            for row in slots
-        ),
-        "determinate_outcome_analyses": determinate,
-        "successful_request_free_causal_exports": exports,
-        "scientific_batch_complete": batch_complete,
-        "worker_pids": worker_pids,
-        "actual_worker_processes": len(actual_pids),
-        "verified_worker_identities": len(verified),
-        "distinct_worker_processes": len(set(actual_pids)),
+        "all_workers_terminal_successfully": all_terminal,
+        "all_primary_trajectories_complete": all_primary,
+        "all_outcome_analyses_determinate": all_analyses,
         "all_worker_processes_distinct": all_distinct,
+        "all_recorded_run_ids_distinct": distinct_runs,
+        "worker_pids": verified_pids,
+        "run_ids": run_ids,
+        "handoffs_ready_from_observed_native_writes": handoffs_ready,
+        "primary_sdk_attempt_ceiling": CASE_REQUEST_LIMIT,
+        "request_bound_respected": request_bound,
+        "protocol_execution_complete": protocol_complete,
+        "research_experiment_complete": research_complete,
+        "end_to_end_native_report_complete": report_native_complete,
+        "observed_native_outcomes": outcomes,
+        "dcpg_candidate_reporting": candidates,
     }
     if any(summary.get(key) != expected for key, expected in derived.items()):
-        raise ValueError("Case B summary disagrees with its worker evidence")
-    if summary.get("status") != ("completed" if batch_complete else "failed"):
-        raise ValueError("Case B summary status disagrees with its derived completion")
+        raise ValueError("Case C summary disagrees with its worker evidence")
+    if summary.get("status") != ("completed" if research_complete else "failed"):
+        raise ValueError("Case C summary status disagrees with its derived completion")
     return summary, counts
 
 
@@ -916,9 +1051,9 @@ def finalize(
     }
     try:
         smoke_root = smoke_path.parent.resolve()
-        require_path(output, smoke_root, "case-b-batch-summary.json")
-        require_path(phase_path, smoke_root, "case-b-phase.json")
-        require_path(wrapper_exit_path, smoke_root, "case-b-wrapper-exit-code.txt")
+        require_path(output, smoke_root, "case-c-batch-summary.json")
+        require_path(phase_path, smoke_root, "case-c-phase.json")
+        require_path(wrapper_exit_path, smoke_root, "case-c-wrapper-exit-code.txt")
         phase = read(phase_path)
         validate_scheduler_decision(phase)
         plan, preflight, smoke, native, cleanup = validate_common_chain(
@@ -935,7 +1070,7 @@ def finalize(
         )
         wrapper_exit = int(wrapper_exit_path.read_text(encoding="utf-8").strip())
         if not 0 <= wrapper_exit <= 255:
-            raise ValueError("Case B wrapper exit code is invalid")
+            raise ValueError("Case C wrapper exit code is invalid")
         synthetic_count = smoke.get("requests_started")
         native_count = native.get("native_requests_started")
         cleanup_case = cleanup.get("case_process", {})
@@ -976,7 +1111,7 @@ def finalize(
                 or smoke_binding.get("slurm_job_id") != phase.get("slurm_job_id")
                 or cleanup_case != {"pid": 0, "term_sent": False, "kill_sent": False, "stopped": True}
             ):
-                raise ValueError("Unstarted Case B terminal evidence is inconsistent")
+                raise ValueError("Unstarted Case C terminal evidence is inconsistent")
             value.update(
                 status="terminal_case_unstarted",
                 framework_status="case_not_started_after_smoke",
@@ -1000,7 +1135,7 @@ def finalize(
             write_exclusive(output, value)
             return value
         if phase.get("status") != "reserved_before_case_calls":
-            raise ValueError("Unknown Case B phase status")
+            raise ValueError("Unknown Case C phase status")
         summary, slot_counts = validate_started_case(
             phase=phase,
             plan=plan,
@@ -1016,20 +1151,24 @@ def finalize(
             or read(server_check_path).get("server_pid") != phase.get("server_pid")
             or cleanup.get("server_pid") != phase.get("server_pid")
         ):
-            raise ValueError("Case B cleanup process identities differ from the launch evidence")
+            raise ValueError("Case C cleanup process identities differ from the launch evidence")
         case_count = sum(slot_counts)
         total = synthetic_count + native_count + case_count
         if not common_valid or case_count > CASE_REQUEST_LIMIT or total > TOTAL_REQUEST_LIMIT:
-            raise ValueError("Smoke-plus-Case-B evidence exceeds its fixed request bounds")
+            raise ValueError("Smoke-plus-Case-C evidence exceeds its fixed request bounds")
         complete = (
             wrapper_exit == 0
             and summary.get("status") == "completed"
-            and summary.get("scientific_batch_complete") is True
-            and summary.get("worker_processing_complete") is True
+            and summary.get("protocol_execution_complete") is True
+            and summary.get("end_to_end_native_report_complete") is True
+            and summary.get("research_experiment_complete") is True
             and summary.get("all_worker_processes_distinct") is True
+            and summary.get("all_recorded_run_ids_distinct") is True
+            and summary.get("request_bound_respected") is True
             and summary.get("primary_sdk_attempt_ceiling") == CASE_REQUEST_LIMIT
             and plan.get("limits", {}).get("online_auditor_requests") == 0
             and plan.get("limits", {}).get("sdk_max_retries") == 0
+            and plan.get("limits", {}).get("request_pacing") is False
         )
         value.update(
             status="complete_all_slots_terminal" if complete else "terminal_case_runner_failed",
@@ -1045,7 +1184,7 @@ def finalize(
                 "case": case_count,
                 "total": total,
                 "limit": TOTAL_REQUEST_LIMIT,
-                "per_case_slot": dict(zip(CONDITIONS, slot_counts, strict=True)),
+                "per_case_session": dict(zip(SLOT_IDS, slot_counts, strict=True)),
             },
             artifacts={
                 "preflight": receipt(preflight_path),
@@ -1059,7 +1198,10 @@ def finalize(
             scientific_outcome={
                 "case_started": True,
                 "case_summary": receipt(case_summary_path),
-                "interpretation": "Use the Case B arm outcomes and joint-pattern fields.",
+                "interpretation": (
+                    "Use the four observed-native transformed-memory outcomes and keep the "
+                    "request-free DCPG candidate report separate from the native oracle."
+                ),
             },
         )
     except (

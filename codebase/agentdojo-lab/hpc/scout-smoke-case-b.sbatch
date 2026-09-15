@@ -21,6 +21,7 @@ umask 077
 : "${SCOUT_SITE_FILE:?Set the absolute private Case B site file}"
 : "${SCOUT_SITE_SHA256:?Export the reviewed site-file SHA-256 at submission}"
 [[ "$SCOUT_SITE_FILE" == /* && -f "$SCOUT_SITE_FILE" && ! -L "$SCOUT_SITE_FILE" ]] || exit 2
+[[ "$(realpath -e -- "$SCOUT_SITE_FILE")" == "$SCOUT_SITE_FILE" ]] || exit 2
 [[ "$SCOUT_SITE_SHA256" =~ ^[0-9a-f]{64}$ ]] || exit 2
 CASE_B_SITE_FILE="$SCOUT_SITE_FILE"
 CASE_B_SITE_SHA256="$SCOUT_SITE_SHA256"
@@ -41,9 +42,11 @@ CASE_B_BUNDLE_ROOT=$(realpath -e -- "$CASE_B_HPC_DIR/..")
 CASE_B_HPC_MANIFEST=$(realpath -e -- "$SCOUT_HPC_MANIFEST")
 CASE_B_EXECUTED_WRAPPER=$(realpath -e -- "${BASH_SOURCE[0]}")
 CASE_B_CANONICAL_WRAPPER="$CASE_B_HPC_DIR/scout-smoke-case-b.sbatch"
+CASE_B_RUNNER="$CASE_B_BUNDLE_ROOT/scripts/run_case_b_scout.py"
+CASE_B_CHAT_TEMPLATE="$CASE_B_HPC_DIR/tool_chat_template_llama4_pythonic_typed_v1.jinja"
 CASE_B_MANIFEST_SHA256="$SCOUT_HPC_MANIFEST_SHA256"
 readonly CASE_B_HPC_DIR CASE_B_BUNDLE_ROOT CASE_B_HPC_MANIFEST CASE_B_EXECUTED_WRAPPER
-readonly CASE_B_CANONICAL_WRAPPER CASE_B_MANIFEST_SHA256
+readonly CASE_B_CANONICAL_WRAPPER CASE_B_RUNNER CASE_B_CHAT_TEMPLATE CASE_B_MANIFEST_SHA256
 [[ "$CASE_B_HPC_DIR" == "$CASE_B_BUNDLE_ROOT/hpc" ]] || exit 2
 [[ "$CASE_B_HPC_MANIFEST" == "$CASE_B_BUNDLE_ROOT/submission-sha256.txt" ]] || exit 2
 read -r ACTUAL_MANIFEST_SHA256 _ < <(sha256sum -- "$CASE_B_HPC_MANIFEST")
@@ -58,11 +61,15 @@ cmp --silent -- "$CASE_B_EXECUTED_WRAPPER" "$CASE_B_CANONICAL_WRAPPER" || exit 2
 [[ "$SCOUT_RUN_DIR" == /* && "$SCOUT_CASE_B_DIR" == /* ]] || exit 2
 [[ "$SCOUT_CASE_B_RUNNER" == /* && "$SCOUT_LAB_PYTHON" == /* ]] || exit 2
 [[ "$SCOUT_CHAT_TEMPLATE" == /* ]] || exit 2
-[[ -x "$SCOUT_LAB_PYTHON" && -f "$SCOUT_CASE_B_RUNNER" ]] || exit 2
-[[ "$(realpath -e -- "$SCOUT_CASE_B_RUNNER")" == \
-    "$CASE_B_BUNDLE_ROOT/scripts/run_case_b_scout.py" ]] || exit 2
-[[ "$(realpath -e -- "$SCOUT_CHAT_TEMPLATE")" == \
-    "$CASE_B_HPC_DIR/tool_chat_template_llama4_pythonic_typed_v1.jinja" ]] || exit 2
+[[ -x "$SCOUT_LAB_PYTHON" ]] || exit 2
+[[ "$SCOUT_CASE_B_RUNNER" == "$CASE_B_RUNNER" && -f "$CASE_B_RUNNER" \
+    && ! -L "$CASE_B_RUNNER" ]] || exit 2
+[[ "$SCOUT_CHAT_TEMPLATE" == "$CASE_B_CHAT_TEMPLATE" && -f "$CASE_B_CHAT_TEMPLATE" \
+    && ! -L "$CASE_B_CHAT_TEMPLATE" ]] || exit 2
+[[ -d "$SCOUT_CASE_B_DIR" && ! -L "$SCOUT_CASE_B_DIR" \
+    && "$(realpath -e -- "$SCOUT_CASE_B_DIR")" == "$SCOUT_CASE_B_DIR" ]] || exit 2
+export SCOUT_CASE_B_DIR
+export SCOUT_CHAT_TEMPLATE="$CASE_B_CHAT_TEMPLATE"
 for directory in "$CASE_B_BUNDLE_ROOT" "$CASE_B_HPC_DIR" \
     "$CASE_B_BUNDLE_ROOT/scripts" "$CASE_B_BUNDLE_ROOT/src" \
     "$CASE_B_BUNDLE_ROOT/src/agentdojo_lab" \
@@ -79,9 +86,11 @@ for helper in scout-smoke-case-b.sbatch scout-smoke.sbatch case_b_batch.py \
     tool_chat_template_llama4_pythonic_typed_v1.jinja; do
     [[ -f "$CASE_B_HPC_DIR/$helper" ]] || exit 2
 done
-[[ -f "$SCOUT_CASE_B_RUNNER" && -f "$CASE_B_HPC_MANIFEST" ]] || exit 2
+[[ -f "$SCOUT_CASE_B_RUNNER" && -f "$CASE_B_HPC_MANIFEST" \
+    && -f "$CASE_B_BUNDLE_ROOT/configs/local_scout.toml" ]] || exit 2
 
 CASE_B_RUNTIME_ARGS=(
+    --runtime-source configs/local_scout.toml "$CASE_B_BUNDLE_ROOT/configs/local_scout.toml"
     --runtime-source hpc/scout-smoke-case-b.sbatch "$CASE_B_HPC_DIR/scout-smoke-case-b.sbatch"
     --runtime-source hpc/scout-smoke.sbatch "$CASE_B_HPC_DIR/scout-smoke.sbatch"
     --runtime-source hpc/case_b_batch.py "$CASE_B_HPC_DIR/case_b_batch.py"
@@ -89,8 +98,8 @@ CASE_B_RUNTIME_ARGS=(
     --runtime-source hpc/preflight.py "$CASE_B_HPC_DIR/preflight.py"
     --runtime-source hpc/smoke.py "$CASE_B_HPC_DIR/smoke.py"
     --runtime-source hpc/native_smoke.py "$CASE_B_HPC_DIR/native_smoke.py"
-    --runtime-source hpc/tool_chat_template_llama4_pythonic_typed_v1.jinja "$SCOUT_CHAT_TEMPLATE"
-    --runtime-source scripts/run_case_b_scout.py "$SCOUT_CASE_B_RUNNER"
+    --runtime-source hpc/tool_chat_template_llama4_pythonic_typed_v1.jinja "$CASE_B_CHAT_TEMPLATE"
+    --runtime-source scripts/run_case_b_scout.py "$CASE_B_RUNNER"
 )
 
 # Verify the complete plan and exact launch bytes before vLLM can start.
@@ -98,7 +107,7 @@ SCOUT_CASE_B_PRE_SMOKE="${SCOUT_RUN_DIR}.case-b-pre-smoke.json"
 [[ "$SCOUT_CASE_B_PRE_SMOKE" == /* && ! -e "$SCOUT_CASE_B_PRE_SMOKE" ]] || exit 2
 "$SCOUT_LAB_PYTHON" "$CASE_B_HPC_DIR/case_b_batch.py" validate \
     --output "$SCOUT_CASE_B_PRE_SMOKE" --case-dir "$SCOUT_CASE_B_DIR" \
-    --smoke-dir "$SCOUT_RUN_DIR" --runner-path "$SCOUT_CASE_B_RUNNER" \
+    --smoke-dir "$SCOUT_RUN_DIR" --runner-path "$CASE_B_RUNNER" \
     --site-path "$CASE_B_SITE_FILE" --site-sha256 "$CASE_B_SITE_SHA256" \
     --manifest-path "$CASE_B_HPC_MANIFEST" \
     --manifest-sha256 "$CASE_B_MANIFEST_SHA256" \
@@ -209,7 +218,7 @@ finalize_terminal() {
         --output "$SCOUT_RUN_DIR/case-b-batch-summary.json" \
         --phase-path "$SCOUT_RUN_DIR/case-b-phase.json" \
         --pre-smoke-path "$SCOUT_CASE_B_PRE_SMOKE" \
-        --runner-path "$SCOUT_CASE_B_RUNNER" \
+        --runner-path "$CASE_B_RUNNER" \
         --preflight-path "$SCOUT_RUN_DIR/preflight.json" \
         --smoke-path "$SCOUT_RUN_DIR/smoke.json" \
         --native-path "$SCOUT_RUN_DIR/native-smoke.json" \
@@ -249,10 +258,11 @@ CASE_B_WRAPPER_SHA256="$SCOUT_RUN_DIR/case-b-wrapper-sha256.txt"
 declare -A CASE_B_HASHED_PATHS=()
 for input in "$CASE_B_EXECUTED_WRAPPER" "$CASE_B_SITE_FILE" \
     "$CASE_B_CANONICAL_WRAPPER" "$CASE_B_HPC_DIR/scout-smoke.sbatch" \
+    "$CASE_B_BUNDLE_ROOT/configs/local_scout.toml" \
     "$CASE_B_HPC_DIR/case_b_batch.py" "$CASE_B_HPC_DIR/case_a_batch.py" \
     "$CASE_B_HPC_DIR/preflight.py" "$CASE_B_HPC_DIR/smoke.py" \
-    "$CASE_B_HPC_DIR/native_smoke.py" "$SCOUT_CASE_B_RUNNER" \
-    "$SCOUT_CHAT_TEMPLATE" "$CASE_B_HPC_MANIFEST"; do
+    "$CASE_B_HPC_DIR/native_smoke.py" "$CASE_B_RUNNER" \
+    "$CASE_B_CHAT_TEMPLATE" "$CASE_B_HPC_MANIFEST"; do
     input=$(realpath -e -- "$input")
     [[ -v 'CASE_B_HASHED_PATHS[$input]' ]] && continue
     sha256sum -- "$input" >> "$CASE_B_WRAPPER_SHA256"
@@ -280,7 +290,7 @@ set +e
     --remaining "$REMAINING_TIME" --time-limit "$TIME_LIMIT" \
     --server-pid "$SCOUT_SERVER_PID" \
     --case-dir "$SCOUT_CASE_B_DIR" --pre-smoke-path "$SCOUT_CASE_B_PRE_SMOKE" \
-    --runner-path "$SCOUT_CASE_B_RUNNER" \
+    --runner-path "$CASE_B_RUNNER" \
     --wrapper-sha256-path "$CASE_B_WRAPPER_SHA256" "${CASE_B_RUNTIME_ARGS[@]}"
 CASE_B_GATE_STATUS=$?
 set -e
@@ -303,7 +313,7 @@ fi
 set +e
 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 \
     HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
-    setsid "$SCOUT_LAB_PYTHON" "$SCOUT_CASE_B_RUNNER" run "$SCOUT_CASE_B_DIR" \
+    setsid "$SCOUT_LAB_PYTHON" "$CASE_B_RUNNER" run "$SCOUT_CASE_B_DIR" \
     --serving-receipt "$SCOUT_RUN_DIR/preflight.json" \
     > "$SCOUT_RUN_DIR/case-b-wrapper.log" 2>&1 &
 CASE_B_PROCESS_PID=$!

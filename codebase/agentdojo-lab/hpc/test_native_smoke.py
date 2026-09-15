@@ -22,6 +22,9 @@ def isolated(monkeypatch):
     monkeypatch.setenv("SLURM_JOB_ID", "smoke-fixture-job")
     monkeypatch.setenv("LOCAL_LLM_API_KEY", SECRET)
     monkeypatch.setenv("GROQ_API_KEY", "must-never-be-used")
+    for mode_name, directory_name in native_smoke.FROZEN_CASE_BINDINGS:
+        monkeypatch.delenv(mode_name, raising=False)
+        monkeypatch.delenv(directory_name, raising=False)
 
 
 @pytest.fixture

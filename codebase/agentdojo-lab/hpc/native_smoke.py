@@ -7,6 +7,7 @@ not start a server, download a model, change a frozen experiment, or run an atta
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import os
@@ -27,6 +28,11 @@ from agentdojo_lab.runner import ROOT, RunConfig, load_config, run_clean
 
 PROTOCOL = "nesi-scout-native-clean-smoke-v1"
 REQUEST_LIMIT = 4
+FROZEN_CASE_BINDINGS = (
+    ("SCOUT_CASE_A_MODE", "SCOUT_CASE_A_DIR"),
+    ("SCOUT_CASE_B_MODE", "SCOUT_CASE_B_DIR"),
+    ("SCOUT_CASE_C_MODE", "SCOUT_CASE_C_DIR"),
+)
 
 
 class NativeSmokeBudgetExceeded(RuntimeError):
@@ -42,8 +48,131 @@ class BudgetedSmokeLLM(GroqLLM):
         return super().query(*args, **kwargs)
 
 
+def file_digest(path: Path) -> str:
+    value = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(8 * 1024 * 1024), b""):
+            value.update(block)
+    return value.hexdigest()
+
+
 def file_receipt(path: Path) -> dict:
-    return {"path": str(path.resolve()), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+    return {"path": str(path.resolve()), "sha256": file_digest(path)}
+
+
+def frozen_upstream_binding() -> tuple[dict, dict]:
+    """Recheck a frozen case's complete source plan before native execution."""
+    if (ROOT / "vendor/agentdojo/.git").exists():
+        upstream = runner.require_upstream()
+        return {"mode": "clean_git_checkout", "upstream": upstream}, upstream
+
+    active: list[tuple[str, str]] = []
+    for mode_name, directory_name in FROZEN_CASE_BINDINGS:
+        mode = os.environ.get(mode_name, "0")
+        if mode not in {"0", "1"}:
+            raise ValueError("Invalid frozen native-smoke case mode")
+        if mode == "1":
+            active.append((mode_name, directory_name))
+    if len(active) != 1:
+        raise ValueError("A frozen native smoke requires exactly one bound case preparation")
+    if (ROOT / ".env").exists():
+        raise ValueError("A frozen native-smoke bundle cannot contain an unbound environment file")
+
+    mode_name, directory_name = active[0]
+    raw_directory = os.environ.get(directory_name, "")
+    preparation_dir = Path(raw_directory)
+    if (
+        not preparation_dir.is_absolute()
+        or preparation_dir.is_symlink()
+        or not preparation_dir.is_dir()
+        or preparation_dir.resolve() != preparation_dir
+    ):
+        raise ValueError("Frozen native-smoke preparation directory is not physical and canonical")
+    if {path.name for path in preparation_dir.iterdir()} != {"plan.json", "preparation.json"}:
+        raise ValueError("Frozen native-smoke preparation is not pristine")
+
+    plan_path = preparation_dir / "plan.json"
+    preparation_path = preparation_dir / "preparation.json"
+    if any(path.is_symlink() or not path.is_file() for path in (plan_path, preparation_path)):
+        raise ValueError("Frozen native-smoke preparation inputs must be physical files")
+    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    preparation = json.loads(preparation_path.read_text(encoding="utf-8"))
+    if not isinstance(plan, dict) or not isinstance(preparation, dict):
+        raise ValueError("Frozen native-smoke preparation inputs must be JSON objects")
+    if (
+        preparation.get("protocol") != plan.get("protocol")
+        or preparation.get("status") != "prepared_not_executed"
+        or preparation.get("real_llm_requests_started") != 0
+        or preparation.get("plan") != file_receipt(plan_path)
+        or plan.get("status") != "prepared_design_only"
+        or plan.get("real_llm_requests_started") != 0
+    ):
+        raise ValueError("Frozen native-smoke preparation receipt is inconsistent")
+
+    hashes = plan.get("source_hashes")
+    required = {
+        "configs/local_scout.toml",
+        "hpc/native_smoke.py",
+        "src/agentdojo_lab/runner.py",
+        "upstream.json",
+        "uv.lock",
+        "vendor/agentdojo/pyproject.toml",
+        "vendor/agentdojo/src/agentdojo/__init__.py",
+    }
+    if not isinstance(hashes, dict) or not required.issubset(hashes):
+        raise ValueError("Frozen native-smoke source plan is incomplete")
+    current: dict[str, str] = {}
+    for name, expected_hash in hashes.items():
+        relative = Path(name) if isinstance(name, str) else Path("/")
+        path = ROOT / relative
+        if (
+            not isinstance(name, str)
+            or not name
+            or relative.is_absolute()
+            or relative.as_posix() != name
+            or ".." in relative.parts
+            or not isinstance(expected_hash, str)
+            or len(expected_hash) != 64
+            or any(character not in "0123456789abcdef" for character in expected_hash)
+            or not path.is_file()
+            or path.is_symlink()
+            or path.resolve() != path
+            or not path.is_relative_to(ROOT)
+        ):
+            raise ValueError("Frozen native-smoke source plan contains an invalid input")
+        current[name] = file_digest(path)
+    if current != hashes:
+        raise ValueError("Frozen native-smoke source bytes changed after preparation")
+    if (
+        Path(__file__).resolve() != ROOT / "hpc/native_smoke.py"
+        or Path(runner.__file__).resolve() != ROOT / "src/agentdojo_lab/runner.py"
+    ):
+        raise ValueError("Frozen native-smoke imports escaped the source bundle")
+
+    expected_upstream = json.loads((ROOT / "upstream.json").read_text(encoding="utf-8"))
+    upstream = plan.get("upstream")
+    if (
+        not isinstance(expected_upstream, dict)
+        or not isinstance(upstream, dict)
+        or any(upstream.get(key) != value for key, value in expected_upstream.items())
+        or upstream.get("actual_commit") != expected_upstream.get("commit")
+        or upstream.get("modified") is not False
+        or upstream.get("pin_matches") is not True
+    ):
+        raise ValueError("Frozen native-smoke upstream provenance is inconsistent")
+    tree_hash = hashlib.sha256(
+        json.dumps(hashes, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    binding = {
+        "mode": mode_name.removeprefix("SCOUT_").removesuffix("_MODE").lower(),
+        "preparation": file_receipt(preparation_path),
+        "plan": file_receipt(plan_path),
+        "source_files": len(hashes),
+        "source_tree_sha256": tree_hash,
+        "unbound_env_file_absent": True,
+        "upstream": upstream,
+    }
+    return binding, copy.deepcopy(upstream)
 
 
 def verify_serving_inputs(path: Path, base_url: str) -> dict:
@@ -149,6 +278,8 @@ def run_native(*, base_url: str, serving_receipt: Path, output: Path, run_dir: P
             receipt["serving"] = verify_serving_inputs(serving_receipt, base_url)
             if run_dir.exists():
                 raise FileExistsError("Native smoke requires a fresh run directory")
+            source_binding, bound_upstream = frozen_upstream_binding()
+            receipt["source_binding"] = source_binding
             config = config_for(base_url)
             receipt["config"] = config.model_dump()
             config.primary_endpoint().require_key()
@@ -162,7 +293,9 @@ def run_native(*, base_url: str, serving_receipt: Path, output: Path, run_dir: P
                     http_client=httpx.Client(trust_env=False, follow_redirects=False),
                 )
 
-            with patch.object(runner, "GroqLLM", BudgetedSmokeLLM), patch.object(
+            with patch.object(
+                runner, "require_upstream", lambda: copy.deepcopy(bound_upstream)
+            ), patch.object(runner, "GroqLLM", BudgetedSmokeLLM), patch.object(
                 EndpointSettings, "client", local_client
             ):
                 native_started = True

@@ -1,8 +1,9 @@
 # Next phase: concrete propagation case studies on NeSI
 
-Plan date: 2026-09-14; checklist reviewed 2026-09-15. Status: **implementation and live Scout smoke complete;
-research experiments remain pending**. This plan follows the researcher's
-new supervisor guidance in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
+Plan date: 2026-09-14; checklist reviewed 2026-09-15; run status updated
+2026-09-16 (NeSI local date). Status: **implementation and live Scout smoke
+complete; research experiments remain pending**. This plan follows the
+researcher's new supervisor guidance in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
 ## Supervisor checklist — checked 2026-09-15
 
@@ -88,9 +89,9 @@ not time estimates or accuracy scores.
   entry points still retain their Groq protocols. The new **single-episode offline
   exporter is implemented**: 38 selected tests (14 new) and a benign native fixture
   pass. The bounded **Case A local runner is also implemented**; its combined
-  runner/provider/report selection passes 84 tests. Its canonical plan is now
-  prepared with zero model requests, and the separate same-allocation batch
-  selection passes 109 tests plus 16 subtests. The first implementation attempt's
+  runner/provider/report selection passed 84 tests. A historical plan was prepared
+  with zero model requests, and the separate same-allocation batch selection
+  passed 109 tests plus 16 subtests. The first implementation attempt's
   platform flag and quarantined draft remain recorded; a Daybreak Blue retry on
   the current Codex surface
   hash-verified and completed it. A separate bounded offline cross-session exporter
@@ -102,32 +103,39 @@ not time estimates or accuracy scores.
   one-step replay now accept an explicit configured OpenAI-compatible endpoint,
   preserve their legacy defaults, disable SDK retries and record endpoint/model
   identity. The strict Case B four-arm runner and two-hour same-allocation wrapper
-  are also implemented. The independent final Case A/B selection passes 191 tests
-  plus 16 subtests, while root's broader selection passes 214 plus 16 subtests.
-  The prepared Case B v2 inventory contains 163 source files: 50 from pushed
+  are also implemented. The prior independent final Case A/B selection passed 191
+  tests plus 16 subtests, while root's broader selection passed 214 plus 16
+  subtests. The historical Case B v2 inventory contains 163 source files: 50 from pushed
   parent checkpoint `228f7c2ce4255a8587921ef955c633868b1fb10d` and 113 from the
   pinned AgentDojo checkout. Its frozen bundle uses physical mode-0400 sources
   and a nine-entry launch manifest; offline import isolation and fixed limits
-  validate. This completes the checked bounded implementation
+  validate. Final A/B/C validation passed **350 tests plus 16 subtests**; Ruff,
+  compilation, Bash syntax and diff checks passed, and independent copied-bundle
+  audits returned GO for all three cases. This completes the checked bounded implementation
   prerequisite, not a scientific result; see RESEARCH_PROGRESS.md.
 - [ ] Freeze exact tasks, payloads, source sets, conditions, budgets, settings,
-  success criteria and run order before the new research trials. The current
-  Case A v1 source-refresh preparation is `runs/scout-case-a-prepared-v4`, with
-  plan SHA-256
+  success criteria and run order before the new research trials. Historical
+  Case A v4 preparation `runs/scout-case-a-prepared-v4` has plan SHA-256
   `5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`.
   It binds 85 source files including the runtime-read MiniLM pin, records zero
-  requests, and supersedes without deleting three source-invalidated preparations.
+  requests, and superseded without deleting three earlier source-invalidated
+  preparations. Current hardening now source-invalidates v4 as well.
   First submission `9043206` was cancelled
   before allocation after audit found a Slurm helper-path defect; it used zero GPU
   time and requests. Corrected job `9050478` was submitted from pushed checkpoint
   `228f7c2ce4255a8587921ef955c633868b1fb10d` after request-free validation and a
-  GO audit with no P1/P2 findings. It remains pending for Priority with zero
-  runtime, no allocation and no requests; its displayed 22:35 NZST start is only
-  an estimate. Case B v2 is prepared and bundled with zero calls; job `9052477`
-  is pending for Priority with zero runtime, no allocation and no calls. Its plan
+  GO audit with no P1/P2 findings. It later failed before vLLM startup because
+  the frozen launcher imported a changed repository module; it made zero calls.
+  Case B v2 was prepared and bundled with zero calls; job `9052477` loaded Scout
+  and passed four synthetic requests, then failed before native inference because
+  `configs/local_scout.toml` was absent from the bundle. Historical Case B v2 plan
   SHA-256 is
   `69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`.
-  Case C remains unfinished, so this combined item stays unchecked.
+  Current hardening source-invalidates it. Case C now has a four-session protocol,
+  a prior noncanonical deterministic fixture and a bounded Slurm wrapper. The
+  final source passed combined validation and independent GO audits. Zero-request
+  Case A v5, Case B v3 and Case C v1 preparations and replacement immutable
+  bundles are not frozen yet, so this combined item stays unchecked.
 - [ ] Recover selected historical raw runs/reports if available and reverify them.
   Their absence does not block new named trials, but old outcome notes cannot
   substitute for locally inspected evidence.
@@ -168,11 +176,13 @@ paired-analysis support needed for these cases.
 
 ## Three case families
 
-All examples below are **designs, not observed results**; Case A now has a prepared
-v1 runner, while B and C remain proposed. Use native simulated AgentDojo tools;
-exact tasks, payloads, tool schemas, and field paths must be frozen before model
-execution. Use addresses validated by the native simulated tool schema. `EmailStr` rejects
-`.invalid`; use `attacker@example.com` for a synthetic attacker recipient.
+All examples below are **designs, not observed results**. The three runners are
+implemented, but their next preparations remain pending final source freeze; the
+older Case A v4 and Case B v2 plans are historical, source-invalidated inputs to
+failed jobs. Use native simulated AgentDojo tools; exact tasks, payloads, tool
+schemas, and field paths must be frozen before model execution. Use addresses
+validated by the native simulated tool schema. `EmailStr` rejects `.invalid`; use
+`attacker@example.com` for a synthetic attacker recipient.
 
 | Case | Clean behavior | Attacked behavior being tested | Main question |
 | --- | --- | --- | --- |
@@ -398,12 +408,13 @@ be tracked in Git. Publish observed counts with their denominators and unknowns.
   single-episode and cross-session exporters, bounded Case A runner, configured
   joint auditor and configured one-step replay are verified offline.
 - [ ] Freeze the new small protocol, run it, and produce actual case studies.
-  Case A v1 is frozen; first job `9043206` was cancelled before allocation after
-  a wrapper-path audit. Corrected job `9050478` is submitted and pending for
-  Priority with no allocation or requests. No research slot has run.
-  Case B's strict four-arm runner and live wrapper are reviewed; v2 is frozen in
-  an immutable bundle, and job `9052477` is pending for Priority with no allocation
-  or calls.
+  Case A job `9043206` was cancelled before allocation; replacement `9050478`
+  failed request-free validation before inference. Case B job `9052477` passed
+  four synthetic requests, then failed before native inference due a missing
+  bundled config. Case C's strict four-session runner and wrapper are implemented;
+  its prior scripted fixture predates current hardening and is noncanonical.
+  Final Case A v5, Case B v3 and Case C v1 preparations, corrected immutable
+  bundles and live results remain. No research slot has run.
 - [ ] Repeat and classify a supported candidate pattern.
 
 Setup evidence is in `codebase/agentdojo-lab/reports/20260914-nesi-setup-v1` and
@@ -414,15 +425,17 @@ without starting. The CPU container retry `9039259` passed in 6m 49s; GPU smoke
 is now verified, while no new research experiment has completed. Case A job
 `9043206` was submitted at 15:36 NZST from pushed checkpoint `84fe7cc`, then
 cancelled at 15:47 before allocation after audit found a Slurm helper-path defect.
-It used zero GPU time and requests. The current 85-source zero-request plan is
-`runs/scout-case-a-prepared-v4`, SHA-256
+It used zero GPU time and requests. Historical 85-source zero-request plan
+`runs/scout-case-a-prepared-v4` has SHA-256
 `5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`.
+Current source hardening invalidates that plan; Case A v5 awaits final source
+freeze and has no plan hash.
 The corrected immutable v2 bundle binds pushed source checkpoint
 `228f7c2ce4255a8587921ef955c633868b1fb10d`. Request-free validation and an
 independent GO audit with no P1/P2 findings passed before job `9050478` was
-submitted. It is currently pending for Priority, has zero runtime and no
-allocation or requests, and will start automatically. The scheduler's Sep 15
-22:35 NZST estimate is provisional.
+submitted. It later failed `1:0` after 30 seconds on `mg14`, before vLLM startup
+or any generation request, because its frozen launcher imported changed repository
+source. A complete self-contained source bundle is now required.
 The 2026-09-14 full repository suite passed 2,056 tests;
 new 2026-09-15 checks passed 28 HPC tests plus 25 subtests, 38 paired/report tests,
 the 84-test Case A runner/provider/report selection, and the final 109-test plus
@@ -433,10 +446,13 @@ review mutations. Its causal status is `not_assessed` and attack status is
 Blue retry completed and is verified offline. The independent final Case A/B
 wrapper selection passed 191 tests plus 16 subtests; root's broader selection
 passed 214 plus 16 subtests. Case B v2 passed offline preflight, request-free
-validation and an independent GO audit with no P1/P2 findings. Job `9052477` was
-submitted at scheduler display Sep 15 17:30 and remains pending for Priority with
-runtime zero, no allocation and no calls. Its Sep 16 00:40 NZST start and `mg14`
-node are provisional scheduler projections. Case A job `9050478` also remains
-pending for Priority with its provisional Sep 15 22:35 NZST start.
+validation and an independent GO audit with no P1/P2 findings. Job `9052477` ran
+8m 35s on `mg14`: Scout loaded and synthetic smoke passed 4/4, then native smoke
+failed before its first request because `configs/local_scout.toml` was absent
+from the immutable bundle. It made zero Case B requests. That v2 plan is now
+source-invalidated, and Case B v3 awaits final source freeze. Case C's prior
+offline four-worker fixture completed both observed native paths with scripted
+responses, but later hardening source-invalidated it. It remains noncanonical
+engineering evidence with zero live calls; Case C v1 has not been prepared.
 See RESEARCH_PROGRESS.md for receipts and limits. Update checkboxes only with
 concrete evidence and actual verification results.

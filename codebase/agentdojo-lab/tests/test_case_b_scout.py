@@ -89,6 +89,7 @@ def test_design_reuses_exact_legacy_inputs_and_fixes_local_limits():
     assert plan["config"]["max_tool_rounds"] == 4
     assert plan["config"]["request_timeout_seconds"] == 180.0
     for required in (
+        "configs/local_scout.toml",
         "configs/case_b_scout_v1.toml",
         "CASE-B-SCOUT-V1.md",
         "src/agentdojo_lab/__init__.py",
@@ -223,6 +224,105 @@ def test_batch_precheck_runs_real_request_free_verifier_and_binds_runtime_files(
     paths = json.loads(probe.stdout)
     assert Path(paths["agentdojo"]).is_relative_to(bundle / "vendor/agentdojo/src/agentdojo")
     assert Path(paths["agentdojo_lab"]).is_relative_to(bundle / "src/agentdojo_lab")
+    assert Path(paths["agentdojo_lab.runner"]) == bundle / "src/agentdojo_lab/runner.py"
+    assert Path(paths["run_attack_factorial"]) == bundle / "scripts/run_attack_factorial.py"
+
+    native_environment = dict(environment)
+    native_environment["PYTHONPATH"] = os.pathsep.join(
+        (str(bundle / "hpc"), native_environment["PYTHONPATH"])
+    )
+    native_environment["SCOUT_CASE_B_MODE"] = "1"
+    native_environment["SCOUT_CASE_B_DIR"] = str(case_dir)
+    native_command = [
+        sys.executable,
+        "-c",
+        (
+            "import json, native_smoke; "
+            "binding, upstream = native_smoke.frozen_upstream_binding(); "
+            "config = native_smoke.config_for('http://127.0.0.1:8123/v1'); "
+            "print(json.dumps({'root': str(native_smoke.ROOT), "
+            "'model': config.model, 'base_url': config.base_url, "
+            "'binding': binding, 'upstream': upstream}))"
+        ),
+    ]
+    native_probe = subprocess.run(
+        native_command,
+        cwd=tmp_path,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=120,
+        check=True,
+        env=native_environment,
+    )
+    native_binding = json.loads(native_probe.stdout)
+    assert Path(native_binding["root"]) == bundle
+    assert native_binding["model"] == "llama-4-scout-local"
+    assert native_binding["base_url"] == "http://127.0.0.1:8123/v1"
+    assert native_binding["binding"]["mode"] == "case_b"
+    assert native_binding["binding"]["source_files"] == len(plan["source_hashes"])
+    assert native_binding["upstream"] == plan["upstream"]
+
+    native_config = bundle / "configs/local_scout.toml"
+    native_config_bytes = native_config.read_bytes()
+    native_config.write_bytes(native_config_bytes + b"\n# changed after preparation\n")
+    changed_native_probe = subprocess.run(
+        native_command,
+        cwd=tmp_path,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=120,
+        check=False,
+        env=native_environment,
+    )
+    assert changed_native_probe.returncode != 0
+    assert "source bytes changed after preparation" in changed_native_probe.stderr
+    native_config.write_bytes(native_config_bytes)
+
+    unbound_env = bundle / ".env"
+    unbound_env.write_text("UNBOUND_RUNTIME_INPUT=1\n", encoding="utf-8")
+    env_native_probe = subprocess.run(
+        native_command,
+        cwd=tmp_path,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=120,
+        check=False,
+        env=native_environment,
+    )
+    assert env_native_probe.returncode != 0
+    assert "cannot contain an unbound environment file" in env_native_probe.stderr
+    unbound_env.unlink()
+
+    bundled_runner = bundle / "src/agentdojo_lab/runner.py"
+    bundled_runner_bytes = bundled_runner.read_bytes()
+    bundled_runner.unlink()
+    bundled_runner.symlink_to(ROOT / "src/agentdojo_lab/runner.py")
+    escaped_import = subprocess.run(
+        [
+            sys.executable,
+            str(bundle / "scripts/run_case_b_scout.py"),
+            "verify",
+            str(case_dir),
+        ],
+        cwd=tmp_path,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=120,
+        check=False,
+        env=environment,
+    )
+    assert escaped_import.returncode != 0
+    assert "escaped its source bundle" in escaped_import.stderr
+    bundled_runner.unlink()
+    bundled_runner.write_bytes(bundled_runner_bytes)
 
     linked_input = bundle / "scripts/run_attack_factorial.py"
     linked_input.unlink()

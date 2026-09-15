@@ -47,7 +47,7 @@ def _canonical(value) -> bytes:
     ).encode()
 
 
-def _validate_run_budget(path: Path):
+def _validate_run_budget(path: Path, *, additional: tuple[Path, ...] = ()):
     if not path.is_dir():
         raise ValueError(f"Run directory does not exist: {path}")
     candidates = [
@@ -60,10 +60,13 @@ def _validate_run_budget(path: Path):
             "causal-online.jsonl",
             "causal-online-graph.json",
             "lineage-state.json",
+            "lineage-initial-state.json",
             "final-environment.json",
             "native-memory.json",
         )
     ]
+    additional = tuple(Path(candidate) for candidate in additional)
+    candidates.extend(additional)
     native = []
     native_root = path / "native"
     if native_root.is_symlink():
@@ -93,7 +96,15 @@ def _validate_run_budget(path: Path):
     for candidate in [*candidates, *native]:
         if not candidate.exists():
             continue
-        if candidate.is_symlink() or not candidate.is_file() or not candidate.resolve().is_relative_to(path):
+        declared_additional = candidate in additional
+        if (
+            candidate.is_symlink()
+            or not candidate.is_file()
+            or not (
+                candidate.resolve().is_relative_to(path)
+                or (declared_additional and candidate.resolve() == candidate)
+            )
+        ):
             raise ValueError(f"Run input is not a regular in-source file: {candidate}")
         size = candidate.stat().st_size
         if size > MAX_ARTIFACT_BYTES:
@@ -1211,7 +1222,107 @@ def _record_identity_consistent(record):
     return pid_error is None and len(_recorded_identity_values(record, "run_id")) == 1
 
 
+SUPPORTED_NATIVE_SINKS = frozenset({"create_file", "send_email"})
+
+
+def _email_attachments_match(arguments, runtime_result):
+    requested = arguments.get("attachments")
+    requested = [] if requested is None else requested
+    observed = runtime_result.get("attachments")
+    if not isinstance(requested, list) or not isinstance(observed, list):
+        return False
+    if len(requested) != len(observed):
+        return False
+    for supplied, stored in zip(requested, observed, strict=True):
+        if not isinstance(supplied, dict):
+            return False
+        if supplied.get("type") == "file" or "file_id" in supplied:
+            if not isinstance(supplied.get("file_id"), str) or stored != supplied["file_id"]:
+                return False
+            continue
+        details = supplied.get("event_details")
+        if not isinstance(details, dict) or not isinstance(stored, dict):
+            return False
+        if any(stored.get(key) != value for key, value in details.items()):
+            return False
+    return True
+
+
+def _sink_runtime_result_matches(function, arguments, runtime_result):
+    """Bind a supported native sink's arguments to its serialized return value."""
+    if not isinstance(arguments, dict) or not isinstance(runtime_result, dict):
+        return False
+    if function == "create_file":
+        return bool(
+            isinstance(runtime_result.get("id_"), str)
+            and runtime_result["id_"]
+            and runtime_result.get("content") == arguments.get("content")
+            and runtime_result.get("filename") == arguments.get("filename")
+        )
+    if function == "send_email":
+        recipients = arguments.get("recipients")
+        cc = arguments.get("cc")
+        bcc = arguments.get("bcc")
+        return bool(
+            isinstance(runtime_result.get("id_"), str)
+            and runtime_result["id_"]
+            and isinstance(recipients, list)
+            and recipients
+            and all(isinstance(recipient, str) and recipient for recipient in recipients)
+            and runtime_result.get("recipients") == recipients
+            and runtime_result.get("cc") == ([] if cc is None else cc)
+            and runtime_result.get("bcc") == ([] if bcc is None else bcc)
+            and isinstance(arguments.get("subject"), str)
+            and runtime_result.get("subject") == arguments["subject"]
+            and isinstance(arguments.get("body"), str)
+            and runtime_result.get("body") == arguments["body"]
+            and runtime_result.get("status") == "sent"
+            and runtime_result.get("read") is True
+            and isinstance(runtime_result.get("sender"), str)
+            and runtime_result["sender"]
+            and isinstance(runtime_result.get("timestamp"), str)
+            and runtime_result["timestamp"]
+            and _email_attachments_match(arguments, runtime_result)
+        )
+    return False
+
+
+def _sink_visible_result_matches(function, visible, runtime_result):
+    if not isinstance(visible, dict) or not isinstance(runtime_result, dict):
+        return False
+    if function == "create_file":
+        fields = ("id_", "content", "filename")
+    elif function == "send_email":
+        fields = (
+            "id_",
+            "sender",
+            "recipients",
+            "cc",
+            "bcc",
+            "subject",
+            "body",
+            "status",
+            "read",
+            "attachments",
+            "timestamp",
+        )
+    else:
+        return False
+    def normalized(key, value):
+        if key != "timestamp" or isinstance(value, str):
+            return value
+        isoformat = getattr(value, "isoformat", None)
+        return isoformat() if callable(isoformat) else value
+
+    return all(
+        normalized(key, visible.get(key)) == normalized(key, runtime_result.get(key))
+        for key in fields
+    )
+
+
 def _native_result_bound(record, function, arguments, runtime_result):
+    if function not in SUPPORTED_NATIVE_SINKS:
+        return False
     for item in record.get("native", []):
         trace = item.get("trace") if isinstance(item, dict) else None
         messages = trace.get("messages") if isinstance(trace, dict) else None
@@ -1222,14 +1333,589 @@ def _native_result_bound(record, function, arguments, runtime_result):
                 isinstance(tool_call, dict)
                 and tool_call.get("function") == function
                 and tool_call.get("args") == arguments
-                and isinstance(visible, dict)
-                and all(
-                    visible.get(key) == runtime_result.get(key)
-                    for key in ("id_", "content", "filename")
-                )
+                and _sink_visible_result_matches(function, visible, runtime_result)
             ):
                 return True
     return False
+
+
+TERMINAL_SEGMENTS = (
+    ("b_sink_runtime_success", "recorded_runtime"),
+    ("b_sink_tool_result", "recorded_tool_result"),
+    ("b_sink_native_state_change", "recorded_native_state"),
+)
+
+
+def _sink_execution_segments(
+    record,
+    action,
+    proposal,
+    final_environment,
+    native_memory,
+    *,
+    graph=None,
+    sink_node=None,
+    require_graph_result=False,
+):
+    """Validate proposal-to-native-state evidence for one supported sink."""
+
+    def segment(name, evidence_type, covered=False, **evidence):
+        return {
+            "segment": name,
+            "coverage": "covered" if covered else "missing",
+            "evidence_type": evidence_type,
+            **evidence,
+        }
+
+    parts = {name: segment(name, evidence_type) for name, evidence_type in TERMINAL_SEGMENTS}
+    function = action.get("function") if isinstance(action, dict) else None
+    arguments = action.get("arguments") if isinstance(action, dict) else None
+    if function not in SUPPORTED_NATIVE_SINKS:
+        for name, evidence_type in TERMINAL_SEGMENTS:
+            parts[name] = segment(
+                name,
+                evidence_type,
+                reason="unsupported_sink_function",
+                function=function,
+            )
+        return parts
+    if not (
+        isinstance(proposal, dict)
+        and proposal.get("event_type") == "TOOL_CALL_PROPOSED"
+        and proposal.get("event_id") == action.get("event_id")
+        and proposal.get("call_ref") == action.get("call_ref")
+        and proposal.get("data", {}).get("function") == function
+        and proposal.get("data", {}).get("arguments") == arguments
+    ):
+        return parts
+
+    events = {event.get("event_id"): event for event in record["events"]}
+    execution = action.get("execution") or {}
+    starts = [events.get(ref.get("event_id")) for ref in execution.get("runtime_starts", [])]
+    returns = [events.get(ref.get("event_id")) for ref in execution.get("runtime_returns", [])]
+    runtime_start = starts[0] if len(starts) == 1 else None
+    runtime = returns[0] if len(returns) == 1 else None
+    runtime_data = runtime.get("data") if isinstance(runtime, dict) else None
+    runtime_result = runtime_data.get("result") if isinstance(runtime_data, dict) else None
+    runtime_ok = bool(
+        execution.get("status") == "returned_successfully"
+        and isinstance(runtime_start, dict)
+        and runtime_start.get("event_type") == "TOOL_RUNTIME_STARTED"
+        and runtime_start.get("run_id") == proposal.get("run_id")
+        and runtime_start.get("episode_id") == proposal.get("episode_id")
+        and runtime_start.get("call_ref") == proposal.get("call_ref")
+        and runtime_start.get("model_request_id") == proposal.get("model_request_id")
+        and runtime_start.get("data", {}).get("function") == function
+        and runtime_start.get("data", {}).get("runtime_input_args") == arguments
+        and proposal.get("event_id") in runtime_start.get("parent_event_ids", [])
+        and isinstance(runtime, dict)
+        and runtime.get("event_type") == "TOOL_RUNTIME_RETURNED"
+        and runtime.get("run_id") == proposal.get("run_id")
+        and runtime.get("episode_id") == proposal.get("episode_id")
+        and runtime.get("call_ref") == proposal.get("call_ref")
+        and runtime.get("model_request_id") == proposal.get("model_request_id")
+        and runtime_start.get("event_id") in runtime.get("parent_event_ids", [])
+        and isinstance(runtime_data, dict)
+        and {"error", "raised_exception_type"} <= runtime_data.keys()
+        and runtime_data["error"] is None
+        and runtime_data["raised_exception_type"] is None
+        and _sink_runtime_result_matches(function, arguments, runtime_result)
+    )
+    if runtime_ok:
+        parts["b_sink_runtime_success"] = segment(
+            "b_sink_runtime_success",
+            "recorded_runtime",
+            True,
+            function=function,
+            event_ids=[proposal["event_id"], runtime_start["event_id"], runtime["event_id"]],
+        )
+
+    results = [
+        event
+        for event in record["events"]
+        if runtime_ok
+        and event.get("event_type") == "TOOL_RESULT"
+        and event.get("run_id") == proposal.get("run_id")
+        and event.get("episode_id") == proposal.get("episode_id")
+        and event.get("call_ref") == proposal.get("call_ref")
+        and event.get("model_request_id") == proposal.get("model_request_id")
+        and proposal["event_id"] in event.get("parent_event_ids", [])
+        and runtime["event_id"] in event.get("parent_event_ids", [])
+        and event.get("data", {}).get("message", {}).get("error") is None
+        and event.get("data", {}).get("message", {}).get("tool_call", {}).get("function")
+        == function
+        and event.get("data", {}).get("message", {}).get("tool_call", {}).get("args")
+        == arguments
+        and _sink_visible_result_matches(
+            function, _single_visible_tool_result_record(event), runtime_result
+        )
+    ]
+    graph_edge = None
+    graph_result_ok = not require_graph_result
+    if require_graph_result and graph and sink_node and len(results) == 1:
+        graph_returns = [
+            edge
+            for edge in graph["edges"].values()
+            if edge.get("from_node") == sink_node.get("node_id")
+            and edge.get("relation") == "tool_return"
+            and edge.get("event_id") == results[0].get("event_id")
+        ]
+        if len(graph_returns) == 1:
+            result_node = graph["nodes"].get(graph_returns[0].get("to_node"))
+            graph_result_ok = bool(
+                isinstance(result_node, dict)
+                and result_node.get("kind") == "tool_result"
+                and result_node.get("event_id") == results[0].get("event_id")
+                and result_node.get("run_id") == results[0].get("run_id")
+                == sink_node.get("run_id")
+                and result_node.get("episode_id") == results[0].get("episode_id")
+                == sink_node.get("episode_id")
+                and result_node.get("outcome") == "success"
+                and sink_node.get("outcome") == "success"
+            )
+            graph_edge = graph_returns[0] if graph_result_ok else None
+    result_ok = len(results) == 1 and graph_result_ok
+    if result_ok:
+        parts["b_sink_tool_result"] = segment(
+            "b_sink_tool_result",
+            "recorded_tool_result",
+            True,
+            function=function,
+            edge_ids=[graph_edge["edge_id"]] if graph_edge else [],
+            event_ids=[results[0]["event_id"]],
+        )
+
+    created = runtime_result.get("id_") if runtime_ok else None
+    expected_path = (
+        f"/cloud_drive/files/{created}"
+        if function == "create_file" and created
+        else f"/inbox/emails/{created}"
+        if created
+        else None
+    )
+    state_key = "cloud_drive" if function == "create_file" else "inbox"
+    collection_key = "files" if function == "create_file" else "emails"
+    observed_changes = execution.get("observed_environment_changes", [])
+    change = observed_changes[0] if result_ok and len(observed_changes) == 1 else None
+    change_event = events.get(change.get("event_id")) if isinstance(change, dict) else None
+    before_values = (
+        change_event.get("data", {}).get("before", {}).get(state_key, {}).get(collection_key)
+        if isinstance(change_event, dict)
+        else None
+    )
+    after_values = (
+        change_event.get("data", {}).get("after", {}).get(state_key, {}).get(collection_key)
+        if isinstance(change_event, dict)
+        else None
+    )
+    final_values = (
+        final_environment.get(state_key, {}).get(collection_key)
+        if isinstance(final_environment, dict)
+        else None
+    )
+    change_rows = change.get("changes") if isinstance(change, dict) else None
+    base_change = {
+        "path": expected_path,
+        "before_present": False,
+        "after_present": True,
+        "before": None,
+        "after": runtime_result,
+    }
+    change_shape_ok = bool(
+        isinstance(change, dict)
+        and change.get("bound_to_return")
+        and change_rows == [base_change]
+    )
+    sent_before = sent_after = sent_final = None
+    sent_path = None
+    if function == "send_email" and isinstance(change_event, dict):
+        sent_before = change_event.get("data", {}).get("before", {}).get("inbox", {}).get("sent")
+        sent_after = change_event.get("data", {}).get("after", {}).get("inbox", {}).get("sent")
+        sent_final = (
+            final_environment.get("inbox", {}).get("sent")
+            if isinstance(final_environment, dict)
+            else None
+        )
+        sent_path = (
+            f"/inbox/sent/{len(sent_before)}" if isinstance(sent_before, list) else None
+        )
+        expected_rows = {
+            expected_path: base_change,
+            sent_path: {
+                "path": sent_path,
+                "before_present": False,
+                "after_present": True,
+                "before": None,
+                "after": runtime_result,
+            },
+        }
+        indexed_rows = {
+            row.get("path"): row
+            for row in change_rows or []
+            if isinstance(row, dict) and isinstance(row.get("path"), str)
+        }
+        change_shape_ok = bool(
+            sent_path
+            and isinstance(change_rows, list)
+            and len(change_rows) == len(indexed_rows) == 2
+            and indexed_rows == expected_rows
+        )
+    create_file_checkpoint_ok = True
+    if function == "create_file":
+        persisted_files = native_memory.get("files") if isinstance(native_memory, dict) else None
+        persisted = [
+            item
+            for item in persisted_files or []
+            if isinstance(item, dict) and item.get("id_") == created
+        ]
+        namespace = graph["state"].get("namespace") if graph else None
+        create_file_checkpoint_ok = bool(
+            isinstance(native_memory, dict)
+            and native_memory.get("schema_version") == 1
+            and isinstance(namespace, str)
+            and native_memory.get("namespace") == namespace
+            and len(persisted) == 1
+            and persisted[0] == runtime_result
+        )
+    collection_state_ok = bool(
+        isinstance(before_values, dict)
+        and created not in before_values
+        and isinstance(after_values, dict)
+        and after_values == {**before_values, created: runtime_result}
+        and isinstance(final_values, dict)
+        and final_values == after_values
+    )
+    if function == "create_file":
+        # Keep the exact-copy report's allowance for unrelated pre-existing/final
+        # files while still binding the newly created record exactly.
+        collection_state_ok = bool(
+            isinstance(before_values, dict)
+            and created not in before_values
+            and isinstance(after_values, dict)
+            and after_values.get(created) == runtime_result
+            and isinstance(final_values, dict)
+            and final_values.get(created) == runtime_result
+        )
+    sent_state_ok = function == "create_file" or bool(
+        isinstance(sent_before, list)
+        and sent_after == [*sent_before, runtime_result]
+        and sent_final == sent_after
+    )
+    native_ok = bool(
+        result_ok
+        and change_shape_ok
+        and isinstance(change_event, dict)
+        and change_event.get("event_type") == "ENVIRONMENT_CHANGE"
+        and change_event.get("run_id") == proposal.get("run_id")
+        and change_event.get("episode_id") == proposal.get("episode_id")
+        and change_event.get("call_ref") == proposal.get("call_ref")
+        and change_event.get("model_request_id") == proposal.get("model_request_id")
+        and runtime.get("event_id") in change_event.get("parent_event_ids", [])
+        and collection_state_ok
+        and sent_state_ok
+        and create_file_checkpoint_ok
+        and _native_result_bound(record, function, arguments, runtime_result)
+    )
+    if native_ok:
+        parts["b_sink_native_state_change"] = segment(
+            "b_sink_native_state_change",
+            "recorded_native_state",
+            True,
+            function=function,
+            state_path=expected_path,
+            **({"sent_state_path": sent_path} if sent_path else {}),
+            event_ids=[change_event["event_id"]],
+        )
+    return parts
+
+
+OBSERVED_NATIVE_SEGMENTS = (
+    ("a_write_to_memory", "recorded_storage"),
+    ("a_checkpoint_to_b", "checkpoint_parent_and_inherited_graph"),
+    ("b_memory_to_read_exposure", "recorded_read_and_exposure"),
+    ("b_sink_proposal_after_exposure", "recorded_same_request_sequence"),
+    *TERMINAL_SEGMENTS,
+)
+
+
+def _observed_a_storage(record, actions, native_memory, graph):
+    created = record["summary"].get("created_file_id")
+    events = {event.get("event_id"): event for event in record["events"]}
+    matches = []
+    for action in actions:
+        if action.get("function") != "create_file":
+            continue
+        proposal = events.get(action.get("event_id"))
+        changes = action.get("execution", {}).get("observed_environment_changes", [])
+        change_event = events.get(changes[0].get("event_id")) if len(changes) == 1 else None
+        final_environment = (
+            change_event.get("data", {}).get("after")
+            if isinstance(change_event, dict)
+            else None
+        )
+        terminal = _sink_execution_segments(
+            record, action, proposal, final_environment, native_memory, graph=graph
+        )
+        returns = action.get("execution", {}).get("runtime_returns", [])
+        returned = events.get(returns[0].get("event_id")) if len(returns) == 1 else None
+        runtime_result = returned.get("data", {}).get("result") if returned else None
+        if (
+            created
+            and isinstance(runtime_result, dict)
+            and runtime_result.get("id_") == created
+            and all(row["coverage"] == "covered" for row in terminal.values())
+        ):
+            matches.append(
+                {
+                    "created_file_id": created,
+                    "proposal_event_id": proposal.get("event_id"),
+                    "runtime_return_event_id": returned.get("event_id"),
+                    "native_state_path": terminal["b_sink_native_state_change"]["state_path"],
+                    "stored_record": runtime_result,
+                    "stored_record_sha256": hashlib.sha256(_canonical(runtime_result)).hexdigest(),
+                }
+            )
+    return matches[0] if len(matches) == 1 and _recording_healthy(record) else None
+
+
+def _observed_b_read_exposure(record, actions, stored_record, b_spec):
+    if not isinstance(stored_record, dict) or b_spec.get("status") != "observed_content_bound":
+        return None
+    created = stored_record.get("id_")
+    if not created:
+        return None
+    events = {event.get("event_id"): event for event in record["events"]}
+    matches = []
+    for action in actions:
+        if (
+            action.get("function") != "get_file_by_id"
+            or (action.get("arguments") or {}).get("file_id") != created
+            or action.get("execution", {}).get("status") != "returned_successfully"
+        ):
+            continue
+        proposal = events.get(action.get("event_id"))
+        starts = action.get("execution", {}).get("runtime_starts", [])
+        returns = action.get("execution", {}).get("runtime_returns", [])
+        start = events.get(starts[0].get("event_id")) if len(starts) == 1 else None
+        returned = events.get(returns[0].get("event_id")) if len(returns) == 1 else None
+        runtime_data = returned.get("data") if isinstance(returned, dict) else None
+        runtime_result = runtime_data.get("result") if isinstance(runtime_data, dict) else None
+        results = [
+            event
+            for event in record["events"]
+            if isinstance(proposal, dict)
+            and isinstance(returned, dict)
+            and event.get("event_type") == "TOOL_RESULT"
+            and event.get("run_id") == proposal.get("run_id")
+            and event.get("episode_id") == proposal.get("episode_id")
+            and event.get("call_ref") == proposal.get("call_ref")
+            and event.get("model_request_id") == proposal.get("model_request_id")
+            and proposal.get("event_id") in event.get("parent_event_ids", [])
+            and returned.get("event_id") in event.get("parent_event_ids", [])
+            and event.get("data", {}).get("message", {}).get("error") is None
+            and event.get("data", {}).get("message", {}).get("tool_call", {}).get("function")
+            == "get_file_by_id"
+            and event.get("data", {}).get("message", {}).get("tool_call", {}).get("args")
+            == action.get("arguments")
+            and _sink_visible_result_matches(
+                "create_file", _single_visible_tool_result_record(event), runtime_result
+            )
+        ]
+        result = results[0] if len(results) == 1 else None
+        exposures = [
+            event
+            for event in record["events"]
+            if isinstance(result, dict)
+            and event.get("event_type") == "TOOL_OUTPUT_EXPOSED"
+            and event.get("run_id") == proposal.get("run_id")
+            and event.get("episode_id") == proposal.get("episode_id")
+            and event.get("call_ref") == proposal.get("call_ref")
+            and event.get("data", {}).get("source_result_event_id") == result.get("event_id")
+            and event.get("model_request_id")
+            and _tool_message_text(event) == _tool_message_text(result)
+            and result.get("event_sequence", -1) < event.get("event_sequence", -1)
+            and any(
+                later.get("event_id") == event.get("event_id")
+                for later_action in actions
+                if events.get(later_action.get("event_id"), {}).get("model_request_id")
+                == event.get("model_request_id")
+                and events.get(later_action.get("event_id"), {}).get("event_sequence", -1)
+                > event.get("event_sequence", -1)
+                for later in later_action.get("source_exposures_in_request", [])
+            )
+        ]
+        exposure = exposures[0] if len(exposures) == 1 else None
+        valid = bool(
+            isinstance(proposal, dict)
+            and proposal.get("event_type") == "TOOL_CALL_PROPOSED"
+            and proposal.get("data", {}).get("function") == "get_file_by_id"
+            and proposal.get("data", {}).get("arguments") == action.get("arguments")
+            and isinstance(start, dict)
+            and start.get("event_type") == "TOOL_RUNTIME_STARTED"
+            and start.get("run_id") == proposal.get("run_id")
+            and start.get("episode_id") == proposal.get("episode_id")
+            and start.get("call_ref") == proposal.get("call_ref")
+            and start.get("model_request_id") == proposal.get("model_request_id")
+            and start.get("data", {}).get("function") == "get_file_by_id"
+            and start.get("data", {}).get("runtime_input_args") == action.get("arguments")
+            and proposal.get("event_id") in start.get("parent_event_ids", [])
+            and isinstance(returned, dict)
+            and returned.get("event_type") == "TOOL_RUNTIME_RETURNED"
+            and returned.get("run_id") == proposal.get("run_id")
+            and returned.get("episode_id") == proposal.get("episode_id")
+            and returned.get("call_ref") == proposal.get("call_ref")
+            and returned.get("model_request_id") == proposal.get("model_request_id")
+            and start.get("event_id") in returned.get("parent_event_ids", [])
+            and isinstance(runtime_data, dict)
+            and {"error", "raised_exception_type"} <= runtime_data.keys()
+            and runtime_data["error"] is None
+            and runtime_data["raised_exception_type"] is None
+            and isinstance(runtime_result, dict)
+            and runtime_result == stored_record
+            and runtime_result.get("id_") == created == b_spec.get("source_id")
+            and runtime_result.get("content") == b_spec.get("source_content")
+            and isinstance(result, dict)
+            and isinstance(exposure, dict)
+            and _recording_healthy(record)
+        )
+        if valid:
+            matches.append(
+                {
+                    "proposal_event_id": proposal["event_id"],
+                    "runtime_return_event_id": returned["event_id"],
+                    "tool_result_event_id": result["event_id"],
+                    "exposure_event_id": exposure["event_id"],
+                    "model_request_id": exposure["model_request_id"],
+                    "event_sequence": exposure["event_sequence"],
+                }
+            )
+    return matches[0] if len(matches) == 1 else None
+
+
+def _observed_native_path(
+    a_record,
+    a_actions,
+    a_native_memory,
+    b_record,
+    b_actions,
+    continuity,
+    checkpoint_inputs,
+    b_spec,
+    fresh_history,
+    final_environment,
+    native_memory,
+    a_graph,
+    b_graph,
+):
+    def segment(name, evidence_type, covered=False, **evidence):
+        return {
+            "segment": name,
+            "coverage": "covered" if covered else "missing",
+            "evidence_type": evidence_type,
+            **evidence,
+        }
+
+    parts = {
+        name: segment(name, evidence_type) for name, evidence_type in OBSERVED_NATIVE_SEGMENTS
+    }
+    storage = _observed_a_storage(a_record, a_actions, a_native_memory, a_graph)
+    if storage:
+        parts["a_write_to_memory"] = segment(
+            "a_write_to_memory", "recorded_storage", True, **storage
+        )
+    checkpoint_ok = bool(
+        storage
+        and continuity.get("status") == "validated"
+        and checkpoint_inputs["native_state"]["status"] == "observed_hash_bound"
+        and checkpoint_inputs["lineage_checkpoint"]["status"] == "observed_hash_bound"
+        and b_spec.get("status") == "observed_content_bound"
+        and fresh_history.get("status") == "observed_empty"
+        and _record_identity_consistent(b_record)
+    )
+    if checkpoint_ok:
+        parts["a_checkpoint_to_b"] = segment(
+            "a_checkpoint_to_b",
+            "checkpoint_parent_and_inherited_graph",
+            True,
+            created_file_id=storage["created_file_id"],
+        )
+    read = _observed_b_read_exposure(
+        b_record, b_actions, storage["stored_record"] if storage else None, b_spec
+    )
+    if checkpoint_ok and read:
+        parts["b_memory_to_read_exposure"] = segment(
+            "b_memory_to_read_exposure",
+            "recorded_read_and_exposure",
+            True,
+            event_ids=[
+                read["proposal_event_id"],
+                read["runtime_return_event_id"],
+                read["tool_result_event_id"],
+                read["exposure_event_id"],
+            ],
+        )
+    events = {event.get("event_id"): event for event in b_record["events"]}
+    later_actions = [
+        action
+        for action in b_actions
+        if read
+        and (proposal := events.get(action.get("event_id")))
+        and proposal.get("model_request_id") == read["model_request_id"]
+        and proposal.get("event_sequence", -1) > read["event_sequence"]
+        and any(
+            row.get("event_id") == read["exposure_event_id"]
+            for row in action.get("source_exposures_in_request", [])
+        )
+    ]
+    supported = [
+        action for action in later_actions if action.get("function") in SUPPORTED_NATIVE_SINKS
+    ]
+    unsupported = sorted(
+        {
+            action.get("function")
+            for action in later_actions
+            if action.get("function") not in SUPPORTED_NATIVE_SINKS
+            and isinstance(action.get("function"), str)
+        }
+    )
+    if checkpoint_ok and read and len(supported) == 1:
+        action = supported[0]
+        proposal = events.get(action.get("event_id"))
+        parts["b_sink_proposal_after_exposure"] = segment(
+            "b_sink_proposal_after_exposure",
+            "recorded_same_request_sequence",
+            True,
+            function=action.get("function"),
+            event_ids=[read["exposure_event_id"], proposal["event_id"]],
+            detector_candidate_correspondence="not_assessed",
+        )
+        parts.update(
+            _sink_execution_segments(
+                b_record,
+                action,
+                proposal,
+                final_environment,
+                native_memory,
+                graph=b_graph,
+            )
+        )
+    rows = list(parts.values())
+    complete = all(row["coverage"] == "covered" for row in rows)
+    return {
+        "status": "all_native_observations_covered" if complete else "partial_or_missing",
+        "segments": rows,
+        "missing_segments": [
+            row["segment"] for row in rows if row["coverage"] == "missing"
+        ],
+        "unsupported_sink_functions": unsupported,
+        "scope": (
+            "recorded native storage, checkpoint, read/exposure, same-request proposal, "
+            "runtime, tool-result, and state evidence; detector correspondence is separate"
+        ),
+        "detector_candidate_correspondence": "not_assessed",
+        "causal_influence": "not_assessed",
+        "attack_success": "unknown",
+    }
 
 
 PATH_SEGMENTS = (
@@ -1550,167 +2236,18 @@ def _complete_paths(
                 "b_exposure_to_sink_proposal", "detector_candidate_correspondence", True,
                 evidence_strength="candidate_bound_to_recorded_proposal",
                 edge_ids=[candidate["edge_id"]], event_ids=[proposal["event_id"]])
-            starts = [
-                events.get(ref.get("event_id"))
-                for ref in action["execution"]["runtime_starts"]
-            ]
-            returns = [
-                events.get(ref.get("event_id"))
-                for ref in action["execution"]["runtime_returns"]
-            ]
-            runtime_start = starts[0] if len(starts) == 1 else None
-            runtime = returns[0] if len(returns) == 1 else None
-            runtime_result = (
-                runtime.get("data", {}).get("result") if isinstance(runtime, dict) else None
-            )
-            runtime_ok = bool(
-                action["execution"]["status"] == "returned_successfully"
-                and isinstance(runtime_start, dict)
-                and runtime_start.get("event_type") == "TOOL_RUNTIME_STARTED"
-                and runtime_start.get("run_id") == proposal.get("run_id")
-                and runtime_start.get("episode_id") == proposal.get("episode_id")
-                and runtime_start.get("call_ref") == proposal.get("call_ref")
-                and runtime_start.get("model_request_id") == proposal.get("model_request_id")
-                and proposal.get("event_id") in runtime_start.get("parent_event_ids", [])
-                and isinstance(runtime, dict)
-                and runtime.get("event_type") == "TOOL_RUNTIME_RETURNED"
-                and runtime.get("run_id") == proposal.get("run_id")
-                and runtime.get("episode_id") == proposal.get("episode_id")
-                and runtime.get("call_ref") == proposal.get("call_ref")
-                and runtime.get("model_request_id") == proposal.get("model_request_id")
-                and runtime_start.get("event_id") in runtime.get("parent_event_ids", [])
-                and all(
-                    runtime.get("data", {}).get(key) is None
-                    for key in ("error", "raised_exception_type")
-                )
-                and isinstance(runtime_result, dict)
-                and isinstance(runtime_result.get("id_"), str)
-                and runtime_result.get("id_")
-                and runtime_result.get("content") == action.get("arguments", {}).get("content")
-                and runtime_result.get("filename")
-                == action.get("arguments", {}).get("filename")
-            )
-            if runtime_ok:
-                parts["b_sink_runtime_success"] = segment(
-                    "b_sink_runtime_success", "recorded_runtime", True,
-                    event_ids=[proposal["event_id"], runtime["event_id"]])
-            results = [
-                event
-                for event in b_record["events"]
-                if runtime_ok
-                and event.get("event_type") == "TOOL_RESULT"
-                and event.get("run_id") == proposal.get("run_id")
-                and event.get("episode_id") == proposal.get("episode_id")
-                and event.get("call_ref") == proposal.get("call_ref")
-                and event.get("model_request_id") == proposal.get("model_request_id")
-                and proposal["event_id"] in event.get("parent_event_ids", [])
-                and runtime["event_id"] in event.get("parent_event_ids", [])
-                and event.get("data", {}).get("message", {}).get("error") is None
-                and event.get("data", {})
-                .get("message", {})
-                .get("tool_call", {})
-                .get("function")
-                == action.get("function")
-                and event.get("data", {}).get("message", {}).get("tool_call", {}).get("args")
-                == action.get("arguments")
-                and isinstance(_single_visible_tool_result_record(event), dict)
-                and all(
-                    _single_visible_tool_result_record(event).get(key)
-                    == runtime_result.get(key)
-                    for key in ("id_", "content", "filename")
-                )
-            ]
-            graph_returns = [
-                edge
-                for edge in b_graph["edges"].values()
-                if edge.get("from_node") == sink["node_id"]
-                and edge.get("relation") == "tool_return"
-                and any(edge.get("event_id") == event.get("event_id") for event in results)
-            ]
-            result_ok = False
-            if len(results) == len(graph_returns) == 1:
-                result_node = b_graph["nodes"].get(graph_returns[0].get("to_node"))
-                if result_node and result_node.get("kind") == "tool_result" \
-                        and result_node.get("event_id") == results[0]["event_id"] \
-                        and result_node.get("run_id") == results[0].get("run_id") \
-                        and result_node.get("run_id") == sink.get("run_id") \
-                        and result_node.get("episode_id") == results[0].get("episode_id") \
-                        and result_node.get("episode_id") == sink.get("episode_id") \
-                        and result_node.get("outcome") == "success" \
-                        and sink.get("outcome") == "success":
-                    result_ok = True
-                    parts["b_sink_tool_result"] = segment(
-                        "b_sink_tool_result", "recorded_tool_result", True,
-                        edge_ids=[graph_returns[0]["edge_id"]], event_ids=[results[0]["event_id"]])
-            created = runtime_result.get("id_") if runtime_ok else None
-            expected_path = f"/cloud_drive/files/{created}" if created else None
-            changes = [
-                change
-                for change in action["execution"]["observed_environment_changes"]
-                if change.get("bound_to_return")
-                and len(change.get("changes") or []) == 1
-                and change["changes"][0]
-                == {
-                    "path": expected_path,
-                    "before_present": False,
-                    "after_present": True,
-                    "before": None,
-                    "after": runtime_result,
-                }
-            ]
-            change_event = events.get(changes[0].get("event_id")) if len(changes) == 1 else None
-            before_files = (
-                change_event.get("data", {}).get("before", {}).get("cloud_drive", {}).get("files")
-                if isinstance(change_event, dict)
-                else None
-            )
-            after_files = (
-                change_event.get("data", {}).get("after", {}).get("cloud_drive", {}).get("files")
-                if isinstance(change_event, dict)
-                else None
-            )
-            final_files = (
-                final_environment.get("cloud_drive", {}).get("files")
-                if isinstance(final_environment, dict)
-                else None
-            )
-            persisted_files = (
-                native_memory.get("files") if isinstance(native_memory, dict) else None
-            )
-            persisted = [
-                item
-                for item in persisted_files or []
-                if isinstance(item, dict) and item.get("id_") == created
-            ]
-            native_ok = bool(
-                result_ok
-                and len(changes) == 1
-                and isinstance(change_event, dict)
-                and change_event.get("event_type") == "ENVIRONMENT_CHANGE"
-                and change_event.get("run_id") == proposal.get("run_id")
-                and change_event.get("episode_id") == proposal.get("episode_id")
-                and change_event.get("call_ref") == proposal.get("call_ref")
-                and change_event.get("model_request_id") == proposal.get("model_request_id")
-                and runtime.get("event_id") in change_event.get("parent_event_ids", [])
-                and isinstance(before_files, dict)
-                and created not in before_files
-                and isinstance(after_files, dict)
-                and after_files.get(created) == runtime_result
-                and isinstance(final_files, dict)
-                and final_files.get(created) == runtime_result
-                and isinstance(native_memory, dict)
-                and native_memory.get("schema_version") == 1
-                and native_memory.get("namespace") == b_graph["state"].get("namespace")
-                and len(persisted) == 1
-                and persisted[0] == runtime_result
-                and _native_result_bound(
-                    b_record, action.get("function"), action.get("arguments"), runtime_result
+            parts.update(
+                _sink_execution_segments(
+                    b_record,
+                    action,
+                    proposal,
+                    final_environment,
+                    native_memory,
+                    graph=b_graph,
+                    sink_node=sink,
+                    require_graph_result=True,
                 )
             )
-            if native_ok:
-                parts["b_sink_native_state_change"] = segment(
-                    "b_sink_native_state_change", "recorded_native_state", True,
-                    event_ids=[change_event["event_id"]])
         rows = list(parts.values())
         routes.append({"label_id": label, "segments": rows,
                        "covered_segments": sum(row["coverage"] == "covered" for row in rows)})
@@ -1801,6 +2338,21 @@ def _boundary(
         "b_actual_source_exposure": _source_exposure(b_record, reads),
         "a_memory_write_and_version": memory,
         "b_restored_read": _restored_reads(b_record, reads),
+        "observed_cross_session_native_path": _observed_native_path(
+            a_record,
+            a_actions,
+            artifacts["a_native_value"],
+            b_record,
+            b_actions,
+            continuity,
+            checkpoint_inputs,
+            b_spec,
+            fresh_history,
+            artifacts["b_final_environment_value"],
+            artifacts["b_native_value"],
+            a_graph,
+            b_graph,
+        ),
         "complete_propagation_path": _complete_paths(
             a_graph,
             b_graph,
@@ -2003,8 +2555,9 @@ def export_cross_session_pair(
         raise FileExistsError(output)
     if any(output == path or output.is_relative_to(path) for path in paths):
         raise ValueError("Report output must not be inside a source run directory")
-    for path in paths:
-        _validate_run_budget(path)
+    for index, path in enumerate(paths):
+        additional = (path.parent / f"{path.name}-spec.json",) if index in (1, 3) else ()
+        _validate_run_budget(path, additional=additional)
     records = [collect_run_record(path) for path in paths]
     consumed = {}
     artifacts = []
@@ -2020,7 +2573,7 @@ def export_cross_session_pair(
         b_final_environment = b_path / "final-environment.json"
         b_native = b_path / "native-memory.json"
         b_spec_path = b_path.parent / f"{b_path.name}-spec.json"
-        _optional_json(a_native, branch_root, branch_consumed)
+        a_native_value = _optional_json(a_native, branch_root, branch_consumed)
         a_lineage_value = _optional_json(a_lineage, branch_root, branch_consumed)
         _optional_json(b_initial, branch_root, branch_consumed)
         b_lineage_value = _optional_json(b_lineage, branch_root, branch_consumed)
@@ -2033,6 +2586,7 @@ def export_cross_session_pair(
         artifacts.append(
             {
                 "a_native": a_native,
+                "a_native_value": a_native_value,
                 "a_lineage": a_lineage,
                 "a_lineage_value": a_lineage_value,
                 "b_lineage_initial": b_initial,

@@ -1,6 +1,6 @@
 # Research progress and run results
 
-Status date: 2026-09-15 (NeSI local date). This is a checked snapshot, not a live scheduler display.
+Status date: 2026-09-16 (NeSI local date). This is a checked snapshot, not a live scheduler display.
 The [supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15)
 is the source of the completion count. Historical ledgers keep their own scope.
 
@@ -30,17 +30,28 @@ That does not complete the supervisor's new experimental deliverables.
 - The offline single-episode comparison and bounded Case A runner are implemented
   and verified. The first Case A attempt's platform flag and quarantined draft
   remain preserved; Daybreak Blue completed the retry on this Codex surface. The
-  current 85-source Case A plan is prepared. The first immutable
+  then-current 85-source Case A plan was prepared. The first immutable
   same-allocation bundle/site produced job **9043206**, which was cancelled before
   allocation after an audit found a Slurm helper-path defect. The corrected v2
   bundle passed request-free validation and a GO audit; replacement job **9050478**
-  is pending for Priority with zero runtime, no allocation and no model requests.
+  later failed in 30 seconds during request-free validation. Its frozen launcher
+  imported the mutable repository implementation, whose source no longer matched
+  the prepared plan. No server, smoke request, or research session started.
   Configured joint/replay transport and the cross-session exporter are also
   verified offline. Proposed payloads and offline fixtures are not live results.
-- The strict Case B four-arm runner and same-allocation wrapper are reviewed and
-  test-clean. Its v2 plan and immutable bundle passed offline validation. Job
-  **9052477** is pending for Priority with zero runtime, no allocation and no
-  model calls. Case A job **9050478** also remains pending for Priority.
+- The strict Case B four-arm runner and same-allocation wrapper passed their prior
+  review selection. Its v2 plan and immutable bundle passed offline validation. Job
+  **9052477** loaded Scout and passed all four synthetic smoke requests, then
+  failed before the native smoke made a request because its immutable bundle
+  omitted `configs/local_scout.toml`. No Case B research session started.
+- Case A/B bundle remediation and the Case C transformed-memory protocol passed
+  **350 tests plus 16 subtests**, Ruff, compilation, Bash syntax and diff checks.
+  Independent copied-bundle audits returned GO for A, B and C after exact path and
+  symlink mutations. Historical Case A v4 and Case B v2 preparations are now
+  source-invalidated. Final Case A v5, Case B v3 and Case C v1 preparations await
+  generation from the pushed source. The prior scripted Case C fixture predates
+  final hardening and is noncanonical engineering evidence with zero live model
+  requests.
 
 ## Run-by-run results
 
@@ -195,6 +206,28 @@ utility, trace/report links, detector evidence, and remaining unknowns. Preserve
 failed and incomplete slots; do not replace them or add unplanned trials to obtain
 a successful attack.
 
+The two terminal case submissions are detailed in their historical sections
+below. Their outcomes do not change the 0/13 experimental count.
+
+| Job | Terminal result | Generation requests | Research sessions |
+| --- | --- | ---: | ---: |
+| `9050478` Case A | Failed request-free source validation after 30 seconds | 0 | 0 |
+| `9052477` Case B | Passed 4/4 synthetic smoke, then failed before native smoke | 4 | 0 |
+
+### Case C transformed-memory fixture — prior noncanonical check
+
+The new four-session design fixes the order to clean A, clean B, attacked A,
+attacked B. Each session uses a distinct worker and fresh conversation. Session A
+paraphrases a native file into versioned memory; session B restores that exact
+native and DCPG checkpoint, reads the A-created ID, and uses the simulated
+`send_email` sink. A prior deterministic fixture completed all four slots, passed
+the independent transformation and exact native-sink oracles in both branches,
+and exported both observed cross-session paths. It used scripted responses and
+**0 live model requests**, so the attacked recipient is not evidence about Scout.
+Later path hardening source-invalidated that fixture; it is noncanonical and must
+be rerun after final source freeze. Case C v1 preparation and immutable-bundle
+validation remain before a live submission.
+
 ### Offline paired-report verification — passed on 2026-09-15
 
 The new exporter passed **38 selected tests, including 14 new tests**. It records
@@ -260,22 +293,23 @@ and implementation checkpoint **`6071eb0`** is pushed to
 historical implementation checkpoint, no live call or Slurm submission had
 occurred. The later smoke and submission are recorded below.
 
-### Case A same-allocation preparation — passed offline
+### Case A same-allocation preparation — historical offline record
 
 The preparations at `runs/scout-case-a-prepared-v1`,
 `runs/scout-case-a-prepared-v2` and `runs/scout-case-a-prepared-v3` remain
 preserved. Later source changes made each old snapshot fail verification as
 designed; v3 specifically omitted the runtime-read MiniLM revision pin from its
-source inventory. The current canonical preparation is
-`codebase/agentdojo-lab/runs/scout-case-a-prepared-v4`. Its `preparation.json`
-status is `prepared_not_executed`, its `real_llm_requests_started` value is zero,
-and its 85-file `plan.json` has SHA-256
+source inventory. Historical preparation
+`codebase/agentdojo-lab/runs/scout-case-a-prepared-v4` has `preparation.json`
+status `prepared_not_executed`, `real_llm_requests_started` zero, and an 85-file
+`plan.json` with SHA-256
 `5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`.
 The directory contains exactly `plan.json` and `preparation.json`; the latter has
 SHA-256
 `b315d3ee67a338124a5b9c35825824dd058e89e25a56a077134fbd9456f3dbd4`.
 The clean-then-attacked order, one repetition per slot and 16-attempt Case A
-ceiling are unchanged. Later bound-source drift must fail verification again.
+ceiling are unchanged. Current source hardening invalidates v4 as designed. Case
+A v5 remains pending final source freeze and has no plan or preparation hash.
 
 Checkpoint **`7b5f1eb`** added `hpc/scout-smoke-case-a.sbatch` as a separate
 two-hour wrapper. It cannot reuse job `9039289` receipts because that job's
@@ -316,7 +350,7 @@ ShellCheck was unavailable. The smoke preflight now reports its smoke-only limit
 separately from the enclosing 7,200-second, 24-total-request, 16-Case-A-request
 and zero-online-auditor envelope.
 
-### Case A submission attempt 2 — job 9050478 — pending
+### Case A submission attempt 2 — job 9050478 — failed before inference
 
 The corrected source checkpoint
 `228f7c2ce4255a8587921ef955c633868b1fb10d` is pushed. Its immutable bundle is
@@ -329,16 +363,16 @@ and `6a8b2f5e3ba7da0f61c7dd9b0723135cdf7b12d15b97fe37492852c004f54aab`.
 Request-free validation passed. An independent audit returned **GO**, with no
 P1/P2 findings; its focused selection passed **81 tests plus 16 subtests**.
 
-Job **9050478** was submitted at the scheduler's **Sep 15 17:08** display. At
-this snapshot it is **PENDING** for **Priority**, with zero runtime, no allocation
-and zero observed model requests. Slurm displays a prospective `mg14` node and
-an estimated **Sep 15 22:35 NZST** start; these are scheduling projections, not
-guarantees or evidence of allocation. The job starts automatically, so no manual
-command is required. Its terminal results are not yet available. The
-`submitted.json` receipt has SHA-256
+Job **9050478** was submitted at the scheduler's **Sep 15 17:08** display and
+later ran on `mg14`. It failed `1:0` after **30 seconds** when request-free plan
+verification detected that the frozen launcher had imported the changed working
+repository's Case A implementation. vLLM never started, and the job made zero
+synthetic, native-smoke, or Case A requests. The `submitted.json` receipt has SHA-256
 `770b8e9fc66590f968d1e0f6bbc7e731b70ff7db66c1c197366955b25a4744c9`.
-Monitor this job, then analyze all smoke, request-accounting, Case A and report
-artifacts after it becomes terminal.
+Its terminal log has SHA-256
+`7124e18c9729caa29124cd422819b407f800c58588f8262b05f66fc851a22af6`.
+The retained v2 bundle is not reused; the replacement must import a complete
+physical plan-bound source tree.
 
 ### Configured causal/replay and cross-session preparation — passed offline
 
@@ -405,8 +439,8 @@ source verifier at terminal close. The launch manifest has exactly nine entries.
 The independent final Case A/B suite passed **191 tests plus 16 subtests in 77.01
 seconds**; root's broader selection passed **214 tests plus 16 subtests**. Ruff,
 Bash syntax, Python compilation and diff whitespace checks passed; 70 focused
-Case B tests are included. The prepared v2 design
-inventory has **163 source files**, including all 113 required AgentDojo runtime
+Case B tests are included. The historical v2 design inventory has **163 source
+files**, including all 113 required AgentDojo runtime
 and package-metadata files from pinned upstream commit
 `089ed468cf3ed0322acc66b0211f26d9d90dbf60`. The upstream runtime-tree SHA-256 is
 `4c58924aeb917f1daf29a4fcb11d79e716af8baf7266b73c592b39aa93a4edd7`.
@@ -420,14 +454,16 @@ and `b685a83c10f3cbcb5decfff4df133fd449132ee9d34676de228d1ba38e86ada7`.
 The preserved v1 plan has 41 sources, zero model calls and SHA-256
 `4b8bc845437ce557fe6bbe589dd90d6ccc5b083d92955ef0fb1324f4df52c036`;
 request-free verification now rejects it because later source/wrapper additions
-changed the protocol inventory. The canonical v2 directory is
+changed the protocol inventory. The historical v2 directory is
 `runs/scout-case-b-prepared-v2`; it contains exactly `plan.json` and
 `preparation.json`. Their SHA-256 values are
 `69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`
 and `ba663d561892b614f7320be36a8fc9c4bf363c946c15837ac52e905fa1b45906`.
 The preparation status is `prepared_not_executed` and records zero model calls.
+Current source/config hardening also invalidates v2. Case B v3 remains pending
+final source freeze and has no plan or preparation hash.
 
-### Case B submission — job 9052477 — pending
+### Case B submission — job 9052477 — synthetic smoke passed, bundle failed
 
 The immutable bundle is
 `evidence/scout-case-b-submission-20260915-v1`; the private site file is
@@ -452,13 +488,20 @@ Offline native/Case B preflight, request-free verification, import isolation,
 runner binding and fixed-limit checks passed. Independent audit returned **GO**
 with no P1/P2 findings.
 
-Job **9052477** was submitted at scheduler display **Sep 15 17:30**. It is
-**PENDING** for **Priority**, with runtime zero, no allocation and no observed
-model calls. Its displayed **Sep 16 00:40 NZST** start and prospective `mg14`
-node are scheduler projections, not guarantees or allocation evidence. It will
-start automatically. The `submitted.json` SHA-256 is
+Job **9052477** was submitted at scheduler display **Sep 15 17:30** and ran on
+`mg14` for **8m 35s**, exiting `1:0`. Scout loaded and all four synthetic requests
+passed. Native smoke then failed before its first request because the immutable
+bundle omitted `configs/local_scout.toml`. Observed usage was four synthetic,
+zero native, and zero Case B requests. The `submitted.json` SHA-256 is
 `88b00e37fa87aa45755de4749aeaa6ae0a2ee81d62c84c9c36bd2c1bb3812408`.
-No Case B result exists yet.
+Retained `preflight.json`, `smoke.json`, `native-smoke.json` and
+`job-exit-code.txt` SHA-256 values are, respectively,
+`1db6093fc37720d4ce1b48bea85d876058d3e740771abe097304ff9188a294b9`,
+`0ac6f32acd85009e9c61a3e749fcc31ff0b036c3069aa372b8ea6edf9c67f4f8`,
+`58a9ecf0da0da278d7678d3bc7553b12843390acdac7ec06e9b1eba6d09c22f8` and
+`4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865`.
+No Case B result exists yet; the planned v3 bundle must bind and validate the
+missing config before vLLM startup.
 
 The checklist is now **10/25 (40%)**, preparation/prerequisites are **10/12
 (83%)**, and live experimental deliverables remain **0/13**.
@@ -472,16 +515,18 @@ and `reports/` are also ignored. A missing bundle on another device is not a
 new failed experiment.
 
 Inspect live jobs with `squeue -u dyu848`; inspect terminal outcomes with `sacct`.
-Update this snapshot from receipts and accounting after each terminal attempt.
-A current next action is to monitor Case A `9050478` and Case B `9052477`, then
-analyze every terminal smoke, request-accounting, case and report artifact.
-A running or queued job has no percentage estimate unless its own instrumentation
+The current next action is to finish and retest the shared source hardening, rerun
+the noncanonical Case C fixture, and freeze request-free Case A v5, Case B v3 and
+Case C v1 plans and immutable bundles. Only then submit separately named jobs and
+analyze every terminal smoke, request-accounting, case and report artifact. A
+running or queued job has no percentage estimate unless its own instrumentation
 provides a measurable denominator. See [HPC_SETUP.md](HPC_SETUP.md) for pins,
-resources, current job IDs, and the next deployment gate.
+resources, historical job IDs, and the next deployment gate.
 
-Synchronization: hardened execution and propagation checkpoint **`84fe7cc`** and
-current Case A launch checkpoint
-**`228f7c2ce4255a8587921ef955c633868b1fb10d`** are pushed to
-`origin/codex/agentdojo-lab`. Git excludes the ignored canonical plans, fixture
-runs, reports and external submission bundles. The cancelled job record and
-pending replacement must be checked separately from Git state.
+Synchronization: Case A submission checkpoint
+**`228f7c2ce4255a8587921ef955c633868b1fb10d`** and the later pushed head
+**`a54f1e31c022005bfe2fa7ac9b83600eb4384c2b`** are on
+`origin/codex/agentdojo-lab`. The current Case A/B remediation and Case C files
+remain working-tree changes. Git excludes ignored preparations, fixture runs,
+reports and external submission bundles; scheduler receipts establish terminal
+job outcomes independently of Git.
