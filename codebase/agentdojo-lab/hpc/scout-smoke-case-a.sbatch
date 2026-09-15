@@ -49,6 +49,8 @@ export SCOUT_NATIVE_SMOKE=1
 unset SCOUT_SITE_FILE
 source "$CASE_A_HPC_DIR/scout-smoke.sbatch"
 [[ "$SCOUT_HPC_DIR" == "$CASE_A_HPC_DIR" && "$SCOUT_NATIVE_SMOKE" == 1 && "$SCOUT_PORT" == 8000 ]] || exit 2
+[[ ${SCOUT_SERVER_PID:-} =~ ^[1-9][0-9]*$ ]] || exit 2
+export SCOUT_SERVER_PID
 
 CASE_A_PROCESS_PID=''
 CASE_A_LAUNCHED_PID=0

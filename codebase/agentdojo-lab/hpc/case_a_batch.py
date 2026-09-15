@@ -6,9 +6,8 @@ import argparse
 import hashlib
 import json
 import os
-import urllib.request
+import time
 from pathlib import Path
-from urllib.parse import urlsplit
 
 PROTOCOL = "nesi-scout-smoke-case-a-v1"
 WALLTIME_SECONDS = 7200
@@ -250,27 +249,27 @@ def reserve_phase(
     return value
 
 
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, request, file_pointer, code, message, headers, new_url):
-        return None
-
-
 def check_server(
-    output: Path, *, base_url: str, key: str, server_pid: int, job_id: str, opener=None
+    output: Path,
+    *,
+    base_url: str,
+    key: str,
+    server_pid: int,
+    job_id: str,
+    opener=None,
+    auth_probe=None,
+    identity_probe=None,
 ) -> dict:
-    parsed = urlsplit(base_url)
-    if (
-        parsed.scheme != "http"
-        or parsed.hostname != "127.0.0.1"
-        or parsed.port is None
-        or not 1024 <= parsed.port <= 65535
-        or parsed.path != "/v1"
-        or parsed.query
-        or parsed.fragment
-        or parsed.username
-        or parsed.password
-    ):
-        raise ValueError("Server check requires literal loopback /v1")
+    from agentdojo_lab.case_a_scout import (
+        live_serving_identity,
+        local_url,
+        models_auth_check,
+    )
+
+    try:
+        local_url(base_url)
+    except ValueError as error:
+        raise ValueError("Server check requires literal loopback /v1") from error
     value = {
         "protocol": PROTOCOL,
         "status": "failed",
@@ -279,35 +278,25 @@ def check_server(
         "server_pid": server_pid,
     }
     try:
-        if not job_id:
-            raise ValueError("A Slurm job ID is required")
-        if type(server_pid) is not int or server_pid <= 1:
-            raise ValueError("Invalid local server PID")
-        os.kill(server_pid, 0)
-        if not key or any(character in key for character in "\r\n"):
-            raise ValueError("Missing local server key")
-        request = urllib.request.Request(
-            base_url + "/models", headers={"Authorization": "Bearer " + key}
+        if os.environ.get("SLURM_JOB_ID") != job_id:
+            raise ValueError("Server check job differs from the current allocation")
+        if os.environ.get("SCOUT_SERVER_PID") != str(server_pid):
+            raise ValueError("Server check PID differs from SCOUT_SERVER_PID")
+        auth_probe = auth_probe or (
+            lambda url, secret: models_auth_check(url, secret, opener=opener)
         )
-        client = opener or urllib.request.build_opener(
-            urllib.request.ProxyHandler({}), _NoRedirect()
+        identity_probe = identity_probe or live_serving_identity
+        identity = identity_probe(server_pid, job_id)
+        auth = auth_probe(base_url, key)
+        if identity_probe(server_pid, job_id) != identity:
+            raise ValueError("Server process identity changed during authentication checks")
+        value.update(
+            status="passed",
+            model="llama-4-scout-local",
+            created_unix_ns=time.time_ns(),
+            live_binding=identity,
+            models_auth=auth,
         )
-        with client.open(request, timeout=10) as response:
-            body = response.read(1024 * 1024 + 1)
-            if (
-                response.status != 200
-                or response.geturl() != base_url + "/models"
-                or len(body) > 1024 * 1024
-            ):
-                raise ValueError("Server liveness response failed its bound")
-        payload = json.loads(body)
-        if not isinstance(payload, dict):
-            raise ValueError("Server liveness response is not an object")
-        models = payload.get("data", [])
-        if not any(isinstance(row, dict) and row.get("id") == "llama-4-scout-local" for row in models):
-            raise ValueError("Expected served model is absent")
-        value["status"] = "passed"
-        value["model"] = "llama-4-scout-local"
     except (OSError, ValueError, TypeError, json.JSONDecodeError) as error:
         value["error_type"] = type(error).__name__
     write_exclusive(output, value)
@@ -437,11 +426,9 @@ def validate_unstarted_chain(
     ):
         raise ValueError("Unstarted smoke or cleanup allocation binding differs")
     if binding_validator is None:
-        if os.environ.get("SLURM_JOB_ID") != job_id:
-            raise ValueError("Finalization is outside the bound Slurm allocation")
-        from agentdojo_lab.case_a_scout import serving_binding
+        from agentdojo_lab.case_a_scout import recorded_smoke_binding
 
-        binding_validator = serving_binding
+        binding_validator = recorded_smoke_binding
     binding = binding_validator(preflight_path, plan["config"]["base_url"])
     if (
         binding.get("status") != "bound_before_case_calls"
@@ -531,11 +518,9 @@ def validate_case_chain(
     ):
         raise ValueError("Smoke, server, cleanup, or allocation binding differs")
     if binding_validator is None:
-        if os.environ.get("SLURM_JOB_ID") != job_id:
-            raise ValueError("Finalization is outside the bound Slurm allocation")
-        from agentdojo_lab.case_a_scout import serving_binding
+        from agentdojo_lab.case_a_scout import recorded_serving_binding
 
-        binding_validator = serving_binding
+        binding_validator = recorded_serving_binding
     binding = binding_validator(preflight_path, plan["config"]["base_url"])
     if (
         binding.get("status") != "bound_before_case_calls"

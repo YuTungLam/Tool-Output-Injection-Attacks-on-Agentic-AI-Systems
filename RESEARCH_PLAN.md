@@ -1,7 +1,7 @@
 # Next phase: concrete propagation case studies on NeSI
 
-Plan date: 2026-09-14; checklist reviewed 2026-09-15. Status: **proposed implementation and experiment plan; not an
-executed experiment or frozen run manifest**. This plan follows the researcher's
+Plan date: 2026-09-14; checklist reviewed 2026-09-15. Status: **implementation and live Scout smoke complete;
+research experiments remain pending**. This plan follows the researcher's
 new supervisor guidance in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
 ## Supervisor checklist — checked 2026-09-15
@@ -16,7 +16,7 @@ case, or a historical result note does not complete an experimental checkbox.
 
 Progress reporting: [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) gives the
 percentage, progress bars, and a run-by-run interpretation. The current first
-checklist contains 25 items, of which 9 are complete (**36%**); the 13 new
+checklist contains 25 items, of which 10 are complete (**40%**); the 13 new
 experimental deliverables remain **0/13**. These are equal checkbox counts,
 not time estimates or accuracy scores.
 
@@ -75,12 +75,14 @@ not time estimates or accuracy scores.
 
 ### Remaining prerequisites and historical evidence
 
-- [ ] Complete the serving container and pass the synthetic plus benign native
+- [x] Complete the serving container and pass the synthetic plus benign native
   Scout smoke. First container job `9029215` failed after 50m 31s during SIF
   creation; GPU job `9029415` was cancelled without starting. Recovery CPU job
   `9039259` passed in 6m 49s with local SSD/faster compression and a longer bounded
-  deadline; GPU smoke `9039289` now waits for scheduling priority. No live
-  Scout result is available yet. See HPC_SETUP.md for all attempt receipts.
+  deadline. GPU smoke `9039289` then completed on four A100s in 9m54s with exit
+  `0:0`: all four synthetic checks and the benign native task passed using seven
+  generation requests in total. This is live integration evidence, not an attack
+  trajectory. See HPC_SETUP.md for all attempt receipts.
 - [x] Add a paired comparison exporter and adapt the selected case runners and
   joint/replay auditors to the explicit local endpoint. Several historical batch
   entry points still retain their Groq protocols. The new **single-episode offline
@@ -370,7 +372,8 @@ be tracked in Git. Publish observed counts with their denominators and unknowns.
 - [x] Restore default lab/upstream; pass native offline smoke and initial local transport tests.
 - [x] Restore semantic dependencies and pass 53 additional targeted checks.
 - [x] Pass the full 2,056-test repository suite and 26 HPC tests.
-- [ ] Verify Scout inference in GPU attempt `9039289`; container recovery `9039259` passed.
+- [x] Verify Scout inference in GPU attempt `9039289`; synthetic 4/4 and the benign
+  native AgentDojo task passed in the same allocation.
 - [ ] Restore selected historical evidence bundles if available.
 - [x] Implement explicit local primary/online judge and deferred single-source endpoints.
 - [x] Finish selected case runners/auditors and cross-session comparison. The
@@ -383,9 +386,9 @@ be tracked in Git. Publish observed counts with their denominators and unknowns.
 Setup evidence is in `codebase/agentdojo-lab/reports/20260914-nesi-setup-v1` and
 `runs/20260914-nesi-offline-smoke-v1`. Model job 9029207 completed successfully;
 container job 9029215 failed, and dependent GPU smoke 9029415 was cancelled
-without starting. The new CPU container retry `9039259` passed in 6m 49s; GPU
-smoke `9039289` is pending scheduling priority. No Scout inference or new research
-experiment has completed. The 2026-09-14 full repository suite passed 2,056 tests;
+without starting. The CPU container retry `9039259` passed in 6m 49s; GPU smoke
+`9039289` passed in 9m54s with seven bounded generation requests. Scout inference
+is now verified, while no new research experiment has completed. The 2026-09-14 full repository suite passed 2,056 tests;
 new 2026-09-15 checks passed 28 HPC tests plus 25 subtests, 38 paired/report tests,
 the 84-test Case A runner/provider/report selection, and the final 109-test plus
 16-subtest same-allocation batch selection. The configured causal/replay and

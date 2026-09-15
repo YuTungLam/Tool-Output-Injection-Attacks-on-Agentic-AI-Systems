@@ -184,10 +184,10 @@ def test_phase_gate_fails_closed_with_terminal_reason(tmp_path, changes, status)
 
 
 class Response:
-    status = 200
-
-    def __init__(self, url):
+    def __init__(self, url, status, body):
         self.url = url
+        self.status = status
+        self.body = body
 
     def __enter__(self):
         return self
@@ -196,22 +196,35 @@ class Response:
         return False
 
     def read(self, _limit):
-        return json.dumps({"data": [{"id": "llama-4-scout-local"}]}).encode()
+        return self.body
 
     def geturl(self):
         return self.url
 
 
 class Opener:
+    def __init__(self):
+        self.authorizations = []
+
     def open(self, request, timeout):
         assert timeout == 10
-        assert request.headers["Authorization"] == "Bearer local-key"
-        return Response(request.full_url)
+        authorization = request.get_header("Authorization")
+        self.authorizations.append(authorization)
+        if authorization == "Bearer local-key":
+            body = json.dumps({"data": [{"id": "llama-4-scout-local"}]}).encode()
+            return Response(request.full_url, 200, body)
+        return Response(request.full_url, 401, b'{"error":"unauthorized"}')
 
 
 def test_server_check_requires_live_literal_loopback_and_preserves_receipt(tmp_path, monkeypatch):
-    seen = []
-    monkeypatch.setattr(case_a_batch.os, "kill", lambda pid, signal: seen.append((pid, signal)))
+    monkeypatch.setenv("SLURM_JOB_ID", "42")
+    monkeypatch.setenv("SCOUT_SERVER_PID", "123")
+    identity = {
+        "server_process": {"pid": 123, "start_ticks": 456},
+        "allocation_process_scope": {"cgroup_sha256": "fixture"},
+        "scheduler": {"reported_job_id": "42", "state": "RUNNING"},
+    }
+    opener = Opener()
     output = tmp_path / "server.json"
     result = case_a_batch.check_server(
         output,
@@ -219,10 +232,19 @@ def test_server_check_requires_live_literal_loopback_and_preserves_receipt(tmp_p
         key="local-key",
         server_pid=123,
         job_id="42",
-        opener=Opener(),
+        opener=opener,
+        identity_probe=lambda _pid, _job: identity,
     )
     assert result["status"] == "passed"
-    assert seen == [(123, 0)]
+    assert result["models_auth"]["generation_requests_started"] == 0
+    assert result["models_auth"]["checks"]["missing_key"]["rejected"] is True
+    assert result["models_auth"]["checks"]["wrong_key"]["rejected"] is True
+    assert opener.authorizations == [
+        "Bearer local-key",
+        None,
+        "Bearer case-a-intentionally-wrong-key",
+    ]
+    assert "local-key" not in output.read_text()
     before = output.read_bytes()
     with pytest.raises(ValueError, match="literal loopback"):
         case_a_batch.check_server(
@@ -239,9 +261,38 @@ def test_server_check_requires_live_literal_loopback_and_preserves_receipt(tmp_p
             key="local-key",
             server_pid=123,
             job_id="42",
-            opener=Opener(),
+            opener=opener,
+            identity_probe=lambda _pid, _job: identity,
         )
     assert output.read_bytes() == before
+
+
+@pytest.mark.parametrize(
+    ("job", "pid"),
+    [("forged-job", "123"), ("42", "999"), ("42", None)],
+)
+def test_server_check_rejects_forged_allocation_or_pid(tmp_path, monkeypatch, job, pid):
+    monkeypatch.setenv("SLURM_JOB_ID", job)
+    if pid is None:
+        monkeypatch.delenv("SCOUT_SERVER_PID", raising=False)
+    else:
+        monkeypatch.setenv("SCOUT_SERVER_PID", pid)
+    output = tmp_path / f"server-{job}-{pid}.json"
+    result = case_a_batch.check_server(
+        output,
+        base_url="http://127.0.0.1:8000/v1",
+        key="local-key",
+        server_pid=123,
+        job_id="42",
+        auth_probe=lambda *_args: (_ for _ in ()).throw(
+            AssertionError("authentication probe must not run")
+        ),
+        identity_probe=lambda *_args: (_ for _ in ()).throw(
+            AssertionError("identity probe must not run")
+        ),
+    )
+    assert result["status"] == "failed"
+    assert result["error_type"] == "ValueError"
 
 
 def completion_fixture(
@@ -599,6 +650,7 @@ def test_wrapper_is_separate_bounded_and_leaves_original_smoke_unchanged():
         "case-a-server-check.json",
         "case-a-cleanup.json",
         "case-a-batch-summary.json",
+        "export SCOUT_SERVER_PID",
         '[[ "$SCOUT_LAB_PYTHON" == /* ]]',
         "readonly CASE_A_HPC_DIR",
         'unset SCOUT_SITE_FILE',
@@ -617,6 +669,9 @@ def test_wrapper_is_separate_bounded_and_leaves_original_smoke_unchanged():
     assert wrapper.index('source "$CASE_A_HPC_DIR/scout-smoke.sbatch"') < wrapper.index(
         '"$SCOUT_CASE_A_RUNNER" run'
     )
+    assert wrapper.index('source "$CASE_A_HPC_DIR/scout-smoke.sbatch"') < wrapper.index(
+        "export SCOUT_SERVER_PID"
+    ) < wrapper.index("case-a-server-check.json")
     assert "http://127.0.0.1:$SCOUT_PORT/v1" in original.decode()
     assert case_a_batch.TOTAL_REQUEST_LIMIT == 24
     assert case_a_batch.WALLTIME_SECONDS == 7200

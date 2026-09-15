@@ -1,6 +1,7 @@
 """Offline Case A protocol checks; these tests never contact a model endpoint."""
 
 import json
+import time
 from pathlib import Path
 
 import pytest
@@ -82,6 +83,7 @@ def test_serving_gate_rejects_execution_outside_scheduler(monkeypatch, tmp_path)
 
 def test_serving_gate_accepts_only_bound_smoke_and_runtime_evidence(monkeypatch, tmp_path):
     monkeypatch.setenv("SLURM_JOB_ID", "fixture-job")
+    monkeypatch.setenv("SCOUT_SERVER_PID", "321")
     template = tmp_path / "template.jinja"
     container = tmp_path / "container.sif"
     download = tmp_path / "download.json"
@@ -172,6 +174,46 @@ def test_serving_gate_accepts_only_bound_smoke_and_runtime_evidence(monkeypatch,
             "artifacts": artifacts,
         },
     )
+    auth = {
+        "endpoint": "http://127.0.0.1:8000/v1/models",
+        "method": "GET",
+        "generation_requests_started": 0,
+        "checks": {
+            "correct_key": {
+                "status_code": 200,
+                "authorized": True,
+                "expected_model_present": True,
+            },
+            "missing_key": {"status_code": 401, "rejected": True},
+            "wrong_key": {"status_code": 401, "rejected": True},
+        },
+    }
+    live = {
+        "server_process": {"pid": 321, "start_ticks": 456},
+        "allocation_process_scope": {"cgroup_sha256": "fixture"},
+        "scheduler": {
+            "reported_job_id": "fixture-job",
+            "state": "RUNNING",
+            "batch_host": "fixture-node",
+        },
+    }
+    case_a_scout.write(
+        tmp_path / "case-a-server-check.json",
+        {
+            "protocol": case_a_scout.SERVER_CHECK_PROTOCOL,
+            "status": "passed",
+            "slurm_job_id": "fixture-job",
+            "endpoint": "http://127.0.0.1:8000/v1",
+            "server_pid": 321,
+            "model": case_a_scout.MODEL,
+            "created_unix_ns": time.time_ns(),
+            "live_binding": live,
+            "models_auth": auth,
+        },
+    )
+    monkeypatch.setenv("LOCAL_LLM_API_KEY", "fixture-secret")
+    monkeypatch.setattr(case_a_scout, "live_serving_identity", lambda _pid, _job: live)
+    monkeypatch.setattr(case_a_scout, "models_auth_check", lambda _url, _key: auth)
 
     binding = case_a_scout.serving_binding(preflight_path, "http://127.0.0.1:8000/v1")
     assert binding["status"] == "bound_before_case_calls"
@@ -183,13 +225,60 @@ def test_serving_gate_accepts_only_bound_smoke_and_runtime_evidence(monkeypatch,
         "container-runtime.json",
         "server-command.txt",
         "gpus.csv",
+        "case-a-server-check.json",
     }
+    assert binding["server_check"]["server_pid"] == 321
+    assert binding["server_check"]["models_auth"] == auth
 
     runtime = json.loads((tmp_path / "container-runtime.json").read_text())
     runtime["devices"].pop()
     case_a_scout.write(tmp_path / "container-runtime.json", runtime)
     with pytest.raises(ValueError, match="four-A100"):
         case_a_scout.serving_binding(preflight_path, "http://127.0.0.1:8000/v1")
+
+
+def test_live_serving_gate_rejects_stale_receipt_forged_job_and_wrong_pid(monkeypatch):
+    now = time.time_ns()
+    auth = {"checks": "fixture"}
+    live = {"server_process": {"pid": 321}}
+    binding = {
+        "status": "bound_before_case_calls",
+        "slurm_job_id": "current-job",
+        "server_check": {
+            "created_unix_ns": now,
+            "server_pid": 321,
+            "live_binding": live,
+            "models_auth": auth,
+        },
+    }
+    monkeypatch.setenv("SLURM_JOB_ID", "current-job")
+    monkeypatch.setenv("SCOUT_SERVER_PID", "321")
+    monkeypatch.setenv("LOCAL_LLM_API_KEY", "current-key")
+    monkeypatch.setattr(case_a_scout, "recorded_serving_binding", lambda *_args: binding)
+    monkeypatch.setattr(case_a_scout, "live_serving_identity", lambda *_args: live)
+    monkeypatch.setattr(case_a_scout, "models_auth_check", lambda *_args: auth)
+    assert case_a_scout.serving_binding(
+        Path("preflight.json"), "http://127.0.0.1:8000/v1"
+    ) is binding
+
+    binding["server_check"]["created_unix_ns"] = now - (
+        case_a_scout.SERVER_CHECK_MAX_AGE_SECONDS + 1
+    ) * 1_000_000_000
+    with pytest.raises(ValueError, match="stale"):
+        case_a_scout.serving_binding(Path("preflight.json"), "http://127.0.0.1:8000/v1")
+
+    binding["server_check"]["created_unix_ns"] = now
+    monkeypatch.setenv("SLURM_JOB_ID", "forged-job")
+    with pytest.raises(ValueError, match="allocation or PID"):
+        case_a_scout.serving_binding(Path("preflight.json"), "http://127.0.0.1:8000/v1")
+
+    monkeypatch.setenv("SLURM_JOB_ID", "current-job")
+    monkeypatch.setenv("SCOUT_SERVER_PID", "999")
+    with pytest.raises(ValueError, match="allocation or PID"):
+        case_a_scout.serving_binding(Path("preflight.json"), "http://127.0.0.1:8000/v1")
+    monkeypatch.delenv("SCOUT_SERVER_PID")
+    with pytest.raises(ValueError, match="SCOUT_SERVER_PID"):
+        case_a_scout.serving_binding(Path("preflight.json"), "http://127.0.0.1:8000/v1")
 
 
 def test_request_and_context_budgets_stop_before_sdk(tmp_path):

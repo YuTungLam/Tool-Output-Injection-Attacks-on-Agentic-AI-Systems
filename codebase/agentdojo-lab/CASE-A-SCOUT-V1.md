@@ -1,10 +1,10 @@
 # Scout Case A: recipient change, version 1
 
 Status: the current source-refresh preparation is
-`runs/scout-case-a-prepared-v2`; no Scout research trajectory has run under this
+`runs/scout-case-a-prepared-v3`; no Scout research trajectory has run under this
 protocol. The script's `prepare` command freezes scientific inputs and hashes
-without any model call. The live container, measured GPU allocation and execution
-binding remain pending a successful smoke.
+without any model call. GPU smoke job `9039289` passed in 9m54s. A fresh
+same-allocation smoke and execution binding remain mandatory for the Case A job.
 
 The active implementation was recovered on 2026-09-15 only after the four
 preserved draft files matched `quarantine.json` byte hashes and an independent
@@ -44,8 +44,8 @@ failure, with no automatic truncation. Slot processes have 1,800-second ceilings
 the case has a 3,600-second worker ceiling. The separately named
 [same-allocation wrapper](hpc/scout-smoke-case-a.sbatch) fixes a two-hour maximum
 and 24 total generation attempts: four synthetic smoke, at most four benign native
-smoke, then at most 16 Case A attempts. It remains unsubmitted pending the terminal
-result and measured timing of smoke job `9039289`.
+smoke, then at most 16 Case A attempts. Smoke job `9039289` completed successfully
+in 9m54s; its measured timing supports the wrapper's existing two-hour envelope.
 
 The unchanged ordinary passive cascade, pinned MiniLM and file lineage are
 enabled. A whole native search response is one registered source even if it
@@ -68,33 +68,41 @@ A single pair establishes neither repeatability nor a systematic method limitati
 From the lab, using its Python 3.12 environment:
 
 ```bash
-.venv/bin/python scripts/run_case_a_scout.py prepare runs/scout-case-a-prepared-v2
+.venv/bin/python scripts/run_case_a_scout.py prepare runs/scout-case-a-prepared-v3
 ```
 
 The first zero-request preparation, `runs/scout-case-a-prepared-v1`, is preserved.
-The later joint/replay transport and cross-session reporting work changed files in
-its deliberately broad source snapshot, so `verify_plan` correctly rejects that
-old preparation. The current canonical preparation is
-`runs/scout-case-a-prepared-v2`. Any later bound source, configuration, payload,
-tool schema or native environment change invalidates it. Use another new named
-preparation directory if a prospective change is needed; preserve both earlier
-ones. `preparation.json` says `prepared_not_executed`, and execution bindings are
-explicitly pending. This command does not execute offline pretend research slots
-or create experimental outcomes.
+Later joint/replay transport and cross-session reporting work invalidated its broad
+source snapshot. The completed propagation-validator work then invalidated
+`runs/scout-case-a-prepared-v2`; both old preparations remain preserved. The
+current canonical preparation is `runs/scout-case-a-prepared-v3`. Any later bound
+source, configuration, payload, tool schema or native environment change
+invalidates it. Use another new named preparation directory if a prospective
+change is needed. `preparation.json` says `prepared_not_executed`, and execution
+bindings are explicitly pending. This command does not execute offline pretend
+research slots or create experimental outcomes.
 
 Only inside an allocated job, after **that same serving job** has passing
 synthetic and native Scout smoke receipts, may the wrapper invoke:
 
 ```bash
-.venv/bin/python scripts/run_case_a_scout.py run runs/scout-case-a-prepared-v2 \
+.venv/bin/python scripts/run_case_a_scout.py run runs/scout-case-a-prepared-v3 \
   --serving-receipt /absolute/path/to/current-smoke/preflight.json
 ```
 
-Do not reuse receipts from `9039289`: its frozen wrapper exits after smoke and
-shuts its server down. After that job passes and its timing is reviewed, freeze a
-new site file and helper bundle for `hpc/scout-smoke-case-a.sbatch`; its own fresh
-allocation repeats both gates before invoking the command above. The endpoint in
-the preparation must match that server's literal loopback port.
+Do not reuse receipts from `9039289`: its frozen wrapper exited after smoke and
+shut its server down. Freeze a new site file and helper bundle for
+`hpc/scout-smoke-case-a.sbatch`; its own fresh allocation repeats both gates before
+invoking the command above. The endpoint in the preparation must match that
+server's literal loopback port.
+Immediately before Case A starts, the wrapper writes a fresh exclusive
+`case-a-server-check.json`. It binds the exported live server PID and Linux
+process identity to Slurm's current `RUNNING` job and batch host, then uses only
+non-generative `GET /v1/models` probes to show that the current key succeeds while
+an absent key and a deliberately wrong key are rejected. The receipt contains
+status codes and process hashes, never the key or a key-derived value. The runner
+repeats those live checks before each slot; terminal finalization reconstructs the
+recorded binding after the wrapper has intentionally stopped the server.
 Execution refuses existing reservation or slot directories and writes a bound
 `execution.json` before workers make calls. It retains per-slot native artifacts,
 `case-a-outcome.json`, attempt reservations, worker logs and terminal receipts;
