@@ -9,14 +9,15 @@ named retry passed, followed by a successful four-A100 GPU smoke. Scout inferenc
 and a benign native tool loop are verified. A separate smoke-plus-Case-A wrapper,
 canonical plan, private site and immutable bundle were frozen. First Case A job
 `9043206` was cancelled before allocation after audit found a Slurm helper-path
-defect; a corrected replacement is pending preparation.
+defect. Corrected job `9050478` is submitted and pending for Priority with zero
+runtime, no allocation and no model requests.
 
 ## Recovery in progress — 2026-09-15
 
 The user requested continued runs with percentages and explanations. The fresh
 container retry and its GPU smoke **passed**. The first separately frozen Case A
 job was cancelled before allocation after audit; its corrected replacement is
-being prepared. See [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) for the checklist
+now queued. See [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) for the checklist
 count and the interpretation of every attempt.
 
 | Job | Latest observed state | Bounded scope |
@@ -24,6 +25,7 @@ count and the interpretation of every attempt.
 | `9039259` | COMPLETED on Genoa `g01`, Slurm elapsed 6m 49s, exit `0:0` | CPU container retry: 8 requested CPUs / 16 allocated logical CPUs, 32 GiB, local SSD, 2 hours maximum; no GPUs |
 | `9039289` | COMPLETED on Milan `mg15`, Slurm elapsed 9m 54s, exit `0:0` | Four A100 SXM4 80 GB GPUs, 48 requested / 96 allocated logical CPUs, 320 GiB; synthetic 4/4 and benign native 9/9 checks passed with seven requests |
 | `9043206` | CANCELLED before allocation, elapsed 00:00:00 | First Case A submission; helper-path defect found by audit; zero GPU time and requests; preserve v1 bundle |
+| `9050478` | PENDING, reason `Priority`, runtime zero; no allocation | Corrected Case A submission; automatic start; Sep 15 22:35 NZST / `mg14` are provisional scheduler projections; zero requests so far |
 
 Slurm eventually started `9039289` automatically on `mg15`; earlier queue
 estimates were provisional and did not predict its actual start. The model loaded
@@ -44,13 +46,13 @@ The first three preparations remain preserved and source-invalidated; v3 omitted
 the runtime-read MiniLM revision pin from its inventory. Smoke timing
 supported the existing two-hour envelope, so a new private site and immutable
 helper bundle were frozen and job `9043206` was submitted. Audit found a relative
-helper-path defect before allocation, and the job was cancelled. Its corrected
-replacement must repeat synthetic and benign native smoke in its own allocation
+helper-path defect before allocation, and the job was cancelled. Corrected job
+`9050478` must repeat synthetic and benign native smoke in its own allocation
 before Case A; old receipts cannot authorize it.
 The final wrapper/Case/report/smoke selection passed 109 tests plus 16 subtests,
 Ruff, Bash syntax and Python compilation. These are offline checks only.
 
-The Case A submission uses private site
+The first Case A submission used private site
 `/nesi/project/uoa04799/dyu848/tools/scout-case-a-site-20260915-v1.env`, immutable
 bundle `evidence/scout-case-a-submission-20260915-v1`, run evidence
 `evidence/scout-case-a-20260915-v1`, and scheduler log
@@ -59,7 +61,7 @@ bundle `evidence/scout-case-a-submission-20260915-v1`, run evidence
 cancelled at 15:47 before allocation after audit found that a relative helper path
 would resolve from Slurm's spool directory. Accounting records 00:00:00 elapsed,
 zero GPU time and zero requests. Preserve the v1 bundle. A corrected v2 bundle and
-replacement submission are pending.
+replacement were subsequently prepared and submitted as job `9050478`.
 
 The preserved mode-0400 cancellation receipt is
 `evidence/scout-case-a-submission-20260915-v1/cancelled.json`, SHA-256
@@ -74,6 +76,27 @@ preflight distinguish smoke-only limits from the enclosing 7,200-second,
 24-total-request, 16-Case-A-request and zero-online-auditor envelope. The
 remediation selection passed 108 tests plus 16 subtests, Ruff, Python compilation,
 Bash syntax and diff checks. ShellCheck was unavailable.
+
+The corrected source checkpoint
+`228f7c2ce4255a8587921ef955c633868b1fb10d` is pushed. The v2 submission bundle is
+`/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-a-submission-20260915-v2`,
+and its private site file is
+`/nesi/project/uoa04799/dyu848/tools/scout-case-a-site-20260915-v2.env`. The site,
+helper manifest and offline preflight SHA-256 values are
+`985c5f97ca5ce6141b5d6c04a8abaef797251f900eccce51676f0bfce1ca905d`,
+`5cc8195c816e43c1c2ec22237cbadc9cacd4503f5beca75ae5e4a243014a6451`
+and `6a8b2f5e3ba7da0f61c7dd9b0723135cdf7b12d15b97fe37492852c004f54aab`.
+Request-free validation passed, and the independent launch audit returned GO
+with no P1/P2 findings after 81 focused tests plus 16 subtests.
+
+Job `9050478` was submitted at the scheduler's Sep 15 17:08 display. It is
+currently `PENDING` for `Priority`, with runtime zero, no allocation and zero
+observed model requests. Slurm's Sep 15 22:35 NZST estimate and prospective
+`mg14` node may change and are not proof of allocation. The scheduler will start
+the job automatically. The bundle's `submitted.json` has SHA-256
+`770b8e9fc66590f968d1e0f6bbc7e731b70ff7db66c1c197366955b25a4744c9`.
+Monitor `9050478`; after it is terminal, inspect every smoke, request-accounting,
+Case A and report artifact before interpreting the experiment.
 
 ### Prepared Case B launch implementation
 
@@ -159,13 +182,15 @@ Read-only `sacct` and retained receipt/log inspection establish:
 | `9039259` container recovery | COMPLETED, 6m 49s, exit `0:0` | Published and checksum-verified the v2 SIF using Genoa local SSD and gzip level 1 |
 | `9039289` GPU smoke | COMPLETED, 9m 54s, exit `0:0` | Four A100s on `mg15`; all four synthetic checks and all nine benign-native checks passed with seven requests |
 | `9043206` Case A | CANCELLED before allocation, elapsed 00:00:00 | Accepted at 15:36 and cancelled at 15:47 NZST after helper-path audit; zero GPU time and requests |
+| `9050478` Case A | PENDING for `Priority`, runtime zero, no allocation | Corrected v2 job submitted at scheduler display Sep 15 17:08; automatic start; displayed Sep 15 22:35 NZST / `mg14` are provisional; zero requests so far |
 
 The 50-minute build timeout and 30-second kill grace match the observed failure
 timing, but the logs only report that the process was killed; timeout is an
 inference, not a conclusively recorded cause. Inspect the retained build/partial
 artifacts before choosing a new bounded preparation attempt. No retry was
-submitted during this checklist/status review, and no new test run is claimed.
-The passing software checks below are the 2026-09-14 verification results.
+submitted during the earlier checklist review. Corrected job `9050478` was
+submitted later and remains pending at this snapshot. The passing software checks
+below are the 2026-09-14 verification results.
 
 Evidence directory:
 `/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/container-prep-20260914-v1/`
@@ -393,7 +418,8 @@ must remain visible failures. None of these checks is an attack experiment.
 
 ## Inputs and evidence still missing
 
-- A terminal Case A clean/attacked result from a corrected same-allocation wrapper.
+- A terminal Case A clean/attacked result from pending corrected job `9050478`;
+  monitor it and analyze all terminal artifacts.
 - A frozen bundle/submission and live result for the prepared four-arm Case B v2 plan.
 - A frozen transformed-memory live protocol for Case C.
 - Selected old raw run/report bundles from the personal computer; none restored.

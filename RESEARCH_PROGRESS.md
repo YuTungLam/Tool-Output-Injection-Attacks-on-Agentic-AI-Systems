@@ -32,8 +32,9 @@ That does not complete the supervisor's new experimental deliverables.
   remain preserved; Daybreak Blue completed the retry on this Codex surface. The
   current 85-source Case A plan is prepared. The first immutable
   same-allocation bundle/site produced job **9043206**, which was cancelled before
-  allocation after an audit found a Slurm helper-path defect. A corrected bundle
-  and replacement are being prepared.
+  allocation after an audit found a Slurm helper-path defect. The corrected v2
+  bundle passed request-free validation and a GO audit; replacement job **9050478**
+  is pending for Priority with zero runtime, no allocation and no model requests.
   Configured joint/replay transport and the cross-session exporter are also
   verified offline. Proposed payloads and offline fixtures are not live results.
 - The strict Case B four-arm runner and same-allocation wrapper are reviewed and
@@ -299,9 +300,8 @@ two-hour limit, four A100s, 48 requested CPUs and 320 GiB host RAM. Audit then
 found that one relative helper path would resolve from Slurm's spool directory,
 so the job was cancelled at **15:47 NZST before allocation**. Slurm records
 00:00:00 elapsed; it used zero GPU time and made zero requests. Preserve the v1
-bundle and cancellation record. A corrected v2 bundle and replacement submission
-are pending. The maximum allocation remains eight GPU-hours and the combined cap
-remains 24 generation requests.
+bundle and cancellation record. The maximum allocation remains eight GPU-hours
+and the combined cap remains 24 generation requests.
 
 The read-only cancellation receipt is
 `evidence/scout-case-a-submission-20260915-v1/cancelled.json`, SHA-256
@@ -314,6 +314,30 @@ tests plus 16 subtests**, Ruff, Python compilation, Bash syntax and diff checks.
 ShellCheck was unavailable. The smoke preflight now reports its smoke-only limits
 separately from the enclosing 7,200-second, 24-total-request, 16-Case-A-request
 and zero-online-auditor envelope.
+
+### Case A submission attempt 2 — job 9050478 — pending
+
+The corrected source checkpoint
+`228f7c2ce4255a8587921ef955c633868b1fb10d` is pushed. Its immutable bundle is
+`evidence/scout-case-a-submission-20260915-v2`, and the private site file is
+`/nesi/project/uoa04799/dyu848/tools/scout-case-a-site-20260915-v2.env`.
+The site file, helper manifest and offline preflight SHA-256 values are
+`985c5f97ca5ce6141b5d6c04a8abaef797251f900eccce51676f0bfce1ca905d`,
+`5cc8195c816e43c1c2ec22237cbadc9cacd4503f5beca75ae5e4a243014a6451`
+and `6a8b2f5e3ba7da0f61c7dd9b0723135cdf7b12d15b97fe37492852c004f54aab`.
+Request-free validation passed. An independent audit returned **GO**, with no
+P1/P2 findings; its focused selection passed **81 tests plus 16 subtests**.
+
+Job **9050478** was submitted at the scheduler's **Sep 15 17:08** display. At
+this snapshot it is **PENDING** for **Priority**, with zero runtime, no allocation
+and zero observed model requests. Slurm displays a prospective `mg14` node and
+an estimated **Sep 15 22:35 NZST** start; these are scheduling projections, not
+guarantees or evidence of allocation. The job starts automatically, so no manual
+command is required. Its terminal results are not yet available. The
+`submitted.json` receipt has SHA-256
+`770b8e9fc66590f968d1e0f6bbc7e731b70ff7db66c1c197366955b25a4744c9`.
+Monitor this job, then analyze all smoke, request-accounting, Case A and report
+artifacts after it becomes terminal.
 
 ### Configured causal/replay and cross-session preparation — passed offline
 
@@ -420,7 +444,9 @@ A running or queued job has no percentage estimate unless its own instrumentatio
 provides a measurable denominator. See [HPC_SETUP.md](HPC_SETUP.md) for pins,
 resources, current job IDs, and the next deployment gate.
 
-Synchronization: hardened execution and propagation checkpoint **`84fe7cc`** is
-pushed to `origin/codex/agentdojo-lab`. Git excludes the ignored canonical plans,
-fixture runs, reports and external submission bundles. The cancelled job record
-and any later replacement must be checked separately from Git state.
+Synchronization: hardened execution and propagation checkpoint **`84fe7cc`** and
+current Case A launch checkpoint
+**`228f7c2ce4255a8587921ef955c633868b1fb10d`** are pushed to
+`origin/codex/agentdojo-lab`. Git excludes the ignored canonical plans, fixture
+runs, reports and external submission bundles. The cancelled job record and
+pending replacement must be checked separately from Git state.

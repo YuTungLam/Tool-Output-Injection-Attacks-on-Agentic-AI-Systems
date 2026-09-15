@@ -207,7 +207,7 @@ a failed integration/utility check; it is not attack evidence. The wrapper hash,
 server command, synthetic receipt, and model/container/template pins are linked
 in `native-smoke.json`. The loopback client uses no proxies or redirects.
 
-### Prepared same-allocation Case A continuation
+### Submitted same-allocation Case A continuation
 
 Completed job `9039289` ran the frozen smoke wrapper and exited after smoke; it
 cannot append Case A. Do not alter its site file or v2 submission bundle.
@@ -227,14 +227,15 @@ server and limits the whole Case A process group to 3,600 seconds with TERM and
 KILL cleanup. The combined ceilings are 24 generation attempts (4 synthetic,
 at most 4 native, at most 16 Case A), zero online auditors, and zero SDK retries.
 
-Use a new site file and fresh scheduler log parent. A reviewed submission invokes
-the wrapper directly:
+The following is a template for a future separately named attempt. Do not use it
+while job `9050478` is queued. A reviewed submission invokes a frozen wrapper,
+site file and fresh scheduler log parent directly:
 
 ```bash
 sbatch \
-  --export=HOME,PATH,LANG,SCOUT_SITE_FILE=/path/to/new-scout-case-a-site.env \
+  --export=HOME,PATH,LANG,SCOUT_SITE_FILE=/path/to/frozen-scout-case-a-site.env \
   --output=/path/to/existing/log-directory/scout-case-a-%j.log \
-  codebase/agentdojo-lab/hpc/scout-smoke-case-a.sbatch
+  /path/to/frozen-hpc/scout-smoke-case-a.sbatch
 ```
 
 The sibling `${SCOUT_RUN_DIR}.case-a-pre-smoke.json` receipt binds the plan and
@@ -249,17 +250,37 @@ and paired report, including unsuccessful and unconfirmed trials.
 The current plan is `runs/scout-case-a-prepared-v4`, with 85 bound source files,
 zero requests and plan SHA-256
 `5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`.
-It is bound to pushed source checkpoint `84fe7cc`. The first submitted bundle was
+The first submitted bundle was
 `evidence/scout-case-a-submission-20260915-v1`, using private site
 `/nesi/project/uoa04799/dyu848/tools/scout-case-a-site-20260915-v1.env`.
 Job `9043206` was submitted at 15:36 NZST, then cancelled at 15:47 before
 allocation after audit found that one relative helper path would resolve from
 Slurm's spool directory. Accounting records 00:00:00 elapsed, zero GPU time and
-zero requests. Preserve that submission record. A corrected v2 bundle and
-replacement submission are required.
+zero requests. Preserve that submission record.
 The mode-0400 `cancelled.json` in that bundle has SHA-256
 `35bfde30958b8ecb49aafcb31c448e69c0c0e71fe57ce8387f8c535b6d6a9e5a` and
 records no assigned node.
+
+The corrected launch source checkpoint
+`228f7c2ce4255a8587921ef955c633868b1fb10d` is pushed. Its immutable bundle is
+`/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-a-submission-20260915-v2`,
+with private site
+`/nesi/project/uoa04799/dyu848/tools/scout-case-a-site-20260915-v2.env`.
+The site, helper manifest and offline preflight SHA-256 values are
+`985c5f97ca5ce6141b5d6c04a8abaef797251f900eccce51676f0bfce1ca905d`,
+`5cc8195c816e43c1c2ec22237cbadc9cacd4503f5beca75ae5e4a243014a6451`
+and `6a8b2f5e3ba7da0f61c7dd9b0723135cdf7b12d15b97fe37492852c004f54aab`.
+Request-free validation passed, and an independent audit returned GO with no
+P1/P2 findings after 81 focused tests plus 16 subtests.
+
+Job `9050478` was submitted at scheduler display Sep 15 17:08. It is pending for
+Priority with runtime zero, no allocation and no observed model requests. Slurm's
+Sep 15 22:35 NZST start and prospective `mg14` node are estimates, not guarantees
+or allocation evidence. It starts automatically. The `submitted.json` receipt
+has SHA-256
+`770b8e9fc66590f968d1e0f6bbc7e731b70ff7db66c1c197366955b25a4744c9`.
+Monitor it rather than submitting a duplicate; after terminal completion, inspect
+all smoke, request-accounting, Case A and report artifacts.
 
 For a synthetic-only check, omit `SCOUT_NATIVE_SMOKE=1` and retain the default
 45-minute batch limit. Neither mode starts research experiments. Native input

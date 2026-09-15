@@ -23,8 +23,9 @@ The bounded [Scout Case A v1](CASE-A-SCOUT-V1.md) runner is also implemented and
 its current `runs/scout-case-a-prepared-v4` plan binds 85 source files, has SHA-256
 `5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`, and
 records zero live model requests. Submitted job `9043206` was cancelled before
-allocation after audit found a Slurm helper-path defect; a corrected replacement
-is being prepared. The Case B four-arm runner and `nesi-scout-smoke-case-b-v1`
+allocation after audit found a Slurm helper-path defect. Corrected job `9050478`
+is pending for Priority with zero runtime, no allocation and no requests; it will
+start automatically. The Case B four-arm runner and `nesi-scout-smoke-case-b-v1`
 same-allocation wrapper are reviewed and test-clean. The final Case A/B selection
 passed 191 tests plus 16 subtests; root's broader selection passed 214 plus 16
 subtests. Case B v2 is prepared with 163 bound files and zero model calls, but it

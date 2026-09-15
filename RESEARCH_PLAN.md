@@ -117,7 +117,11 @@ not time estimates or accuracy scores.
   requests, and supersedes without deleting three source-invalidated preparations.
   First submission `9043206` was cancelled
   before allocation after audit found a Slurm helper-path defect; it used zero GPU
-  time and requests. Case B v2 is prepared with zero calls but not bundled or
+  time and requests. Corrected job `9050478` was submitted from pushed checkpoint
+  `228f7c2ce4255a8587921ef955c633868b1fb10d` after request-free validation and a
+  GO audit with no P1/P2 findings. It remains pending for Priority with zero
+  runtime, no allocation and no requests; its displayed 22:35 NZST start is only
+  an estimate. Case B v2 is prepared with zero calls but not bundled or
   submitted; its plan SHA-256 is
   `69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`.
   Case C remains unfinished, so this combined item stays unchecked.
@@ -392,8 +396,8 @@ be tracked in Git. Publish observed counts with their denominators and unknowns.
   joint auditor and configured one-step replay are verified offline.
 - [ ] Freeze the new small protocol, run it, and produce actual case studies.
   Case A v1 is frozen; first job `9043206` was cancelled before allocation after
-  a wrapper-path audit, and its corrected replacement is pending preparation. No
-  research slot has run.
+  a wrapper-path audit. Corrected job `9050478` is submitted and pending for
+  Priority with no allocation or requests. No research slot has run.
   Case B's strict four-arm runner and live wrapper are reviewed and v2 is prepared
   with zero calls, but it is not bundled or submitted.
 - [ ] Repeat and classify a supported candidate pattern.
@@ -409,6 +413,12 @@ cancelled at 15:47 before allocation after audit found a Slurm helper-path defec
 It used zero GPU time and requests. The current 85-source zero-request plan is
 `runs/scout-case-a-prepared-v4`, SHA-256
 `5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`.
+The corrected immutable v2 bundle binds pushed source checkpoint
+`228f7c2ce4255a8587921ef955c633868b1fb10d`. Request-free validation and an
+independent GO audit with no P1/P2 findings passed before job `9050478` was
+submitted. It is currently pending for Priority, has zero runtime and no
+allocation or requests, and will start automatically. The scheduler's Sep 15
+22:35 NZST estimate is provisional.
 The 2026-09-14 full repository suite passed 2,056 tests;
 new 2026-09-15 checks passed 28 HPC tests plus 25 subtests, 38 paired/report tests,
 the 84-test Case A runner/provider/report selection, and the final 109-test plus

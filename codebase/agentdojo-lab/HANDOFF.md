@@ -68,12 +68,26 @@ Its final selection passed 109 tests plus 16 subtests, Ruff, Bash syntax and Pyt
 compilation. Pushed checkpoint `84fe7cc` contains the hardened execution and
 propagation bindings. The first submission, job `9043206`, was cancelled before
 allocation after audit found that a helper path would resolve to Slurm's spool
-directory. It used zero GPU time and made zero requests. A corrected immutable
-bundle and replacement submission are pending.
+directory. It used zero GPU time and made zero requests. Preserve that attempt.
 The corrected helper-path and preflight-envelope selection passed 108 tests plus
 16 subtests, Ruff, Python compilation, Bash syntax and diff checks. ShellCheck was
 unavailable. The replacement wrapper verifies an absolute frozen helper directory,
 its checksum manifest and the spooled wrapper bytes before any helper runs.
+
+The current launch checkpoint
+`228f7c2ce4255a8587921ef955c633868b1fb10d` is pushed. Corrected immutable bundle
+`/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-a-submission-20260915-v2`
+passed request-free validation. Its private site file, helper manifest and offline
+preflight SHA-256 values are
+`985c5f97ca5ce6141b5d6c04a8abaef797251f900eccce51676f0bfce1ca905d`,
+`5cc8195c816e43c1c2ec22237cbadc9cacd4503f5beca75ae5e4a243014a6451`
+and `6a8b2f5e3ba7da0f61c7dd9b0723135cdf7b12d15b97fe37492852c004f54aab`.
+An independent audit returned GO with no P1/P2 findings after 81 focused tests
+plus 16 subtests. Job `9050478` was submitted at scheduler display Sep 15 17:08.
+It is pending for Priority with zero runtime, no allocation and no model requests.
+The displayed Sep 15 22:35 NZST start and prospective `mg14` node are estimates;
+the job starts automatically. Its `submitted.json` has SHA-256
+`770b8e9fc66590f968d1e0f6bbc7e731b70ff7db66c1c197366955b25a4744c9`.
 
 The joint no-tools causal auditor and observed one-step replay now accept an
 explicit OpenAI-compatible `--endpoint-config` under separately named protocols.
@@ -193,9 +207,10 @@ not leave a server available for a later native run.
   credential redaction. These checks do not measure Scout's tool-use quality,
   attribution accuracy, propagation failures, or end-to-end attack success.
 
-Next: freeze and submit a corrected Case A bundle from the current v4 plan. The
-new job must repeat both smoke gates in the same allocation before the
-clean/attacked slots. In parallel, freeze the prepared Case B v2 plan into its
+Next: monitor corrected Case A job `9050478` and, once terminal, analyze all smoke,
+request-accounting, clean/attacked and report artifacts. The job must repeat both
+smoke gates in its own allocation before the clean/attacked slots. In parallel,
+freeze the prepared Case B v2 plan into its
 reviewed four-arm bundle. Keep the original platform
 restriction, cancelled pre-allocation submission, infrastructure outcomes and
 research results separate. Preserve failures and unavailable evidence, and update

@@ -143,9 +143,10 @@ Bare module filenames in this map refer to `src/agentdojo_lab/`.
 ## Current state on NeSI — 2026-09-15
 
 This continuation began from clean source checkpoint `3c71025` on
-`codex/agentdojo-lab`. The current hardened execution and propagation checkpoint
-is `84fe7cc`, pushed to `origin/codex/agentdojo-lab`. Recheck these facts on a
-later visit.
+`codex/agentdojo-lab`. Hardened execution and propagation checkpoint `84fe7cc`
+and the current Case A launch checkpoint
+`228f7c2ce4255a8587921ef955c633868b1fb10d` are pushed to
+`origin/codex/agentdojo-lab`. Recheck these facts on a later visit.
 
 | Item | Observed state |
 | --- | --- |
@@ -160,7 +161,7 @@ later visit.
 | Model storage | Private scratch root `/nesi/nobackup/uoa04799/dyu848/tool-output-lab`; 10 TiB project scratch allocation |
 | NeSI offline smoke | Completed native fixture with a valid 15-event recording and HTML; no real LLM calls |
 | Git transport | SSH push and pull tested successfully on this device earlier in the session |
-| Scout Case A runner | Hardened 85-source v4 plan prepared with zero requests. First submitted wrapper job 9043206 was cancelled before allocation after audit found a Slurm helper-path defect; zero live Case A requests |
+| Scout Case A runner | Hardened 85-source v4 plan prepared with zero requests. First job 9043206 was cancelled before allocation after audit found a Slurm helper-path defect. Corrected job 9050478 is pending for Priority with no allocation or model requests yet |
 | New case-study pilot | Planned in RESEARCH_PLAN.md; zero new trajectories |
 
 The read-only scheduler assessment found project association `uoa04799` and GPU
@@ -184,12 +185,13 @@ ledgers and result notes retain their historical values.
 
 1. Use [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15)
    to track delivered results separately from existing code and preparation.
-2. Finish the corrected Case A helper-path binding, freeze a v2 bundle/site and
-   submit one replacement job. Preserve cancelled job `9043206`, which used no
-   GPU time or requests.
-3. When the replacement becomes terminal, verify its same-allocation synthetic/native
-   smoke chain, request accounting and clean/attacked evidence before interpreting
-   any recipient or sink result.
+2. Monitor corrected Case A job `9050478`; it will start automatically when Slurm
+   allocates resources, so do not submit a duplicate or require a manual start.
+   Its displayed 22:35 NZST start and prospective `mg14` node are scheduler
+   estimates, not guarantees or an allocation. Preserve cancelled job `9043206`.
+3. When `9050478` becomes terminal, verify and analyze every same-allocation
+   synthetic/native smoke receipt, request-accounting record, clean/attacked
+   trace and report before interpreting any recipient or sink result.
 4. Use the offline single-episode paired report for changed tool arguments,
    proposal divergence and configured sensitive-field divergence. The separate
    `offline-cross-session-propagation-v2` exporter validates eight typed path
@@ -212,8 +214,9 @@ passed 84 selected tests, Ruff and Python compilation; `prepare` records
 `prepared_not_executed` and makes zero model requests. This resolves the tooling
 restriction for this bounded implementation on the current Codex surface only;
 it does not establish access in a separate API project or product. The original
-flag and quarantine remain historical evidence. No live Case A request was made,
-so this is not a Scout refusal or an experimental finding.
+flag and quarantine remain historical evidence. No live Case A request has yet
+been observed: the first job was cancelled before allocation and the corrected
+job is queued. This is not a Scout refusal or an experimental finding.
 
 Continuation checkpoint `7b5f1eb` added the separate two-hour smoke-plus-Case-A
 wrapper without changing the then-pending smoke job. It requires current-job
@@ -235,13 +238,29 @@ pushed checkpoint `84fe7cc` was copied into immutable bundle
 Case A job `9043206` was submitted at 15:36 NZST, then cancelled at 15:47 before
 allocation when audit found a relative helper path that would resolve from
 Slurm's spool directory. Accounting records 00:00:00 elapsed, zero GPU time and
-zero requests. Preserve that failed submission record. A corrected v2 bundle and
-replacement job are pending; the limits remain 24 requests and eight GPU-hours.
+zero requests. Preserve that failed submission record.
+
+The corrected source checkpoint
+`228f7c2ce4255a8587921ef955c633868b1fb10d` is pushed. The immutable v2 bundle is
+`/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-a-submission-20260915-v2`.
+Its private site file has SHA-256
+`985c5f97ca5ce6141b5d6c04a8abaef797251f900eccce51676f0bfce1ca905d`;
+the helper manifest and offline preflight have SHA-256
+`5cc8195c816e43c1c2ec22237cbadc9cacd4503f5beca75ae5e4a243014a6451`
+and `6a8b2f5e3ba7da0f61c7dd9b0723135cdf7b12d15b97fe37492852c004f54aab`.
+Request-free validation passed, and an independent audit returned GO with no
+P1/P2 findings after 81 focused tests plus 16 subtests. Corrected job `9050478`
+was submitted at the scheduler's Sep 15 17:08 display. At this snapshot it is
+`PENDING (Priority)`, runtime zero, with no allocation and no model requests.
+Slurm displays a provisional Sep 15 22:35 NZST start and `mg14` node; both may
+change. The job starts automatically. Its `submitted.json` has SHA-256
+`770b8e9fc66590f968d1e0f6bbc7e731b70ff7db66c1c197366955b25a4744c9`.
+The limits remain 24 requests and eight GPU-hours.
 
 The 2026-09-15 checklist review read Slurm accounting and retained job artifacts.
-It did not rerun tests or launch replacement jobs. Container failure and GPU
-cancellation are infrastructure outcomes, not research attack trials. Detailed
-states and evidence paths are in HPC_SETUP.md.
+The later corrected submission launched no model process while pending. Container
+failure, cancellation and queueing are infrastructure states, not research attack
+trials. Detailed states and evidence paths are in HPC_SETUP.md.
 
 The user confirms Hugging Face approval, has signed in successfully on NeSI,
 and has delegated storage choices. No further authentication input is needed.
@@ -300,8 +319,9 @@ The completed Case A runner and its report/provider regressions passed **84
 selected tests** on 2026-09-15. Its execution gate requires successful synthetic
 and benign native smoke receipts from the same four-A100 serving job before either
 clean or attacked slot can make a request. The first submitted job, `9043206`, was
-cancelled before allocation after the helper-path audit; it made zero requests
-and does not increase the experimental-deliverable count.
+cancelled before allocation after the helper-path audit; it made zero requests.
+Corrected job `9050478` is pending without allocation or requests and likewise
+does not increase the experimental-deliverable count.
 
 The later same-allocation batch validation passed **109 tests and 16 subtests**.
 Checkpoint `84fe7cc` strengthens exact runtime, tool-result, native-state and
@@ -311,7 +331,9 @@ integrity; it is not a Case A result.
 After the submission audit, the corrected helper-path and preflight-envelope
 selection passed **108 tests plus 16 subtests**, Ruff, Python compilation, Bash
 syntax and diff checks. ShellCheck was unavailable. This remediation invalidated
-v3 and produced the 85-source v4 plan above; no replacement job is claimed yet.
+v3 and produced the 85-source v4 plan above. The later launch audit returned GO
+with no P1/P2 findings after 81 focused tests plus 16 subtests; request-free
+validation passed before corrected job `9050478` was submitted.
 
 The Case B four-arm runner is strict about distinct worker processes and exact
 proposal → runtime start → runtime return → visible tool result → native state
@@ -333,9 +355,11 @@ Git synchronization: this continuation started from clean checkpoint **`3c71025`
 matching `origin/codex/agentdojo-lab`. SSH push and pull were already verified for
 repository owner `YuTungLam`. The Case A implementation checkpoint **`6071eb0`**,
 batch-preparation checkpoint **`7b5f1eb`**, and hardened execution/propagation
-checkpoint **`84fe7cc`** were subsequently pushed to that branch. Git
-synchronization does not imply that a corrected Case A job has been submitted;
-inspect scheduler and submission receipts separately.
+checkpoint **`84fe7cc`** and current Case A launch checkpoint
+**`228f7c2ce4255a8587921ef955c633868b1fb10d`** were subsequently pushed to that
+branch. Job `9050478` was submitted from the latter checkpoint. Its queued state
+and eventual outcome must still be established from scheduler and submission
+receipts rather than Git state.
 
 ## Moving between devices
 
