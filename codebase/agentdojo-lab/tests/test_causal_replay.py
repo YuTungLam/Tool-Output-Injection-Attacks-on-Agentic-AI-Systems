@@ -89,7 +89,7 @@ def exported(tmp_path, monkeypatch):
     return plans, source, tmp_path / "replay"
 
 
-def completion(*, function="write", args="{}", text=None, finish=None, calls=None):
+def completion(*, function="write", args="{}", text=None, finish=None, calls=None, model=None):
     if text is not None:
         message = {"role": "assistant", "content": text}
     else:
@@ -104,7 +104,7 @@ def completion(*, function="write", args="{}", text=None, finish=None, calls=Non
         "id": "mock-replay",
         "object": "chat.completion",
         "created": 0,
-        "model": "recorded-model",
+        "model": "recorded-model" if model is None else model,
         "choices": [
             {
                 "index": 0,
@@ -161,6 +161,98 @@ def test_pair_replay_preserves_original_settings_tools_and_exact_contexts(export
     assert len({slot["slot_id"] for slot in slots}) == 4
     assert slots[0]["analysis_line_sha256"] == rows(source / "provenance.jsonl")[1]["analysis_line_sha256"]
     assert all(slot["analysis_flush_sha256"] and slot["original_request_event_sha256"] for slot in slots)
+
+
+def test_configured_endpoint_preserves_recorded_primary_request_and_has_new_identity(exported, monkeypatch):
+    plans, source, output = exported
+    monkeypatch.setenv("SCOUT_PRIMARY_KEY", "fixture-private-key")
+    endpoint = {
+        "provider": "openai_compatible",
+        "model": "openai/gpt-oss-120b",
+        "base_url": "http://127.0.0.1:8123/v1",
+        "api_key_env": "SCOUT_PRIMARY_KEY",
+    }
+    bodies = []
+
+    def respond(request):
+        bodies.append(json.loads(request.content))
+        return httpx.Response(200, json=completion(model=endpoint["model"]))
+
+    client = client_with(respond)
+
+    def configured_client(self, *, key, timeout):
+        assert self.model == endpoint["model"] and self.url == endpoint["base_url"]
+        assert key == "fixture-private-key" and timeout == 60.0
+        return client
+
+    monkeypatch.setattr(replay.EndpointSettings, "client", configured_client)
+    result = replay.run_replay(plans, output, live=True, endpoint=endpoint, max_requests=1)
+    assert client.is_closed
+    original = rows(source / "events.jsonl")[0]["data"]["body"]
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert bodies == [original]
+    assert result["protocol"] == manifest["protocol"] == replay.OPENAI_COMPATIBLE_PROTOCOL
+    assert result["provider"] == manifest["provider"] == "openai_compatible"
+    assert result["endpoint"] == manifest["endpoint"] == endpoint
+    assert "providers.py" in manifest["implementation_hashes"]
+    assert "providers.py" in result["implementation_hashes_before"]
+    assert rows(output / "replay-plan.jsonl")[0]["protocol"] == replay.OPENAI_COMPATIBLE_PROTOCOL
+    assert "fixture-private-key" not in (output / "manifest.json").read_text()
+
+
+def test_configured_replay_forbids_injected_client(exported, monkeypatch):
+    plans, _, output = exported
+    monkeypatch.setenv("SCOUT_PRIMARY_KEY", "present")
+    endpoint = {
+        "provider": "openai_compatible", "model": "openai/gpt-oss-120b",
+        "base_url": "http://127.0.0.1:8123/v1", "api_key_env": "SCOUT_PRIMARY_KEY",
+    }
+    with client_with(lambda request: pytest.fail("Client must be rejected")) as client:
+        with pytest.raises(ValueError, match="cannot be combined"):
+            replay.run_replay(plans, output, client=client, live=True, endpoint=endpoint)
+    assert not output.exists()
+
+
+@pytest.mark.parametrize(
+    "response_model,reason",
+    [("other-model", "response_model_mismatch"), ("", "missing_or_invalid_response_model")],
+)
+def test_configured_replay_rejects_unbound_response_model(
+    exported, monkeypatch, response_model, reason
+):
+    plans, _, output = exported
+    monkeypatch.setenv("SCOUT_PRIMARY_KEY", "present")
+    endpoint = {
+        "provider": "openai_compatible", "model": "openai/gpt-oss-120b",
+        "base_url": "http://127.0.0.1:8123/v1", "api_key_env": "SCOUT_PRIMARY_KEY",
+    }
+    client = client_with(
+        lambda request: httpx.Response(200, json=completion(model=response_model))
+    )
+    monkeypatch.setattr(replay.EndpointSettings, "client", lambda *a, **k: client)
+    result = replay.run_replay(plans, output, live=True, endpoint=endpoint, max_requests=1)
+    first = rows(output / "results.jsonl")[0]
+    assert result["observed_slots"] == 0
+    assert first["status"] == "invalid" and first["reason"] == reason
+
+
+def test_configured_replay_requires_live_key_and_matching_recorded_model_before_output(exported, monkeypatch):
+    plans, _, output = exported
+    endpoint = {
+        "provider": "openai_compatible",
+        "model": "different-served-model",
+        "base_url": "http://127.0.0.1:8123/v1",
+        "api_key_env": "SCOUT_PRIMARY_KEY",
+    }
+    monkeypatch.setenv("SCOUT_PRIMARY_KEY", "present")
+    with pytest.raises(ValueError, match="requires --live"):
+        replay.run_replay(plans, output, endpoint=endpoint)
+    with pytest.raises(ValueError, match="does not match"):
+        replay.run_replay(plans, output, endpoint=endpoint, live=True)
+    monkeypatch.delenv("SCOUT_PRIMARY_KEY")
+    with pytest.raises(ValueError, match="SCOUT_PRIMARY_KEY"):
+        replay.run_replay(plans, output, endpoint=endpoint, live=True)
+    assert not output.exists()
 
 
 def test_plan_only_never_constructs_transport(exported, monkeypatch):

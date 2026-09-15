@@ -13,6 +13,7 @@ import hashlib
 import html
 import json
 import time
+import tomllib
 from collections import Counter
 from pathlib import Path
 
@@ -27,8 +28,10 @@ from agentdojo_lab.causal_v2_audit import (
 from agentdojo_lab.counterfactual import _canonical, _hash
 from agentdojo_lab.counterfactual_audit import _contains_cjk, _verified_inputs
 from agentdojo_lab.evaluation_review import _local, _strict
+from agentdojo_lab.providers import EndpointSettings
 
 PROTOCOL = "observed-one-step-source-replay-v1"
+OPENAI_COMPATIBLE_PROTOCOL = "observed-one-step-source-replay-openai-compatible-v1"
 SCOPE = (
     "Observed next-step model proposals under recorded and neutralized prefixes; no tool execution, "
     "whole-task outcomes, hidden-history access, causal ground truth or calibrated causality."
@@ -61,6 +64,7 @@ DEPENDENCIES = (
     "inspection.py",
     "profiles.py",
     "pacing.py",
+    "providers.py",
     "runner.py",
 )
 
@@ -105,7 +109,7 @@ def _original_request(event, probe):
     return copy.deepcopy(body)
 
 
-def _replay_slots(plans, source):
+def _replay_slots(plans, source, *, protocol=PROTOCOL):
     """Bind every request body to a verified event, analysis line and flush receipt."""
     calls, _ = _verified_inputs(source)
     by_id = {call["proposal_event_id"]: call for call in calls}
@@ -134,7 +138,7 @@ def _replay_slots(plans, source):
         analysis, raw = analyses[call["proposal_event_id"]]
         flush = flushes[analysis["record_sequence"]]
         common = {
-            "protocol": PROTOCOL,
+            "protocol": protocol,
             "proposal_event_id": call["proposal_event_id"],
             "call_binding": first["call_binding"],
             "sink": first["sink"],
@@ -287,13 +291,29 @@ def _comparisons(results, inputs_unchanged):
     return comparisons
 
 
-def run_replay(plans_dir: Path, output: Path, *, client=None, live=False, max_requests=8, pacer=None):
+def run_replay(
+    plans_dir: Path, output: Path, *, client=None, live=False, max_requests=8, pacer=None,
+    endpoint=None,
+):
     """Execute one baseline per proposal and frozen interventions, up to eight SDK attempts."""
     if type(live) is not bool or type(max_requests) is not int or not 0 <= max_requests <= MAX_REQUESTS:
         raise ValueError("Replay permits a total of zero through eight SDK requests")
+    if endpoint is not None and client is not None:
+        raise ValueError("An explicit endpoint cannot be combined with an injected client")
+    if endpoint is not None:
+        endpoint = EndpointSettings.model_validate(endpoint)
+        if endpoint.provider != "openai_compatible":
+            raise ValueError("The configured replay protocol requires an openai_compatible endpoint")
+        if not live:
+            raise ValueError("An explicit endpoint requires --live")
+        if pacer is not None:
+            raise ValueError("Local endpoint replay does not use Groq pacing state")
+        endpoint_key = endpoint.require_key()
+    else:
+        endpoint_key = None
     folder, output = _local(plans_dir), _local(output)
     plans, source, export_before, source_before, _ = _validate_export(folder)
-    if live and client is None:
+    if live and client is None and endpoint is None:
         from agentdojo_lab.providers import reject_implicit_groq_audit
 
         reject_implicit_groq_audit(source)
@@ -306,19 +326,28 @@ def run_replay(plans_dir: Path, output: Path, *, client=None, live=False, max_re
         path = _local(Path(pacer.path))
         if any(path.is_relative_to(tree) or tree.is_relative_to(path) for tree in (folder, source)):
             raise ValueError("Pacing state must be separate from input artifacts")
-    slots = _replay_slots(plans, source)
+    protocol = OPENAI_COMPATIBLE_PROTOCOL if endpoint is not None else PROTOCOL
+    slots = _replay_slots(plans, source, protocol=protocol)
+    if endpoint is not None and any(slot["body"]["model"] != endpoint.model for slot in slots):
+        raise ValueError("Endpoint model does not match the recorded primary request model")
     if _snapshot(source) != source_before or _snapshot(folder) != export_before:
         raise ValueError("Input artifacts changed while preparing replay slots")
     implementation = _implementation_hashes()
     output.mkdir(parents=True)
     (output / "plans.jsonl").write_bytes((folder / "plans.jsonl").read_bytes())
     (output / "replay-plan.jsonl").write_bytes(b"".join(_canonical(slot) + b"\n" for slot in slots))
-    mode = "injected_client" if client is not None else "live_groq" if live else "plan_only"
+    mode = (
+        "live_openai_compatible" if endpoint is not None
+        else "injected_client" if client is not None
+        else "live_groq" if live else "plan_only"
+    )
     manifest = {
         "schema_version": 1,
-        "protocol": PROTOCOL,
+        "protocol": protocol,
         "scope": SCOPE,
         "mode": mode,
+        **({"provider": endpoint.provider} if endpoint is not None else {}),
+        **({"endpoint": endpoint.model_dump()} if endpoint is not None else {}),
         "source_run": str(source),
         "plan_export": str(folder),
         "planned_slots": len(slots),
@@ -386,7 +415,11 @@ def run_replay(plans_dir: Path, output: Path, *, client=None, live=False, max_re
                             row["reason"] = "source_export_or_implementation_changed"
                         else:
                             if client is None:
-                                client, owned_client = _new_client(), True
+                                client = (
+                                    endpoint.client(key=endpoint_key, timeout=60.0)
+                                    if endpoint is not None else _new_client()
+                                )
+                                owned_client = True
                                 _client_config(client)
                             request_file.write(
                                 _canonical(
@@ -415,7 +448,16 @@ def run_replay(plans_dir: Path, output: Path, *, client=None, live=False, max_re
                             row["usage"] = (
                                 response.get("usage") if isinstance(response.get("usage"), dict) else {}
                             )
-                            if _contains_cjk(encoded.decode()):
+                            response_model = response.get("model")
+                            if endpoint is not None and (
+                                not isinstance(response_model, str) or not response_model.strip()
+                            ):
+                                row.update(
+                                    status="invalid", reason="missing_or_invalid_response_model"
+                                )
+                            elif endpoint is not None and response_model != body["model"]:
+                                row.update(status="invalid", reason="response_model_mismatch")
+                            elif _contains_cjk(encoded.decode()):
                                 name = f"response-{ordinal:04d}.bin"
                                 (output / name).write_bytes(encoded)
                                 row.update(
@@ -445,9 +487,11 @@ def run_replay(plans_dir: Path, output: Path, *, client=None, live=False, max_re
     changed = changed or not unchanged()
     summary = {
         "schema_version": 1,
-        "protocol": PROTOCOL,
+        "protocol": protocol,
         "scope": SCOPE,
         "mode": mode,
+        **({"provider": endpoint.provider} if endpoint is not None else {}),
+        **({"endpoint": endpoint.model_dump()} if endpoint is not None else {}),
         "planned_slots": len(slots),
         "result_slots": len(results),
         "request_count": request_count,
@@ -515,6 +559,10 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--max-requests", type=int, default=8)
     parser.add_argument("--live", action="store_true")
+    parser.add_argument(
+        "--endpoint-config", type=Path,
+        help="Credential-free OpenAI-compatible endpoint TOML; requires --live",
+    )
     parser.add_argument("--pacing-state", type=Path)
     args = parser.parse_args()
     pacer = None
@@ -522,7 +570,16 @@ def main():
         from agentdojo_lab.pacing import RequestPacer
 
         pacer = RequestPacer(7000, args.pacing_state)
-    result = run_replay(args.plans, args.output, live=args.live, max_requests=args.max_requests, pacer=pacer)
+    endpoint = (
+        EndpointSettings.model_validate(tomllib.loads(args.endpoint_config.read_text()))
+        if args.endpoint_config is not None else None
+    )
+    if endpoint is not None and args.pacing_state is not None:
+        raise ValueError("Local endpoint replay does not use Groq pacing state")
+    result = run_replay(
+        args.plans, args.output, live=args.live, max_requests=args.max_requests, pacer=pacer,
+        endpoint=endpoint,
+    )
     print(
         json.dumps(
             {

@@ -16,7 +16,7 @@ case, or a historical result note does not complete an experimental checkbox.
 
 Progress reporting: [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) gives the
 percentage, progress bars, and a run-by-run interpretation. The current first
-checklist contains 25 items, of which 8 are complete (**32%**); the 13 new
+checklist contains 25 items, of which 9 are complete (**36%**); the 13 new
 experimental deliverables remain **0/13**. These are equal checkbox counts,
 not time estimates or accuracy scores.
 
@@ -81,7 +81,7 @@ not time estimates or accuracy scores.
   `9039259` passed in 6m 49s with local SSD/faster compression and a longer bounded
   deadline; GPU smoke `9039289` now waits for scheduling priority. No live
   Scout result is available yet. See HPC_SETUP.md for all attempt receipts.
-- [ ] Add a paired comparison exporter and adapt the selected case runners and
+- [x] Add a paired comparison exporter and adapt the selected case runners and
   joint/replay auditors to the explicit local endpoint. Several historical batch
   entry points still retain their Groq protocols. The new **single-episode offline
   exporter is implemented**: 38 selected tests (14 new) and a benign native fixture
@@ -91,15 +91,23 @@ not time estimates or accuracy scores.
   selection passes 109 tests plus 16 subtests. The first implementation attempt's
   platform flag and quarantined
   draft remain recorded; a Daybreak Blue retry on the current Codex surface
-  hash-verified and completed it. Cross-session alignment and joint/replay runners
-  remain pending, so this combined prerequisite stays unchecked. Neither the
-  platform event nor the offline verification is a scientific result; see
+  hash-verified and completed it. A separate bounded offline cross-session exporter
+  now aligns ordered A/B pairs and verifies typed session-boundary evidence; its
+  42-test targeted selection (20 new tests) passes against the existing four-process
+  memory fixture and negative cases. The joint no-tools auditor and observed
+  one-step replay now accept an explicit configured OpenAI-compatible endpoint,
+  preserve their legacy defaults, disable SDK retries and record endpoint/model
+  identity. The final combined root selection passed 217 tests. This completes
+  the bounded implementation prerequisite, not a scientific result; see
   RESEARCH_PROGRESS.md.
 - [ ] Freeze exact tasks, payloads, source sets, conditions, budgets, settings,
-  success criteria and run order before the new research trials. Case A v1 is
-  frozen locally as `runs/scout-case-a-prepared-v1` with plan SHA-256
-  `e4311002046d7ce12c9a1729f169159cb4995609e63e4124ce1ecfdad5b40d76`;
-  the remaining case families are not frozen, so this combined item stays unchecked.
+  success criteria and run order before the new research trials. The current
+  Case A v1 source-refresh preparation is `runs/scout-case-a-prepared-v2`, with
+  plan SHA-256
+  `1189cdd015d1eb6967d2c8b1e7724214fc5573e255b82e897a779b6058d36770`.
+  It supersedes but does not delete the source-invalidated first zero-request
+  preparation. The remaining case families are not frozen, so this combined item
+  stays unchecked.
 - [ ] Recover selected historical raw runs/reports if available and reverify them.
   Their absence does not block new named trials, but old outcome notes cannot
   substitute for locally inspected evidence.
@@ -365,9 +373,9 @@ be tracked in Git. Publish observed counts with their denominators and unknowns.
 - [ ] Verify Scout inference in GPU attempt `9039289`; container recovery `9039259` passed.
 - [ ] Restore selected historical evidence bundles if available.
 - [x] Implement explicit local primary/online judge and deferred single-source endpoints.
-- [ ] Finish selected case runners/auditors and cross-session comparison; the
-  single-episode paired exporter and bounded Case A runner are verified, while
-  joint/replay and cross-session work remain.
+- [x] Finish selected case runners/auditors and cross-session comparison. The
+  single-episode and cross-session exporters, bounded Case A runner, configured
+  joint auditor and configured one-step replay are verified offline.
 - [ ] Freeze the new small protocol, run it, and produce actual case studies.
   Case A v1 is frozen and its batch wrapper is verified offline; no live slot has run.
 - [ ] Repeat and classify a supported candidate pattern.
@@ -380,7 +388,10 @@ smoke `9039289` is pending scheduling priority. No Scout inference or new resear
 experiment has completed. The 2026-09-14 full repository suite passed 2,056 tests;
 new 2026-09-15 checks passed 28 HPC tests plus 25 subtests, 38 paired/report tests,
 the 84-test Case A runner/provider/report selection, and the final 109-test plus
-16-subtest same-allocation batch selection. The first Case A draft
+16-subtest same-allocation batch selection. The configured causal/replay and
+cross-session reporting selection passed 217 tests, with 20 dedicated
+cross-session tests including negative evidence-integrity cases. The first Case A
+draft
 was platform-flagged and preserved; the Daybreak Blue retry completed and is
 verified offline, with zero live model requests.
 See RESEARCH_PROGRESS.md for receipts and limits. Update checkboxes only with

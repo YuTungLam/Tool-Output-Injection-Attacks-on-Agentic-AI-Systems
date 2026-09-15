@@ -361,9 +361,10 @@ failure and its remaining extracted files are preserved.
 
 `completed-input-preflight.json` in the submission bundle subsequently passed
 the complete input preflight, including the new SIF hash, template hash and
-binding to the verified model receipt. GPU job `9039289` was still pending for
-priority; the scheduler displayed `Sep 15 22:35` in its local timezone as an
-estimated start, which can change. No generation requests have run.
+binding to the verified model receipt. At 13:35 NZST, GPU job `9039289` was still
+pending only for priority; the scheduler planned `mg15` and displayed
+`Sep 15 21:30` in its local timezone as an estimated start, which can change.
+No generation requests have run.
 
 On 2026-09-15, the HPC pytest suite passed **28 tests and 25 subtests**;
 Ruff, the new script's `bash -n`, and `git diff --check` passed. New finalizer

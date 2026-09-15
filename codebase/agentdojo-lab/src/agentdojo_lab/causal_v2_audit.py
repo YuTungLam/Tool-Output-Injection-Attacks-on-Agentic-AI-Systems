@@ -11,6 +11,7 @@ import hashlib
 import html
 import json
 import time
+import tomllib
 from collections import Counter
 from pathlib import Path
 
@@ -18,9 +19,14 @@ from agentdojo_lab import causal_v2, judgment_formats
 from agentdojo_lab.counterfactual import _canonical, _hash
 from agentdojo_lab.counterfactual_audit import _contains_cjk, _verified_inputs
 from agentdojo_lab.evaluation_review import _local, _strict
+from agentdojo_lab.providers import EndpointSettings
 
 PROTOCOL = "counterfactual-joint-auditor-v2"
 PUNCTUATION_PROTOCOL = "counterfactual-joint-auditor-v3"
+OPENAI_COMPATIBLE_PROTOCOL = "counterfactual-joint-auditor-openai-compatible-v1"
+OPENAI_COMPATIBLE_PUNCTUATION_PROTOCOL = (
+    "counterfactual-joint-auditor-openai-compatible-punctuation-v1"
+)
 MODEL = "openai/gpt-oss-120b"
 MAX_REQUESTS = 32
 MAX_PROBES = 2048
@@ -125,15 +131,18 @@ def _validate_export(folder):
     return plans, source, export_hashes, source_hashes, slots
 
 
-def request_body(probe, *, judgment_format: str = judgment_formats.ASCII_FORMAT):
+def request_body(
+    probe, *, judgment_format: str = judgment_formats.ASCII_FORMAT, model: str = MODEL,
+    reasoning_effort: str | None = "low",
+):
     """The prompt explicitly covers single-source and simultaneous pair removals."""
     judgment_formats.validate_format(judgment_format)
     punctuation = judgment_format == judgment_formats.ENGLISH_PUNCTUATION_FORMAT
     return {
-        "model": MODEL,
+        "model": model,
         "temperature": 0,
         "max_completion_tokens": 4096,
-        "reasoning_effort": "low",
+        **({"reasoning_effort": reasoning_effort} if reasoning_effort is not None else {}),
         "response_format": {"type": "json_object"},
         "messages": [
             {"role": "system", "content": PUNCTUATION_SYSTEM_PROMPT if punctuation else SYSTEM_PROMPT},
@@ -174,7 +183,16 @@ def _client_config(client):
         raise ValueError("The auditor client must disable SDK retries")
 
 
-def _response_result(probe, response, *, judgment_format: str = judgment_formats.ASCII_FORMAT):
+def _response_result(
+    probe, response, *, judgment_format: str = judgment_formats.ASCII_FORMAT,
+    expected_model: str | None = None,
+):
+    response_model = response.get("model")
+    if expected_model is not None:
+        if not isinstance(response_model, str) or not response_model.strip():
+            return {"status": "invalid", "reason": "missing_or_invalid_response_model"}
+        if response_model != expected_model:
+            return {"status": "invalid", "reason": "response_model_mismatch"}
     choices = response.get("choices")
     if not isinstance(choices, list) or len(choices) != 1:
         return {"status": "invalid", "reason": "ambiguous_response_choices"}
@@ -209,7 +227,7 @@ def _usage(attempted):
 
 def run_audit(
     plans_dir: Path, output: Path, *, client=None, live: bool = False, max_requests: int = 8,
-    judgment_format: str = judgment_formats.ASCII_FORMAT,
+    judgment_format: str = judgment_formats.ASCII_FORMAT, endpoint=None,
 ) -> dict:
     """Run one pass over every immutable intervention slot, with no retries/replacement.
 
@@ -219,7 +237,22 @@ def run_audit(
     """
     judgment_formats.validate_format(judgment_format)
     punctuation = judgment_format == judgment_formats.ENGLISH_PUNCTUATION_FORMAT
-    protocol = PUNCTUATION_PROTOCOL if punctuation else PROTOCOL
+    if endpoint is not None and client is not None:
+        raise ValueError("An explicit endpoint cannot be combined with an injected client")
+    if endpoint is not None:
+        endpoint = EndpointSettings.model_validate(endpoint)
+        if endpoint.provider != "openai_compatible":
+            raise ValueError("The configured joint-audit protocol requires an openai_compatible endpoint")
+        if not live:
+            raise ValueError("An explicit endpoint requires --live")
+        endpoint_key = endpoint.require_key()
+        protocol = (
+            OPENAI_COMPATIBLE_PUNCTUATION_PROTOCOL if punctuation
+            else OPENAI_COMPATIBLE_PROTOCOL
+        )
+    else:
+        endpoint_key = None
+        protocol = PUNCTUATION_PROTOCOL if punctuation else PROTOCOL
     system_prompt = PUNCTUATION_SYSTEM_PROMPT if punctuation else SYSTEM_PROMPT
     format_fields = {"judgment_format": judgment_format} if punctuation else {}
     if type(live) is not bool or type(max_requests) is not int or not 0 <= max_requests <= MAX_REQUESTS:
@@ -228,7 +261,7 @@ def run_audit(
     if output.exists() or output.is_relative_to(folder) or folder.is_relative_to(output):
         raise ValueError("Use a fresh audit output separate from the plan export")
     plans, source, export_hashes, source_hashes, slots = _validate_export(folder)
-    if live and client is None:
+    if live and client is None and endpoint is None:
         from agentdojo_lab.providers import reject_implicit_groq_audit
 
         reject_implicit_groq_audit(source)
@@ -237,7 +270,13 @@ def run_audit(
     if client is not None:
         _client_config(client)
     enabled = live or client is not None
-    mode = "injected_client" if client is not None else "live_groq" if live else "plan_only"
+    mode = (
+        "live_openai_compatible" if endpoint is not None
+        else "injected_client" if client is not None
+        else "live_groq" if live else "plan_only"
+    )
+    request_model = endpoint.model if endpoint is not None else MODEL
+    reasoning_effort = None if endpoint is not None else "low"
     started = time.monotonic()
     output.mkdir(parents=True)
     (output / "plans.jsonl").write_bytes((folder / "plans.jsonl").read_bytes())
@@ -249,7 +288,9 @@ def run_audit(
         "input_plans": str(folder),
         "source_run": str(source),
         "mode": mode,
-        "model": MODEL,
+        **({"provider": endpoint.provider} if endpoint is not None else {}),
+        "model": request_model,
+        **({"endpoint": endpoint.model_dump()} if endpoint is not None else {}),
         "max_requests": max_requests,
         "sdk_max_retries": 0,
         "request_timeout_seconds": 60,
@@ -262,7 +303,10 @@ def run_audit(
         "scope": causal_v2.SCOPE,
         "implementation_hashes": {
             name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
-            for name in ("causal_v2_audit.py", "causal_v2.py", "counterfactual.py", "profiles.py")
+            for name in (
+                "causal_v2_audit.py", "causal_v2.py", "counterfactual.py", "profiles.py",
+                "providers.py",
+            )
             + (("judgment_formats.py",) if punctuation else ())
         },
     }
@@ -292,7 +336,10 @@ def run_audit(
                     source_changed |= _snapshot(source) != source_hashes or _snapshot(folder) != export_hashes
                 except (OSError, ValueError):
                     source_changed = True
-                body = request_body(probe, judgment_format=judgment_format)
+                body = request_body(
+                    probe, judgment_format=judgment_format, model=request_model,
+                    reasoning_effort=reasoning_effort,
+                )
                 if source_changed:
                     result["reason"] = "source_or_plan_export_changed"
                 elif not enabled:
@@ -305,7 +352,10 @@ def run_audit(
                     tick = time.monotonic()
                     try:
                         if client is None:
-                            client = _new_client()
+                            client = (
+                                endpoint.client(key=endpoint_key, timeout=60.0)
+                                if endpoint is not None else _new_client()
+                            )
                             own_client = True
                             _client_config(client)
                         request_stream.write(
@@ -347,7 +397,12 @@ def run_audit(
                             )
                         else:
                             result["response"] = response
-                            result.update(_response_result(probe, response, judgment_format=judgment_format))
+                            result.update(
+                                _response_result(
+                                    probe, response, judgment_format=judgment_format,
+                                    expected_model=request_model if endpoint is not None else None,
+                                )
+                            )
                     except Exception as error:
                         result.update(
                             status="error",
@@ -386,6 +441,8 @@ def run_audit(
         **format_fields,
         "scope": causal_v2.SCOPE,
         "mode": mode,
+        **({"provider": endpoint.provider} if endpoint is not None else {}),
+        **({"endpoint": endpoint.model_dump()} if endpoint is not None else {}),
         "planned_slots": len(slots),
         "result_slots": len(results),
         "request_count": request_count,
@@ -434,9 +491,14 @@ def _report(output, summary, results):
         f"<details><summary>{esc(str(row['proposal_event_id']))}: {esc(row['prediction_summary']['status'])}</summary><pre>{esc(json.dumps(row, indent=2))}</pre></details>"
         for row in summary["proposal_summaries"]
     )
-    text = f'<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Joint counterfactual auditor v2</title><style>body{{max-width:1000px;margin:30px auto;padding:20px;font:16px/1.5 system-ui}}table{{border-collapse:collapse;width:100%}}td,th{{padding:8px;border-bottom:1px solid #ddd;text-align:left}}pre{{white-space:pre-wrap;overflow-wrap:anywhere}}summary{{cursor:pointer}}details{{margin:15px 0}}</style><h1>Joint counterfactual auditor v2</h1><p>{summary["planned_slots"]} planned interventions; {summary["request_count"]} SDK attempts; {summary["valid_judgments"]} valid predictions; {summary["unknown_judgments"]} unknown judgments.</p><p>These are auditor predictions about source removal. They are not observed agent reruns, calibrated causal probabilities or maliciousness labels.</p><p>Original source artifacts unchanged: {summary["source_files_unchanged"]}.</p><details><summary>Every intervention slot</summary><table><tr><th>Slot</th><th>Intervention</th><th>Status</th><th>Reason</th></tr>{rows}</table></details><h2>Bound proposal summaries</h2>{groups}<p><a href="summary.json">Summary</a> · <a href="judgments.jsonl">Judgments</a> · <a href="plans.jsonl">Intervention plans</a> · <a href="manifest.json">Protocol and hashes</a></p></html>'
-    if summary["protocol"] == PUNCTUATION_PROTOCOL:
-        text = text.replace("Joint counterfactual auditor v2", "Joint counterfactual auditor v3")
+    title = {
+        PUNCTUATION_PROTOCOL: "Joint counterfactual auditor v3",
+        OPENAI_COMPATIBLE_PROTOCOL: "Configured OpenAI-compatible joint counterfactual auditor",
+        OPENAI_COMPATIBLE_PUNCTUATION_PROTOCOL: (
+            "Configured OpenAI-compatible joint counterfactual auditor with punctuation"
+        ),
+    }.get(summary["protocol"], "Joint counterfactual auditor v2")
+    text = f'<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title}</title><style>body{{max-width:1000px;margin:30px auto;padding:20px;font:16px/1.5 system-ui}}table{{border-collapse:collapse;width:100%}}td,th{{padding:8px;border-bottom:1px solid #ddd;text-align:left}}pre{{white-space:pre-wrap;overflow-wrap:anywhere}}summary{{cursor:pointer}}details{{margin:15px 0}}</style><h1>{title}</h1><p>{summary["planned_slots"]} planned interventions; {summary["request_count"]} SDK attempts; {summary["valid_judgments"]} valid predictions; {summary["unknown_judgments"]} unknown judgments.</p><p>These are auditor predictions about source removal. They are not observed agent reruns, calibrated causal probabilities or maliciousness labels.</p><p>Original source artifacts unchanged: {summary["source_files_unchanged"]}.</p><details><summary>Every intervention slot</summary><table><tr><th>Slot</th><th>Intervention</th><th>Status</th><th>Reason</th></tr>{rows}</table></details><h2>Bound proposal summaries</h2>{groups}<p><a href="summary.json">Summary</a> · <a href="judgments.jsonl">Judgments</a> · <a href="plans.jsonl">Intervention plans</a> · <a href="manifest.json">Protocol and hashes</a></p></html>'
     (output / "index.html").write_text(text)
 
 
@@ -444,16 +506,24 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--plans", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--live", action="store_true", help="Explicitly enable real Groq auditor requests")
+    parser.add_argument("--live", action="store_true", help="Explicitly enable real auditor requests")
+    parser.add_argument(
+        "--endpoint-config", type=Path,
+        help="Credential-free OpenAI-compatible endpoint TOML; requires --live",
+    )
     parser.add_argument("--max-requests", type=int, default=8)
     parser.add_argument(
         "--judgment-format", choices=judgment_formats.FORMATS, default=judgment_formats.ASCII_FORMAT,
         help="Opt in to v3 punctuation compatibility; the default preserves the historical ASCII policy",
     )
     args = parser.parse_args()
+    endpoint = (
+        EndpointSettings.model_validate(tomllib.loads(args.endpoint_config.read_text()))
+        if args.endpoint_config is not None else None
+    )
     result = run_audit(
         args.plans, args.output, live=args.live, max_requests=args.max_requests,
-        judgment_format=args.judgment_format,
+        judgment_format=args.judgment_format, endpoint=endpoint,
     )
     print(
         json.dumps(

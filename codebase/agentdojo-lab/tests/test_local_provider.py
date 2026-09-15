@@ -101,6 +101,25 @@ def test_missing_local_key_cannot_use_a_groq_key_or_create_output(monkeypatch, t
     assert not (tmp_path / "never-created").exists()
 
 
+def test_endpoint_client_uses_declared_loopback_and_disables_sdk_retries(monkeypatch):
+    captured = {}
+    sentinel = object()
+
+    def construct(**kwargs):
+        captured.update(kwargs)
+        return sentinel
+
+    monkeypatch.setattr(providers.openai, "OpenAI", construct)
+    endpoint = EndpointSettings(**LOCAL)
+    assert endpoint.client(key="fixture-private-key", timeout=60.0) is sentinel
+    assert captured == {
+        "api_key": "fixture-private-key",
+        "base_url": LOCAL["base_url"],
+        "max_retries": 0,
+        "timeout": 60.0,
+    }
+
+
 def test_local_round_trip_preserves_tool_arguments_ids_and_output():
     received, executed = [], []
     arguments = {"recipients": ["user@example.invalid", "other@example.invalid"], "comment": None}

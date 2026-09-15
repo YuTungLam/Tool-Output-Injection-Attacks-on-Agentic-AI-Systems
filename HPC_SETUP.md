@@ -22,12 +22,27 @@ count and the interpretation of every attempt.
 | `9039259` | COMPLETED on Genoa `g01`, Slurm elapsed 6m 49s, exit `0:0` | CPU container retry: 8 requested CPUs / 16 allocated logical CPUs, 32 GiB, local SSD, 2 hours maximum; no GPUs |
 | `9039289` | PENDING, Priority; `afterok:9039259` fulfilled | Four A100s, 48 requested CPUs, 320 GiB, 1 hour, at most eight synthetic/benign native generation requests |
 
+The 2026-09-15 13:35 NZST live scheduler check confirmed that `9039289` is
+eligible, has no remaining dependency, and is waiting only for priority. Slurm
+now plans it on `mg15` at 21:30 NZST, 65 minutes earlier than the 12:40 estimate;
+the projection is not guaranteed. At the later check, three of `mg15`'s four
+A100s were allocated and the node was marked planned. The longest visible GPU
+occupant reaches its time limit at 21:30, while the single currently unallocated
+GPU is insufficient for this four-GPU request. Test-only equivalent requests
+projected a later start, even with shorter walltime or fewer CPUs and memory, so
+cancelling or replacing `9039289` would probably lose the earlier reservation.
+Two-GPU queues cannot hold the 203 GiB BF16 checkpoint without offload and a new
+model protocol.
+
 Do not modify `9039289`, its v2 site file or frozen submission bundle. Its script
 ends after smoke and cannot run Case A in the same allocation. Checkpoint
 `7b5f1eb` adds a separately named future wrapper,
-`codebase/agentdojo-lab/hpc/scout-smoke-case-a.sbatch`. The canonical ignored
-preparation is `runs/scout-case-a-prepared-v1`, with zero model requests and plan
-SHA-256 `e4311002046d7ce12c9a1729f169159cb4995609e63e4124ce1ecfdad5b40d76`.
+`codebase/agentdojo-lab/hpc/scout-smoke-case-a.sbatch`. The current ignored
+preparation is `runs/scout-case-a-prepared-v2`, with zero model requests, 84
+bound source files and plan SHA-256
+`1189cdd015d1eb6967d2c8b1e7724214fc5573e255b82e897a779b6058d36770`.
+The first preparation remains preserved; later joint/replay and cross-session
+source changes correctly invalidate its old 83-file snapshot.
 If `9039289` passes, use its measured timing to review the two-hour envelope,
 then create a new site file, frozen helper bundle, smoke directory and scheduler
 log before submitting the wrapper. That new job must repeat synthetic and benign

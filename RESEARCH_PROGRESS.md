@@ -6,14 +6,14 @@ is the source of the completion count. Historical ledgers keep their own scope.
 
 | Scope | Progress | Completed / total |
 | --- | --- | ---: |
-| Current checklist | **32%** `██████░░░░░░░░░░░░░░` | 8 / 25 |
-| Preparation and remaining prerequisites | **67%** `█████████████░░░░░░░` | 8 / 12 |
+| Current checklist | **36%** `███████░░░░░░░░░░░░░` | 9 / 25 |
+| Preparation and remaining prerequisites | **75%** `███████████████░░░░░` | 9 / 12 |
 | Supervisor's new experimental deliverables | **0%** `░░░░░░░░░░░░░░░░░░░░` | 0 / 13 |
 
 Percentages count completed checkboxes equally; they are not estimates of time
 remaining, model-download progress, attack success rate, or detector accuracy.
-The denominator is the first checklist's 8 completed preparation items, 13
-experimental deliverables, and 4 remaining prerequisites. It excludes the older
+The denominator is the first checklist's 9 completed preparation/prerequisite
+items, 13 experimental deliverables, and 3 unfinished prerequisites. It excludes the older
 checklist later in the plan. A partial item remains unchecked. Recovering old
 raw artifacts is listed but does not block new named experiments.
 
@@ -30,9 +30,10 @@ That does not complete the supervisor's new experimental deliverables.
 - The offline single-episode comparison and bounded Case A runner are implemented
   and verified. The first Case A attempt's platform flag and quarantined draft
   remain preserved; Daybreak Blue completed the retry on this Codex surface. The
-  canonical Case A plan and separate same-allocation wrapper are ready but remain
-  unsubmitted until the queued smoke passes. Proposed payloads and offline fixtures
-  are not live results.
+  refreshed Case A plan and separate same-allocation wrapper are ready but remain
+  unsubmitted until the queued smoke passes. Configured joint/replay transport and
+  the cross-session exporter are also verified offline. Proposed payloads and
+  offline fixtures are not live results.
 
 ## Run-by-run results
 
@@ -112,6 +113,16 @@ This is a scheduled integration check. There are no GPU results or research
 outcomes yet. The new evidence directory, `evidence/scout-smoke-20260915-v2/`,
 will be created when the job starts. The server stops when the bounded job ends.
 
+At 13:35 NZST, the live controller still showed the dependency cleared and
+`Priority` as the only pending reason. Slurm moved the estimate 65 minutes earlier,
+to `mg15` at 21:30 NZST; this is an estimate and can move. Three of that node's
+four A100s were allocated and it was marked planned. Its longest visible GPU
+occupant reaches its time limit at 21:30, while the single currently unallocated
+GPU is insufficient for this four-GPU request. Test-only equivalent requests had
+projected Sep 16 14:11, so cancellation or resubmission would lose the earlier
+position. Debug is limited to two GPUs, while the BF16 checkpoint alone is about 203 GiB. Queued time
+has zero runtime and cannot produce inference progress.
+
 ### Offline native integration fixture — passed on 2026-09-14
 
 The fixture completed **one simulated tool execution and two mocked model
@@ -181,10 +192,9 @@ The first report/test attempt exposed incorrectly encoded event-fragment IDs;
 that defect was fixed before the passing report was exported to a new directory.
 
 This component handles single-episode tool-proposal comparisons. Assistant prose,
-cross-session alignment and causal attribution remain outside its scope. The
-combined exporter/local-case-runner prerequisite is therefore still unchecked;
-the Case A runner is now implemented, while joint/replay and cross-session support
-are unfinished.
+cross-session alignment and causal attribution remain outside its scope. The later
+cross-session exporter handles ordered session pairs separately; it does not alter
+this component or infer causal influence.
 
 ### Case A implementation attempt — stopped by platform
 
@@ -223,19 +233,22 @@ and implementation checkpoint **`6071eb0`** is pushed to
 Scout call, research trajectory, Slurm submission, sink outcome or attack result
 was produced. Live execution remains gated by same-job passing synthetic and
 benign native smoke receipts; job `9039289` is still pending scheduling priority.
-The checklist remains **8/25 (32%)** and new experimental deliverables remain
-**0/13**.
+At that checkpoint the checklist remained **8/25 (32%)**. The later transport and
+cross-session work below raises preparation to 9/12 without completing any of the
+**0/13** experimental deliverables.
 
 ### Case A same-allocation preparation — passed offline
 
-The canonical preparation now exists at
-`codebase/agentdojo-lab/runs/scout-case-a-prepared-v1`. Its `preparation.json`
+The first preparation at `runs/scout-case-a-prepared-v1` remains preserved. The
+later causal-transport and reporting implementation changed files inside its broad
+83-file source snapshot, so `verify_plan` correctly rejects it before execution.
+The refreshed canonical preparation is
+`codebase/agentdojo-lab/runs/scout-case-a-prepared-v2`. Its `preparation.json`
 status is `prepared_not_executed`, its `real_llm_requests_started` value is zero,
-and `plan.json` has SHA-256
-`e4311002046d7ce12c9a1729f169159cb4995609e63e4124ce1ecfdad5b40d76`.
-The ignored plan binds 83 source files, the clean-then-attacked order, one repetition
-per slot and a 16-attempt Case A ceiling. Any bound-source drift makes it fail
-verification rather than silently preparing a replacement.
+and its 84-file `plan.json` has SHA-256
+`1189cdd015d1eb6967d2c8b1e7724214fc5573e255b82e897a779b6058d36770`.
+The clean-then-attacked order, one repetition per slot and 16-attempt Case A
+ceiling are unchanged. Later bound-source drift must fail verification again.
 
 Checkpoint **`7b5f1eb`** adds `hpc/scout-smoke-case-a.sbatch` as a separate,
 unsubmitted two-hour wrapper. It cannot reuse job `9039289` receipts because that
@@ -254,6 +267,48 @@ pending job/site/submission bundle was not changed. A general review worker
 encountered the earlier platform filter again; Daybreak Blue completed the bounded
 implementation and reviews without an access block.
 
+### Configured causal/replay and cross-session preparation — passed offline
+
+The joint no-tools auditor and observed one-step replay now accept an explicit
+credential-free `--endpoint-config` with separately named OpenAI-compatible
+protocols. Both require `--live` and an environment-only key, construct a client
+with zero SDK retries, record provider/model/URL metadata and refuse a configured
+endpoint mixed with an injected client. The auditor sends no tools and omits the
+unsupported reasoning-effort field. Replay preserves the recorded messages,
+tools and request settings, rejects an endpoint model different from the recorded
+primary request, and treats a missing or different response model as invalid.
+Legacy Groq defaults and protocols remain unchanged. Independent review found and
+verified fixes for transport/receipt mismatch, unhashed provider code and the
+configured punctuation-report identity.
+
+The new offline cross-session exporter compares two ordered A/B run pairs. It
+aligns actions independently in each session and keeps insertions, omissions and
+ambiguous alignments visible. Its boundary record separately types process/run
+identity, fresh first-request history, A native-state and lineage hashes, the A
+created-file ID versus the successful B read, actual B exposure, the versioned
+write row and the restored read. The checkpoint row is bound to the successful
+proposal, runtime return and visible tool-result content. Its canonical state
+digest is verified, while full lineage graph connectivity remains explicitly
+`unknown_not_validated` rather than inferred.
+
+The named control source at
+`runs/20260915-cross-session-report-source-v1` completed four separate offline
+processes and 12 MockTransport requests, with **zero real model requests**. The
+marker branch retained its marker through session B; the neutralized branch did
+not. Both A and B cross-condition alignments were unique under the documented
+rule. Both branches recorded distinct process/run IDs, empty prior assistant/tool
+history, matching checkpoint hashes, successful created-ID/read-ID correspondence,
+source exposure and restored-read evidence. This is exact-copy control evidence,
+not a transformed attack, causal effect or Scout result.
+
+The dedicated cross-session suite passed **20 tests** and its broader selection
+passed 42. Root's final combined causal/provider/paired/memory selection passed
+**217 tests**; Ruff, Python compilation and `git diff --check` passed. The ignored
+report is `reports/20260915-cross-session-report-fixture-v1`, with hashes and
+interpretation in `validation.json`. This completes one implementation prerequisite:
+the checklist is now **9/25 (36%)**, preparation/prerequisites are **9/12 (75%)**,
+and live experimental deliverables remain **0/13**.
+
 ## Evidence locations and continuing work
 
 External evidence paths above are relative to
@@ -268,7 +323,8 @@ A running or queued job has no percentage estimate unless its own instrumentatio
 provides a measurable denominator. See [HPC_SETUP.md](HPC_SETUP.md) for pins,
 resources, current job IDs, and the next deployment gate.
 
-Synchronization: Case A batch-preparation checkpoint **`7b5f1eb`** was pushed to
-`origin/codex/agentdojo-lab`; the documentation update follows it on the same
-branch. This synchronization does not include the ignored canonical plan or imply
-completion of queued GPU job `9039289`.
+Synchronization: the earlier Case A and documentation checkpoints through
+**`c7266ad`** were pushed to `origin/codex/agentdojo-lab`. The configured causal/
+replay and cross-session update is checkpointed on the same branch. Git excludes
+the ignored canonical plans, fixture runs and reports; synchronization does not
+imply completion of queued GPU job `9039289`.

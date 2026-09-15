@@ -22,11 +22,14 @@ do not rely on a previous chat being available.
   inspect HPC_SETUP.md before submitting duplicates. The first Case A implementation
   attempt was platform-flagged and remains preserved; a Daybreak Blue retry on
   the current Codex surface hash-verified, restored and completed the bounded
-  offline runner. The canonical Case A plan is prepared with zero model requests,
-  and the separate same-allocation wrapper's latest selection passes 109 tests
-  plus 16 subtests. It is unsubmitted pending smoke `9039289`; no live trajectory
-  has run. Preserve both records. Verify live tool calls before scheduling
-  experiments; do not silently fall back to Groq.
+  offline runner. Explicit configured-endpoint joint/replay support and the
+  cross-session exporter are now implemented. The current Case A source-refresh
+  plan is `runs/scout-case-a-prepared-v2`, SHA-256
+  `1189cdd015d1eb6967d2c8b1e7724214fc5573e255b82e897a779b6058d36770`,
+  with zero model requests. The separate same-allocation wrapper is unsubmitted
+  pending smoke `9039289`; no live trajectory has run. Preserve earlier plans and
+  both platform records. Verify live tool calls before scheduling experiments;
+  do not silently fall back to Groq.
 
 ## Evidence and implementation
 

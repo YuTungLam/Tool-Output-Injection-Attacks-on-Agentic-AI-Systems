@@ -1,9 +1,10 @@
 # Scout Case A: recipient change, version 1
 
-Status: canonical scientific plan prepared locally; no Scout research trajectory
-has run under this protocol. The script's `prepare` command freezes scientific
-inputs and hashes without any model call. The live container, measured GPU
-allocation and execution binding remain pending a successful smoke.
+Status: the current source-refresh preparation is
+`runs/scout-case-a-prepared-v2`; no Scout research trajectory has run under this
+protocol. The script's `prepare` command freezes scientific inputs and hashes
+without any model call. The live container, measured GPU allocation and execution
+binding remain pending a successful smoke.
 
 The active implementation was recovered on 2026-09-15 only after the four
 preserved draft files matched `quarantine.json` byte hashes and an independent
@@ -67,21 +68,25 @@ A single pair establishes neither repeatability nor a systematic method limitati
 From the lab, using its Python 3.12 environment:
 
 ```bash
-.venv/bin/python scripts/run_case_a_scout.py prepare runs/scout-case-a-prepared-v1
+.venv/bin/python scripts/run_case_a_scout.py prepare runs/scout-case-a-prepared-v2
 ```
 
-The canonical local preparation is `runs/scout-case-a-prepared-v1`. Any later
-bound source, configuration, payload, tool schema or native environment change
-invalidates it. Use a new named preparation directory if a prospective change is
-needed; preserve the old one. `preparation.json` says `prepared_not_executed`, and
-execution bindings are explicitly pending. This command does not execute offline
-pretend research slots or create experimental outcomes.
+The first zero-request preparation, `runs/scout-case-a-prepared-v1`, is preserved.
+The later joint/replay transport and cross-session reporting work changed files in
+its deliberately broad source snapshot, so `verify_plan` correctly rejects that
+old preparation. The current canonical preparation is
+`runs/scout-case-a-prepared-v2`. Any later bound source, configuration, payload,
+tool schema or native environment change invalidates it. Use another new named
+preparation directory if a prospective change is needed; preserve both earlier
+ones. `preparation.json` says `prepared_not_executed`, and execution bindings are
+explicitly pending. This command does not execute offline pretend research slots
+or create experimental outcomes.
 
 Only inside an allocated job, after **that same serving job** has passing
 synthetic and native Scout smoke receipts, may the wrapper invoke:
 
 ```bash
-.venv/bin/python scripts/run_case_a_scout.py run runs/scout-case-a-prepared-v1 \
+.venv/bin/python scripts/run_case_a_scout.py run runs/scout-case-a-prepared-v2 \
   --serving-receipt /absolute/path/to/current-smoke/preflight.json
 ```
 

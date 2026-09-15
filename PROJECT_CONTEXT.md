@@ -153,7 +153,7 @@ This continuation began from clean source checkpoint `3c71025` on
 | Lab environment and AgentDojo checkout | Restored on NeSI; `doctor` verifies the pinned clean upstream |
 | Semantic weights | Pinned MiniLM snapshot downloaded and file hashes verified; locked semantic dependencies installed and 53 dependent regressions passed |
 | Default Python / lab Python | System 3.9.25; restored lab `.venv` 3.12.14 |
-| Local LLM integration | Explicit primary/online judge endpoints, local deferred single-source judge, provider-aware doctor and regression coverage implemented; legacy batch/joint paths remain scoped out |
+| Local LLM integration | Explicit primary, online, deferred, joint-audit and one-step replay endpoints plus provider-aware doctor coverage implemented; legacy defaults remain unchanged |
 | Scout weights/server | All 63 pinned files verified. First container 9029215 FAILED and GPU 9029415 CANCELLED. CPU retry 9039259 COMPLETED in 6m 49s; SIF/input preflight passed. GPU smoke 9039289 waits for scheduling priority; inference unverified |
 | Hugging Face access | Browser login complete; saved identity and authenticated pinned Scout config download verified |
 | Model storage | Private scratch root `/nesi/nobackup/uoa04799/dyu848/tool-output-lab`; 10 TiB project scratch allocation |
@@ -189,10 +189,14 @@ ledgers and result notes retain their historical values.
    original failed/cancelled attempts.
 3. Verify the new synthetic/native GPU smoke's terminal receipts. Live Scout
    inference remains unverified while the GPU job is queued.
-4. Use the new offline single-episode paired report for changed tool arguments,
-   proposal divergence and configured sensitive-field divergence. The Case A
-   local runner, canonical plan and unsubmitted same-allocation wrapper are ready;
-   cross-session alignment and joint/replay runners remain pending.
+4. Use the offline single-episode paired report for changed tool arguments,
+   proposal divergence and configured sensitive-field divergence. The separate
+   offline cross-session exporter now aligns caller-labelled A/B pairs and reports
+   checkpoint, native-state, exposure, write/version and restored-read boundary
+   evidence. The joint auditor and one-step replay now accept explicit configured
+   OpenAI-compatible endpoints while preserving their legacy defaults. The Case A
+   local runner, refreshed canonical plan and unsubmitted same-allocation wrapper
+   are ready.
 5. If `9039289` passes, inspect its timing, freeze a new site file and immutable
    helper bundle, then submit the separately named Case A wrapper. It must repeat
    both smoke gates in its own allocation before the clean/attacked pair.
@@ -217,9 +221,11 @@ loopback server, the exact plan-bound runner, and a recomputed preflight → smo
 native → execution → terminal evidence chain. The combined ceiling is 24 generation
 attempts: 4 synthetic, at most 4 benign native, and at most 16 Case A. Root's final
 selection passed **109 tests plus 16 subtests**, Ruff, Bash syntax and Python
-compilation. The ignored canonical preparation is
-`codebase/agentdojo-lab/runs/scout-case-a-prepared-v1`; its plan SHA-256 is
-`e4311002046d7ce12c9a1729f169159cb4995609e63e4124ce1ecfdad5b40d76`
+compilation. Later causal-transport and reporting source changes correctly
+invalidated the first zero-request preparation. The refreshed ignored preparation
+is `codebase/agentdojo-lab/runs/scout-case-a-prepared-v2`; it binds 84 source
+files, has plan SHA-256
+`1189cdd015d1eb6967d2c8b1e7724214fc5573e255b82e897a779b6058d36770`
 and records zero model requests. The wrapper remains unsubmitted until `9039289`
 finishes successfully and its timing is reviewed.
 
@@ -234,7 +240,7 @@ Previous run/report bundle locations remain unknown.
 
 Continuation on 2026-09-15: [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) now
 provides progress bars and per-run explanations. The first supervisor checklist
-is **8/25 complete (32%)**, including preparation; its 13 new experimental
+is **9/25 complete (36%)**, including preparation; its 13 new experimental
 deliverables remain **0/13**. This counts completed items, not elapsed time or
 detector accuracy. The new CPU/GPU attempt uses private, separately named
 evidence and site files described in HPC_SETUP.md.
@@ -261,6 +267,24 @@ report is `reports/20260915-paired-report-fixture-v2/index.html` in the lab.
 This demonstrates the exporter, not a Scout attack. It compares tool proposals
 within a single episode; assistant prose and cross-session alignment are outside
 that component. Detailed receipts and limitations are in RESEARCH_PROGRESS.md.
+
+The separate bounded cross-session exporter was added on 2026-09-15 for Case C
+preparation. It accepts two ordered A/B run pairs with caller-supplied condition
+labels, preserves run-local IDs and ambiguous/inserted/omitted action alignments,
+and reports each session-boundary link as observed, mismatched, absent, or unknown.
+The existing four-process offline memory fixture and negative boundary cases pass
+in a 42-test targeted selection (20 new tests), with Ruff, compilation and diff
+checks passing. This is derived-report preparation with zero live calls or jobs;
+it does not turn the exact-copy control into a cross-session attack result.
+
+The joint no-tools auditor and observed one-step replay now have separately named
+configured OpenAI-compatible protocols and `--endpoint-config`. They require
+explicit `--live`, an environment-only key, zero SDK retries and truthful endpoint/
+model receipts; replay preserves the recorded request and rejects a model mismatch.
+The final combined root selection passed **217 tests**. The ignored named fixture
+is `reports/20260915-cross-session-report-fixture-v1`; both session alignments are
+unique under the documented rule, both A→B checkpoint hashes and successful reads
+match, and graph connectivity remains explicitly unknown rather than inferred.
 
 The completed Case A runner and its report/provider regressions passed **84
 selected tests** on 2026-09-15. Its execution gate requires successful synthetic

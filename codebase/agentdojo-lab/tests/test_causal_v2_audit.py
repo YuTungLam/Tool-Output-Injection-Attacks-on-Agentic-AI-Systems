@@ -49,12 +49,12 @@ def exported(tmp_path, monkeypatch):
     return plans, source, tmp_path / "audit"
 
 
-def completion(value=True, *, finish="stop", raw=None):
+def completion(value=True, *, finish="stop", raw=None, model=None):
     return {
         "id": "mock-judge",
         "object": "chat.completion",
         "created": 0,
-        "model": audit.MODEL,
+        "model": audit.MODEL if model is None else model,
         "choices": [
             {
                 "index": 0,
@@ -127,6 +127,117 @@ def test_multi_source_prompt_and_exact_joint_context_are_sent_without_tools(expo
     assert summary["reported_usage"]["total_tokens"]["known_sum"] == 45
     assert len(read_results(output)) == 3
     assert "<script" not in (output / "index.html").read_text()
+
+
+def test_configured_endpoint_uses_endpoint_model_without_judge_tools_or_reasoning(exported, monkeypatch):
+    plans, _, output = exported
+    monkeypatch.setenv("SCOUT_JUDGE_KEY", "fixture-private-key")
+    endpoint = {
+        "provider": "openai_compatible",
+        "model": "llama-4-scout-fixture",
+        "base_url": "http://127.0.0.1:8123/v1",
+        "api_key_env": "SCOUT_JUDGE_KEY",
+    }
+    bodies = []
+
+    def respond(request):
+        bodies.append(json.loads(request.content))
+        return httpx.Response(200, json=completion(model=endpoint["model"]))
+
+    client = client_with(respond)
+
+    def configured_client(self, *, key, timeout):
+        assert self.model == endpoint["model"] and self.url == endpoint["base_url"]
+        assert key == "fixture-private-key" and timeout == 60.0
+        return client
+
+    monkeypatch.setattr(audit.EndpointSettings, "client", configured_client)
+    result = audit.run_audit(plans, output, live=True, endpoint=endpoint, max_requests=1)
+    assert client.is_closed
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert result["protocol"] == manifest["protocol"] == audit.OPENAI_COMPATIBLE_PROTOCOL
+    assert result["mode"] == "live_openai_compatible"
+    assert result["provider"] == manifest["provider"] == "openai_compatible"
+    assert manifest["endpoint"] == result["endpoint"] == endpoint
+    assert "providers.py" in manifest["implementation_hashes"]
+    assert "fixture-private-key" not in (output / "manifest.json").read_text()
+    assert bodies[0]["model"] == endpoint["model"]
+    assert not {"tools", "tool_choice", "functions", "reasoning_effort"}.intersection(bodies[0])
+
+
+def test_configured_endpoint_forbids_injected_client(exported, monkeypatch):
+    plans, _, output = exported
+    monkeypatch.setenv("SCOUT_JUDGE_KEY", "present")
+    endpoint = {
+        "provider": "openai_compatible", "model": "judge",
+        "base_url": "http://127.0.0.1:8123/v1", "api_key_env": "SCOUT_JUDGE_KEY",
+    }
+    with client_with(lambda request: pytest.fail("Client must be rejected")) as client:
+        with pytest.raises(ValueError, match="cannot be combined"):
+            audit.run_audit(plans, output, client=client, live=True, endpoint=endpoint)
+    assert not output.exists()
+
+
+@pytest.mark.parametrize(
+    "response_model,reason",
+    [("other-model", "response_model_mismatch"), ("", "missing_or_invalid_response_model")],
+)
+def test_configured_endpoint_rejects_unbound_response_model(
+    exported, monkeypatch, response_model, reason
+):
+    plans, _, output = exported
+    monkeypatch.setenv("SCOUT_JUDGE_KEY", "present")
+    endpoint = {
+        "provider": "openai_compatible", "model": "judge-model",
+        "base_url": "http://127.0.0.1:8123/v1", "api_key_env": "SCOUT_JUDGE_KEY",
+    }
+    client = client_with(
+        lambda request: httpx.Response(200, json=completion(model=response_model))
+    )
+    monkeypatch.setattr(audit.EndpointSettings, "client", lambda *a, **k: client)
+    result = audit.run_audit(plans, output, live=True, endpoint=endpoint, max_requests=1)
+    first = read_results(output)[0]
+    assert result["valid_judgments"] == 0
+    assert first["status"] == "invalid" and first["reason"] == reason
+
+
+def test_configured_punctuation_has_distinct_schema_protocol_and_report_title(exported, monkeypatch):
+    plans, _, output = exported
+    monkeypatch.setenv("SCOUT_JUDGE_KEY", "present")
+    endpoint = {
+        "provider": "openai_compatible", "model": "judge-model",
+        "base_url": "http://127.0.0.1:8123/v1", "api_key_env": "SCOUT_JUDGE_KEY",
+    }
+    client = client_with(
+        lambda request: httpx.Response(200, json=completion(model="judge-model"))
+    )
+    monkeypatch.setattr(audit.EndpointSettings, "client", lambda *a, **k: client)
+    result = audit.run_audit(
+        plans, output, live=True, endpoint=endpoint, max_requests=1,
+        judgment_format=audit.judgment_formats.ENGLISH_PUNCTUATION_FORMAT,
+    )
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert result["schema_version"] == manifest["schema_version"] == 3
+    assert result["protocol"] == audit.OPENAI_COMPATIBLE_PUNCTUATION_PROTOCOL
+    title = "Configured OpenAI-compatible joint counterfactual auditor with punctuation"
+    assert f"<title>{title}</title>" in (output / "index.html").read_text()
+
+
+def test_configured_endpoint_requires_live_and_key_before_output(exported, monkeypatch):
+    plans, _, output = exported
+    endpoint = {
+        "provider": "openai_compatible",
+        "model": "llama-4-scout-fixture",
+        "base_url": "http://127.0.0.1:8123/v1",
+        "api_key_env": "SCOUT_JUDGE_KEY",
+    }
+    monkeypatch.setenv("SCOUT_JUDGE_KEY", "present")
+    with pytest.raises(ValueError, match="requires --live"):
+        audit.run_audit(plans, output, endpoint=endpoint)
+    monkeypatch.delenv("SCOUT_JUDGE_KEY")
+    with pytest.raises(ValueError, match="SCOUT_JUDGE_KEY"):
+        audit.run_audit(plans, output, endpoint=endpoint, live=True)
+    assert not output.exists()
 
 
 def test_plan_only_never_constructs_a_client_and_retains_all_slots(exported, monkeypatch):

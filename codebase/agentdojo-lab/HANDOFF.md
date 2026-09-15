@@ -34,7 +34,8 @@ download/job status rather than treating preparation as a deployment receipt.
 The new offline single-episode exporter (`scripts/report_trace_pair.py`) passed
 38 selected tests, including 14 new cases. It compares tool-proposal sequences,
 sensitive argument changes, exposure/runtime/state evidence and initial environment
-differences; cross-session alignment and causal attribution remain out of scope.
+differences; cross-session alignment and causal attribution remain out of scope for
+that component. A separate bounded cross-session exporter is described below.
 The benign mock fixture is `reports/20260915-paired-report-fixture-v2/index.html`.
 The updated HPC suite passed 28 tests plus 25 subtests. These are new 2026-09-15
 checks, distinct from the historical full-suite totals above.
@@ -49,11 +50,43 @@ This confirms Daybreak access only for the current Codex product surface. Read
 [RESEARCH_PROGRESS.md](../../RESEARCH_PROGRESS.md) for the original restriction,
 retry evidence, percentage and run-by-run outcomes. No Scout research call occurred.
 
-The canonical ignored preparation is `runs/scout-case-a-prepared-v1`; its plan
-SHA-256 is `e4311002046d7ce12c9a1729f169159cb4995609e63e4124ce1ecfdad5b40d76`
-and it records zero model requests. Checkpoint `7b5f1eb` adds the separate
-`hpc/scout-smoke-case-a.sbatch` wrapper. Its final selection passed 109 tests plus
-16 subtests, Ruff, Bash syntax and Python compilation. The wrapper is not submitted.
+The first ignored preparation, `runs/scout-case-a-prepared-v1`, remains preserved.
+Later causal-transport and reporting changes modified files in its broad source
+snapshot, so its verification now fails as designed; it must not be executed or
+relabelled. The refreshed canonical preparation is
+`runs/scout-case-a-prepared-v2`. It binds 84 source files, records zero model
+requests, and has plan SHA-256
+`1189cdd015d1eb6967d2c8b1e7724214fc5573e255b82e897a779b6058d36770`.
+Checkpoint `7b5f1eb` adds the separate `hpc/scout-smoke-case-a.sbatch` wrapper.
+Its final selection passed 109 tests plus 16 subtests, Ruff, Bash syntax and Python
+compilation. The wrapper is not submitted.
+
+The joint no-tools causal auditor and observed one-step replay now accept an
+explicit OpenAI-compatible `--endpoint-config` under separately named protocols.
+Both require explicit live mode and an environment-only key, disable SDK retries,
+and record endpoint/model identity without credentials. Replay preserves the
+recorded primary request and rejects endpoint or response model mismatches. Their
+legacy Groq defaults remain unchanged. These are transport and evidence-integrity
+checks; no live Scout causal judgment or replay has run.
+
+The bounded offline cross-session exporter (`scripts/report_cross_session_pair.py`)
+aligns two ordered A/B run pairs and types process/run identity, fresh first-request
+history, checkpoint/native-state hashes, created-ID/read-ID correspondence, source
+exposure, version evidence and restored reads. The named fixture source at
+`runs/20260915-cross-session-report-source-v1` completed **4/4 separate offline
+processes** and **12 MockTransport requests**, with **zero real model calls**. The
+original-marker branch retained its marker through session B; the neutralized
+branch did not. The checkpoint's canonical state digest and bound evidence row are
+verified, while full lineage-graph connectivity remains explicitly unknown. This
+is exact-copy control evidence, not a transformed attack, causal effect, or Scout
+result. The dedicated cross-session suite passed **20 tests**; the final combined
+causal/provider/paired/memory selection passed **217 tests**, with Ruff, Python
+compilation and diff checks passing.
+
+Against the supervisor checklist, completed preparation/prerequisites are now
+**9/12 (75%)** and overall completion is **9/25 (36%)**. All **13** experimental
+deliverables remain incomplete (**0/13**); none of the offline work changes that
+denominator or supplies a live trajectory outcome.
 
 ### Implemented local transport and usage
 
@@ -111,10 +144,12 @@ not leave a server available for a later native run.
   and specialized attack/memory/panel/native-replay scripts retain frozen Groq
   settings. Reusing their implementation patterns requires a newly named local
   protocol; changing or resuming old frozen batches is not migration support.
-- Default live `paper_audit`, `causal_v2_audit`, and `causal_replay` reject a local
-  source manifest before constructing their implicit Groq client. Their old
-  protocols were not converted. The supported deferred single-source judge is
-  not equivalent to the full joint completed-trace composition.
+- Default live `paper_audit` remains on its frozen Groq protocol. The default
+  `causal_v2_audit` and `causal_replay` paths also preserve their legacy Groq
+  behavior and reject local source manifests, while their new explicit
+  `--endpoint-config` paths support separately named OpenAI-compatible protocols.
+  The deferred single-source judge is not equivalent to the full joint
+  completed-trace composition.
 - Local wire mocks verified call IDs, list/null arguments, unmodified Unicode
   tool output, separate primary/judge routing, bounded judge requests, and
   credential redaction. These checks do not measure Scout's tool-use quality,

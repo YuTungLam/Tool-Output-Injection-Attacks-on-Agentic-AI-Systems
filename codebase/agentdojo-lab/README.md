@@ -12,8 +12,12 @@ all 63 pinned model files passed their checksums. Rechecked 2026-09-15:
 the first container/GPU attempts failed or were cancelled; retry `9039259` passed
 and GPU smoke `9039289` is queued. Scout inference remains unverified. The offline
 single-episode pair exporter passed 38 tests; use `scripts/report_trace_pair.py`.
+The bounded Case C preparation exporter compares two ordered A/B session pairs
+offline with explicit boundary evidence; its 20 dedicated tests pass. Use
+`scripts/report_cross_session_pair.py`.
 The bounded [Scout Case A v1](CASE-A-SCOUT-V1.md) runner is also implemented and
-its canonical plan records zero live model requests. A separately named future
+its refreshed `runs/scout-case-a-prepared-v2` plan records zero live model
+requests. A separately named future
 same-allocation wrapper is verified offline and unsubmitted pending job `9039289`.
 See [progress/results](../../RESEARCH_PROGRESS.md) and [the supervisor checklist](../../RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15). Historical
 run/HTML bundles still need separate transfer. The large evaluation below remains
@@ -70,6 +74,22 @@ This requires a live server in the same allocation. Without `--live`, omit
 `--judge-config` to plan without inference. The plain clean smoke above does not
 produce the provenance/checkpoint prerequisites for this audit.
 
+The joint no-tools auditor and one-step primary replay accept separately named
+configured OpenAI-compatible modes after a verified `causal_v2` plan export:
+
+```bash
+.venv/bin/python -m agentdojo_lab.causal_v2_audit \
+  --plans reports/LOCAL-v2-plans --output reports/NEW-local-joint-audit \
+  --live --endpoint-config configs/local_scout_judge.toml
+.venv/bin/python -m agentdojo_lab.causal_replay \
+  --plans reports/LOCAL-v2-plans --output reports/NEW-local-replay \
+  --live --endpoint-config configs/local_scout.toml
+```
+
+Replay requires the endpoint model to equal the recorded primary model. These
+commands use environment-only keys, disable SDK retries, retain endpoint/model
+receipts and never execute a returned replay tool call.
+
 Migration scope is deliberately explicit:
 
 - Per-run HTML supports local runs. The aggregate `dojo-lab report` command
@@ -78,10 +98,11 @@ Migration scope is deliberately explicit:
   specialized attack, memory, panel, and native-replay scripts retain their
   frozen Groq protocols. Do not resume them with local settings; create a new
   named case-study protocol.
-- Standalone `paper_audit`, `causal_v2_audit`, and `causal_replay` keep their
-  legacy live protocols. Their default live paths reject a local source trace
-  instead of selecting Groq implicitly. The configured deferred command above
-  is a single-source judge, not a replacement for the complete joint composer.
+- `paper_audit` remains legacy-only. `causal_v2_audit` and `causal_replay`
+  preserve their legacy live defaults while also accepting an explicit
+  `--endpoint-config` for their new OpenAI-compatible protocols. Legacy defaults
+  reject a local source trace instead of selecting Groq implicitly. The
+  configured deferred command remains a separate single-source judge.
 
 Migration verification: the restored environment passed `doctor` and an offline
 native smoke with one tool call, two mocked completions, and 15 valid events;
