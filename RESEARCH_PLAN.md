@@ -614,3 +614,25 @@ runner tests and 47 Case C HPC tests, with scoped Ruff, compilation, Bash syntax
 and whitespace checks. No new checkbox is completed by these software repairs;
 progress stays **4/13 experimental** and **16/25 overall**. The remaining nine
 items need valid new observations or independent evidence, not changes to labels.
+
+## Submitted follow-up observations — 2026-09-17 NZST
+
+Three prospectively named follow-ups now bind the pushed repaired source at
+`134ee6b`, fresh preparations, fresh evidence paths and immutable copied bundles:
+
+- Case A job `9123394`: repaired cleanup/finalization validation.
+- Case B job `9123398`: one additional descriptive four-condition observation.
+- Case C job `9123399`: repaired per-call uncertainty and handoff diagnostic.
+
+Slurm accepted all three at 09:27 NZST. At the recorded checkpoint they were
+pending for Priority, with zero GPU runtime, research sessions and model
+requests. Each has a four-A100, 48-CPU, 320-GiB, two-hour ceiling and starts
+automatically when allocated. The displayed Sep 18 02:04 NZST start is only a
+scheduler estimate.
+
+This submission does not mark a checkbox complete. The nine open entries are
+scientific criteria, not queued tasks. In particular, the new jobs do not yet
+provide the missing redundant-source construction or no-tools judge/intervention
+panel; a single added B observation also does not meet the frozen three-repeat
+criterion. Terminal results must be assessed against the existing acceptance
+language before updating **4/13 experimental** or **16/25 overall**.

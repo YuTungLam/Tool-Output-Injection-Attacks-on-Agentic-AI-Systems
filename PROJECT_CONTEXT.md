@@ -558,3 +558,26 @@ payload change or raw-result edit occurred. These fixes improve future evidence
 quality but do not complete an absent cross-session action, repeated observation,
 causal judgment or systematic research pattern. Progress remains **4/13 (31%)**
 experimental and **16/25 (64%)** overall.
+
+## Repaired-source follow-up queued — 2026-09-17 NZST
+
+The repaired code at pushed commit `134ee6b` now has three fresh, request-free,
+source-bound preparations and immutable launch bundles. Slurm accepted Case A
+job `9123394`, Case B job `9123398`, and Case C job `9123399` at 09:27 NZST.
+Each requests one Milan node with four A100s, 48 CPUs, 320 GiB and a two-hour
+ceiling. All were pending for Priority with zero runtime and no allocation at
+the recorded checkpoint; Sep 18 02:04 NZST was a provisional scheduler estimate.
+
+A is explicitly a repaired cleanup/finalization validation, B a prospective
+descriptive repeat, and C a repaired uncertainty/handoff diagnostic. Fresh
+preparations are `runs/scout-case-a-prepared-v6`,
+`runs/scout-case-b-prepared-v4`, and `runs/scout-case-c-prepared-v3`. The old
+jobs, preparations and raw evidence remain unchanged. Submission receipts are in
+the corresponding `scout-case-*-submission-20260917-*` durable evidence bundles.
+
+The nine unchecked items are acceptance criteria rather than nine existing GPU
+tasks. These three jobs do not add the still-unimplemented redundant-source case
+or judge/intervention panel, and C still preserves an unknown/blocked handoff if
+Scout produces a non-unique eligible write. No experimental checkbox changes
+until terminal observations satisfy its stated criterion; progress is still
+**4/13 experimental (31%)** and **16/25 overall (64%)**.

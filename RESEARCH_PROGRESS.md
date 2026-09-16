@@ -694,3 +694,21 @@ integrity guard failed as designed; the stable-tree rerun passed all 32 tests.
 No raw evidence changed and no model request, GPU allocation, scheduler action,
 payload edit or experimental native action occurred. These repairs do not change
 the completion count: **4/13 experimental (31%)**, **16/25 overall (64%)**.
+
+## GPU follow-up queue — 2026-09-17 NZST
+
+`9123394` (A repair validation), `9123398` (B prospective repeat), and `9123399`
+(C repair diagnostic) were submitted at 09:27 NZST from fresh immutable bundles
+binding pushed commit `134ee6b`. Request-free preparation and copied-bundle gates
+passed for all three. Each requests four A100s, 48 CPUs, 320 GiB and at most two
+hours. Their initial state is **PENDING (Priority)** with zero runtime, allocation,
+research sessions and model requests. Slurm's current Sep 18 02:04 NZST start is
+provisional.
+
+Queue progress: **0/3 allocated** `░░░░░░░░░░░░░░░░░░░░`.
+
+Experimental progress stays **4/13 (31%)** `██████░░░░░░░░░░░░░░` until terminal
+evidence satisfies an acceptance criterion. The nine incomplete deliverables are
+not nine runnable jobs: redundant-source and judge/intervention protocols remain
+to be implemented, and this additional B run alone is below the stated minimum
+for repeated-run evidence.

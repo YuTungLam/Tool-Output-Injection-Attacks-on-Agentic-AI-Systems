@@ -558,3 +558,35 @@ scheduler or native experimental action occurred.
 The starter primary and judge both use local Scout, with independent endpoint
 configuration. A different judge requires a new explicit model condition. The
 project's remaining allocation balance has not been independently verified.
+
+## Repaired-source GPU follow-up submitted — 2026-09-17 NZST
+
+Fresh request-free preparations were created from pushed commit `134ee6b` and
+verified before submission: Case A `runs/scout-case-a-prepared-v6`, Case B
+`runs/scout-case-b-prepared-v4`, and Case C
+`runs/scout-case-c-prepared-v3`. Each preparation contains only its immutable
+`plan.json` and `preparation.json` and records zero model requests.
+
+Three new, separately named jobs were accepted by Slurm at 09:27 NZST:
+
+| Job | Scope | Initial state | Requested resources |
+| --- | --- | --- | --- |
+| `9123394` | Case A repaired cleanup/finalization validation | PENDING (Priority) | 4 A100s, 48 CPUs, 320 GiB, 2 hours maximum |
+| `9123398` | Case B prospective descriptive repeat | PENDING (Priority) | 4 A100s, 48 CPUs, 320 GiB, 2 hours maximum |
+| `9123399` | Case C repaired uncertainty/handoff diagnostic | PENDING (Priority) | 4 A100s, 48 CPUs, 320 GiB, 2 hours maximum |
+
+All source, runtime-manifest, model-file, container, site-file and copied-wrapper
+gates passed without inference or scheduler allocation. The new bundles are
+`evidence/scout-case-a-submission-20260917-v4`,
+`evidence/scout-case-b-submission-20260917-v3`, and
+`evidence/scout-case-c-submission-20260917-v3` under the private durable lab
+root. Their `submitted.json` receipts preserve job IDs, input hashes and initial
+Slurm records. The scheduler showed a provisional Sep 18 02:04 NZST start for
+all three; that estimate is not an allocation guarantee and can change.
+
+These are three runnable follow-ups, not nine jobs. The nine open checklist
+entries are scientific acceptance criteria. These runs may add evidence for A,
+B, C and repetition, but they do not implement the absent redundant-source
+variant or judge/intervention panel and cannot by themselves complete all nine.
+No new model request or GPU second was observed at this submission checkpoint,
+so progress remains **4/13 experimental (31%)** and **16/25 overall (64%)**.
