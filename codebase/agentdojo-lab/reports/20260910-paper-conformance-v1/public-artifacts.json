@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "audit_type": "public_artifact_and_original_recipe_availability",
+  "checked_on": "2026-09-10",
+  "scope": "Read-only inspection of official paper and public artifact pages; no model requests or experiment execution.",
+  "subject": {
+    "title": "Ghost in the Agent: Redefining Information Flow Tracking for LLM Agents",
+    "method": "NeuroTaint",
+    "version": "arXiv:2604.23374v1",
+    "submitted": "2026-04-25"
+  },
+  "conclusion": {
+    "method_reimplementation": "Publicly disclosed components can be implemented independently in AgentDojo with explicit local choices.",
+    "original_numeric_reproduction": "Not yet established: the exact author experiment recipe and scenario artifacts remain unverified.",
+    "release_status": "The paper describes a release, but its NeuroTaint/TaintBench artifact URL was not located in the inspected sources. This is not a claim that no public release exists.",
+    "research_interpretation": "Artifact availability does not establish a method flaw. New local tests must retain their own protocol and evidence scope."
+  },
+  "retrieved_sources": [
+    {
+      "url": "https://arxiv.org/abs/2604.23374",
+      "checked": "Submission history and displayed artifact links",
+      "result": "v1 displayed; paper access available; no method repository or dataset URL located."
+    },
+    {
+      "url": "https://arxiv.org/html/2604.23374v1",
+      "checked": "Method, evaluation, Appendices A-D and outbound links",
+      "result": "Readable; numerical tables, source/sink catalogues and framework/version table available."
+    },
+    {
+      "url": "https://arxiv.org/pdf/2604.23374",
+      "checked": "16-page PDF text, including code/prompt boxes missing from HTML extraction",
+      "result": "Readable; identifies the causal prompt as abbreviated."
+    },
+    {
+      "url": "https://sites.google.com/view/ryancaicse/",
+      "checked": "First-author homepage",
+      "result": "No Ghost/NeuroTaint publication or artifact link located in displayed content."
+    },
+    {
+      "url": "https://wcventure.github.io/",
+      "checked": "Author publications and open-source sections",
+      "result": "No Ghost/NeuroTaint artifact located; links to author GitHub."
+    },
+    {
+      "url": "https://scqin.github.io/",
+      "checked": "Author homepage",
+      "result": "No Ghost publication or method artifact located in displayed content."
+    },
+    {
+      "url": "https://github.com/wcventure",
+      "checked": "Author-linked profile overview and displayed popular repositories",
+      "result": "No method artifact located in the overview; full repository inventory not retrieved."
+    },
+    {
+      "url": "https://github.com/uiuc-kang-lab/InjecAgent",
+      "checked": "Official README and displayed dataset files",
+      "result": "Public benchmark repository; README reports 1054 test cases and base/enhanced settings. Its own released model outputs are linked. These are not NeuroTaint outputs."
+    },
+    {
+      "url": "https://github.com/ryoungj/ToolEmu",
+      "checked": "Official README, benchmark and runtime structure",
+      "result": "Public repository with 144 cases and emulator/evaluator code. NeuroTaint-specific 79-case membership was not located."
+    },
+    {
+      "url": "https://github.com/microsoft/fides",
+      "checked": "Official README and displayed repository structure",
+      "result": "Public FIDES tutorial notebook. This does not identify the baseline adaptation used by NeuroTaint."
+    },
+    {
+      "url": "https://taintbench.github.io/",
+      "checked": "Name-collision result",
+      "result": "Android taint-analysis benchmark; not the LLM-agent TaintBench."
+    }
+  ],
+  "access_errors_and_unchecked_material": [
+    {
+      "url": "https://arxiv.org/src/2604.23374v1",
+      "result": "Web retrieval error; TeX archive contents were not inspected."
+    },
+    {
+      "url": "https://arxiv.org/pdf/2604.23374v1",
+      "result": "Versioned endpoint initially errored; unversioned PDF subsequently retrieved and identifies v1."
+    },
+    {
+      "url": "https://github.com/search?q=NeuroTaint&type=repositories",
+      "result": "Web retrieval error; no exhaustive GitHub search claim."
+    },
+    {
+      "url": "https://api.github.com/search/repositories?q=NeuroTaint",
+      "result": "Web retrieval error."
+    },
+    {
+      "url": "https://api.github.com/users/wcventure/repos?per_page=100",
+      "result": "Web retrieval error; complete repository inventory unverified."
+    },
+    {
+      "url": "https://arxiv.org/pdf/2604.23374",
+      "result": "Figure screenshot failed. PDF text inspected; threshold-curve coordinates not independently digitized."
+    }
+  ],
+  "disclosed_recipe": {
+    "locations": [
+      "Section 5.1",
+      "Tables 3-8",
+      "Appendices A-D"
+    ],
+    "primary_benchmark": {
+      "name": "TaintBench",
+      "scenarios": 400,
+      "frameworks": 20,
+      "scenarios_per_framework": 20,
+      "positive": 200,
+      "negative": 200,
+      "outcome_families": 13
+    },
+    "aggregation": {
+      "runs_per_scenario": 5,
+      "scenario_positive_votes_at_least": 3,
+      "same_rule_for_baseline": true
+    },
+    "label_contract": "Scenario-level intended provenance; two authors reviewed templates and representative traces before comparison. This is not a supplied per-run causal oracle.",
+    "main_execution_model": "gpt-4.1-mini",
+    "additional_execution_and_review_models": [
+      "gpt-4.1",
+      "claude-sonnet-4-6",
+      "claude-opus-4-6"
+    ],
+    "embedding_model": "all-MiniLM-L6-v2",
+    "thresholds": {
+      "ordinary_lcs": 0.15,
+      "implicit_string_lcs": 0.4,
+      "ordinary_semantic": 0.6,
+      "retrieved_semantic": 0.85,
+      "safe_control_semantic": 0.95,
+      "fragment_coverage": 0.1
+    },
+    "primary_target_counts": {
+      "neurotaint": {
+        "TP": 187,
+        "FP": 16,
+        "FN": 13,
+        "TN": 184
+      },
+      "fides": {
+        "TP": 108,
+        "FP": 106,
+        "FN": 92,
+        "TN": 94
+      }
+    },
+    "supplementary_benchmarks": {
+      "ToolEmu": "79-case filtered subset, native unsafe labels",
+      "InjecAgent": "Approximately 1.17K base / 1.20K enhanced, native unsafe labels; reconcile with upstream 1054-case README."
+    },
+    "review_cascade": {
+      "surfaced_scenarios": 203,
+      "scoring_denominator": 400,
+      "purpose": "Unsafe-action triage, not independent provenance validation"
+    },
+    "prompts": {
+      "causal": "Abbreviated prompt and self-reported confidence specified.",
+      "unsafe_review": "Full system prompt and user-context fields supplied."
+    },
+    "cost": "0.25 seconds per execution unit; 457 tokens per causal query with available token traces."
+  },
+  "finite_original_result_prerequisites": [
+    {
+      "id": "R1",
+      "need": "Exact scenario IDs, contents, labels, source/sink mappings, framework adapters, environment states, and transfer-subset membership.",
+      "status": "Artifact unlocated/unverified; tables and examples cannot substitute for the complete dataset.",
+      "method_reimplementation_blocker": false
+    },
+    {
+      "id": "R2",
+      "need": "Pinned framework dependencies and model revisions; execution/auditor roles, full prompts, decoding parameters, limits, seeds, retry/failure policy.",
+      "status": "Partially specified in text; complete recipe not supplied in inspected material.",
+      "method_reimplementation_blocker": false
+    },
+    {
+      "id": "R3",
+      "need": "Chunk size/stride, sentence segmentation, coverage denominator, LCS sequence unit and preprocessing, embedding revision/truncation, and label-independent profile-selection rule. The LCS ratio formula itself is supplied.",
+      "status": "Operational details unresolved in inspected method text; explicit local choices needed.",
+      "method_reimplementation_blocker": false
+    },
+    {
+      "id": "R4",
+      "need": "Causal context boundaries, exact neutralization, derived-history handling, replay versus judge procedure, joint-source decision rule, and query accounting.",
+      "status": "Partial narrative and abbreviated prompt; executable recipe unresolved.",
+      "method_reimplementation_blocker": false
+    },
+    {
+      "id": "R5",
+      "need": "FIDES adaptation, per-run decisions, failed/no-sink handling, scenario aggregation receipts, threshold-sweep data, timing scope/hardware and token-coverage denominator.",
+      "status": "Original comparison and cost receipts unverified; current FIDES tutorial is insufficient to identify that adaptation.",
+      "method_reimplementation_blocker": false
+    }
+  ],
+  "completion_contract": {
+    "agentdojo_method_work": "Finish each disclosed component, document local choices, test it under frozen local reference contracts, and label unsupported claims explicitly.",
+    "original_table_work": "Requires R1-R5 or justified documented departures; departures produce a new reproduction setting, not identical original-condition results.",
+    "manual_labeling": "No new labeling is required for this availability audit. Original independent attribution accuracy cannot be manufactured from model-generated labels.",
+    "no_pooling": "Keep TaintBench provenance, transfer unsafe-label scores, unsafe-review cascade, and local AgentDojo experiments separate."
+  },
+  "actions": {
+    "model_requests": 0,
+    "attack_executions": 0,
+    "source_changes": 0,
+    "existing_artifact_changes": 0
+  }
+}

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NeuroTaint method completion contract</title>
+<style>
+:root{color-scheme:light dark;--bg:#f6f8fa;--fg:#152a39;--panel:#fff;--line:#c4cdd5;--muted:#526371;--link:#146b90;--accent:#1c765d}
+@media(prefers-color-scheme:dark){:root{--bg:#171d24;--fg:#edf1f5;--panel:#23303b;--line:#516273;--muted:#b6c5d0;--link:#8ccfe8;--accent:#89d7bc}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,sans-serif}main{max-width:950px;margin:auto;padding:28px 20px 55px}h1{font-size:1.8rem;line-height:1.25}h2{font-size:1.2rem;margin-top:28px}a{color:var(--link)}nav{display:flex;flex-wrap:wrap;gap:16px;margin:16px 0}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}.scroll{overflow:auto}.muted{color:var(--muted)}.flow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:22px 0}.node{padding:10px;background:var(--panel);border:1px solid var(--line);max-width:100%}details{border-top:1px solid var(--line);padding:16px 0}summary{cursor:pointer;font-weight:600}.outcome{padding-left:14px;border-left:3px solid var(--accent)}code{overflow-wrap:anywhere}li{margin:8px 0}@media(max-width:560px){main{padding:20px 14px}h1{font-size:1.5rem}.flow{gap:6px}td,th{padding:9px 5px}}
+</style>
+<main>
+<p class="muted">AgentDojo paper-method reimplementation · 10 September 2026</p>
+<h1>What does complete mean?</h1>
+<p class="outcome"><strong>Method implementation, evaluated capability, and original-table reproduction are separate outcomes.</strong> A failed prediction can be an experimental result. An unimplemented operation cannot be counted as a paper limitation.</p>
+<nav aria-label="Verification"><a href="../../REPRODUCTION-CONTRACT.md">Fixed completion contract</a><a href="runtime-coverage.json">Runtime coverage inventory</a><a href="public-artifacts.json">Public source audit</a><a href="integration.json">Integration verification</a></nav>
+
+<h2>One complete audit workflow</h2>
+<div class="flow" aria-label="Audit flow: verified trace and policy supply the provenance graph; explicit checks precede an optional isolated judge; all results enter the final decisions and derived graph.">
+<div class="node">Recorded trace<br>+ policy + prefix</div><span aria-hidden="true">→</span><div class="node">DCPG<br>+ restored memory</div><span aria-hidden="true">→</span><div class="node">Explicit Tier 1–4</div><span aria-hidden="true">→</span><div class="node">Optional no-tools judge<br>when explicit evidence is absent</div><span aria-hidden="true">→</span><div class="node">Per-sink decisions<br>+ derived evidence graph</div>
+</div>
+<p>Explicit hits skip causal requests. Missing, failed or inapplicable evidence remains visible. Joint-source predictions retain their source set; a judge confidence is not a calibrated causal probability.</p>
+
+<h2>Fixed functional checklist</h2>
+<div class="scroll"><table><thead><tr><th>Requirement</th><th>State</th><th>Scope</th></tr></thead><tbody>
+<tr><td>M1 · Policy and exact trace bindings</td><td>Implemented and tested</td><td>AgentDojo event adapter</td></tr>
+<tr><td>M2 · All tiers and four profiles</td><td>Implemented and tested</td><td>Explicitly documented local choices</td></tr>
+<tr><td>M3 · Graph and session continuity</td><td>Implemented and tested</td><td>Native file memory adapter</td></tr>
+<tr><td>M4 · Single and pair judge analysis</td><td>Implemented and tested</td><td>Declared judge interpretation and local joint-probe rule</td></tr>
+<tr><td>M5 · Composed audit and verdict graph</td><td id="integration-state">Implemented and verified</td><td>New derived output; old graph unchanged</td></tr>
+<tr><td>M6 · Explicit, control and memory integration</td><td id="coverage-state">3 / 3 compositions verified</td><td>Retained evidence; zero new primary trajectories</td></tr>
+</tbody></table></div>
+<p class="muted">This is a functional checklist, not an accuracy score or an estimate of the original paper reproduced.</p>
+<nav aria-label="Composed examples"><a href="explicit-v2/index.html">Explicit evidence</a><a href="control-v2/index.html">Control predictions</a><a href="memory-v2/index.html">Restored memory</a></nav>
+<p>The final compositions account for seven proposals and three selected sinks. They reuse three recorded auditor replies and make zero new model or tool requests. These are integration checks, not an accuracy sample.</p>
+<p>Final regression: 1,811 tests pass; Ruff passes. <a href="validation-final.json">Verification receipt</a>. Browser interaction was not revalidated; local links and language were checked statically.</p>
+<details><summary>Two integration defects fixed; initial attempts retained</summary><p>Reuse now preserves the exact old planning budget. A verified legacy adapter reads old passive memory evidence while leaving unsupported causal transport unavailable. Newly recorded memory files include the canonical passive condition for standard planning. The original failed outputs and initial composer remain preserved.</p><p><a href="initial-integration.json">Initial outcomes</a></p></details>
+
+<details><summary>What existing real-agent runs do not yet demonstrate</summary>
+<ul><li>No real-agent registered Canary first hit was found in the inspected inventory.</li><li>Ordered real-agent comparisons stop at Tier 2; real local semantic computation is separately exercised offline.</li><li>The real memory pilot demonstrates exact-copy continuity, not transformed semantic recovery.</li><li>Implicit-string and safe-control profiles have deterministic tests but no located real-agent runs.</li><li>All four recent rewrite tasks omit the requested background read, leaving that comparison unavailable.</li></ul>
+<p>These are limits on live-performance claims. They do not mean the implemented functions are absent, and they do not require repeated runs until a favorable example appears.</p>
+</details>
+<details><summary>Why original-table reproduction is a different target</summary>
+<p>Our declared setting uses AgentDojo and Groq gpt-oss. Original scenario membership, labels, exact execution and audit recipes, framework pins and baseline adaptations are not fully verified. The public-artifact audit distinguishes an unlocated release from proof that no release exists.</p>
+<p>Independent human labeling is not a prerequisite for implementing the method. Natural-trajectory attribution accuracy still requires appropriate reference evidence.</p>
+</details>
+<details><summary>What would make a research-gap claim credible?</summary>
+<ol><li>Finish and verify the relevant implementation.</li><li>Preserve a reproducible failing case with a clear reference contract.</li><li>Check plausible specification choices and setting differences.</li><li>Test fresh cases and relevant alternatives before claiming a general limitation or novelty.</li></ol>
+<p>The earlier blocked injection subtask was not retried. Runtime restrictions, missing inputs and parser failures are not evidence against the scientific method.</p>
+</details>
+</main>
+</html>

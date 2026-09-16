@@ -1,0 +1,16 @@
+% Requires \usepackage{booktabs}. Costs are per run; no pooled success estimate.
+\begin{table*}[t]
+\centering
+\small
+\caption{Descriptive clean-run observations: 3 real LLM runs and 1 unique evaluated task(s). Repetitions are not independent task samples.}
+\begin{tabular}{llrrrrrl}
+\toprule
+Run & Model & Passed/evaluated & Requests & Tools/errors & In/out tokens & Time (s) & Event log \\
+\midrule
+R1 & openai/gpt-oss-120b & 1/1 & 3 & 2/1 & 5,441/196 & 2.015 & Unrecorded* \\
+R2 & openai/gpt-oss-120b & 1/1 & 3 & 2/1 & 5,441/196 & 2.327 & Unrecorded* \\
+R3 & openai/gpt-oss-120b & 1/1 & 3 & 2/1 & 5,441/196 & 2.304 & 24 events \\
+\bottomrule
+\end{tabular}
+\par\footnotesize * Recording metadata absent. Times do not estimate tracing overhead.
+\end{table*}

@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "passed": true,
+  "checks": {
+    "session1_native_behavior_equal": true,
+    "session2_native_behavior_equal": true,
+    "persisted_inputs_unchanged": true,
+    "restored_memory_content_present": true,
+    "actual_outbound_tool_content_present": true,
+    "session2_has_recovered_ancestry": true,
+    "session2_recovers_session1_origin": true,
+    "session2_has_matched_recovered_comparison": true,
+    "session2_has_lineage_paths": true,
+    "session2_lineage_persisted_before_native_sink": true,
+    "session2_initial_history_empty": true,
+    "both_sidecars_complete": true,
+    "both_final_states_saved": true,
+    "checkpoint_copy_is_exact": true
+  },
+  "real_llm": false,
+  "namespace": "native-fixture-drive-v1",
+  "policy_sha256": "ba98b5fe0c13cbe7e2f4c1aac5adcad59e7dfd9efa5317647db3d4a6436cc853",
+  "input_sha256": {
+    "native-memory.json": "6de1c65bf3de188823a9b83447349cdba797141c0746cf4ea348e2e028562332",
+    "lineage-state.json": "a3ad4eb5180db7cff4501f0327ae0e9bbea97b37dcc6fc41edcdf413fec7f3f6"
+  },
+  "timing_ns": {
+    "native_memory_save": 86250,
+    "lineage_checkpoint_save": 327291,
+    "lineage_checkpoint_load": 205875,
+    "session2_baseline_native_memory_load": 341334,
+    "session2_traced_native_memory_load": 138250
+  },
+  "timing_scope": "One invocation of each named offline fixture operation measured with time.perf_counter_ns; save/load durations include serialization or parsing, validation and file I/O. The two native memory loads are the existing baseline/traced session initializations. Per-run sidecar checkpoint saves and callback compute/flush are separate operations. These single-operation descriptions are not live overhead estimates or model/accuracy evidence.",
+  "session2_lineage_summary": {
+    "causal_influence": "not_assessed",
+    "comparison_count": 1,
+    "incomplete_comparison_count": 0,
+    "maliciousness": "not_assessed",
+    "matched_comparison_count": 1,
+    "recovered_source_count": 1,
+    "status": "recovered_candidates"
+  },
+  "scope": "Native two-session persistence and lineage engineering control; no provenance accuracy, maliciousness, causality, benchmark efficacy, or model capability claim.",
+  "reports": [
+    "session1-baseline/report.html",
+    "session1-traced/report.html",
+    "session2-baseline/report.html",
+    "session2-traced/report.html"
+  ]
+}

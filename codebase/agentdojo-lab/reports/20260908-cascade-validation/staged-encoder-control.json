@@ -1,0 +1,608 @@
+{
+  "passed": true,
+  "checks": {
+    "lcs_nonmatch_reaches_semantics": true,
+    "whole_text_encoding_visited": true,
+    "route_completed": true,
+    "reference_completed": true,
+    "tier3_score_agrees": true,
+    "tier3_matched_agrees": true,
+    "tier4_score_agrees": true,
+    "tier4_matched_agrees": true,
+    "coverage_agrees": true
+  },
+  "spec": {
+    "source": "Alpha files remain local. Beta notes contain meeting details. Gamma records describe the schedule. Delta folders hold drafts. Epsilon pages contain summaries.",
+    "target": "ZZZZ",
+    "absolute_score_tolerance": 1e-06,
+    "purpose": "Supplementary real-encoder execution and staged/independent consistency control; no task labels or quality claim",
+    "cache_size": 0
+  },
+  "route_encoder_entries": [
+    [
+      "Alpha files remain local. Beta notes contain meeting details. Gamma records describe the schedule. Delta folders hold drafts. Epsilon pages contain summaries.",
+      "ZZZZ"
+    ],
+    [
+      "ZZZZ",
+      "Alpha files remain local. Beta notes contain meeting details. Gamma records describe the schedule.",
+      "Gamma records describe the schedule. Delta folders hold drafts. Epsilon pages contain summaries."
+    ]
+  ],
+  "route": {
+    "method": "nt_style_ordered_cascade_v1",
+    "status": "scored",
+    "matched": false,
+    "first_matched_tier": null,
+    "complete": true,
+    "truncated": false,
+    "source_length": 158,
+    "target_length": 4,
+    "stages": {
+      "tier1": {
+        "stage": "tier1",
+        "status": "disabled_condition",
+        "reason": "passive_input_unchanged_no_canary",
+        "score": null,
+        "matched": null,
+        "complete": false,
+        "truncated": false
+      },
+      "tier2": {
+        "method": "nt_style_lcs_v1",
+        "status": "scored",
+        "score": 0.0,
+        "lcs_length": 0,
+        "source_length": 158,
+        "target_length": 4,
+        "threshold": 0.15,
+        "matched": false,
+        "metadata": {
+          "unit": "unicode_codepoint",
+          "case_sensitive": true,
+          "normalization": "none",
+          "algorithm": "exact_bitset_longest_common_subsequence",
+          "limits": {
+            "max_codepoints_per_input": 65536,
+            "max_length_product": 67108864
+          },
+          "exceeded_limits": []
+        },
+        "stage": "tier2",
+        "complete": true,
+        "truncated": false,
+        "reason": "threshold_not_met"
+      },
+      "tier3": {
+        "method": "nt_style_semantic_v1",
+        "stage": "tier3",
+        "status": "scored",
+        "score": 0.050745821620201075,
+        "matched": false,
+        "complete": true,
+        "truncated": false,
+        "source_length": 158,
+        "target_length": 4,
+        "semantic_threshold": 0.6,
+        "metadata": {
+          "method": "nt_style_semantic_v1",
+          "assumptions": {
+            "sentence_boundary_regex": "(?<=[.!?\u3002\uff01\uff1f])\\s+|[\\r\\n]+",
+            "sentence_edge_whitespace": "excluded_from_spans_without_changing_original_text",
+            "chunk_sentences": 3,
+            "chunk_overlap_sentences": 1,
+            "coverage": "union_length_of_threshold_matching_encoded_token_envelopes/source_codepoints",
+            "coverage_denominator": "all_original_source_codepoints_including_whitespace",
+            "offset_unit": "unicode_codepoint_half_open",
+            "threshold_policy": "fixed_ordinary_thresholds_without_gold_label_selection",
+            "evaluation": "compute_tier3_only_when_explicitly_called",
+            "cosine_accumulation": "python_math_fsum_float64_over_float32_model_embeddings",
+            "truncation": "score_encoded_view_and_report_incomplete_without_claiming_full_text_coverage",
+            "interpretation": "semantic_similarity_candidate_not_confirmed_provenance_or_maliciousness"
+          },
+          "semantic_threshold": 0.6,
+          "coverage_threshold": 0.1,
+          "limits": {
+            "max_codepoints_per_input": 65536,
+            "max_chunks": 128
+          },
+          "encoder": {
+            "model_id": "sentence-transformers/all-MiniLM-L6-v2",
+            "model_path": "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/.model-cache/all-MiniLM-L6-v2-1110a243",
+            "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+            "revision_verification": "pinned_manifest_verified",
+            "pin_sha256": "1e1ce741dc5ccaefa6228aaf47de2da9b8df1684c576097eb71408c6c37a4d00",
+            "files_sha256": {
+              "1_Pooling/config.json": "4be450dde3b0273bb9787637cfbd28fe04a7ba6ab9d36ac48e92b11e350ffc23",
+              "config.json": "953f9c0d463486b10a6871cc2fd59f223b2c70184f49815e7efbcab5d8908b41",
+              "config_sentence_transformers.json": "061ca9d39661d6c6d6de5ba27f79a1cd5770ea247f8d46412a68a498dc5ac9f3",
+              "model.safetensors": "53aa51172d142c89d9012cce15ae4d6cc0ca6895895114379cacb4fab128d9db",
+              "modules.json": "84e40c8e006c9b1d6c122e02cba9b02458120b5fb0c87b746c41e0207cf642cf",
+              "sentence_bert_config.json": "fc1993fde0a95c24ec6c022539d41cf6e2f7c9721e5415d6fb6897472a9cd4b7",
+              "special_tokens_map.json": "303df45a03609e4ead04bc3dc1536d0ab19b5358db685b6f3da123d05ec200e3",
+              "tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+              "tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+              "vocab.txt": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+            },
+            "manifest_sha256": "0cfc83afb449f81d5535c4f5d76b097ee7074a09fdb02ad94ea5bb3c282e01f6",
+            "device": "cpu",
+            "dtype": "float32",
+            "max_tokens": 256,
+            "trust_remote_code": false,
+            "local_files_only": true,
+            "use_safetensors": true,
+            "cache_max_entries": 0,
+            "cache_max_codepoints": 1048576,
+            "cache_key": "exact_input_text",
+            "normalize_embeddings": true,
+            "versions": {
+              "sentence-transformers": "6.0.1",
+              "transformers": "5.16.1",
+              "tokenizers": "0.23.2",
+              "torch": "2.14.0"
+            }
+          },
+          "scoring_scope": "full_tokenized_inputs"
+        },
+        "source_tokenization": {
+          "input_tokens": 32,
+          "encoded_tokens": 32,
+          "max_tokens": 256,
+          "truncated": false,
+          "visible_span": [
+            0,
+            158
+          ],
+          "special_tokens_included": true,
+          "offset_unit": "unicode_codepoint",
+          "tokenizer_input_ids_verified": true
+        },
+        "target_tokenization": {
+          "input_tokens": 5,
+          "encoded_tokens": 5,
+          "max_tokens": 256,
+          "truncated": false,
+          "visible_span": [
+            0,
+            4
+          ],
+          "special_tokens_included": true,
+          "offset_unit": "unicode_codepoint",
+          "tokenizer_input_ids_verified": true
+        },
+        "source_visible_span": [
+          0,
+          158
+        ],
+        "reason": "threshold_not_met"
+      },
+      "tier4": {
+        "method": "nt_style_semantic_v1",
+        "stage": "tier4",
+        "status": "scored",
+        "score": 0.07311295688396222,
+        "matched": false,
+        "complete": true,
+        "truncated": false,
+        "source_length": 158,
+        "target_length": 4,
+        "semantic_threshold": 0.6,
+        "metadata": {
+          "method": "nt_style_semantic_v1",
+          "assumptions": {
+            "sentence_boundary_regex": "(?<=[.!?\u3002\uff01\uff1f])\\s+|[\\r\\n]+",
+            "sentence_edge_whitespace": "excluded_from_spans_without_changing_original_text",
+            "chunk_sentences": 3,
+            "chunk_overlap_sentences": 1,
+            "coverage": "union_length_of_threshold_matching_encoded_token_envelopes/source_codepoints",
+            "coverage_denominator": "all_original_source_codepoints_including_whitespace",
+            "offset_unit": "unicode_codepoint_half_open",
+            "threshold_policy": "fixed_ordinary_thresholds_without_gold_label_selection",
+            "evaluation": "compute_tier4_only_when_explicitly_called",
+            "cosine_accumulation": "python_math_fsum_float64_over_float32_model_embeddings",
+            "truncation": "score_encoded_view_and_report_incomplete_without_claiming_full_text_coverage",
+            "interpretation": "semantic_similarity_candidate_not_confirmed_provenance_or_maliciousness"
+          },
+          "semantic_threshold": 0.6,
+          "coverage_threshold": 0.1,
+          "limits": {
+            "max_codepoints_per_input": 65536,
+            "max_chunks": 128
+          },
+          "encoder": {
+            "model_id": "sentence-transformers/all-MiniLM-L6-v2",
+            "model_path": "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/.model-cache/all-MiniLM-L6-v2-1110a243",
+            "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+            "revision_verification": "pinned_manifest_verified",
+            "pin_sha256": "1e1ce741dc5ccaefa6228aaf47de2da9b8df1684c576097eb71408c6c37a4d00",
+            "files_sha256": {
+              "1_Pooling/config.json": "4be450dde3b0273bb9787637cfbd28fe04a7ba6ab9d36ac48e92b11e350ffc23",
+              "config.json": "953f9c0d463486b10a6871cc2fd59f223b2c70184f49815e7efbcab5d8908b41",
+              "config_sentence_transformers.json": "061ca9d39661d6c6d6de5ba27f79a1cd5770ea247f8d46412a68a498dc5ac9f3",
+              "model.safetensors": "53aa51172d142c89d9012cce15ae4d6cc0ca6895895114379cacb4fab128d9db",
+              "modules.json": "84e40c8e006c9b1d6c122e02cba9b02458120b5fb0c87b746c41e0207cf642cf",
+              "sentence_bert_config.json": "fc1993fde0a95c24ec6c022539d41cf6e2f7c9721e5415d6fb6897472a9cd4b7",
+              "special_tokens_map.json": "303df45a03609e4ead04bc3dc1536d0ab19b5358db685b6f3da123d05ec200e3",
+              "tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+              "tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+              "vocab.txt": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+            },
+            "manifest_sha256": "0cfc83afb449f81d5535c4f5d76b097ee7074a09fdb02ad94ea5bb3c282e01f6",
+            "device": "cpu",
+            "dtype": "float32",
+            "max_tokens": 256,
+            "trust_remote_code": false,
+            "local_files_only": true,
+            "use_safetensors": true,
+            "cache_max_entries": 0,
+            "cache_max_codepoints": 1048576,
+            "cache_key": "exact_input_text",
+            "normalize_embeddings": true,
+            "versions": {
+              "sentence-transformers": "6.0.1",
+              "transformers": "5.16.1",
+              "tokenizers": "0.23.2",
+              "torch": "2.14.0"
+            }
+          },
+          "scoring_scope": "full_tokenized_inputs"
+        },
+        "coverage": 0.0,
+        "coverage_threshold": 0.1,
+        "chunks": [
+          {
+            "span": [
+              0,
+              98
+            ],
+            "sentence_range": [
+              0,
+              3
+            ],
+            "score": 0.07156460589729417,
+            "matched": false,
+            "tokenization": {
+              "input_tokens": 19,
+              "encoded_tokens": 19,
+              "max_tokens": 256,
+              "truncated": false,
+              "visible_span": [
+                0,
+                98
+              ],
+              "special_tokens_included": true,
+              "offset_unit": "unicode_codepoint",
+              "tokenizer_input_ids_verified": true
+            },
+            "visible_span": [
+              0,
+              98
+            ]
+          },
+          {
+            "span": [
+              62,
+              158
+            ],
+            "sentence_range": [
+              2,
+              5
+            ],
+            "score": 0.07311295688396222,
+            "matched": false,
+            "tokenization": {
+              "input_tokens": 21,
+              "encoded_tokens": 21,
+              "max_tokens": 256,
+              "truncated": false,
+              "visible_span": [
+                0,
+                96
+              ],
+              "special_tokens_included": true,
+              "offset_unit": "unicode_codepoint",
+              "tokenizer_input_ids_verified": true
+            },
+            "visible_span": [
+              62,
+              158
+            ]
+          }
+        ],
+        "matched_visible_spans": [],
+        "target_tokenization": {
+          "input_tokens": 5,
+          "encoded_tokens": 5,
+          "max_tokens": 256,
+          "truncated": false,
+          "visible_span": [
+            0,
+            4
+          ],
+          "special_tokens_included": true,
+          "offset_unit": "unicode_codepoint",
+          "tokenizer_input_ids_verified": true
+        },
+        "reason": "threshold_not_met"
+      }
+    },
+    "metadata": {
+      "method": "nt_style_ordered_cascade_v1",
+      "component_mode": "ordered_staged_per_pair",
+      "assumptions": {
+        "evaluation": "ordered_staged_computation_per_source_target_pair",
+        "tier1": "disabled_condition_passive_input_unchanged_no_canary",
+        "tier2": "exact_lcs_unicode_codepoints_minimum_length_denominator",
+        "tier3": "full_source_and_target_encoded_views_only",
+        "tier4": "target_and_overlapping_source_chunks_only",
+        "short_circuit": "first_observed_threshold_hit_within_one_pair",
+        "sources": "caller_evaluates_each_visible_source_independently_without_global_short_circuit",
+        "budget_failure": "continue_to_later_stage_but_preserve_incomplete_earlier_evidence",
+        "encoder_failure": "stop_further_semantic_computation_and_return_encoder_error",
+        "negative": "requires_all_enabled_stages_scored_without_truncation",
+        "threshold_policy": "fixed_ordinary_thresholds_without_gold_label_selection",
+        "interpretation": "similarity_candidate_not_confirmed_provenance_maliciousness_or_causality",
+        "paper_fidelity": "local_implementation_choices_require_independent_paper_audit"
+      },
+      "thresholds": {
+        "tier2_lcs": 0.15,
+        "tier3_cosine": 0.6,
+        "tier4_cosine": 0.6,
+        "tier4_coverage": 0.1
+      },
+      "canary_enabled": false,
+      "model_inputs_modified": false,
+      "semantic_enabled": true,
+      "semantic": {
+        "method": "nt_style_semantic_v1",
+        "assumptions": {
+          "sentence_boundary_regex": "(?<=[.!?\u3002\uff01\uff1f])\\s+|[\\r\\n]+",
+          "sentence_edge_whitespace": "excluded_from_spans_without_changing_original_text",
+          "chunk_sentences": 3,
+          "chunk_overlap_sentences": 1,
+          "coverage": "union_length_of_threshold_matching_encoded_token_envelopes/source_codepoints",
+          "coverage_denominator": "all_original_source_codepoints_including_whitespace",
+          "offset_unit": "unicode_codepoint_half_open",
+          "threshold_policy": "fixed_ordinary_thresholds_without_gold_label_selection",
+          "evaluation": "score_tiers_3_and_4_independently_not_the_full_ordered_cascade",
+          "cosine_accumulation": "python_math_fsum_float64_over_float32_model_embeddings",
+          "truncation": "score_encoded_view_and_report_incomplete_without_claiming_full_text_coverage",
+          "interpretation": "semantic_similarity_candidate_not_confirmed_provenance_or_maliciousness"
+        },
+        "semantic_threshold": 0.6,
+        "coverage_threshold": 0.1,
+        "limits": {
+          "max_codepoints_per_input": 65536,
+          "max_chunks": 128
+        },
+        "encoder": {
+          "model_id": "sentence-transformers/all-MiniLM-L6-v2",
+          "model_path": "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/.model-cache/all-MiniLM-L6-v2-1110a243",
+          "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+          "revision_verification": "pinned_manifest_verified",
+          "pin_sha256": "1e1ce741dc5ccaefa6228aaf47de2da9b8df1684c576097eb71408c6c37a4d00",
+          "files_sha256": {
+            "1_Pooling/config.json": "4be450dde3b0273bb9787637cfbd28fe04a7ba6ab9d36ac48e92b11e350ffc23",
+            "config.json": "953f9c0d463486b10a6871cc2fd59f223b2c70184f49815e7efbcab5d8908b41",
+            "config_sentence_transformers.json": "061ca9d39661d6c6d6de5ba27f79a1cd5770ea247f8d46412a68a498dc5ac9f3",
+            "model.safetensors": "53aa51172d142c89d9012cce15ae4d6cc0ca6895895114379cacb4fab128d9db",
+            "modules.json": "84e40c8e006c9b1d6c122e02cba9b02458120b5fb0c87b746c41e0207cf642cf",
+            "sentence_bert_config.json": "fc1993fde0a95c24ec6c022539d41cf6e2f7c9721e5415d6fb6897472a9cd4b7",
+            "special_tokens_map.json": "303df45a03609e4ead04bc3dc1536d0ab19b5358db685b6f3da123d05ec200e3",
+            "tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+            "tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+            "vocab.txt": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+          },
+          "manifest_sha256": "0cfc83afb449f81d5535c4f5d76b097ee7074a09fdb02ad94ea5bb3c282e01f6",
+          "device": "cpu",
+          "dtype": "float32",
+          "max_tokens": 256,
+          "trust_remote_code": false,
+          "local_files_only": true,
+          "use_safetensors": true,
+          "cache_max_entries": 0,
+          "cache_max_codepoints": 1048576,
+          "cache_key": "exact_input_text",
+          "normalize_embeddings": true,
+          "versions": {
+            "sentence-transformers": "6.0.1",
+            "transformers": "5.16.1",
+            "tokenizers": "0.23.2",
+            "torch": "2.14.0"
+          }
+        }
+      }
+    },
+    "provenance_verdict": "unreviewed",
+    "maliciousness": "not_assessed",
+    "causal_influence": "not_assessed"
+  },
+  "reference": {
+    "method": "nt_style_semantic_v1",
+    "status": "scored",
+    "matched": false,
+    "complete": true,
+    "truncated": false,
+    "source_length": 158,
+    "target_length": 4,
+    "tier3": {
+      "status": "scored",
+      "score": 0.050745821620201075,
+      "matched": false,
+      "complete": true,
+      "truncated": false,
+      "source_tokenization": {
+        "input_tokens": 32,
+        "encoded_tokens": 32,
+        "max_tokens": 256,
+        "truncated": false,
+        "visible_span": [
+          0,
+          158
+        ],
+        "special_tokens_included": true,
+        "offset_unit": "unicode_codepoint",
+        "tokenizer_input_ids_verified": true
+      },
+      "target_tokenization": {
+        "input_tokens": 5,
+        "encoded_tokens": 5,
+        "max_tokens": 256,
+        "truncated": false,
+        "visible_span": [
+          0,
+          4
+        ],
+        "special_tokens_included": true,
+        "offset_unit": "unicode_codepoint",
+        "tokenizer_input_ids_verified": true
+      },
+      "source_visible_span": [
+        0,
+        158
+      ]
+    },
+    "tier4": {
+      "status": "scored",
+      "score": 0.07311300343018343,
+      "coverage": 0.0,
+      "matched": false,
+      "complete": true,
+      "truncated": false,
+      "chunks": [
+        {
+          "span": [
+            0,
+            98
+          ],
+          "sentence_range": [
+            0,
+            3
+          ],
+          "score": 0.07156460589729417,
+          "matched": false,
+          "tokenization": {
+            "input_tokens": 19,
+            "encoded_tokens": 19,
+            "max_tokens": 256,
+            "truncated": false,
+            "visible_span": [
+              0,
+              98
+            ],
+            "special_tokens_included": true,
+            "offset_unit": "unicode_codepoint",
+            "tokenizer_input_ids_verified": true
+          },
+          "visible_span": [
+            0,
+            98
+          ]
+        },
+        {
+          "span": [
+            62,
+            158
+          ],
+          "sentence_range": [
+            2,
+            5
+          ],
+          "score": 0.07311300343018343,
+          "matched": false,
+          "tokenization": {
+            "input_tokens": 21,
+            "encoded_tokens": 21,
+            "max_tokens": 256,
+            "truncated": false,
+            "visible_span": [
+              0,
+              96
+            ],
+            "special_tokens_included": true,
+            "offset_unit": "unicode_codepoint",
+            "tokenizer_input_ids_verified": true
+          },
+          "visible_span": [
+            62,
+            158
+          ]
+        }
+      ],
+      "matched_visible_spans": [],
+      "target_tokenization": {
+        "input_tokens": 5,
+        "encoded_tokens": 5,
+        "max_tokens": 256,
+        "truncated": false,
+        "visible_span": [
+          0,
+          4
+        ],
+        "special_tokens_included": true,
+        "offset_unit": "unicode_codepoint",
+        "tokenizer_input_ids_verified": true
+      }
+    },
+    "metadata": {
+      "method": "nt_style_semantic_v1",
+      "assumptions": {
+        "sentence_boundary_regex": "(?<=[.!?\u3002\uff01\uff1f])\\s+|[\\r\\n]+",
+        "sentence_edge_whitespace": "excluded_from_spans_without_changing_original_text",
+        "chunk_sentences": 3,
+        "chunk_overlap_sentences": 1,
+        "coverage": "union_length_of_threshold_matching_encoded_token_envelopes/source_codepoints",
+        "coverage_denominator": "all_original_source_codepoints_including_whitespace",
+        "offset_unit": "unicode_codepoint_half_open",
+        "threshold_policy": "fixed_ordinary_thresholds_without_gold_label_selection",
+        "evaluation": "score_tiers_3_and_4_independently_not_the_full_ordered_cascade",
+        "cosine_accumulation": "python_math_fsum_float64_over_float32_model_embeddings",
+        "truncation": "score_encoded_view_and_report_incomplete_without_claiming_full_text_coverage",
+        "interpretation": "semantic_similarity_candidate_not_confirmed_provenance_or_maliciousness"
+      },
+      "semantic_threshold": 0.6,
+      "coverage_threshold": 0.1,
+      "limits": {
+        "max_codepoints_per_input": 65536,
+        "max_chunks": 128
+      },
+      "encoder": {
+        "model_id": "sentence-transformers/all-MiniLM-L6-v2",
+        "model_path": "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/.model-cache/all-MiniLM-L6-v2-1110a243",
+        "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+        "revision_verification": "pinned_manifest_verified",
+        "pin_sha256": "1e1ce741dc5ccaefa6228aaf47de2da9b8df1684c576097eb71408c6c37a4d00",
+        "files_sha256": {
+          "1_Pooling/config.json": "4be450dde3b0273bb9787637cfbd28fe04a7ba6ab9d36ac48e92b11e350ffc23",
+          "config.json": "953f9c0d463486b10a6871cc2fd59f223b2c70184f49815e7efbcab5d8908b41",
+          "config_sentence_transformers.json": "061ca9d39661d6c6d6de5ba27f79a1cd5770ea247f8d46412a68a498dc5ac9f3",
+          "model.safetensors": "53aa51172d142c89d9012cce15ae4d6cc0ca6895895114379cacb4fab128d9db",
+          "modules.json": "84e40c8e006c9b1d6c122e02cba9b02458120b5fb0c87b746c41e0207cf642cf",
+          "sentence_bert_config.json": "fc1993fde0a95c24ec6c022539d41cf6e2f7c9721e5415d6fb6897472a9cd4b7",
+          "special_tokens_map.json": "303df45a03609e4ead04bc3dc1536d0ab19b5358db685b6f3da123d05ec200e3",
+          "tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+          "tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+          "vocab.txt": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+        },
+        "manifest_sha256": "0cfc83afb449f81d5535c4f5d76b097ee7074a09fdb02ad94ea5bb3c282e01f6",
+        "device": "cpu",
+        "dtype": "float32",
+        "max_tokens": 256,
+        "trust_remote_code": false,
+        "local_files_only": true,
+        "use_safetensors": true,
+        "cache_max_entries": 0,
+        "cache_max_codepoints": 1048576,
+        "cache_key": "exact_input_text",
+        "normalize_embeddings": true,
+        "versions": {
+          "sentence-transformers": "6.0.1",
+          "transformers": "5.16.1",
+          "tokenizers": "0.23.2",
+          "torch": "2.14.0"
+        }
+      },
+      "scoring_scope": "full_tokenized_inputs"
+    }
+  }
+}

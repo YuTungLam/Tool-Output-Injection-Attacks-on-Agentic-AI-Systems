@@ -1,0 +1,73 @@
+{
+  "recorded_at": "2026-09-08T03:37:25.897793+00:00",
+  "single_live_trial_executed": 1,
+  "replacement_trials": 0,
+  "sdk_retries": 0,
+  "live_outcome": "retained_BadRequestError; share_file permission read rejected before native proposal; no utility value",
+  "executions": [
+    {
+      "name": "native",
+      "exit_code": 0,
+      "operation": "scripts/validate_lineage_memory.py --output runs/20260908-lineage-memory-control",
+      "logs": {
+        "native.stdout.log": "f3f85f207ca5d0507a27a1f5335958c577e5044fb34d71c9d26d4709ded1856d",
+        "native.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "old_trace_replay",
+      "exit_code": 0,
+      "operation": "reports/20260908-lineage-validation/run_replay.py",
+      "logs": {
+        "replay.stdout.log": "3860f990cdd9e0b93e9aeeda655b124d0443818d120aa458493dfdc3d881af6c",
+        "replay.stderr.log": "57d777a1f6d02f2eb9c871ee88b6c236de083db2dd91f644b55ea94ff4ab59a2"
+      }
+    },
+    {
+      "name": "selected_live_trial",
+      "exit_code": 2,
+      "operation": "dojo-lab run --config configs/groq_lineage.toml --output runs/20260908-lineage-groq-task32",
+      "logs": {
+        "live.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "live.stderr.log": "f96606c2247a8df65b28458f4c437cd70a16d6fb31aac6e524a55e84951f142d"
+      }
+    },
+    {
+      "name": "live_verification",
+      "exit_code": 0,
+      "operation": "scripts/verify_online_run.py --run runs/20260908-lineage-groq-task32",
+      "logs": {
+        "live-verify.stdout.log": "e82ae0adc95679b07b628f9cb5cc8ab8d88b60322b16b3e78b0b381bbb7f37e2",
+        "live-verify.stderr.log": "9be0cdca80ac15519d8f1290a115a02e0ea8e9f493c020cd932332924aff9661"
+      }
+    },
+    {
+      "name": "memory_session1_verification",
+      "exit_code": 0,
+      "operation": "scripts/verify_online_run.py --run runs/20260908-lineage-memory-control/session1-traced",
+      "logs": {
+        "memory-session1-verify.stdout.log": "1cdbeea2dcf9c79b8f14c62d7bac435ad45a44f97578840b10e10a41282bc22d",
+        "memory-session1-verify.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "memory_session2_verification",
+      "exit_code": 0,
+      "operation": "scripts/verify_online_run.py --run runs/20260908-lineage-memory-control/session2-traced",
+      "logs": {
+        "memory-session2-verify.stdout.log": "7d92fc2259c23f2dcc2777e1d8c51bce8bc8e8cecf113f771d173cf476a235d2",
+        "memory-session2-verify.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "build",
+      "exit_code": 0,
+      "operation": "UV_CACHE_DIR=.uv-cache .bootstrap/bin/uv build --offline",
+      "logs": {
+        "build.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "build.stderr.log": "f9d9372fb57bb19c83aae118a6ecda98988192ea620fc5f465fd1ecfd8cc28fe"
+      }
+    }
+  ],
+  "scope": "Local tool-run completion records and artifact hashes; failing task outcome is separate from observer acceptance"
+}

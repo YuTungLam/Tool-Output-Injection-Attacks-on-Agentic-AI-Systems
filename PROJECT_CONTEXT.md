@@ -415,8 +415,8 @@ do not travel with a clone.
 ## Moving between devices
 
 Git syncs tracked code, configurations, and these context files on the selected
-branch. It ignores `.env`, lab `runs/`, `reports/`, `.venv/`, `.model-cache/`, and
-`vendor/`. Root `/docs/` and `/CODEX_HANDOFF.md` are also ignored, which is why
+branch. As requested on 2026-09-16, lab `reports/` is tracked. It still ignores
+`.env`, lab `runs/`, `.venv/`, `.model-cache/`, and `vendor/`. Root `/docs/` and `/CODEX_HANDOFF.md` are also ignored, which is why
 the durable context lives in these root files instead.
 
 For old experiments, transfer selected complete batch directories and their
@@ -431,3 +431,25 @@ At the end of a work session, update this status and the research plan, commit
 the intended tracked changes, and record whether they were pushed. On the next
 device, pull the same branch and let AGENTS.md route Codex to these notes. The
 new device still needs its own Git/Hugging Face authentication and environment.
+
+## Report synchronization — 2026-09-16, Mac
+
+The researcher requested that `codebase/agentdojo-lab/reports/` travel with Git.
+Removed its blanket ignore rule and inventoried 990 existing files (70,984,402
+bytes; largest file 3,619,000 bytes), with no symlinks. A local text scan found no
+common provider-key or private-key patterns; credential-field candidates were
+report status values. Existing report bytes are preserved. This archive addition
+does not rerun or independently revalidate the historical experiments.
+
+The reports are being committed for synchronization on `codex/agentdojo-lab`.
+Raw `runs/` remain ignored: report links into those directories or absolute local
+paths still require the corresponding evidence on the destination device. The
+NeSI checkpoints above remain dated historical records, not a fresh job check.
+Next action: pull this branch on the other device to receive the reports; transfer
+any required raw runs separately. Verify the push result in the session handoff.
+
+Verification: all 990 staged reports match local bytes exactly after applying
+`reports/** -text` and `git add --renormalize`. Scoped `git diff --cached --check`
+passes for the edited guidance and configuration; the full archive check flags
+pre-existing whitespace in generated artifacts, preserved intentionally. No
+model runs or application tests were needed for this archive-only change.

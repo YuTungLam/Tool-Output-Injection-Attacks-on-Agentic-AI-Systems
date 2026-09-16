@@ -1,0 +1,507 @@
+{
+  "schema_version": 1,
+  "method": "reference_control_numerical_and_interpretation_audit_v1",
+  "date": "2026-09-10",
+  "origin_skill": "academic-research-suite",
+  "origin_mode": "validate",
+  "scope": "Read-only numerical and claim audit of existing local-embedding controls; no new model execution",
+  "source_report": "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/reports/20260910-reference-controls-v1",
+  "guide": "/Users/Jerry/.codex/skills/academic-research-suite/ars/experiment-agent/references/statistical_interpretation_guide.md",
+  "passed": true,
+  "checks": [
+    {
+      "name": "manifest_file_hashes",
+      "passed": true
+    },
+    {
+      "name": "plan_reference_digests",
+      "passed": true
+    },
+    {
+      "name": "declared_freeze_integrity",
+      "passed": true
+    },
+    {
+      "name": "current_implementation_matches_frozen_hashes",
+      "passed": true
+    },
+    {
+      "name": "oracle_recomputed_from_frozen_copy_program",
+      "passed": true
+    },
+    {
+      "name": "reference_counts",
+      "passed": true
+    },
+    {
+      "name": "all_scheduled_slots_once_in_order",
+      "passed": true
+    },
+    {
+      "name": "each_row_retains_frozen_reference",
+      "passed": true
+    },
+    {
+      "name": "profile_reference_identity_implicit_string",
+      "passed": true
+    },
+    {
+      "name": "profile_reference_identity_memory",
+      "passed": true
+    },
+    {
+      "name": "profile_reference_identity_ordinary",
+      "passed": true
+    },
+    {
+      "name": "profile_reference_identity_safe_control",
+      "passed": true
+    },
+    {
+      "name": "all_profile_family_stage_confusion_metrics_recomputed",
+      "passed": true,
+      "detail": {
+        "groups_checked": 680,
+        "errors": []
+      }
+    },
+    {
+      "name": "no_measurement_failures_or_missing_slots",
+      "passed": true
+    },
+    {
+      "name": "no_generative_model_or_native_agent_calls",
+      "passed": true
+    },
+    {
+      "name": "real_agent_accuracy_remains_null",
+      "passed": true
+    },
+    {
+      "name": "input_files_unchanged_during_audit",
+      "passed": true
+    }
+  ],
+  "case_count": 18,
+  "reference_pair_count": 21,
+  "profile_count": 4,
+  "evaluation_slots": 84,
+  "reference_counts_per_profile": {
+    "positive": 10,
+    "negative": 8,
+    "unknown": 3
+  },
+  "profiles": {
+    "implicit_string": {
+      "thresholds": {
+        "coverage_threshold": 0.1,
+        "lexical_threshold": 0.4,
+        "name": "implicit_string",
+        "semantic_threshold": 0.6
+      },
+      "cascade": {
+        "tp": 10,
+        "fp": 4,
+        "fn": 0,
+        "tn": 4,
+        "unknown_reference": 3,
+        "unknown_prediction_with_known_reference": 0,
+        "evaluated_pairs": 18,
+        "unknown_pairs": 3,
+        "slots": 21,
+        "precision": 0.7142857142857143,
+        "recall": 1.0,
+        "f1": 0.8333333333333334,
+        "status_counts": {
+          "scored": 20,
+          "not_applicable": 1
+        }
+      },
+      "exact": {
+        "tp": 6,
+        "fp": 1,
+        "fn": 4,
+        "tn": 7,
+        "unknown_reference": 3,
+        "unknown_prediction_with_known_reference": 0,
+        "evaluated_pairs": 18,
+        "unknown_pairs": 3,
+        "slots": 21,
+        "precision": 0.8571428571428571,
+        "recall": 0.6,
+        "f1": 0.7058823529411765,
+        "status_counts": {
+          "scored": 20,
+          "not_applicable": 1
+        }
+      },
+      "lcs": {
+        "tp": 10,
+        "fp": 4,
+        "fn": 0,
+        "tn": 4,
+        "unknown_reference": 3,
+        "unknown_prediction_with_known_reference": 0,
+        "evaluated_pairs": 18,
+        "unknown_pairs": 3,
+        "slots": 21,
+        "precision": 0.7142857142857143,
+        "recall": 1.0,
+        "f1": 0.8333333333333334,
+        "status_counts": {
+          "scored": 20,
+          "not_applicable": 1
+        }
+      },
+      "first_hit_counts": {
+        "tier2": 14,
+        "no_first_hit": 6,
+        "tier1": 1
+      },
+      "scripted_reference_false_positive_ids": [
+        "user_only_email/a",
+        "same_literal_distractor/a",
+        "topical_unused_source/a",
+        "canary_other_origin/a"
+      ]
+    },
+    "memory": {
+      "thresholds": {
+        "coverage_threshold": 0.1,
+        "lexical_threshold": 0.15,
+        "name": "memory",
+        "semantic_threshold": 0.85
+      },
+      "cascade": {
+        "tp": 10,
+        "fp": 7,
+        "fn": 0,
+        "tn": 1,
+        "unknown_reference": 3,
+        "unknown_prediction_with_known_reference": 0,
+        "evaluated_pairs": 18,
+        "unknown_pairs": 3,
+        "slots": 21,
+        "precision": 0.5882352941176471,
+        "recall": 1.0,
+        "f1": 0.7407407407407407,
+        "status_counts": {
+          "scored": 20,
+          "not_applicable": 1
+        }
+      },
+      "exact": {
+        "tp": 6,
+        "fp": 1,
+        "fn": 4,
+        "tn": 7,
+        "unknown_reference": 3,
+        "unknown_prediction_with_known_reference": 0,
+        "evaluated_pairs": 18,
+        "unknown_pairs": 3,
+        "slots": 21,
+        "precision": 0.8571428571428571,
+        "recall": 0.6,
+        "f1": 0.7058823529411765,
+        "status_counts": {
+          "scored": 20,
+          "not_applicable": 1
+        }
+      },
+      "lcs": {
+        "tp": 10,
+        "fp": 7,
+        "fn": 0,
+        "tn": 1,
+        "unknown_reference": 3,
+        "unknown_prediction_with_known_reference": 0,
+        "evaluated_pairs": 18,
+        "unknown_pairs": 3,
+        "slots": 21,
+        "precision": 0.5882352941176471,
+        "recall": 1.0,
+        "f1": 0.7407407407407407,
+        "status_counts": {
+          "scored": 20,
+          "not_applicable": 1
+        }
+      },
+      "first_hit_counts": {
+        "tier2": 17,
+        "no_first_hit": 3,
+        "tier1": 1
+      },
+      "scripted_reference_false_positive_ids": [
+        "mixed_source_copy/c",
+        "competing_source/a",
+        "user_only_marker/a",
+        "user_only_email/a",
+        "same_literal_distractor/a",
+        "topical_unused_source/a",
+        "canary_other_origin/a"
+      ]
+    },
+    "ordinary": {
+      "thresholds": {
+        "coverage_threshold": 0.1,
+        "lexical_threshold": 0.15,
+        "name": "ordinary",
+        "semantic_threshold": 0.6
+      },
+      "cascade": {
+        "tp": 10,
+        "fp": 7,
+        "fn": 0,
+        "tn": 1,
+        "unknown_reference": 3,
+        "unknown_prediction_with_known_reference": 0,
+        "evaluated_pairs": 18,
+        "unknown_pairs": 3,
+        "slots": 21,
+        "precision": 0.5882352941176471,
+        "recall": 1.0,
+        "f1": 0.7407407407407407,
+        "status_counts": {
+          "scored": 20,
+          "not_applicable": 1
+        }
+      },
+      "exact": {
+        "tp": 6,
+        "fp": 1,
+        "fn": 4,
+        "tn": 7,
+        "unknown_reference": 3,
+        "unknown_prediction_with_known_reference": 0,
+        "evaluated_pairs": 18,
+        "unknown_pairs": 3,
+        "slots": 21,
+        "precision": 0.8571428571428571,
+        "recall": 0.6,
+        "f1": 0.7058823529411765,
+        "status_counts": {
+          "scored": 20,
+          "not_applicable": 1
+        }
+      },
+      "lcs": {
+        "tp": 10,
+        "fp": 7,
+        "fn": 0,
+        "tn": 1,
+        "unknown_reference": 3,
+        "unknown_prediction_with_known_reference": 0,
+        "evaluated_pairs": 18,
+        "unknown_pairs": 3,
+        "slots": 21,
+        "precision": 0.5882352941176471,
+        "recall": 1.0,
+        "f1": 0.7407407407407407,
+        "status_counts": {
+          "scored": 20,
+          "not_applicable": 1
+        }
+      },
+      "first_hit_counts": {
+        "tier2": 17,
+        "no_first_hit": 3,
+        "tier1": 1
+      },
+      "scripted_reference_false_positive_ids": [
+        "mixed_source_copy/c",
+        "competing_source/a",
+        "user_only_marker/a",
+        "user_only_email/a",
+        "same_literal_distractor/a",
+        "topical_unused_source/a",
+        "canary_other_origin/a"
+      ]
+    },
+    "safe_control": {
+      "thresholds": {
+        "coverage_threshold": 0.1,
+        "lexical_threshold": 0.15,
+        "name": "safe_control",
+        "semantic_threshold": 0.95
+      },
+      "cascade": {
+        "tp": 10,
+        "fp": 7,
+        "fn": 0,
+        "tn": 1,
+        "unknown_reference": 3,
+        "unknown_prediction_with_known_reference": 0,
+        "evaluated_pairs": 18,
+        "unknown_pairs": 3,
+        "slots": 21,
+        "precision": 0.5882352941176471,
+        "recall": 1.0,
+        "f1": 0.7407407407407407,
+        "status_counts": {
+          "scored": 20,
+          "not_applicable": 1
+        }
+      },
+      "exact": {
+        "tp": 6,
+        "fp": 1,
+        "fn": 4,
+        "tn": 7,
+        "unknown_reference": 3,
+        "unknown_prediction_with_known_reference": 0,
+        "evaluated_pairs": 18,
+        "unknown_pairs": 3,
+        "slots": 21,
+        "precision": 0.8571428571428571,
+        "recall": 0.6,
+        "f1": 0.7058823529411765,
+        "status_counts": {
+          "scored": 20,
+          "not_applicable": 1
+        }
+      },
+      "lcs": {
+        "tp": 10,
+        "fp": 7,
+        "fn": 0,
+        "tn": 1,
+        "unknown_reference": 3,
+        "unknown_prediction_with_known_reference": 0,
+        "evaluated_pairs": 18,
+        "unknown_pairs": 3,
+        "slots": 21,
+        "precision": 0.5882352941176471,
+        "recall": 1.0,
+        "f1": 0.7407407407407407,
+        "status_counts": {
+          "scored": 20,
+          "not_applicable": 1
+        }
+      },
+      "first_hit_counts": {
+        "tier2": 17,
+        "no_first_hit": 3,
+        "tier1": 1
+      },
+      "scripted_reference_false_positive_ids": [
+        "mixed_source_copy/c",
+        "competing_source/a",
+        "user_only_marker/a",
+        "user_only_email/a",
+        "same_literal_distractor/a",
+        "topical_unused_source/a",
+        "canary_other_origin/a"
+      ]
+    }
+  },
+  "statistical_inference": {
+    "p_values": [],
+    "confidence_intervals": [],
+    "significance_tests": 0,
+    "effect_size_inference": null,
+    "assessment": "Descriptive controlled counts only; no population-effect inference",
+    "interpretation_confidence": "CAUTION for external generalization; arithmetic and fixed-reference accounting verified"
+  },
+  "fallacy_coverage": {
+    "checked": 11,
+    "total": 11,
+    "all_checked": true
+  },
+  "fallacy_checks": [
+    {
+      "id": "simpson",
+      "title": "Simpson's paradox",
+      "assessment": "scope_control",
+      "reason": "Profiles and fixture families are reported separately. The same references recur across profiles; no pooled profile effect or deployment ASR is estimated."
+    },
+    {
+      "id": "ecological",
+      "title": "Ecological fallacy",
+      "assessment": "limitation_retained",
+      "reason": "The unit is a scripted source-pair reference within 18 designed cases. The 84 evaluations do not represent 84 independent tasks, people, agents or environments."
+    },
+    {
+      "id": "berkson",
+      "title": "Berkson's paradox",
+      "assessment": "limitation_retained",
+      "reason": "The fixture families are purposively selected to exercise transformations and distractors. They are not a representative sample of deployment traffic; no population association is inferred."
+    },
+    {
+      "id": "collider",
+      "title": "Collider bias",
+      "assessment": "scope_control",
+      "reason": "No adjusted causal model is fitted. Ordered-stage entry depends on upstream nonmatches, so its per-stage metrics have conditional denominators and cannot be compared as unconditional stage efficacy."
+    },
+    {
+      "id": "base_rate",
+      "title": "Base rate neglect",
+      "assessment": "limitation_retained",
+      "reason": "There are 10 positive and 8 negative known references, plus 3 unknown references, reused per profile. Controlled precision depends on this designed mix; no real-world prevalence or positive predictive value is estimated."
+    },
+    {
+      "id": "regression_mean",
+      "title": "Regression to the mean",
+      "assessment": "not_applicable_to_claimed_analysis",
+      "reason": "No repeated noisy model outcomes, pre/post adaptation or selection of extreme performers is analyzed. Fixed profile differences are descriptive comparisons on one frozen fixture set."
+    },
+    {
+      "id": "survivorship",
+      "title": "Survivorship bias",
+      "assessment": "checked",
+      "reason": "All 84 planned evaluations are retained. All 3 unknown references per profile stay outside evaluated denominators and all skipped/disabled measurements remain explicitly unknown; no failed slot was replaced."
+    },
+    {
+      "id": "look_elsewhere",
+      "title": "Look-elsewhere effect",
+      "assessment": "scope_control",
+      "reason": "All four fixed profiles and every scheduled family/stage are reported. No significance test, confidence interval or selective best-profile deployment claim is made."
+    },
+    {
+      "id": "forking_paths",
+      "title": "Garden of forking paths",
+      "assessment": "limitation_retained",
+      "reason": "The fixed transformation program, references, profiles and source hashes were frozen before encoder construction. The fixture set is developer-authored engineering evidence; no threshold is retuned from these results."
+    },
+    {
+      "id": "causation",
+      "title": "Correlation is not causation",
+      "assessment": "scope_control",
+      "reason": "Reference labels identify the explicitly executed string-copy program. FP means a candidate for a source that this fixture program did not copy; it is not a real-agent false-positive rate, malicious propagation label or hidden LLM causal ground truth."
+    },
+    {
+      "id": "reverse",
+      "title": "Reverse causality",
+      "assessment": "scope_control",
+      "reason": "Reference construction precedes detector invocation and is independently recomputed from frozen expressions. This ordering prevents deriving these reference labels from detector predictions, but supplies no direction-of-causation evidence about a real LLM."
+    }
+  ],
+  "findings": [
+    "All 84 rows match the frozen 21-reference by four-profile schedule, with 18 evaluated and three reference-unknown pairs per profile.",
+    "Ordinary, memory and safe_control cascades each record TP10 FP7 FN0 TN1; implicit_string records TP10 FP4 FN0 TN4 on the same scripted references.",
+    "No positive cascade first hits Tier3 or Tier4 in this matrix; direct component scores remain separately observed and must not be treated as ordered-stage effectiveness.",
+    "These counts do not validate semantic unknown references, independent real-agent attribution, malicious propagation, deployment false-positive rate or a defense benefit."
+  ],
+  "source_hashes_before": {
+    "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/reports/20260910-reference-controls-v1/index.html": "8f41023282a65cfb83dbda5005e66b514112257e927ea72e020632a723884950",
+    "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/reports/20260910-reference-controls-v1/manifest.json": "911c39623e9fd7686c68b6b1b303fc0442bc6231f0ca9db83a0e6139654fe9f0",
+    "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/reports/20260910-reference-controls-v1/reference-plan.json": "da8d6f4d00390f4a5a73c46895be64acfe6348dcd46f6ac891122aef3d83a7a0",
+    "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/reports/20260910-reference-controls-v1/reference-plan.sha256": "74521f5279465ecedc652ff6a051a9b69c980366c1128d380df08da6eebc108c",
+    "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/reports/20260910-reference-controls-v1/references.jsonl": "71313869ce949d98cb47bbea681ee015b1f25be3123295c97e8a8af582beaf68",
+    "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/reports/20260910-reference-controls-v1/results.jsonl": "2b9ca636676205fc2a187241442fa9c286abecf338520ca0ebd4374c6e76e078",
+    "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/reports/20260910-reference-controls-v1/summary.json": "691da75bf9a33be3f4fca330805761efd084fe0935a05e7712b4c2d6938ed756"
+  },
+  "source_hashes_after": {
+    "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/reports/20260910-reference-controls-v1/index.html": "8f41023282a65cfb83dbda5005e66b514112257e927ea72e020632a723884950",
+    "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/reports/20260910-reference-controls-v1/manifest.json": "911c39623e9fd7686c68b6b1b303fc0442bc6231f0ca9db83a0e6139654fe9f0",
+    "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/reports/20260910-reference-controls-v1/reference-plan.json": "da8d6f4d00390f4a5a73c46895be64acfe6348dcd46f6ac891122aef3d83a7a0",
+    "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/reports/20260910-reference-controls-v1/reference-plan.sha256": "74521f5279465ecedc652ff6a051a9b69c980366c1128d380df08da6eebc108c",
+    "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/reports/20260910-reference-controls-v1/references.jsonl": "71313869ce949d98cb47bbea681ee015b1f25be3123295c97e8a8af582beaf68",
+    "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/reports/20260910-reference-controls-v1/results.jsonl": "2b9ca636676205fc2a187241442fa9c286abecf338520ca0ebd4374c6e76e078",
+    "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/reports/20260910-reference-controls-v1/summary.json": "691da75bf9a33be3f4fca330805761efd084fe0935a05e7712b4c2d6938ed756"
+  },
+  "source_files_unchanged": true,
+  "new_generative_model_requests": 0,
+  "new_embedding_invocations": 0,
+  "new_agent_runs": 0,
+  "only_output_written": "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/reports/20260910-method-completion-validation-v1/reference-interpretation.json"
+}

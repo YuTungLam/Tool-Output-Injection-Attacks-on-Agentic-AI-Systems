@@ -478,3 +478,15 @@ corrected canonical C v2 has 206 sources, zero requests and plan SHA-256
 job `9064142` is pending. No live case result exists yet.
 See RESEARCH_PROGRESS.md for receipts and limits. Update checkboxes only with
 concrete evidence and actual verification results.
+
+## Report archive synchronization — 2026-09-16, Mac
+
+At the researcher's request, the lab `reports/` directory is now eligible for Git
+tracking, including the 990 files currently present on this Mac. The archive is
+being committed and pushed on `codex/agentdojo-lab`; this does not complete any
+experimental checklist item or imply that NeSI-only reports are present here.
+Inventory, file-size checks and a credential-pattern scan were run locally.
+Report bytes are preserved; raw `runs/`, credentials and model caches stay
+ignored. See [the synchronization note](PROJECT_CONTEXT.md#report-synchronization--2026-09-16-mac)
+for counts and cross-device limits. Next action is to pull the branch on the
+destination device and supply any separately needed raw-run dependencies.

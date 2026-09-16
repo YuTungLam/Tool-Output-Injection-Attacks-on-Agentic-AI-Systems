@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "passed": true,
+  "checks": {
+    "frozen_source_files_and_set_unchanged": true,
+    "all_719_original_files_unchanged": true,
+    "native_controls": true,
+    "native_14_replays": true,
+    "old_10_full_calls_and_graphs": true,
+    "passive_live_replay": true,
+    "canary_live_replay": true,
+    "english_html_and_jsonl": true,
+    "two_trials_no_replacement": true,
+    "real_marker_assigned_applied_exposed": true,
+    "live_report_script_syntax": true
+  },
+  "tests": {
+    "path": "reports/20260908-canary-validation/pytest-before.stdout.log",
+    "sha256": "70f1d93824ea83c0de2b479c1c54e1ee7c7613b18b0e70f0ed3d73050264d3b3",
+    "passed": 760,
+    "seconds": 12.24,
+    "summary": "760 passed in 12.24s"
+  },
+  "native_script_validation": "native-script-validation.json",
+  "live_script_validation": [
+    {
+      "arm": "passive",
+      "scripts": 1,
+      "passed": true
+    },
+    {
+      "arm": "canary",
+      "scripts": 1,
+      "passed": true
+    }
+  ],
+  "real_sink_survival": {
+    "status": "unavailable",
+    "reason": "Both preselected trials stopped at provider validation before a native sink proposal",
+    "eligible_sink_pairs": 0,
+    "survival_rate": null,
+    "causal_effect": null
+  },
+  "acceptance": "Gate 6 bounded engineering checks pass; real insertion/exposure observed, sink carryover checked in scripted native controls only. Full real-model task completion, maliciousness, accuracy, and causality remain unvalidated."
+}

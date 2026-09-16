@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NeuroTaint method completion</title>
+<style>
+body{font:16px system-ui;line-height:1.55;max-width:960px;margin:32px auto;padding:0 20px;background:#fafafa;color:#202124}
+h1{font-size:1.7rem;line-height:1.25}h2{font-size:1.2rem}progress{width:100%;height:18px;accent-color:#2767b2}
+details{margin:14px 0}summary{cursor:pointer;padding:6px 0}a{color:#205da3}li{overflow-wrap:anywhere}
+table{border-collapse:collapse;width:100%;font-size:14px}td,th{text-align:left;padding:7px;border-bottom:1px solid #bbb}
+.scroll{overflow:auto}.muted{color:#54585e}pre{white-space:pre-wrap;overflow-wrap:anywhere}
+@media(prefers-color-scheme:dark){body{background:#17191c;color:#eceef2}.muted{color:#b5bdc8}a{color:#a0c7ff}}
+</style>
+<h1>NeuroTaint method completion</h1>
+<p><strong>5 / 5 scoped deliverables accepted</strong> · September 10, 2026</p>
+<progress value="5" max="5" aria-label="Accepted scoped deliverables"></progress>
+<p class="muted">The bar counts this phase's deliverables. It does not measure time remaining or full-paper reproduction.</p>
+<h2>What changed</h2>
+<ul><li>Four fixed threshold profiles, with explicit runtime selection.</li>
+<li>A separate passive / argument-free causal protocol and bounded joint-source probes.</li>
+<li>84 / 84 local reference evaluations with actual pinned MiniLM.</li>
+<li>4 / 4 real Groq sessions; 12 requests and 4,830 reported tokens.</li></ul>
+<h2>Two results to inspect</h2>
+<p><strong>Cross-session restoration worked in the copy pilot.</strong> The original reference reached the new file in Session B,
+and its matched lineage returned to Session A. The neutralized branch had no reference marker. <a href="../../runs/20260910-memory-pair-live-v1/index.html">Open four session timelines</a></p>
+<p><strong>LCS also selected unused sources in the constructed controls.</strong> Ordinary cascade: 10 positive relations detected;
+7 of 8 negative relations selected. These are known program-origin controls, not real-agent false-positive estimates. <a href="../20260910-reference-controls-v1/index.html">Inspect reference cases and evidence</a></p>
+<details><summary>Implementation evidence</summary><details><summary>1. Threshold profiles — accepted</summary><ul><li><a href="../../src/agentdojo_lab/profiles.py">profiles.py</a></li><li><a href="../../tests/test_profiles.py">test_profiles.py</a></li><li><a href="../../tests/test_profile_plumbing.py">test_profile_plumbing.py</a></li><li><a href="../../tests/test_profile_protocol_guards.py">test_profile_protocol_guards.py</a></li></ul></details><details><summary>2. Passive and argument-free causal applicability — accepted</summary><ul><li><a href="../../src/agentdojo_lab/causal_v2.py">causal_v2.py</a></li><li><a href="../../tests/test_causal_v2.py">test_causal_v2.py</a></li><li><a href="../20260910-causal-v2-existing-prefix-v1/summary.json">summary.json</a></li></ul></details><details><summary>3. Automatic reference evaluation — accepted</summary><ul><li><a href="../20260910-reference-controls-v1/index.html">index.html</a></li><li><a href="../20260910-method-completion-validation-v1/reference-interpretation.json">reference-interpretation.json</a></li><li><a href="../../tests/test_reference_controls.py">test_reference_controls.py</a></li></ul></details><details><summary>4. Joint-source probe implementation — accepted</summary><ul><li><a href="../../src/agentdojo_lab/causal_v2.py">causal_v2.py</a></li><li><a href="../../src/agentdojo_lab/causal_v2_audit.py">causal_v2_audit.py</a></li><li><a href="../../tests/test_causal_v2.py">test_causal_v2.py</a></li><li><a href="../../tests/test_causal_v2_audit.py">test_causal_v2_audit.py</a></li><li><a href="../20260910-causal-v2-auditor-plan-v1/index.html">index.html</a></li></ul></details><details><summary>5. Real cross-session paired pilot — accepted</summary><ul><li><a href="../../runs/20260910-memory-pair-live-v1/index.html">index.html</a></li><li><a href="../../runs/20260910-memory-pair-live-v1/summary.json">summary.json</a></li><li><a href="../../tests/test_memory_pair.py">test_memory_pair.py</a></li><li><a href="../20260910-method-completion-validation-v1/memory-interpretation.json">memory-interpretation.json</a></li></ul></details></details>
+<details><summary>Controlled reference comparison</summary><p>21 source-pair references per profile, from 18 fixed cases.
+Three references remain unknown. Repeated profiles are not independent cases.</p><div class="scroll"><table>
+<tr><th>Profile</th><th>Method</th><th>TP</th><th>FP</th><th>FN</th><th>TN</th><th>Unknown</th></tr><tr><td>implicit_string</td><td>exact</td><td>6</td><td>1</td><td>4</td><td>7</td><td>3</td></tr><tr><td>implicit_string</td><td>lcs</td><td>10</td><td>4</td><td>0</td><td>4</td><td>3</td></tr><tr><td>implicit_string</td><td>cascade</td><td>10</td><td>4</td><td>0</td><td>4</td><td>3</td></tr><tr><td>implicit_string</td><td>direct_tier3</td><td>9</td><td>1</td><td>1</td><td>7</td><td>3</td></tr><tr><td>implicit_string</td><td>direct_tier4</td><td>9</td><td>1</td><td>1</td><td>7</td><td>3</td></tr><tr><td>memory</td><td>exact</td><td>6</td><td>1</td><td>4</td><td>7</td><td>3</td></tr><tr><td>memory</td><td>lcs</td><td>10</td><td>7</td><td>0</td><td>1</td><td>3</td></tr><tr><td>memory</td><td>cascade</td><td>10</td><td>7</td><td>0</td><td>1</td><td>3</td></tr><tr><td>memory</td><td>direct_tier3</td><td>4</td><td>0</td><td>6</td><td>8</td><td>3</td></tr><tr><td>memory</td><td>direct_tier4</td><td>4</td><td>0</td><td>6</td><td>8</td><td>3</td></tr><tr><td>ordinary</td><td>exact</td><td>6</td><td>1</td><td>4</td><td>7</td><td>3</td></tr><tr><td>ordinary</td><td>lcs</td><td>10</td><td>7</td><td>0</td><td>1</td><td>3</td></tr><tr><td>ordinary</td><td>cascade</td><td>10</td><td>7</td><td>0</td><td>1</td><td>3</td></tr><tr><td>ordinary</td><td>direct_tier3</td><td>9</td><td>1</td><td>1</td><td>7</td><td>3</td></tr><tr><td>ordinary</td><td>direct_tier4</td><td>9</td><td>1</td><td>1</td><td>7</td><td>3</td></tr><tr><td>safe_control</td><td>exact</td><td>6</td><td>1</td><td>4</td><td>7</td><td>3</td></tr><tr><td>safe_control</td><td>lcs</td><td>10</td><td>7</td><td>0</td><td>1</td><td>3</td></tr><tr><td>safe_control</td><td>cascade</td><td>10</td><td>7</td><td>0</td><td>1</td><td>3</td></tr><tr><td>safe_control</td><td>direct_tier3</td><td>3</td><td>0</td><td>7</td><td>8</td><td>3</td></tr><tr><td>safe_control</td><td>direct_tier4</td><td>3</td><td>0</td><td>7</td><td>8</td><td>3</td></tr></table></div></details>
+<details><summary>What is still unvalidated</summary><ul>
+<li>Independent real-agent semantic attribution and malicious-propagation accuracy.</li>
+<li>Real-model joint causal accuracy; self-reported judgments are not causal ground truth.</li>
+<li>General memory backends, unseen tools/attacks and original benchmark result tables.</li>
+</ul><p>The September 9 closeout and its independent-evaluation gate remain unchanged.</p></details>
+<details><summary>Validation receipt</summary><pre>{
+  &quot;schema_version&quot;: 1,
+  &quot;phase&quot;: &quot;method-completion-v1&quot;,
+  &quot;created_at_utc&quot;: &quot;2026-09-09T21:53:50.078609+00:00&quot;,
+  &quot;status&quot;: &quot;passed_with_evidence_limits&quot;,
+  &quot;final_pytest&quot;: {
+    &quot;tests&quot;: 1579,
+    &quot;failures&quot;: 0,
+    &quot;errors&quot;: 0,
+    &quot;skipped&quot;: 0,
+    &quot;receipt&quot;: &quot;pytest-final.xml&quot;,
+    &quot;sha256&quot;: &quot;2af541a2c1afe9d8cfe8be706870cbab95dcb00738a21ce8d7248f898cd709a3&quot;,
+    &quot;warning&quot;: &quot;One existing Pydantic serializer warning; no failed tests.&quot;
+  },
+  &quot;ruff&quot;: {
+    &quot;exit_code&quot;: 0,
+    &quot;output&quot;: &quot;All checks passed!&quot;
+  },
+  &quot;retained_initial_test_run&quot;: {
+    &quot;receipt&quot;: &quot;pytest.xml&quot;,
+    &quot;accepted_as_final&quot;: false,
+    &quot;reason&quot;: &quot;Two source-integrity guards detected concurrent implementation edits during an earlier test run. The final suite ran after all implementation writers stopped.&quot;
+  },
+  &quot;integrity&quot;: {
+    &quot;protected_historical_files&quot;: {
+      &quot;checked&quot;: 1932,
+      &quot;passed&quot;: true
+    },
+    &quot;memory_artifacts&quot;: {
+      &quot;checked&quot;: 75,
+      &quot;passed&quot;: true
+    },
+    &quot;memory_implementation&quot;: {
+      &quot;checked&quot;: 48,
+      &quot;passed&quot;: true
+    },
+    &quot;reference_artifacts&quot;: {
+      &quot;checked&quot;: 6,
+      &quot;passed&quot;: true
+    },
+    &quot;reference_implementation&quot;: {
+      &quot;checked&quot;: 7,
+      &quot;passed&quot;: true
+    }
+  },
+  &quot;reference_audit&quot;: {
+    &quot;checks&quot;: 17,
+    &quot;passed&quot;: true,
+    &quot;metric_groups_recomputed&quot;: 680,
+    &quot;interpretation_categories_reviewed&quot;: 11,
+    &quot;receipt&quot;: &quot;reference-interpretation.json&quot;
+  },
+  &quot;memory_audit&quot;: {
+    &quot;checks&quot;: 84,
+    &quot;passed&quot;: 84,
+    &quot;receipt&quot;: &quot;memory-interpretation.json&quot;
+  },
+  &quot;language_before_overview&quot;: {
+    &quot;html_files&quot;: 168,
+    &quot;jsonl_files&quot;: 273,
+    &quot;passed&quot;: true
+  },
+  &quot;final_language_and_static_html_receipts&quot;: [
+    &quot;english-final.json&quot;,
+    &quot;html-artifacts.json&quot;
+  ],
+  &quot;real_model_usage&quot;: {
+    &quot;provider&quot;: &quot;Groq&quot;,
+    &quot;model&quot;: &quot;openai/gpt-oss-120b&quot;,
+    &quot;sessions&quot;: 4,
+    &quot;requests&quot;: 12,
+    &quot;reported_tokens&quot;: 4830,
+    &quot;retries&quot;: 0,
+    &quot;replacement_live_slots&quot;: 0
+  },
+  &quot;joint_auditor_validation&quot;: {
+    &quot;mock_and_native_transport_tests&quot;: 28,
+    &quot;real_auditor_requests&quot;: 0,
+    &quot;real_causal_accuracy&quot;: null
+  },
+  &quot;browser_validation&quot;: {
+    &quot;status&quot;: &quot;blocked_by_browser_url_policy&quot;,
+    &quot;requested_action&quot;: &quot;Open generated local HTML in the in-app browser&quot;,
+    &quot;performed&quot;: false,
+    &quot;scope&quot;: &quot;No browser visual or interaction acceptance is claimed. Static artifact validation is separate.&quot;
+  },
+  &quot;limits&quot;: [
+    &quot;Five accepted deliverables measure only this scoped phase, not full-paper reproduction.&quot;,
+    &quot;Constructed program-origin references are not independent human labels or hidden model provenance.&quot;,
+    &quot;One benign original/neutralized pair does not measure malicious propagation or population causal accuracy.&quot;,
+    &quot;The historical independent-evaluation gate remains unchanged.&quot;
+  ]
+}</pre></details>
+</html>

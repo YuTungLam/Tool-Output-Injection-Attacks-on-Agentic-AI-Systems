@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Semantic tracing — controlled validation</title>
+<style>
+:root{color-scheme:light dark;--bg:#f7f9fb;--fg:#192a3c;--muted:#4d6073;--line:#bfcbd6;--surface:#fff;--accent:#176850;--soft:#deefe9;--link:#175f9e}
+@media(prefers-color-scheme:dark){:root{--bg:#161c23;--fg:#ebf0f6;--muted:#b8c8d6;--line:#4e6073;--surface:#202b35;--accent:#80d7b9;--soft:#28453c;--link:#99cfff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,sans-serif}main{max-width:980px;margin:auto;padding:28px 20px 60px}h1{font-size:1.8rem;line-height:1.2}h2{font-size:1.2rem;margin-top:28px}h3{font-size:1rem}a{color:var(--link)}p{margin:10px 0}.muted{color:var(--muted)}.row,nav{display:flex;gap:15px;align-items:center;flex-wrap:wrap}.row{justify-content:space-between}nav{margin:16px 0}.lanes{display:grid;gap:14px;margin:22px 0}.track{height:9px;background:var(--line);margin-top:5px}.fill{height:100%;background:var(--accent)}table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}td,th{padding:9px 7px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}.scroll{overflow:auto}details{padding:14px 0;border-top:1px solid var(--line)}summary{cursor:pointer;font-weight:600}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--surface);padding:12px}button,select{font:inherit;color:var(--fg);background:var(--surface);padding:8px;border:1px solid var(--line);border-radius:4px}select{max-width:100%}button{cursor:pointer}.flow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:20px 0}.node{padding:10px;border:1px solid var(--line)}.active{background:var(--soft);border-color:var(--accent)}.source-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.source-grid p{overflow-wrap:anywhere}.notice{padding-left:14px;border-left:3px solid var(--accent)}@media(max-width:600px){main{padding:20px 14px}.source-grid{grid-template-columns:1fr}h1{font-size:1.5rem}th,td{padding:8px 5px}.flow{gap:6px}}
+</style>
+<main>
+<p class="muted">NeuroTaint paper-based adaptation · 10 September 2026</p>
+<h1>Semantic tracing: controlled results</h1>
+<p><strong>This fixed validation phase is complete.</strong> Full-paper replication and independent attribution accuracy remain incomplete.</p>
+<div class="lanes">
+<div><div class="row"><span>Component reference pairs recorded</span><strong>16 / 16</strong></div><div class="track" role="progressbar" aria-label="Component reference pairs recorded" aria-valuemin="0" aria-valuemax="16" aria-valuenow="16"><div class="fill" style="width:100%"></div></div></div>
+<div><div class="row"><span>Native process records completed</span><strong>4 / 4</strong></div><div class="track" role="progressbar" aria-label="Native process records completed" aria-valuemin="0" aria-valuemax="4" aria-valuenow="4"><div class="fill" style="width:100%"></div></div></div>
+<div><div class="row"><span>Fresh auditor judgments recorded</span><strong>6 / 6</strong></div><div class="track" role="progressbar" aria-label="Fresh auditor judgments recorded" aria-valuemin="0" aria-valuemax="6" aria-valuenow="6"><div class="fill" style="width:100%"></div></div></div>
+</div>
+<p class="muted">These bars count completed experiment records, not task success, attribution accuracy or paper completion.</p>
+<nav aria-label="Evidence"><a href="../../SEMANTIC-VALIDATION-RESULTS.md">Result note</a><a href="../20260910-semantic-components-v1/index.html">All component evidence</a><a href="../20260910-semantic-native-analysis-v2/index.html">Real-agent timelines</a><a href="summary.json">Summary data</a></nav>
+
+<h2>What did the component checks show?</h2>
+<div class="scroll"><table><thead><tr><th>Measurement</th><th>Authored positives retained</th><th>Other-origin candidates</th><th>Unknown references</th></tr></thead><tbody>
+<tr><td>Ordinary ordered cascade</td><td>8 / 8</td><td>6 / 6</td><td>2</td></tr>
+<tr><td>Direct Tier 3 cosine</td><td>6 / 8</td><td>6 / 6</td><td>2</td></tr>
+<tr><td>Direct Tier 4 chunks</td><td>6 / 8</td><td>6 / 6</td><td>2</td></tr>
+</tbody></table></div>
+<p>All 16 ordered comparisons ended at Tier 2. Their semantic stages were never entered. The direct semantic checks above were performed separately.</p>
+<p class="muted">Positive references were authored before scoring. Other-origin controls use a declared construction program, including deliberately equivalent or identical text. A similarity match on these controls does not establish that the source was used. These are controlled diagnostics, not independent human accuracy labels.</p>
+
+<h2>Inspect a reference</h2>
+<div class="row"><label for="case">Reference <select id="case" aria-controls="case-detail"></select></label><button id="miss" type="button">Show a missed paraphrase</button></div>
+<div id="case-detail" aria-live="polite">
+<p id="reference-label"></p>
+<div class="flow" aria-label="Ordered cascade execution">
+<div class="node active">Tier 2 · LCS<br><strong id="lexical-result"></strong></div><span aria-hidden="true">→</span>
+<div class="node">Tier 3 · Cosine<br>Skipped in cascade</div><span aria-hidden="true">→</span>
+<div class="node">Tier 4 · Chunks<br>Skipped in cascade</div>
+</div>
+<div class="source-grid"><section><h3>Candidate source</h3><p id="source-text"></p></section><section><h3>Target</h3><p id="target-text"></p></section></div>
+<p id="component-scores"></p><p id="relation" class="muted"></p>
+</div>
+<noscript><p>The interactive selector requires JavaScript. <a href="../20260910-semantic-components-v1/index.html">Read every case in the static evidence report.</a></p></noscript>
+
+<h2>What happened in the real agent?</h2>
+<p>Four fresh processes produced the requested nonempty rewrite/summary files and ended normally. The two repetitions within each family produced identical output bytes: two unique task/output examples.</p>
+<p class="notice"><strong>Required background read omitted: 4 / 4.</strong> Every agent read file 1 and skipped file 2. Completion of all requested observable steps is therefore 0 / 4. Background-source attribution is unavailable, not a measured true negative.</p>
+<p>The four visible designated-source pairs all have Tier-2 candidates. Their whole-tool direct Tier 3 cosine scores pass 0.60; direct Tier 4 also meets its chunk cosine threshold of 0.60 and source coverage threshold of 0.10. Output text is not a verbatim substring of either input document. Semantic correctness and hidden source reliance remain unscored.</p>
+<nav aria-label="Native examples"><a href="../../runs/20260910-semantic-native-live-v1/runs/paraphrase-r01/report.html">Paraphrase timeline + diagram</a><a href="../../runs/20260910-semantic-native-live-v1/runs/summary-r01/report.html">Summary timeline + diagram</a><a href="../20260910-semantic-native-analysis-v2/index.html">All four records and availability</a></nav>
+
+<h2>Did the auditor format repair work?</h2>
+<p><strong>6 / 6 fresh judgments are valid.</strong> Four predictions agree with the previously recorded one-step observations; two disagree. These are six fresh predictions on existing prefixes, not six new primary trajectories or held-out causal accuracy.</p>
+<nav><a href="../20260910-semantic-audit-live-v1/conditional_action-r01-both/index.html">Auditor repetition 1</a><a href="../20260910-semantic-audit-live-v1/conditional_action-r02-both/index.html">Auditor repetition 2</a></nav>
+<details><summary>Format policy and preservation</summary><p>The opt-in v3 policy permits enumerated English typographic punctuation and spaces. Schema, type, range and binding checks remain strict. It is a character policy, not a general language detector. The default stays ASCII/v2. Prior invalid responses are preserved and are never silently promoted.</p></details>
+<details><summary>Scope change, resources and validation</summary>
+<p>An automatic security check rejected the proposed additional injection subtask. It was not retried. The four new native tasks are normal user-authorized transformations and add no malicious-propagation evidence.</p>
+<p>New live cost: 12 native requests / 6,174 reported tokens, plus 6 auditor requests / 10,197 tokens. Total: 18 requests / 16,371 tokens, below the frozen 22-request ceiling. There were no native replacements, new prefix replays or parameter updates.</p>
+<p>The v2 native analysis adds explicit unexposed-source inventory and separates native completion, recorder completion and requested steps. Its original v1 report and raw trajectories are retained. No native or API requests were repeated for this reporting refinement.</p>
+<nav><a href="../20260910-semantic-validation-quality-v1/validation-final.json">Final validation receipt</a><a href="../20260910-semantic-validation-quality-v1/component-interpretation.json">Component count audit</a><a href="../20260910-semantic-validation-quality-v1/native-interpretation.json">Native evidence audit</a><a href="../20260910-semantic-validation-quality-v1/auditor-interpretation-v2.json">Auditor evidence audit</a><a href="manifest.json">Report hashes</a></nav>
+</details>
+</main>
+<script src="cases.js"></script>
+<script>
+const select=document.getElementById('case');
+for(const item of window.semanticCases){const option=document.createElement('option');option.value=item.id;option.textContent=item.id;select.append(option);}
+function showCase(){const item=window.semanticCases.find(x=>x.id===select.value);if(!item)return;
+document.getElementById('reference-label').textContent=item.reference===null?'Reference: unknown':item.reference?'Reference: authored correspondence':'Reference: declared other origin';
+document.getElementById('source-text').textContent=item.source;document.getElementById('target-text').textContent=item.target;
+document.getElementById('lexical-result').textContent='Hit · '+item.lcs.toFixed(3);
+document.getElementById('component-scores').textContent='Separate diagnostics — Tier 3 cosine: '+item.tier3.toFixed(3)+'; Tier 4 max chunk cosine: '+item.tier4.toFixed(3)+'; Tier 4 source coverage: '+item.tier4_coverage.toFixed(3)+'. Fixed cosine threshold: 0.600; Tier 4 additionally requires coverage >= 0.100.';
+document.getElementById('relation').textContent=item.relation;}
+select.addEventListener('change',showCase);document.getElementById('miss').addEventListener('click',()=>{select.value='paraphrase_lights/a';showCase();});showCase();
+</script>
+</html>
