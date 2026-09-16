@@ -736,3 +736,29 @@ implementation. The next evidence-bearing step is fresh preparation and immutabl
 bundle validation from the pushed source commit, followed by Slurm submission.
 The experimental count stays **4/13 (31%)** `██████░░░░░░░░░░░░░░` and overall
 **16/25 (64%)** `█████████████░░░░░░░` until terminal results meet the frozen criteria.
+
+## Additional protocol queue — 2026-09-17 NZST
+
+An exact copied-bundle test found and stopped a Case D source-inventory defect
+before submission. The corrected source is pushed at `43d068e`; 105 B/D focused
+tests, 68 shared tests plus 16 subtests, and an independent strict bundle build
+pass. The stale C2/D v1 preparations made zero requests. Fresh v2 preparations,
+all final bundle manifests and three independent launch audits pass.
+
+Slurm accepted:
+
+- C2 `9126739` — fixed target, fresh-session handoff and simulated sink;
+- D `9126740` — four-arm redundant-source pattern;
+- repeat/judge `9126776` — nine fixed calls across three identical repetitions.
+
+All were submitted at 10:53 NZST and were **PENDING (Priority)** with zero runtime.
+Their last receipt showed a provisional Sep 18 04:05 NZST start. A/B/C jobs
+`9123394`, `9123398` and `9123399` remain pending with a provisional 02:04 start.
+
+Current six-job queue: **0/6 allocated** `░░░░░░░░░░░░░░░░░░░░`.
+New protocol submission: **3/3** `████████████████████`.
+New terminal results: **0/3** `░░░░░░░░░░░░░░░░░░░░`.
+
+The jobs start automatically; no terminal result or new checklist completion is
+claimed. Experimental progress remains **4/13 (31%)** `██████░░░░░░░░░░░░░░`, overall
+**16/25 (64%)** `█████████████░░░░░░░`.

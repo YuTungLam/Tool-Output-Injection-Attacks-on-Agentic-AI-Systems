@@ -605,3 +605,23 @@ method limitation. Items 1 and 2 still depend on valid terminal A/B observations
 No new scientific result is claimed, and the count remains **4/13 experimental
 (31%)**, **16/25 overall (64%)** pending fresh source-bound preparation, submission
 and terminal evidence.
+
+## Additional protocols queued — 2026-09-17 NZST
+
+Final freezing uses pushed commit `43d068e`. An earlier request-free C2/D
+preparation exposed a copied-bundle D inventory defect and was superseded without
+inference. The repaired exact-source preparations are C2 v2 and D v2. Strict
+commit/blob checks, copied preflight and batch validators, owner-only permissions,
+credential scans, symlink scans and absent-destination checks all passed.
+
+Slurm accepted C2 job `9126739`, D job `9126740` and repeat/judge job `9126776`
+at 10:53 NZST. Every job requests one Milan node, four A100s, 48 CPUs, 320 GiB
+and at most two hours. All were pending for Priority with zero runtime at the
+recorded checkpoint. C2 and D had tentative nodes and Sep 18 04:05 starts; the
+repeat estimate initially showed unknown and then the same 04:05 time. Scheduler
+estimates are provisional and do not prove allocation.
+
+The six current jobs start automatically. None is allocated yet. The three new
+protocols are fully submitted, while terminal evidence remains 0/3. The source
+and submission milestone changes no experimental checkbox: **4/13 experimental
+(31%)**, **16/25 overall (64%)** until observed outcomes meet the original criteria.

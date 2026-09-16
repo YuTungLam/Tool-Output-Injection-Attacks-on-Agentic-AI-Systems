@@ -663,3 +663,32 @@ negative or unknown result, and item 13 stays unchecked unless repeated evidence
 actually distinguishes a method limitation from implementation and task effects.
 Items 1 and 2 continue to depend on valid terminal A/B evidence. Current progress
 remains **4/13 experimental (31%)** and **16/25 overall (64%)**.
+
+## Additional protocol submissions — 2026-09-17 NZST
+
+The copied-bundle gate rejected the first D preparation because its runner tried
+to validate two filtered Case B launcher paths. No model request or GPU allocation
+occurred. The fix adds a pre-validation runtime candidate helper and a regression
+that copies exactly the D plan inventory and verifies it in isolation. Focused
+B/D validation passed 105 tests; shared validation passed 68 tests plus 16
+subtests. Final source `43d068e` is pushed and binds fresh C2/D v2 preparations.
+
+All final immutable bundles passed independent launch audit and were submitted:
+
+- C2 `9126739`, for items 4, 6 and the missing endpoint of item 10;
+- D `9126740`, for the separate redundant-source criterion in item 3;
+- repeat/judge `9126776`, for items 7 and 8 and evidence relevant to item 13.
+
+Each has a fixed four-A100, 48-CPU, 320-GiB, two-hour ceiling and no fallback
+model. Their initial state is pending for Priority with zero runtime and zero
+observed research requests. The three new jobs had a provisional Sep 18 04:05
+NZST start; A/B/C remained provisionally at 02:04. They start automatically.
+
+After terminal completion, validate each saved receipt and update the deliverable
+ledger without replacing failures. C2 can complete items 4, 6 and 10 only if the
+prospectively bound handoff and fresh-session sink are observed. D can complete
+item 3 only if utility, exposure, witnesses and the exact fixed outcome pattern
+pass. Repeat/judge completes the repeated/ambiguity measurements even when the
+result is disagreement or unknown; item 13 remains conditional on an actual
+systematic method limitation. Items 1 and 2 still depend on terminal A/B evidence.
+Current checkbox progress remains **4/13 experimental** and **16/25 overall**.

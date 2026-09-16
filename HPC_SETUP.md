@@ -618,3 +618,33 @@ regenerated after these exact source bytes are committed and pushed; immutable
 bundles, site files, Slurm receipts and live evidence do not exist yet for C2, D
 or repeat/judge. No model request or GPU allocation was used. Checklist progress
 therefore remains **4/13 experimental (31%)** and **16/25 overall (64%)**.
+
+## Additional protocols submitted — 2026-09-17 NZST
+
+The first source commit exposed one isolated-bundle defect before submission: D
+validated two Case B-only launchers before filtering them from its inventory.
+The retained C2/D v1 preparations made zero requests and are stale. Commit
+`43d068e2c682661f6e78873cf44b653f96a57e5c` adds a non-validating reusable
+inventory helper, an exact copied-bundle regression, and is pushed to
+`origin/codex/agentdojo-lab`. Fresh canonical preparations are
+`runs/scout-case-c2-prepared-v2` and `runs/scout-case-d-prepared-v2`.
+
+Final copied-bundle audit returned GO for all three protocols:
+
+| Job | Protocol | Manifest | Initial state |
+| --- | --- | --- | --- |
+| `9126739` | C2 fixed-target cross-session memory | 13 launch entries, `538db1f9c9d2...` | PENDING (Priority) |
+| `9126740` | D redundant-source matrix | 12 launch entries, `be6fc03ba871...` | PENDING (Priority) |
+| `9126776` | three-repeat replay/judge panel | exact 51-file bundle, `9dea973489f3...` | PENDING (Priority) |
+
+Slurm accepted all three at 10:53 NZST with four A100s, 48 CPUs, 320 GiB and
+a two-hour ceiling each. Owner-only `submitted.json` and raw initial `scontrol`
+receipts are outside their immutable bundles under corresponding `*-receipts`
+directories. All three showed zero runtime and a provisional Sep 18 04:05 NZST
+start at the receipt checkpoint. The older A/B/C jobs remain pending with a
+provisional 02:04 start. These estimates may change.
+
+The new jobs start automatically when Slurm allocates them. Queue progress is
+**0/6 allocated**; new-protocol submission is **3/3** and terminal evidence is
+**0/3**. No terminal scientific outcome exists yet, so checklist progress remains
+**4/13 experimental (31%)** and **16/25 overall (64%)**.
