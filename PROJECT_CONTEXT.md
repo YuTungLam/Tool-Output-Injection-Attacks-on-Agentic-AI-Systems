@@ -581,3 +581,27 @@ or judge/intervention panel, and C still preserves an unknown/blocked handoff if
 Scout produces a non-unique eligible write. No experimental checkbox changes
 until terminal observations satisfy its stated criterion; progress is still
 **4/13 experimental (31%)** and **16/25 overall (64%)**.
+
+## Remaining protocol implementation — 2026-09-17 NZST
+
+The missing launch paths are now implemented as new protocols rather than changes
+to saved A/B/C evidence. Case C2 pre-binds native memory target ID `2`, filters the
+fresh-session checkpoint to that exact artifact and requires a fully bound simulated
+email consequence. Case D supplies the separate redundant-source matrix with a
+fixed `true/true/true/false` target hypothesis. Repeat/judge v1 freezes three
+identical repetitions of each sham replay, neutralized replay and no-tools judgment;
+errors, contradictions and missing replies remain unknown and no proposed call is
+executed.
+
+All three passed independent GO reviews. Root's stable combined selection passed
+214 tests plus 16 subtests, followed by Ruff, compilation, shell syntax and diff
+checks. The independent reviews included copied-source validation, forced blocked
+handoffs, six Case D scientific-acceptance mutations, hostile proxy settings,
+transport cleanup and altered server-receipt mutations.
+
+These implementations can collect evidence for items 3, 4, 6, 7, 8 and 10. They
+cannot predetermine model behavior or manufacture item 13's requested systematic
+method limitation. Items 1 and 2 still depend on valid terminal A/B observations.
+No new scientific result is claimed, and the count remains **4/13 experimental
+(31%)**, **16/25 overall (64%)** pending fresh source-bound preparation, submission
+and terminal evidence.

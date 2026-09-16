@@ -18,6 +18,9 @@ CASE_B_TOTAL_REQUEST_LIMIT = 24
 CASE_C_WALLTIME_SECONDS = 7200
 CASE_C_REQUEST_LIMIT = 16
 CASE_C_TOTAL_REQUEST_LIMIT = 24
+CASE_D_WALLTIME_SECONDS = 7200
+CASE_D_REQUEST_LIMIT = 16
+CASE_D_TOTAL_REQUEST_LIMIT = 24
 
 
 def sha256(path: Path) -> str:
@@ -109,9 +112,10 @@ def limit_records(
     case_a_mode: bool,
     case_b_mode: bool = False,
     case_c_mode: bool = False,
+    case_d_mode: bool = False,
 ) -> dict:
     """Describe smoke separately from an optional enclosing case-study job."""
-    if sum((case_a_mode, case_b_mode, case_c_mode)) > 1:
+    if sum((case_a_mode, case_b_mode, case_c_mode, case_d_mode)) > 1:
         raise ValueError("A smoke job cannot enclose more than one case study")
     records = {
         "limits": {
@@ -156,6 +160,16 @@ def limit_records(
             "requests_per_case_session": 4,
             "online_auditor_requests": 0,
         }
+    if case_d_mode:
+        records["enclosing_case_d_limits"] = {
+            "scope": "smoke_plus_case_d_job",
+            "walltime_seconds": CASE_D_WALLTIME_SECONDS,
+            "total_generation_requests": CASE_D_TOTAL_REQUEST_LIMIT,
+            "case_requests": CASE_D_REQUEST_LIMIT,
+            "case_slots": 4,
+            "requests_per_case_slot": 4,
+            "online_auditor_requests": 0,
+        }
     return records
 
 
@@ -173,6 +187,7 @@ def main() -> int:
         case_a_mode = os.environ.get("SCOUT_CASE_A_MODE", "0") == "1"
         case_b_mode = os.environ.get("SCOUT_CASE_B_MODE", "0") == "1"
         case_c_mode = os.environ.get("SCOUT_CASE_C_MODE", "0") == "1"
+        case_d_mode = os.environ.get("SCOUT_CASE_D_MODE", "0") == "1"
         model = inspect_snapshot(Path(os.environ["SCOUT_SNAPSHOT"]), os.environ["SCOUT_REVISION"])
         receipt = {
             "protocol": "nesi-scout-smoke-v1",
@@ -187,6 +202,7 @@ def main() -> int:
                 case_a_mode=case_a_mode,
                 case_b_mode=case_b_mode,
                 case_c_mode=case_c_mode,
+                case_d_mode=case_d_mode,
             ),
         }
         with args.output.open("x", encoding="utf-8") as stream:

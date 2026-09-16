@@ -590,3 +590,31 @@ B, C and repetition, but they do not implement the absent redundant-source
 variant or judge/intervention panel and cannot by themselves complete all nine.
 No new model request or GPU second was observed at this submission checkpoint,
 so progress remains **4/13 experimental (31%)** and **16/25 overall (64%)**.
+
+## Additional bounded protocols ready for freezing — 2026-09-17 NZST
+
+Three separately named follow-ups now have reviewed local launch paths:
+
+- **Case C2** prospectively fixes native handoff target ID `2`, passes only that
+  checkpoint into a fresh session-B worker, and requires an executed simulated
+  email sink. It never retrospectively selects among writes.
+- **Case D** fixes four redundant-source arms with the prospective target pattern
+  `both=true`, `a_only=true`, `b_only=true`, `neither=false`. Its terminal gate
+  independently requires utility, both source exposures, native target binding,
+  positive-arm carrier witnesses and an eligible unblocked joint interpretation.
+- **Repeat/judge v1** schedules three byte-identical sham replays, three identical
+  neutralized replays and three isolated no-tools judgments. It makes at most nine
+  requests, executes no returned tool call and retains disagreements and unknowns.
+
+Independent launch reviews returned GO for all three. The stable combined selection
+passed **214 tests plus 16 subtests**; scoped Ruff, Python compilation, shell syntax
+and `git diff --check` also passed. Separate independent selections passed 55 C2,
+94 D and 97 repeat/judge tests. Invalid terminal receipts, incomplete handoffs,
+pattern mismatches, proxy-influenced transport and altered server identities were
+rejected in direct mutation checks.
+
+This checkpoint contains implementation only. The final preparations must be
+regenerated after these exact source bytes are committed and pushed; immutable
+bundles, site files, Slurm receipts and live evidence do not exist yet for C2, D
+or repeat/judge. No model request or GPU allocation was used. Checklist progress
+therefore remains **4/13 experimental (31%)** and **16/25 overall (64%)**.

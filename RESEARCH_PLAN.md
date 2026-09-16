@@ -636,3 +636,30 @@ provide the missing redundant-source construction or no-tools judge/intervention
 panel; a single added B observation also does not meet the frozen three-repeat
 criterion. Terminal results must be assessed against the existing acceptance
 language before updating **4/13 experimental** or **16/25 overall**.
+
+## Additional prospective protocols implemented — 2026-09-17 NZST
+
+- [x] Implement and independently audit Case C2 with a prospectively named native
+  handoff target, a one-artifact checkpoint, fresh worker/history, and a fully
+  bound simulated sink.
+- [x] Implement and independently audit Case D's redundant-source construction
+  with four isolated arms and fail-closed terminal acceptance for the exact
+  `true/true/true/false` pattern.
+- [x] Implement and independently audit a three-repeat sham/neutralized/no-tools
+  panel with byte-identical inputs, direct loopback transport, no retries, no
+  proposed-tool execution and explicit unknown/disagreement retention.
+
+These are implementation substeps, not additions to the 13 experimental checkbox
+count. Root's stable selection passed **214 tests plus 16 subtests**. Independent
+reviews passed 55 C2, 94 D and 97 repeat/judge tests and exercised copied-source,
+partial-evidence, scientific-acceptance, proxy and server-identity mutations. Ruff,
+compilation, shell syntax and whitespace checks pass.
+
+Next, commit and push the reviewed bytes, regenerate request-free preparations,
+copy the exact plan-bound sources into fresh immutable bundles, repeat copied-bundle
+validation and submit the three wrappers. Terminal evidence may address items 3,
+4, 6, 7, 8 and 10. Completion is outcome-dependent; the protocols preserve a
+negative or unknown result, and item 13 stays unchecked unless repeated evidence
+actually distinguishes a method limitation from implementation and task effects.
+Items 1 and 2 continue to depend on valid terminal A/B evidence. Current progress
+remains **4/13 experimental (31%)** and **16/25 overall (64%)**.

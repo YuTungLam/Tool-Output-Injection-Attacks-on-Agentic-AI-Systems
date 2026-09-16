@@ -712,3 +712,27 @@ evidence satisfies an acceptance criterion. The nine incomplete deliverables are
 not nine runnable jobs: redundant-source and judge/intervention protocols remain
 to be implemented, and this additional B run alone is below the stated minimum
 for repeated-run evidence.
+
+## Additional protocol readiness — 2026-09-17 NZST
+
+Case C2, Case D and repeat/judge v1 are now implemented and independently cleared
+for freezing. C2 fixes the memory target before session A and passes only that
+artifact to a genuinely fresh session B. D adds the missing redundant-source
+`both`, `a_only`, `b_only`, `neither` matrix. Repeat/judge freezes three identical
+repetitions of sham replay, neutralized replay and isolated causal judgment.
+
+Root's combined stable-tree run passed **214 tests plus 16 subtests**. Independent
+review selections passed 55 C2, 94 D and 97 repeat/judge tests. Ruff, compilation,
+three wrapper syntax checks and `git diff --check` passed. Direct negative tests
+showed that off-target handoffs, incomplete paths, wrong redundancy outcomes,
+failed utility, absent exposure/witness evidence, proxy inheritance and altered
+server identity cannot be reported as complete.
+
+Readiness progress: **3/3 protocols independently GO** `████████████████████`.
+Live progress: **0/3 new protocols submitted** `░░░░░░░░░░░░░░░░░░░░`.
+
+No new model request, GPU second or experimental native action occurred during
+implementation. The next evidence-bearing step is fresh preparation and immutable
+bundle validation from the pushed source commit, followed by Slurm submission.
+The experimental count stays **4/13 (31%)** `██████░░░░░░░░░░░░░░` and overall
+**16/25 (64%)** `█████████████░░░░░░░` until terminal results meet the frozen criteria.
