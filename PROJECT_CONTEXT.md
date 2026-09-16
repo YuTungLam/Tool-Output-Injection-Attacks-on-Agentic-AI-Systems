@@ -1,14 +1,15 @@
 # Project context: Tool Output Injection Attacks
 
-> **Current analysis — 2026-09-16:** All three Scout jobs are terminal. A
-> `9064136` saved two sessions / eight requests before final validation failed
-> with shutdown unconfirmed; B `9064141` completed four conditions / eleven
-> requests; C `9064142` saved two first sessions / six requests, with no second-session
-> requests. Total: **25 research requests across eight sessions**.
-> The [saved-results analysis](codebase/agentdojo-lab/reports/20260916-scout-analysis-v1/index.html)
-> completes the clean/attacked comparison deliverable. Preparation is **12/12**;
-> experiments **1/13**; overall **13/25 (52%)**. No models were called or rerun
-> during this analysis. Defects are diagnosed, not repaired.
+> **Meeting-packet assessment — 2026-09-16:** The
+> [HTML packet](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/index.html)
+> contains all eight Scout session outcomes, observed paths, a tracer-coverage
+> table and all 13 deliverable statuses. Preparation is **12/12**; experimental
+> deliverables **4/13 (31%)**; overall **16/25 (64%)**. Completed items are
+> within-session transformation/provenance assessment, clean/attacked comparison,
+> coverage assessment and the meeting packet. Causal, repeated and cross-session
+> claims remain incomplete. All three jobs are terminal: **25 research requests**
+> total, with zero additional requests in this reporting continuation.
+> Runtime defects remain diagnosed, not repaired.
 
 Last updated: 2026-09-16 (NeSI local date). This is the durable project brief for
 the researcher, supervisor, and future Codex sessions. It records the user's
@@ -209,14 +210,15 @@ ledgers and result notes retain their historical values.
    initial erroneous sends precede source exposure and cannot be attributed to it.
 3. Keep Case B's both-only target action descriptive: all four task utilities
    failed, and one observation per condition does not establish reproducibility.
-4. Diagnose Case A shutdown evidence and Case C's exact-one read/write assumptions
-   from saved artifacts. C actually read/exposed the source; its aggregate result
-   suppresses that evidence after validation fails. The later stored content was
-   identical across branches and retained the intended recipient; neither second
-   session ran. Do not report a complete cross-session attack path.
-5. Assemble the meeting packet, distinguish tracer correspondence from causal
-   influence, and document any proposed follow-up under a new named protocol.
-   No code repair or additional inference was performed in this review.
+4. Use the completed Case A cleanup and Case C selection diagnoses. C's source
+   was actually exposed; the later factual paraphrase retains a persisted source
+   label. This completes the within-session transformation assessment, while
+   neither second session ran. A complete cross-session path remains absent.
+5. Present the [meeting packet](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/index.html)
+   and its coverage table. Nine deliverables remain partial or missing; the packet
+   specifies the evidence limits without promising that research hypotheses will
+   be confirmed. No runtime repair or additional inference occurred. A separate
+   archived judge/replay review was blocked by a platform cybersecurity-risk flag.
 
 ## Historical implementation and submission record
 
@@ -310,8 +312,8 @@ Previous run/report bundles are recovered and tracked at `f96bdc8`.
 
 Continuation through 2026-09-16: [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) now
 provides progress bars and per-run explanations. The first supervisor checklist
-is **13/25 complete (52%)**, including preparation; preparation/prerequisites are
-**12/12 (100%)**, while its 13 new experimental deliverables are **1/13 (8%)**. This
+is **16/25 complete (64%)**, including preparation; preparation/prerequisites are
+**12/12 (100%)**, while its 13 new experimental deliverables are **4/13 (31%)**. This
 counts completed items, not elapsed time or detector accuracy. The active jobs use
 private, separately named evidence and site files described in HPC_SETUP.md.
 
@@ -512,3 +514,27 @@ are **1/13 (8%)**. Use recovered reports alongside the new Scout analysis for
 meeting preparation; file integrity alone does not validate scientific claims.
 Archive recovery used pushed checkpoint `f96bdc8`. This analysis checkpoint includes
 the recovery receipt, new analysis, and the three original Scout case directories.
+
+## Meeting-packet milestone — 2026-09-16
+
+The [meeting packet](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/index.html)
+adds a full eight-session outcome table, observed-path diagrams, a descriptive
+NeuroTaint coverage assessment, all 13 deliverable statuses and presentation notes.
+Three additional assessment/reporting items are complete: within-session
+transformation and provenance, coverage assessment, and the packet itself.
+Current progress is **4/13 experimental (31%)**, **16/25 overall (64%)**.
+The nine remaining items include unestablished hypotheses, unobserved stages and
+repeated-run evidence; their completion cannot be guaranteed by scheduling jobs.
+
+Verification reran the offline saved-evidence verifier and checked all 206 raw
+files unchanged, all eight structural audits, 25 request entries and 96 terminal
+hashes. All 79 coverage inputs match. Scoped renderer Ruff/compilation, local
+links and checklist accounting pass; validation is recorded alongside the packet.
+No model call, runtime fix or GPU job occurred. Two additional review workers
+were stopped by platform cybersecurity-risk flags (archived judge/replay analysis
+and independent full acceptance review); neither is claimed completed.
+
+At the start of this continuation, HEAD and the origin tracking reference matched
+`f52834161912d569eb045d13286779c74951ebce`. New changes are the meeting packet and
+four current-status documents. Original Scout run directories and prior reports
+remain unchanged; Git history records the new synchronization checkpoint.

@@ -1,14 +1,15 @@
 # NeSI setup and local inference plan
 
-> **Current analysis — 2026-09-16:** All three Scout jobs are terminal. A
-> `9064136` saved two sessions / eight requests before final validation failed
-> with shutdown unconfirmed; B `9064141` completed four conditions / eleven
-> requests; C `9064142` saved two first sessions / six requests, with no second-session
-> requests. Total: **25 research requests across eight sessions**.
-> The [saved-results analysis](codebase/agentdojo-lab/reports/20260916-scout-analysis-v1/index.html)
-> completes the clean/attacked comparison deliverable. Preparation is **12/12**;
-> experiments **1/13**; overall **13/25 (52%)**. No models were called or rerun
-> during this analysis. Defects are diagnosed, not repaired.
+> **Meeting-packet assessment — 2026-09-16:** The
+> [HTML packet](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/index.html)
+> contains all eight Scout session outcomes, observed paths, a tracer-coverage
+> table and all 13 deliverable statuses. Preparation is **12/12**; experimental
+> deliverables **4/13 (31%)**; overall **16/25 (64%)**. Completed items are
+> within-session transformation/provenance assessment, clean/attacked comparison,
+> coverage assessment and the meeting packet. Causal, repeated and cross-session
+> claims remain incomplete. All three jobs are terminal: **25 research requests**
+> total, with zero additional requests in this reporting continuation.
+> Runtime defects remain diagnosed, not repaired.
 
 Last updated: **2026-09-16 UTC**. The CPU lab and pinned MiniLM files have been
 restored, and the offline native-tool fixture passes. Hugging Face login and

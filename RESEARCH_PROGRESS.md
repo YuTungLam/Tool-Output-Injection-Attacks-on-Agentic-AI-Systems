@@ -1,14 +1,15 @@
 # Research progress and run results
 
-> **Current analysis — 2026-09-16:** All three Scout jobs are terminal. A
-> `9064136` saved two sessions / eight requests before final validation failed
-> with shutdown unconfirmed; B `9064141` completed four conditions / eleven
-> requests; C `9064142` saved two first sessions / six requests, with no second-session
-> requests. Total: **25 research requests across eight sessions**.
-> The [saved-results analysis](codebase/agentdojo-lab/reports/20260916-scout-analysis-v1/index.html)
-> completes the clean/attacked comparison deliverable. Preparation is **12/12**;
-> experiments **1/13**; overall **13/25 (52%)**. No models were called or rerun
-> during this analysis. Defects are diagnosed, not repaired.
+> **Meeting-packet assessment — 2026-09-16:** The
+> [HTML packet](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/index.html)
+> contains all eight Scout session outcomes, observed paths, a tracer-coverage
+> table and all 13 deliverable statuses. Preparation is **12/12**; experimental
+> deliverables **4/13 (31%)**; overall **16/25 (64%)**. Completed items are
+> within-session transformation/provenance assessment, clean/attacked comparison,
+> coverage assessment and the meeting packet. Causal, repeated and cross-session
+> claims remain incomplete. All three jobs are terminal: **25 research requests**
+> total, with zero additional requests in this reporting continuation.
+> Runtime defects remain diagnosed, not repaired.
 
 Status date: 2026-09-16 (NeSI local date). This is a checked snapshot, not a live scheduler display.
 The [supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-16)
@@ -16,9 +17,9 @@ is the source of the completion count. Historical ledgers keep their own scope.
 
 | Scope | Progress | Completed / total |
 | --- | --- | ---: |
-| Current checklist | **52%** `██████████░░░░░░░░░░` | 13 / 25 |
+| Current checklist | **64%** `█████████████░░░░░░░` | 16 / 25 |
 | Preparation and remaining prerequisites | **100%** `████████████████████` | 12 / 12 |
-| Supervisor's new experimental deliverables | **8%** `██░░░░░░░░░░░░░░░░░░` | 1 / 13 |
+| Supervisor's new experimental deliverables | **31%** `██████░░░░░░░░░░░░░░` | 4 / 13 |
 
 Percentages count completed checkboxes equally; they are not estimates of time
 remaining, model-download progress, attack success rate, or detector accuracy.
@@ -563,8 +564,9 @@ Retained `preflight.json`, `smoke.json`, `native-smoke.json` and
 That historical attempt produced no Case B result. The later v3 bundle included
 the config and job `9064141` completed the four conditions recorded above.
 
-The checklist is **13/25 (52%)**, preparation/prerequisites are **12/12
-(100%)**, and experimental deliverables are **1/13 (8%)**.
+At the initial saved-result checkpoint the checklist was **13/25 (52%)**, preparation/prerequisites were **12/12
+(100%)**, and experimental deliverables were **1/13 (8%)**. The later meeting-packet
+assessment raises the current total to 16/25, with four experimental deliverables complete.
 
 ## Evidence locations and continuing work
 
@@ -573,12 +575,15 @@ External evidence paths above are relative to
 `runs/` and `reports/` are now tracked as requested. Preserve raw bytes and check
 new artifacts for credentials before committing.
 
-The next work is to assemble the meeting packet from saved results, document
-Case A cleanup and Case C validation defects, and identify bounded follow-up
-questions. The three jobs are terminal; no monitoring or duplicate submission is
-required. Complete cross-session paths, method coverage, repeated consistency,
-and a supported research gap remain outstanding. See [HPC_SETUP.md](HPC_SETUP.md)
-for pins, resources and job evidence.
+The [meeting packet](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/index.html)
+is ready for review and presentation. It includes the completed transformation
+and coverage assessments, earlier A comparison, all eight session outcomes and
+the nine partial/missing deliverables. Complete cross-session paths, causal
+judgments, repeated consistency and a supported research gap remain outstanding.
+All three jobs are terminal. This continuation schedules no new trials and does
+not repair attack execution. A separate archived judge/replay review was blocked
+by a platform cybersecurity-risk flag; no completed review is claimed.
+See [HPC_SETUP.md](HPC_SETUP.md) for pins, resources and job evidence.
 
 Synchronization baseline: at analysis start, HEAD and `origin/codex/agentdojo-lab`
 matched **`f96bdc81fe1283c1e697b30bd2dea6e4736ebf47`**. This checkpoint adds the
@@ -620,3 +625,44 @@ The portable [analysis HTML](codebase/agentdojo-lab/reports/20260916-scout-analy
 contains observed event paths, interpretation limits, detailed source references
 and the Case A shutdown / Case C selection diagnoses. No runtime fix, new model
 request, new GPU allocation or replacement trial was made.
+
+## Meeting packet and additional assessment — 2026-09-16
+
+**Experimental deliverables: 4/13 (31%)** `██████░░░░░░░░░░░░░░`.
+**Overall checklist: 16/25 (64%)** `█████████████░░░░░░░`.
+Preparation stays at 12/12; these new completions add no model requests.
+
+- **Item 5, transformation/provenance:** C's later factual paraphrase follows
+  bound source exposure and retains a Tier-2 candidate and persisted source
+  label. This completes the stated within-session assessment, not a carried
+  attack or fresh-session consequence.
+- **Item 9, paired comparison:** previously completed; A's response and sensitive
+  argument divergence and both native outcomes remain available.
+- **Item 11, coverage:** the completed table compares candidate and recovered
+  segments with actual execution and missing evidence across eight sessions.
+  All 26 evaluated pairs stop at Tier 2; no higher-tier or causal accuracy is measured.
+- **Item 12, meeting packet:** the HTML packages three case families, observed
+  paths, all eight session outcomes, coverage, limitations and presentation notes.
+
+The [packet](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/index.html)
+shows all nine remaining items. The complete-path chart item stays partial;
+C's later-session path is absent and B's exact first divergence is not separately
+established in the packet. Repeated consistency and a systematic research gap
+remain unestablished. Two extra reviews were blocked by platform cybersecurity-risk
+flags: archived judge/replay analysis and an independent full acceptance review.
+Neither review is counted as complete, and this continuation schedules no attack runs.
+
+Commands actually run from the lab: `.venv/bin/python
+scripts/verify_saved_scout_results.py --output
+reports/20260916-meeting-packet-v1/verification.json`, the packet's
+`build_report.py`, scoped Ruff, Python compilation, and
+`.venv/bin/python /tmp/validate_meeting_packet.py`; root `git diff --check` passed.
+Fresh checks cover eight audits, 25 request entries, 96 terminal hashes, 206
+unchanged original files, and 79 matching coverage inputs. Local links and
+checkbox/ledger counts pass. An initial Ruff import-order finding was corrected;
+the final check passes. No application test suite or browser visual QA was run.
+
+Receipts: [validation](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/validation.json)
+and [raw-evidence verification](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/verification.json).
+This continuation began from pushed `f528341`; it adds the packet and current
+status updates while preserving original reports and raw results.

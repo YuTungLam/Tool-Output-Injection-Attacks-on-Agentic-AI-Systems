@@ -1,18 +1,20 @@
 # Next phase: concrete propagation case studies on NeSI
 
-> **Current analysis — 2026-09-16:** All three Scout jobs are terminal. A
-> `9064136` saved two sessions / eight requests before final validation failed
-> with shutdown unconfirmed; B `9064141` completed four conditions / eleven
-> requests; C `9064142` saved two first sessions / six requests, with no second-session
-> requests. Total: **25 research requests across eight sessions**.
-> The [saved-results analysis](codebase/agentdojo-lab/reports/20260916-scout-analysis-v1/index.html)
-> completes the clean/attacked comparison deliverable. Preparation is **12/12**;
-> experiments **1/13**; overall **13/25 (52%)**. No models were called or rerun
-> during this analysis. Defects are diagnosed, not repaired.
+> **Meeting-packet assessment — 2026-09-16:** The
+> [HTML packet](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/index.html)
+> contains all eight Scout session outcomes, observed paths, a tracer-coverage
+> table and all 13 deliverable statuses. Preparation is **12/12**; experimental
+> deliverables **4/13 (31%)**; overall **16/25 (64%)**. Completed items are
+> within-session transformation/provenance assessment, clean/attacked comparison,
+> coverage assessment and the meeting packet. Causal, repeated and cross-session
+> claims remain incomplete. All three jobs are terminal: **25 research requests**
+> total, with zero additional requests in this reporting continuation.
+> Runtime defects remain diagnosed, not repaired.
 
 Plan date: 2026-09-14; checklist reviewed 2026-09-16; run status updated
 2026-09-16 (NeSI local date). Status: **implementation and live Scout smoke
-complete; eight research sessions saved and the Case A comparison analysed**.
+complete; eight research sessions analysed and the meeting packet produced**.
+The meeting packet and descriptive coverage assessment are now complete.
 This plan follows the researcher's new supervisor guidance in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
 <a id="supervisor-checklist--checked-2026-09-15"></a>
@@ -21,18 +23,20 @@ This plan follows the researcher's new supervisor guidance in [PROJECT_CONTEXT.m
 
 Most completed work in the NeSI phase is preparation. The existing independent
 NeuroTaint implementation and per-run HTML reports predate this phase. They are
-the foundation for the requested stress tests. The new meeting packet has not
-been produced. The initial Scout runs have saved outputs and an analysed Case A
-comparison; other scientific acceptance criteria remain outstanding.
+the foundation for the requested stress tests. The
+[meeting packet](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/index.html)
+now presents all three case families, including failed and incomplete paths.
+It completes reporting and bounded assessment work; the remaining scientific
+criteria require evidence that these saved runs do not establish.
 
 A checked box means the stated deliverable is complete. Existing code, a proposed
 case, or a historical result note does not complete an experimental checkbox.
 
 Progress reporting: [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) gives the
 percentage, progress bars, and a run-by-run interpretation. The current first
-checklist contains 25 items, of which 13 are complete (**52%**); preparation and
+checklist contains 25 items, of which 16 are complete (**64%**); preparation and
 prerequisites are **12/12 (100%)**, while the 13 new experimental deliverables
-are **1/13 (8%)**. These are equal checkbox counts, not time estimates or accuracy
+are **4/13 (31%)**. These are equal checkbox counts, not time estimates or accuracy
 scores.
 
 ### Completed preparation
@@ -53,7 +57,7 @@ scores.
   and an offline native fixture passed. These are software checks, not evidence
   that the detector reliably identifies attacks.
 
-### Supervisor's experimental deliverables — 1 of 13 complete
+### Supervisor's experimental deliverables — 4 of 13 complete
 
 - [ ] **Same tool, contaminated argument:** run a clean/attacked pair where the
   tool stays `send_email` but the recipient changes; establish the new value's
@@ -68,12 +72,19 @@ scores.
   proposed variant, not established by the joint-source construction.
 - [ ] **Long propagation chains:** trace malicious information through multiple
   tool interactions to an executed sensitive action, with event references.
-- [ ] **Summarization, rewriting and paraphrase:** verify that the source was
+- [x] **Summarization, rewriting and paraphrase:** verify that the source was
   exposed and transformed, then identify where its provenance is retained or lost.
+  C's first-session source exposure precedes the later factual paraphrase in file
+  3, with a Tier-2 candidate and persisted source label. This completes the stated
+  within-session assessment; it does not establish a carried attack, higher-tier
+  semantic accuracy or the separate cross-session deliverable. See the
+  [coverage assessment](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/coverage.md).
 - [ ] **Cross-session memory attack:** persist contaminated content in session A,
   retrieve it in a genuinely fresh session B, and verify the later consequence.
 - [ ] **Ambiguous judgments:** preserve uncertain, missing and contradictory
   judgments; compare judge predictions with observed interventions.
+  Scout has no judge outputs. An additional review of archived judge/replay
+  evidence was blocked by a platform cybersecurity-risk flag and is not counted.
 - [ ] **Inconsistent repeated runs:** freeze repetitions and controls, then measure
   whether the same inputs produce different actions or attribution conclusions.
 - [x] **Clean/attacked comparisons:** align executions, show changed arguments,
@@ -84,12 +95,20 @@ scores.
   erroneous send precedes source exposure in both branches; both fail the native
   exactly-one-email requirement. Comparison completion is not attack success.
 - [ ] **Complete propagation flowcharts:** link source → entry point → first
-  divergence → intermediate propagation → memory/tools → final action. The
-  illustrative diagram below is a template; case-specific evidence charts remain undone.
-- [ ] **Assess NeuroTaint's coverage:** compare recovered and missing path segments
+  divergence → intermediate propagation → memory/tools → final action. Case-specific
+  charts now show recorded A/B/C stages and missing endpoints in the meeting
+  packet. The full requested path evidence remains partial: B's exact first
+  divergence is not separately established there and C has no second-session path.
+- [x] **Assess NeuroTaint's coverage:** compare recovered and missing path segments
   against recorded execution evidence, including final task/attack outcomes.
-- [ ] **Produce the meeting packet:** a small set of end-to-end examples, paired
+  The eight-session coverage table and event-indexed assessment account for
+  exposure, 26 Tier-2 matches, native actions, stored labels and unobserved stages.
+  This is coverage assessment, not a detector-accuracy or causal claim.
+- [x] **Produce the meeting packet:** a small set of end-to-end examples, paired
   traces, flowcharts, outcomes and limitations. Preserve unsuccessful cases too.
+  The HTML packet includes all three case families, recorded source-to-action
+  paths where available, the blocked C continuation, eight session outcomes,
+  coverage, acceptance criteria and five-minute presentation notes.
 - [ ] **Establish a systematic failure pattern and research gap:** repeat a
   supported candidate and distinguish implementation defects, missing exposure,
   ambiguous method choices and actual method limitations before proposing a defense.
@@ -452,8 +471,9 @@ denominators and unknowns.
   its prior scripted fixture predates current hardening and is noncanonical.
   Canonical A v5, B v3 and corrected C v2 preparations and immutable bundles are
   frozen. Those jobs are now terminal, with 25 research requests across eight
-  sessions. The Case A comparison is complete; the full meeting packet and
-  supported causal/cross-session claims remain outstanding.
+  sessions. The Case A comparison, within-session transformation assessment,
+  coverage table and meeting packet are complete. Supported causal/cross-session
+  claims and the full planned execution remain outstanding.
 - [ ] Repeat and classify a supported candidate pattern.
 
 Setup evidence is in `codebase/agentdojo-lab/reports/20260914-nesi-setup-v1` and
@@ -544,3 +564,28 @@ are **1/13 (8%)**. Use recovered reports alongside the new Scout analysis for
 meeting preparation; file integrity alone does not validate scientific claims.
 Archive recovery used pushed checkpoint `f96bdc8`. This analysis checkpoint includes
 the recovery receipt, new analysis, and the three original Scout case directories.
+
+## Meeting-packet milestone — 2026-09-16
+
+The [HTML packet](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/index.html)
+completes items 5, 11 and 12 alongside the previously completed item 9. Current
+experimental progress is **4/13 (31%)**, overall **16/25 (64%)**. Item 5 is limited
+to observed within-session paraphrase and persisted candidate lineage; item 11
+is an assessment that explicitly includes missing coverage. Neither changes the
+unmet attack, causal or cross-session acceptance criteria.
+
+The nine unchecked items retain their original criteria in the
+[deliverable ledger](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/deliverables.json).
+The independent coverage assessment completed; the separate archived judge/replay
+review and independent full acceptance review were blocked by platform
+cybersecurity-risk flags and are not counted as completed reviews. No new
+inference, scheduler allocation, runtime repair or replacement trial occurred.
+
+Fresh offline verification checked eight event audits, 25 request-ledger entries,
+96 terminal-bound hashes and 206 unchanged raw files. The coverage assessment's
+79 input hashes also match. The HTML renderer passes scoped Ruff and compilation;
+local link and checklist-accounting checks pass. See the
+[verification receipt](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/validation.json).
+No application regression suite or browser visual QA is claimed for this report.
+Synchronization started from pushed `f528341`; the packet and current status
+documents are the changes in this continuation, with raw evidence unchanged.
