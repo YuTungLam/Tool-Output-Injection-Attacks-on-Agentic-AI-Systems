@@ -1,0 +1,99 @@
+{
+  "protocol": "scout-infrastructure-diagnosis-v1",
+  "new_model_requests": 0,
+  "receipts": [
+    {
+      "original_path": "/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-a-20260916-v3/case-a-cleanup.json",
+      "copy": "infrastructure-evidence/case-a-cleanup.json",
+      "sha256": "cc8d8cb9cafb5a9141ea0d62de9db0fa45209012406a47420a250765fae9d120"
+    },
+    {
+      "original_path": "/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-a-20260916-v3/case-a-batch-summary.json",
+      "copy": "infrastructure-evidence/case-a-batch-summary.json",
+      "sha256": "f74ffda022eb859289dd89469e1d30a3f3cb5bc4baad480bea02401aeb69bd7f"
+    },
+    {
+      "original_path": "/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-a-20260916-v3/case-a-wrapper-exit-code.txt",
+      "copy": "infrastructure-evidence/case-a-wrapper-exit-code.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "original_path": "/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-b-20260916-v2/case-b-batch-summary.json",
+      "copy": "infrastructure-evidence/case-b-batch-summary.json",
+      "sha256": "3aeec372ec0ed6274c5b2491e4a7e2f662e6aad9a607b75ba92980c187c31ec0"
+    },
+    {
+      "original_path": "/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-c-20260916-v2/case-c-batch-summary.json",
+      "copy": "infrastructure-evidence/case-c-batch-summary.json",
+      "sha256": "60b41b2002ce644e829d247b0f932d40dfa83a501831c42ed59ebfe585c4f001"
+    }
+  ],
+  "server_log": {
+    "original_path": "/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-a-20260916-v3/server.log",
+    "sha256": "156193fe80f7c5d25a31956fa8031bdbbcc201836e367f908110d3dd3e48dd8d",
+    "selected_lines": [
+      {
+        "line": 308,
+        "text": "(APIServer pid=2196693) INFO 09-16 00:35:35 [launcher.py:124] [shutdown] API server: shutdown triggered"
+      },
+      {
+        "line": 327,
+        "text": "(APIServer pid=2196693) INFO:     Application shutdown complete."
+      },
+      {
+        "line": 333,
+        "text": "(APIServer pid=2196693) AttributeError: module 'tabulate' has no attribute 'tabulate'"
+      },
+      {
+        "line": 370,
+        "text": "(Worker_TP1 pid=2200269) ModuleNotFoundError: No module named 'vllm.device_allocator.cumem'"
+      },
+      {
+        "line": 376,
+        "text": "(Worker_TP1 pid=2200269) AttributeError: module 'tabulate' has no attribute 'tabulate'"
+      },
+      {
+        "line": 412,
+        "text": "(Worker_TP2 pid=2200270) ModuleNotFoundError: No module named 'vllm.device_allocator.cumem'"
+      },
+      {
+        "line": 418,
+        "text": "(Worker_TP2 pid=2200270) AttributeError: module 'tabulate' has no attribute 'tabulate'"
+      },
+      {
+        "line": 454,
+        "text": "(Worker_TP3 pid=2200271) ModuleNotFoundError: No module named 'vllm.device_allocator.cumem'"
+      },
+      {
+        "line": 460,
+        "text": "(Worker_TP3 pid=2200271) AttributeError: module 'tabulate' has no attribute 'tabulate'"
+      },
+      {
+        "line": 496,
+        "text": "(Worker_TP0 pid=2200268) ModuleNotFoundError: No module named 'vllm.device_allocator.cumem'"
+      },
+      {
+        "line": 502,
+        "text": "(Worker_TP0 pid=2200268) AttributeError: module 'tabulate' has no attribute 'tabulate'"
+      },
+      {
+        "line": 503,
+        "text": "[rank0]:[W916 00:35:37.139279861 ProcessGroupNCCL.cpp:1624] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())"
+      }
+    ]
+  },
+  "confirmed": {
+    "case_a_runner_exit": 0,
+    "case_a_cleanup_status": "server_cleanup_unconfirmed",
+    "server_term_and_kill_sent": true,
+    "case_process_stopped": true,
+    "finalizer_requires_server_stopped": true,
+    "recorded_error_type": "ValueError"
+  },
+  "limits": [
+    "The finalizer does not retain the exception message or failing predicate. Cleanup is a confirmed failing condition, not proven to be the first or only rejection.",
+    "Process-group membership/state at the last poll is absent. Lingering live workers, zombies and signal-to-exit timing cannot be distinguished.",
+    "The transient Slurm spool file is no longer available locally, so a full post-job replay of its validation is not claimed."
+  ],
+  "scheduler_observation": "sacct -j 9064136,9064141,9064142 --format=JobID,State,Start,End,Elapsed,ExitCode,NodeList -P: A FAILED1:0 11m20s; B COMPLETED0:0 10m56s; C FAILED1:0 9m53s; all on mg15."
+}

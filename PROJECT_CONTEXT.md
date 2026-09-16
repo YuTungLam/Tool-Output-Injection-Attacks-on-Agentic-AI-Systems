@@ -1,5 +1,15 @@
 # Project context: Tool Output Injection Attacks
 
+> **Current analysis — 2026-09-16:** All three Scout jobs are terminal. A
+> `9064136` saved two sessions / eight requests before final validation failed
+> with shutdown unconfirmed; B `9064141` completed four conditions / eleven
+> requests; C `9064142` saved two first sessions / six requests, with no second-session
+> requests. Total: **25 research requests across eight sessions**.
+> The [saved-results analysis](codebase/agentdojo-lab/reports/20260916-scout-analysis-v1/index.html)
+> completes the clean/attacked comparison deliverable. Preparation is **12/12**;
+> experiments **1/13**; overall **13/25 (52%)**. No models were called or rerun
+> during this analysis. Defects are diagnosed, not repaired.
+
 Last updated: 2026-09-16 (NeSI local date). This is the durable project brief for
 the researcher, supervisor, and future Codex sessions. It records the user's
 initial idea and supervisor guidance, followed by a separately identified
@@ -145,8 +155,8 @@ Bare module filenames in this map refer to `src/agentdojo_lab/`.
 
 This continuation began from clean source checkpoint `3c71025` on
 `codex/agentdojo-lab`. The failed Case A job used pushed checkpoint
-`228f7c2ce4255a8587921ef955c633868b1fb10d`. Current head
-`74c31d5e5ad5fc5bbb89a5eb4e1520b7787d3336` matches
+`228f7c2ce4255a8587921ef955c633868b1fb10d`. Pulled source head
+`f96bdc81fe1283c1e697b30bd2dea6e4736ebf47` matches
 `origin/codex/agentdojo-lab`. Case A/B bundles bind
 `ebc619813a9c22bdb2eb3bed675213edfc83bc89`; their source inventories exclude the
 later C-only fix and were revalidated after it. Corrected Case C v2 binds
@@ -155,7 +165,7 @@ later C-only fix and were revalidated after it. Corrected Case C v2 binds
 | Item | Observed state |
 | --- | --- |
 | Source/configuration/test files | Case A/B remediation, Case C and the explicit disabled-auditor binding are pushed at `74c31d5`; the final submitted-source suite passed 351 tests plus 16 subtests in 168.01 seconds |
-| Previous raw runs and generated HTML | Historical bundles absent; new setup receipts/offline smoke exist locally |
+| Previous raw runs and generated HTML | Historical bundles recovered at f96bdc8 and checked; see HISTORICAL_EVIDENCE_VERIFICATION.json |
 | Lab environment and AgentDojo checkout | Restored on NeSI; `doctor` verifies the pinned clean upstream |
 | Semantic weights | Pinned MiniLM snapshot downloaded and file hashes verified; locked semantic dependencies installed and 53 dependent regressions passed |
 | Default Python / lab Python | System 3.9.25; restored lab `.venv` 3.12.14 |
@@ -165,10 +175,10 @@ later C-only fix and were revalidated after it. Corrected Case C v2 binds
 | Model storage | Private scratch root `/nesi/nobackup/uoa04799/dyu848/tool-output-lab`; 10 TiB project scratch allocation |
 | NeSI offline smoke | Completed native fixture with a valid 15-event recording and HTML; no real LLM calls |
 | Git transport | SSH push and pull tested successfully on this device earlier in the session |
-| Scout Case A runner | Historical v4/failed jobs remain preserved. Canonical 205-source v5 records zero requests, passed exact validation and is queued as job `9064136` |
-| Scout Case B runner | Historical v2/job `9052477` remain preserved. Canonical 164-source v3 records zero requests, passed exact validation and is queued as job `9064141` |
-| Scout Case C runner | Four-session transformed-memory protocol and wrapper implemented. Unsubmitted v1 was rejected request-free for a missing explicit disabled-auditor field; corrected canonical 206-source v2 passed and is queued as job `9064142` |
-| New case-study pilot | Frozen and queued; zero new research trajectories have started |
+| Scout Case A runner | Canonical 205-source v5 / job `9064136`: two completed sessions, eight requests; finalizer failed with shutdown unconfirmed. Earlier attempts remain preserved |
+| Scout Case B runner | Canonical 164-source v3 / job `9064141`: four completed conditions, eleven requests; target write only in both-source arm, but all four native task utilities failed |
+| Scout Case C runner | Canonical 206-source v2 / job `9064142`: two first sessions, six requests; both read their sources and wrote files. Exact-one evidence assumptions left handoffs unverified; no second-session inference |
+| New case-study pilot | Eight research sessions ran (25 requests); see the saved-results analysis above |
 
 The read-only scheduler assessment found project association `uoa04799` and GPU
 nodes; see [HPC_SETUP.md](HPC_SETUP.md) for the dated inventory and feasibility
@@ -177,8 +187,9 @@ project GPU-hour balance.
 
 Historical result notes describe successful two-source constructed attacks,
 an exact-copy cross-session pilot, and possible early LCS overmatching. Those
-are useful leads, but their ignored raw artifacts are not locally available to
-reverify. Do not regenerate missing evidence by silently rerunning the models.
+are useful leads. Their raw artifacts were recovered at `f96bdc8` and passed
+file-integrity verification; this does not independently replicate every reported
+scientific outcome. Do not replace historical evidence with silent model reruns.
 The memory copy pilot is not evidence of an actual memory-persistence attack.
 
 The old NT-AgentDojo-Eval-v1 document proposes 120 native trajectories. Its
@@ -189,24 +200,25 @@ ledgers and result notes retain their historical values.
 
 ## Next actions and unresolved inputs
 
-1. Use [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15)
-   to track delivered results separately from existing code and preparation.
-2. Preserve failed jobs `9050478` and `9052477`, rejected unsubmitted Case C v1,
-   and their original bundles. Monitor queued jobs `9064136`, `9064141` and
-   `9064142`; Slurm starts them automatically, so do not submit duplicates.
-3. After each new job becomes terminal, verify every same-allocation
-   synthetic/native smoke receipt, request-accounting record, case trace and report
-   before interpreting any recipient or sink result.
-4. Use the offline single-episode paired report for changed tool arguments,
-   proposal divergence and configured sensitive-field divergence. The separate
-   `offline-cross-session-propagation-v2` exporter validates eight typed path
-   segments in each existing offline control. The joint auditor and one-step
-   replay accept explicit configured OpenAI-compatible endpoints while preserving
-   their legacy defaults. Causal influence remains unassessed and attack success
-   unknown for the offline controls.
-5. Keep rejected Case C v1 as noncanonical engineering evidence. Monitor corrected
-   C v2 job `9064142`, then distinguish its live four-session outcomes from the
-   earlier scripted fixture and from the rejected request-free packaging attempt.
+1. Use [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-16)
+   to distinguish completed comparisons from pending causal and cross-session claims.
+2. Use the [saved-results analysis](codebase/agentdojo-lab/reports/20260916-scout-analysis-v1/index.html)
+   for Case A's first semantic response difference (event 34), first changed tool
+   and sensitive argument (event 37), and executed outcomes. Both conditions sent
+   two emails; the native task requires exactly one, so both fail utility. Their
+   initial erroneous sends precede source exposure and cannot be attributed to it.
+3. Keep Case B's both-only target action descriptive: all four task utilities
+   failed, and one observation per condition does not establish reproducibility.
+4. Diagnose Case A shutdown evidence and Case C's exact-one read/write assumptions
+   from saved artifacts. C actually read/exposed the source; its aggregate result
+   suppresses that evidence after validation fails. The later stored content was
+   identical across branches and retained the intended recipient; neither second
+   session ran. Do not report a complete cross-session attack path.
+5. Assemble the meeting packet, distinguish tracer correspondence from causal
+   influence, and document any proposed follow-up under a new named protocol.
+   No code repair or additional inference was performed in this review.
+
+## Historical implementation and submission record
 
 The first 2026-09-15 Case A implementation subagent was stopped by a platform
 security-risk flag. Its four unfinished files remain preserved byte-for-byte in
@@ -218,8 +230,8 @@ passed 84 selected tests, Ruff and Python compilation; `prepare` records
 `prepared_not_executed` and makes zero model requests. This resolves the tooling
 restriction for this bounded implementation on the current Codex surface only;
 it does not establish access in a separate API project or product. The original
-flag and quarantine remain historical evidence. No live Case A request has yet
-been observed: the first job was cancelled before allocation and corrected job
+flag and quarantine remain historical evidence. At that earlier checkpoint no live
+Case A request had been observed: the first job was cancelled before allocation and corrected job
 `9050478` failed before inference with zero requests. This is not a Scout refusal
 or an experimental finding.
 
@@ -237,8 +249,8 @@ MiniLM revision pin in its source inventory. Historical preparation
 plan SHA-256
 `5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`
 and records zero model requests. Current source hardening invalidates v4; canonical
-v5 is frozen with 205 sources and zero requests, as recorded in the active set
-below. After smoke `9039289` passed, the exact source at
+v5 was frozen with 205 sources and zero requests before its later live run,
+as recorded below. After smoke `9039289` passed, the exact source at
 pushed checkpoint `84fe7cc` was copied into immutable bundle
 `evidence/scout-case-a-submission-20260915-v1`, with private site file
 `/nesi/project/uoa04799/dyu848/tools/scout-case-a-site-20260915-v1.env`.
@@ -274,18 +286,17 @@ research attack trials. Detailed states and evidence paths are in HPC_SETUP.md.
 The active Case A/B replacement bundles bind pushed source
 `ebc619813a9c22bdb2eb3bed675213edfc83bc89`; they were revalidated after the
 C-only follow-up. Corrected Case C v2 binds pushed source
-`74c31d5e5ad5fc5bbb89a5eb4e1520b7787d3336`. Canonical zero-request preparations
-are Case A v5 (205 sources, plan
+`74c31d5e5ad5fc5bbb89a5eb4e1520b7787d3336`. The original request-free
+preparation snapshots are Case A v5 (205 sources, plan
 `992509a7a4e1b8e8817072d4c2720ded6ec5981a559fd4aa1062cb5676fe1d15`), Case B
 v3 (164 sources, plan
 `a5c0b7d19d32b619df337ab5ba47f79a4c6ba1e47732ea2f08278236390d98cf`) and Case
 C v2 (206 sources, plan
 `b28f3497f1f75faf608784d73714b9ec67cf07bbdae89e21399508a217aa1388`). Each
-preparation contains only `plan.json` and `preparation.json`; copied immutable
-bundles passed exact validation. Jobs `9064136`, `9064141` and `9064142` are
-pending for Priority with runtime zero, no allocation and no requests. Their
-latest displayed starts are Sep 16 14:14 for A, 16:15 for B and 18:15 for C;
-they are provisional and Slurm will start the jobs automatically.
+preparation initially contained only `plan.json` and `preparation.json`; copied
+immutable bundles passed exact validation. The later jobs are terminal: A
+`9064136` saved eight research requests, B `9064141` eleven, and C `9064142`
+six. Actual runs occurred 12:24–12:57 NZST; earlier queue estimates are obsolete.
 
 Case C v1 and its first bundle remain preserved but unsubmitted. The copied-wrapper
 gate caught a missing explicit `online_causal_audit = false` plan field before any
@@ -295,12 +306,12 @@ research result.
 
 The user confirms Hugging Face approval, has signed in successfully on NeSI,
 and has delegated storage choices. No further authentication input is needed.
-Previous run/report bundle locations remain unknown.
+Previous run/report bundles are recovered and tracked at `f96bdc8`.
 
 Continuation through 2026-09-16: [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) now
 provides progress bars and per-run explanations. The first supervisor checklist
-is **11/25 complete (44%)**, including preparation; preparation/prerequisites are
-**11/12 (92%)**, while its 13 new experimental deliverables remain **0/13**. This
+is **13/25 complete (52%)**, including preparation; preparation/prerequisites are
+**12/12 (100%)**, while its 13 new experimental deliverables are **1/13 (8%)**. This
 counts completed items, not elapsed time or detector accuracy. The active jobs use
 private, separately named evidence and site files described in HPC_SETUP.md.
 
@@ -314,8 +325,9 @@ Logs are `pytest-full-final.txt` and `pytest-hpc.txt` in the setup receipt direc
 The initial full run's six failures are retained in `pytest-full.txt`: four were
 missing plotting dependencies; two exposed a plan-only auditor guard bug, which
 was fixed without changing frozen protocols. The final full rerun passes.
-Live Scout integration inference has now succeeded, but no new research
-trajectory has completed. Preparation and smoke evidence is retained in
+Live Scout inference and eight new research sessions have completed; the
+new experimental claims remain limited as described in the current analysis.
+Preparation and smoke evidence is retained in
 `/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/` outside Git.
 
 New 2026-09-15 verification passed **28 HPC tests plus 25 subtests**, and **38
@@ -342,7 +354,7 @@ configured OpenAI-compatible protocols and `--endpoint-config`. They require
 explicit `--live`, an environment-only key, zero SDK retries and truthful endpoint/
 model receipts; replay preserves the recorded request and rejects a model mismatch.
 The earlier 217-test combined selection remains historical verification. The
-current ignored report is `reports/20260915-cross-session-propagation-v2`; both
+report is `reports/20260915-cross-session-propagation-v2`; both
 session alignments and graph halves are validated against content-derived IDs and
 strict input hashes. The earlier v1 report remains preserved.
 
@@ -380,8 +392,8 @@ AgentDojo runtime/package-metadata files, and a nine-entry launch manifest.
 `69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`
 and `ba663d561892b614f7320be36a8fc9c4bf363c946c15837ac52e905fa1b45906`.
 The preparation records zero model calls. Current source/config hardening
-invalidates both preserved v1 and v2. Canonical v3 is frozen with 164 sources and
-zero requests, as recorded in the active set above.
+invalidates both preserved v1 and v2. Canonical v3 was frozen with 164 sources and
+zero requests before its later four-condition run recorded above.
 
 The immutable Case B bundle is
 `/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-b-submission-20260915-v1`.
@@ -404,13 +416,15 @@ has SHA-256
 Git synchronization: this continuation started from clean checkpoint **`3c71025`**,
 matching `origin/codex/agentdojo-lab`. SSH push and pull were already verified for
 repository owner `YuTungLam`. Historical jobs retain their original checkpoints.
-Current head and `origin/codex/agentdojo-lab` both resolve to
-**`74c31d5e5ad5fc5bbb89a5eb4e1520b7787d3336`**. Active A/B bundles bind
+Pulled head and `origin/codex/agentdojo-lab` both resolve to
+**`f96bdc81fe1283c1e697b30bd2dea6e4736ebf47`**. Current analysis and
+verification additions are included in this analysis checkpoint. Active A/B bundles bind
 **`ebc619813a9c22bdb2eb3bed675213edfc83bc89`** and were revalidated after the
 C-only follow-up; active C v2 binds
 **`74c31d5e5ad5fc5bbb89a5eb4e1520b7787d3336`**. Scheduler receipts establish
-job state independently of Git; ignored plans, runs, reports and external bundles
-do not travel with a clone.
+job state independently of Git. Lab runs/reports are eligible for tracking;
+new local artifacts require commit and push. External submission bundles and
+private site files remain outside Git.
 
 ## Moving between devices
 
@@ -419,7 +433,8 @@ branch. As requested on 2026-09-16, lab `reports/` and `runs/` are tracked. It
 still ignores `.env`, `.venv/`, `.model-cache/`, and `vendor/`. Root `/docs/` and `/CODEX_HANDOFF.md` are also ignored, which is why
 the durable context lives in these root files instead.
 
-For old experiments, transfer selected complete batch directories and their
+The old evidence transfer is complete. For future transfers, preserve complete
+batch directories and their
 linked derived report directories through the researcher's normal file-transfer
 route. Preserve relative paths, original bytes, failed/quarantined artifacts,
 and manifests. Record the source device, batch IDs, destination, and SHA-256
@@ -441,12 +456,10 @@ common provider-key or private-key patterns; credential-field candidates were
 report status values. Existing report bytes are preserved. This archive addition
 does not rerun or independently revalidate the historical experiments.
 
-The reports are being committed for synchronization on `codex/agentdojo-lab`.
-Raw `runs/` remain ignored: report links into those directories or absolute local
-paths still require the corresponding evidence on the destination device. The
-NeSI checkpoints above remain dated historical records, not a fresh job check.
-Next action: pull this branch on the other device to receive the reports; transfer
-any required raw runs separately. Verify the push result in the session handoff.
+At the report-only Mac checkpoint, raw `runs/` were still excluded and a
+separate transfer was proposed. The subsequent raw-run archive and NeSI pull at
+`f96bdc8` completed both transfers, as recorded below. Absolute paths may still
+require the original directory layout on another device.
 
 Verification: all 990 staged reports match local bytes exactly after applying
 `reports/** -text` and `git add --renormalize`. Scoped `git diff --cached --check`
@@ -467,14 +480,35 @@ status values and offline/synthetic test values. Raw `.bin` files include retain
 artifact byte snapshots, not model weights. Byte-preserving Git attributes cover
 both runs and reports. No historical experiment was rerun.
 
-Reports commit `31d839c` already matches the local origin tracking reference.
-Next action: commit and push the raw-run archive, then pull the same branch on
-the destination device. Only files present on this Mac are included; NeSI-only
-artifacts still require synchronization from that device. Existing absolute-path
-links may still need the original layout. Check the session handoff for the
-verified push result.
+At the Mac report-only checkpoint, commit `31d839c` matched the local origin
+tracking reference.
+The raw-run archive was subsequently pushed and pulled on NeSI at `f96bdc8`.
+Only files present on the Mac were included; NeSI-only artifacts still require
+synchronization from this device. Existing absolute-path links may need the
+original layout.
 
 Validation: scoped `git diff --cached --check` passes for changed guidance and
 configuration. The full archive check reports pre-existing generated-artifact
 whitespace, retained intentionally. No application tests are claimed for this
 archive-only change.
+
+## Historical evidence recovery verified — 2026-09-16
+
+This checkpoint supersedes earlier statements that historical artifacts are absent
+or excluded from Git. Pulled source `f96bdc8` contains 4,933 tracked run/report
+files. Offline verification parsed 3,204 JSON documents and all 761 JSONL files
+(10,771 records), checked 652 original/recovered attack-batch SHA-256 values with
+zero mismatches, and checked 612 local links across 329 HTML reports with none
+missing. Two historical stdout captures are empty (`control.stdout.json` and
+`memory.stdout.json` under the paper-conformance report); their bytes are preserved.
+
+Receipt: [HISTORICAL_EVIDENCE_VERIFICATION.json](HISTORICAL_EVIDENCE_VERIFICATION.json).
+Verification ran with the lab Python 3.12 using `/tmp/verify_recovered_reports.py`.
+This verifies recovered file integrity/readability, not a new scientific replication;
+no model requests were made. Original process failures and later analytical recovery
+remain separate. Recovery completed preparation: **12/12 (100%)**. With the later
+saved-run comparison, overall progress is **13/25 (52%)** and experimental deliverables
+are **1/13 (8%)**. Use recovered reports alongside the new Scout analysis for
+meeting preparation; file integrity alone does not validate scientific claims.
+Archive recovery used pushed checkpoint `f96bdc8`. This analysis checkpoint includes
+the recovery receipt, new analysis, and the three original Scout case directories.

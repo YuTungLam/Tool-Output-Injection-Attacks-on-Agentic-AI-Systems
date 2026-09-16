@@ -1,5 +1,15 @@
 # NeSI setup and local inference plan
 
+> **Current analysis — 2026-09-16:** All three Scout jobs are terminal. A
+> `9064136` saved two sessions / eight requests before final validation failed
+> with shutdown unconfirmed; B `9064141` completed four conditions / eleven
+> requests; C `9064142` saved two first sessions / six requests, with no second-session
+> requests. Total: **25 research requests across eight sessions**.
+> The [saved-results analysis](codebase/agentdojo-lab/reports/20260916-scout-analysis-v1/index.html)
+> completes the clean/attacked comparison deliverable. Preparation is **12/12**;
+> experiments **1/13**; overall **13/25 (52%)**. No models were called or rerun
+> during this analysis. Defects are diagnosed, not repaired.
+
 Last updated: **2026-09-16 UTC**. The CPU lab and pinned MiniLM files have been
 restored, and the offline native-tool fixture passes. Hugging Face login and
 Scout gated-file access are verified. Local transport is implemented; the pinned
@@ -22,16 +32,17 @@ explicit `online_causal_audit = false` setting; commit
 `74c31d5e5ad5fc5bbb89a5eb4e1520b7787d3336` fixed the binding, and 81
 current-source focused Case C tests passed. Canonical Case A v5, Case B v3 and
 Case C v2 preparations and immutable bundles are now frozen. Jobs `9064136`,
-`9064141` and `9064142` are pending for Priority with no allocation or requests.
+`9064141` and `9064142` are terminal, with 25 research requests across eight
+sessions. See the saved-results analysis above for outcomes and defects.
 
-## Recovery in progress — 2026-09-16
+## Terminal research jobs and saved-evidence review — 2026-09-16
 
 The user requested continued runs with percentages and explanations. The fresh
 container retry and its GPU smoke **passed**. The first separately frozen Case A
 job was cancelled before allocation; corrected Case A job `9050478` and Case B
 job `9052477` are terminal failures with zero research requests. The repaired
 source is pushed, frozen and audited. Case A v5, Case B v3 and corrected Case C
-v2 are submitted as separately named jobs. See
+v2 ran as separately named jobs and are now terminal. See
 [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) for the checklist count and the
 interpretation of every attempt.
 
@@ -42,9 +53,9 @@ interpretation of every attempt.
 | `9043206` | CANCELLED before allocation, elapsed 00:00:00 | First Case A submission; helper-path defect found by audit; zero GPU time and requests; preserve v1 bundle |
 | `9050478` | FAILED `1:0` on `mg14`, elapsed 00:00:30 | Request-free Case A validation rejected source drift before vLLM; zero generation requests and zero research sessions |
 | `9052477` | FAILED `1:0` on `mg14`, elapsed 00:08:35 | Scout loaded and synthetic smoke passed 4/4; missing bundled local config stopped native smoke before its first request; zero Case B sessions |
-| `9064136` | PENDING for `Priority`, runtime zero; no allocation | Canonical Case A v5; automatic start; Sep 16 14:14 is the latest provisional projection; zero requests |
-| `9064141` | PENDING for `Priority`, runtime zero; no allocation | Canonical Case B v3; automatic start; Sep 16 16:15 is the latest provisional projection; zero requests |
-| `9064142` | PENDING for `Priority`, runtime zero; no allocation | Canonical Case C v2; automatic start; Sep 16 18:15 is the latest provisional projection; zero requests |
+| `9064136` | FAILED `1:0`, 12:24–12:35 NZST on mg15, 11m20s | Both research sessions completed (8 requests); shutdown unconfirmed and final validation incomplete |
+| `9064141` | COMPLETED `0:0`, 12:36–12:47 NZST on mg15, 10m56s | Four research conditions completed (11 requests); utility failures limit interpretation |
+| `9064142` | FAILED `1:0`, 12:47–12:57 NZST on mg15, 9m53s | First sessions completed (6 requests); later sessions blocked by unverified memory handoff |
 
 Slurm eventually started `9039289` automatically on `mg15`; earlier queue
 estimates were provisional and did not predict its actual start. The model loaded
@@ -68,7 +79,8 @@ envelope, so a new private site and immutable helper bundle were frozen and job
 `9043206` was submitted. Audit found a relative helper-path defect before
 allocation, and the job was cancelled. Job `9050478` was required to repeat
 synthetic and benign native smoke in its own allocation but failed before them.
-Active v5 job `9064136` must repeat those gates; old receipts cannot authorize it.
+Later v5 job `9064136` passed its own gates before both research sessions;
+old receipts did not authorize it.
 The final wrapper/Case/report/smoke selection passed 109 tests plus 16 subtests,
 Ruff, Bash syntax and Python compilation. These are offline checks only.
 
@@ -142,7 +154,7 @@ and `preparation.json`, whose SHA-256 values are
 `69b0b0c2a77bff5057789719ae76a4a05c757a1acc511e3f66f14bd13dff60ff`
 and `ba663d561892b614f7320be36a8fc9c4bf363c946c15837ac52e905fa1b45906`.
 The preparation itself records zero model calls. Current source/config hardening
-invalidates v2. Active Case B v3 is frozen and queued as job `9064141`; its exact
+invalidates v2. Later Case B v3 ran as terminal job `9064141`; its exact
 receipt is recorded below.
 
 The immutable submission bundle is
@@ -177,9 +189,10 @@ Thus the job made four synthetic, zero native and zero Case B requests. The
 Case A/B bundles bind pushed source
 `ebc619813a9c22bdb2eb3bed675213edfc83bc89`; their inventories exclude the later
 C-only plan-field fix and were revalidated after it. Corrected Case C v2 binds
-`74c31d5e5ad5fc5bbb89a5eb4e1520b7787d3336`. Each canonical preparation contains
-only `plan.json` and `preparation.json`, records zero model requests and passed
-request-free verification:
+`74c31d5e5ad5fc5bbb89a5eb4e1520b7787d3336`. At freeze time each canonical
+preparation contained only `plan.json` and `preparation.json`, recorded zero model
+requests and passed request-free verification. Later execution outputs and request
+counts are separate from those original preparation receipts:
 
 | Case | Preparation | Sources | Plan SHA-256 | Preparation SHA-256 |
 | --- | --- | ---: | --- | --- |
@@ -221,11 +234,12 @@ and GPU time. Its `rejected.json` SHA-256 is
 `a855f99b0435770ead2442964164a43812f33fd24aac19cf7a9f01b4d82d092c`.
 The corrected C v2 preparation and bundle passed the same gate.
 
-Jobs `9064136` (A), `9064141` (B) and `9064142` (C) are pending for Priority with
-runtime zero, no allocation and zero model/research requests. Slurm starts them
-automatically. The latest displayed starts are Sep 16 14:14 for A, 16:15 for B
-and 18:15 for C. They have moved from the initial submission projections and
-remain provisional, not reservations or experimental progress.
+Jobs `9064136` (A), `9064141` (B) and `9064142` (C) are terminal. Actual
+execution occurred 12:24–12:57 NZST on September 16, superseding the queue
+projections. A saved two sessions/eight requests but failed finalization with
+shutdown unconfirmed; B completed four conditions/eleven requests; C saved two
+first sessions/six requests and blocked second sessions before inference. No
+repair or further model request was performed during the saved-evidence review.
 
 ### Successful GPU smoke — job 9039289
 
@@ -302,7 +316,7 @@ Evidence directory:
 `evidence/prep-logs/container-9029215.log`. Preserve these failed-attempt records.
 That review identified container recovery and a newly named smoke as the next
 steps. Both later attempts passed; the cancelled first attempt remains terminal.
-For research deliverables, see [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-15).
+For research deliverables, see [the supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-16).
 
 ## Selected storage and sign-in
 
@@ -344,8 +358,8 @@ is `reports/20260914-nesi-setup-v1/scout-authenticated-access.json` in the lab.
 
 The inspected immutable model revision is
 `92f3b1597a195b523d8d9e5700e57e4fbb8f20d3`. Public metadata and MiniLM file-hash
-receipts are in `codebase/agentdojo-lab/reports/20260914-nesi-setup-v1/` (ignored
-runtime evidence). The public inventory predates authentication; retain it
+receipts are in `codebase/agentdojo-lab/reports/20260914-nesi-setup-v1/` (runtime
+evidence, eligible for tracking). The public inventory predates authentication; retain it
 alongside the later access check and complete download receipts.
 
 ## What is available here
@@ -518,18 +532,24 @@ must remain visible failures. None of these checks is an attack experiment.
 
 5. **Verify actual function calling.** After health/model-list checks, test one synthetic tool request, a tool result followed by a final answer, multiple calls, Unicode content, and array/null arguments. Include the no-tools JSON judge path. A successful text chat response is insufficient. Then run one clean AgentDojo task through the completed local adapter and inspect its native result, saved request, events, and HTML trace. Treat format errors and context exhaustion separately from attack effects.
 
-6. **Run the frozen paired experiments.** Case A v5, Case B v3 and Case C v2 now bind the tasks, model identities, request budgets, context limits, template, settings and order. Their queued jobs must repeat same-allocation smoke before research sessions. Keep historical Groq results separate. Link each report to immutable source traces; document the first divergence, argument changes, memory/tool propagation, final consequence, and each NeuroTaint prediction. Temperature zero does not eliminate the need to measure run-to-run variability.
+6. **Run the frozen paired experiments.** Case A v5, Case B v3 and Case C v2 now bind the tasks, model identities, request budgets, context limits, template, settings and order. The initial jobs are now terminal; each passed same-allocation smoke before its research requests. Keep historical Groq results separate. Link each report to immutable source traces; document the first divergence, argument changes, memory/tool propagation, final consequence, and each NeuroTaint prediction. Temperature zero does not eliminate the need to measure run-to-run variability.
 
-## Inputs and evidence still missing
+## Remaining evidence and diagnostics
 
-- A terminal Case A clean/attacked result from queued job `9064136`; its
-  self-contained v5 preparation and bundle are frozen with zero requests.
-- A terminal four-arm Case B result from queued job `9064141`; its v3 bundle must
-  rerun the same-allocation gates that the earlier job did not complete.
-- A live transformed-memory Case C result from queued job `9064142`. Its corrected
-  v2 preparation and bundle passed the copied-wrapper gate with zero requests;
-  rejected unsubmitted v1 remains preserved as engineering evidence.
-- Selected old raw run/report bundles from the personal computer; none restored.
+- Case A's two completed sessions have been compared. Finalizer failure leaves
+  shutdown evidence unconfirmed; inspect this orchestration defect without
+  discarding saved outputs or claiming a repair.
+- Case B's four conditions are saved. The both-only target outcome and all-four
+  utility failures need qualified interpretation; repetition and causal-method
+  coverage remain outstanding.
+- Case C read/exposed its sources and made two memory writes per first session.
+  Exact-one validator assumptions rejected the handoff and hid aggregate exposure;
+  both second sessions made zero requests. A complete cross-session path is absent.
+- Historical raw run/report bundles are recovered and integrity-checked at
+  `f96bdc8`; the verification receipt does not certify every old scientific claim.
+
+Current work is offline analysis and meeting preparation. Changes to validators,
+models, protocols, or experiments have not been made by this review.
 
 The starter primary and judge both use local Scout, with independent endpoint
 configuration. A different judge requires a new explicit model condition. The

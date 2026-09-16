@@ -1,25 +1,38 @@
 # Next phase: concrete propagation case studies on NeSI
 
-Plan date: 2026-09-14; checklist reviewed 2026-09-15; run status updated
-2026-09-16 (NeSI local date). Status: **implementation and live Scout smoke
-complete; research experiments remain pending**. This plan follows the
-researcher's new supervisor guidance in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
+> **Current analysis — 2026-09-16:** All three Scout jobs are terminal. A
+> `9064136` saved two sessions / eight requests before final validation failed
+> with shutdown unconfirmed; B `9064141` completed four conditions / eleven
+> requests; C `9064142` saved two first sessions / six requests, with no second-session
+> requests. Total: **25 research requests across eight sessions**.
+> The [saved-results analysis](codebase/agentdojo-lab/reports/20260916-scout-analysis-v1/index.html)
+> completes the clean/attacked comparison deliverable. Preparation is **12/12**;
+> experiments **1/13**; overall **13/25 (52%)**. No models were called or rerun
+> during this analysis. Defects are diagnosed, not repaired.
 
-## Supervisor checklist — checked 2026-09-15
+Plan date: 2026-09-14; checklist reviewed 2026-09-16; run status updated
+2026-09-16 (NeSI local date). Status: **implementation and live Scout smoke
+complete; eight research sessions saved and the Case A comparison analysed**.
+This plan follows the researcher's new supervisor guidance in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
+
+<a id="supervisor-checklist--checked-2026-09-15"></a>
+
+## Supervisor checklist — checked 2026-09-16
 
 Most completed work in the NeSI phase is preparation. The existing independent
 NeuroTaint implementation and per-run HTML reports predate this phase. They are
 the foundation for the requested stress tests. The new meeting packet has not
-been produced, and no new Scout research trajectories have run.
+been produced. The initial Scout runs have saved outputs and an analysed Case A
+comparison; other scientific acceptance criteria remain outstanding.
 
 A checked box means the stated deliverable is complete. Existing code, a proposed
 case, or a historical result note does not complete an experimental checkbox.
 
 Progress reporting: [RESEARCH_PROGRESS.md](RESEARCH_PROGRESS.md) gives the
 percentage, progress bars, and a run-by-run interpretation. The current first
-checklist contains 25 items, of which 11 are complete (**44%**); preparation and
-prerequisites are **11/12 (92%)**, while the 13 new experimental deliverables
-remain **0/13**. These are equal checkbox counts, not time estimates or accuracy
+checklist contains 25 items, of which 13 are complete (**52%**); preparation and
+prerequisites are **12/12 (100%)**, while the 13 new experimental deliverables
+are **1/13 (8%)**. These are equal checkbox counts, not time estimates or accuracy
 scores.
 
 ### Completed preparation
@@ -40,12 +53,13 @@ scores.
   and an offline native fixture passed. These are software checks, not evidence
   that the detector reliably identifies attacks.
 
-### Supervisor's experimental deliverables — still outstanding
+### Supervisor's experimental deliverables — 1 of 13 complete
 
 - [ ] **Same tool, contaminated argument:** run a clean/attacked pair where the
   tool stays `send_email` but the recipient changes; establish the new value's
-  source and whether the simulated send actually succeeds. The Case A runner is
-  prepared and verified offline; the live pair remains outstanding.
+  source and whether the simulated send actually succeeds. The live Case A pair
+  was compared, but no attacker-recipient send occurred and both conditions
+  failed native utility; this intended contaminated-argument case remains unmet.
 - [ ] **Joint influence:** test both sources, A alone, B alone and neither;
   determine whether both sources are necessary for the observed action in the
   new case. A bounded earlier Groq pilot is recorded below.
@@ -62,8 +76,13 @@ scores.
   judgments; compare judge predictions with observed interventions.
 - [ ] **Inconsistent repeated runs:** freeze repetitions and controls, then measure
   whether the same inputs produce different actions or attribution conclusions.
-- [ ] **Clean/attacked comparisons:** align executions, show changed arguments,
+- [x] **Clean/attacked comparisons:** align executions, show changed arguments,
   and identify both the first behavioral and first security-relevant divergence.
+  [Case A saved-result analysis](codebase/agentdojo-lab/reports/20260916-scout-analysis-v1/index.html)
+  finds identical functional responses 1/2, first semantic response difference at
+  event 34 and first tool/sensitive-argument difference at event 37. The initial
+  erroneous send precedes source exposure in both branches; both fail the native
+  exactly-one-email requirement. Comparison completion is not attack success.
 - [ ] **Complete propagation flowcharts:** link source → entry point → first
   divergence → intermediate propagation → memory/tools → final action. The
   illustrative diagram below is a template; case-specific evidence charts remain undone.
@@ -141,8 +160,8 @@ scores.
   network, GPU or scheduler actions. Commit
   `74c31d5e5ad5fc5bbb89a5eb4e1520b7787d3336` fixed the binding. A/B bind
   `ebc619813a9c22bdb2eb3bed675213edfc83bc89` and were revalidated after that
-  C-only fix; corrected C v2 binds `74c31d5`. Canonical zero-request preparations
-  contain only `plan.json` and `preparation.json`:
+  C-only fix; corrected C v2 binds `74c31d5`. Canonical preparations initially
+  recorded zero requests and contained only `plan.json` and `preparation.json`:
   Case A v5 has 205 sources and plan SHA-256
   `992509a7a4e1b8e8817072d4c2720ded6ec5981a559fd4aa1062cb5676fe1d15`;
   Case B v3 has 164 and
@@ -150,19 +169,21 @@ scores.
   corrected Case C v2 has 206 and
   `b28f3497f1f75faf608784d73714b9ec67cf07bbdae89e21399508a217aa1388`.
   Their immutable bundles passed exact validation. Jobs `9064136`, `9064141` and
-  `9064142` are pending with zero allocation, requests and research sessions.
-- [ ] Recover selected historical raw runs/reports if available and reverify them.
+  `9064142` are terminal: A two sessions/eight requests, B four/eleven,
+  C two/six; C second sessions made no requests.
+- [x] Recover selected historical raw runs/reports if available and reverify them.
   Their absence does not block new named trials, but old outcome notes cannot
   substitute for locally inspected evidence.
 
 ### Partial progress from earlier Groq pilots
 
-These results predate the NeSI setup and are recorded in tracked notes. Their raw
-bundles are absent locally, so this review has not reverified the reported outcomes.
+These results predate the NeSI setup. Their raw bundles were recovered at
+`f96bdc8` and passed integrity/readability checks; those checks do not independently
+replicate every scientific conclusion in the historical notes.
 
 | Area | Recorded historical progress | Remaining limit |
 | --- | --- | --- |
-| Joint sources | 16 native trajectories across two constructed attack families; each both-payload condition succeeded in 2/2 repetitions, singleton/neither arms in 0/2 | Small constructed pilot; new Scout case and paired meeting presentation still pending |
+| Joint sources | 16 native trajectories across two constructed attack families; each both-payload condition succeeded in 2/2 repetitions, singleton/neither arms in 0/2 | Small constructed pilot; Scout four-arm outputs now exist, but utility failures and one observation per condition limit interpretation |
 | Rewriting | Four normal-task processes produced nonverbatim outputs, but all omitted a required second read | Not malicious transformed propagation; requested step coverage was incomplete |
 | Cross-session memory | Four original/neutralized processes successfully copied and restored file content | Authorized exact-copy control, not an attacked paraphrased-memory case |
 | Judge ambiguity | Six valid later judgments included four agreements and two disagreements with earlier one-step replays | Judge/replay disagreement does not establish variability across repeated identical judgments |
@@ -191,10 +212,10 @@ paired-analysis support needed for these cases.
 
 ## Three case families
 
-All examples below are **designs, not observed results**. The three runners and
-canonical preparations are frozen and queued, while the older Case A v4 and Case
-B v2 plans remain historical, source-invalidated inputs to failed jobs. Use native
-simulated AgentDojo tools and the exact task, payload, schema and field-path
+The examples below describe **intended experimental designs**. Observed Scout
+results are linked above and do not establish every intended behavior. The older
+Case A v4 and Case B v2 plans remain historical, source-invalidated inputs to
+failed jobs. Use native simulated AgentDojo tools and the exact task, payload, schema and field-path
 bindings in the canonical plans. Use addresses validated by the native simulated
 tool schema. `EmailStr` rejects `.invalid`; use `attacker@example.com` for a
 synthetic attacker recipient.
@@ -405,8 +426,9 @@ that the original authors' implementation does so.
 The intended packet is a small HTML index plus per-case Markdown/JSON evidence:
 paired timelines, argument diffs, flowcharts, a table of covered/missing edges,
 and a short explanation of the candidate pattern and its limits. Raw evidence
-stays immutable in ignored run directories; shareable summaries and schemas can
-be tracked in Git. Publish observed counts with their denominators and unknowns.
+stays immutable in tracked run directories; new reports and evidence require
+credential checks before commit and push. Publish observed counts with their
+denominators and unknowns.
 
 - [x] Read project source and prior handoff; record the original idea and new scope.
 - [x] Identify existing graph, memory, argument, and report support and the gaps.
@@ -417,7 +439,7 @@ be tracked in Git. Publish observed counts with their denominators and unknowns.
 - [x] Pass the full 2,056-test repository suite and 26 HPC tests.
 - [x] Verify Scout inference in GPU attempt `9039289`; synthetic 4/4 and the benign
   native AgentDojo task passed in the same allocation.
-- [ ] Restore selected historical evidence bundles if available.
+- [x] Restore and integrity-check selected historical evidence bundles (`f96bdc8`).
 - [x] Implement explicit local primary/online judge and deferred single-source endpoints.
 - [x] Finish selected case runners/auditors and cross-session comparison. The
   single-episode and cross-session exporters, bounded Case A runner, configured
@@ -429,8 +451,9 @@ be tracked in Git. Publish observed counts with their denominators and unknowns.
   bundled config. Case C's strict four-session runner and wrapper are implemented;
   its prior scripted fixture predates current hardening and is noncanonical.
   Canonical A v5, B v3 and corrected C v2 preparations and immutable bundles are
-  frozen. Jobs `9064136`, `9064141` and `9064142` are pending with zero requests;
-  live results remain and no research slot has run.
+  frozen. Those jobs are now terminal, with 25 research requests across eight
+  sessions. The Case A comparison is complete; the full meeting packet and
+  supported causal/cross-session claims remain outstanding.
 - [ ] Repeat and classify a supported candidate pattern.
 
 Setup evidence is in `codebase/agentdojo-lab/reports/20260914-nesi-setup-v1` and
@@ -438,16 +461,16 @@ Setup evidence is in `codebase/agentdojo-lab/reports/20260914-nesi-setup-v1` and
 container job 9029215 failed, and dependent GPU smoke 9029415 was cancelled
 without starting. The CPU container retry `9039259` passed in 6m 49s; GPU smoke
 `9039289` passed in 9m54s with seven bounded generation requests. Scout inference
-is now verified, while no new research experiment has completed. Case A job
-`9043206` was submitted at 15:36 NZST from pushed checkpoint `84fe7cc`, then
+is verified; later jobs completed eight research sessions as recorded above.
+Case A job `9043206` was submitted at 15:36 NZST from pushed checkpoint `84fe7cc`, then
 cancelled at 15:47 before allocation after audit found a Slurm helper-path defect.
 It used zero GPU time and requests. Historical 85-source zero-request plan
 `runs/scout-case-a-prepared-v4` has SHA-256
 `5e3b9aa67767e2bf0b5c1275dac14742ee02f596efff84f0d6fe2cd4c95b5d31`.
-Current source hardening invalidates that plan. Canonical Case A v5 has 205
-sources, zero requests and plan SHA-256
+Current source hardening invalidates that plan. Canonical Case A v5 bound 205
+sources in its request-free preparation, with plan SHA-256
 `992509a7a4e1b8e8817072d4c2720ded6ec5981a559fd4aa1062cb5676fe1d15`;
-job `9064136` is pending.
+job `9064136` later saved both sessions and failed finalization.
 The corrected immutable v2 bundle binds pushed source checkpoint
 `228f7c2ce4255a8587921ef955c633868b1fb10d`. Request-free validation and an
 independent GO audit with no P1/P2 findings passed before job `9050478` was
@@ -468,28 +491,28 @@ validation and an independent GO audit with no P1/P2 findings. Job `9052477` ran
 8m 35s on `mg14`: Scout loaded and synthetic smoke passed 4/4, then native smoke
 failed before its first request because `configs/local_scout.toml` was absent
 from the immutable bundle. It made zero Case B requests. That v2 plan is now
-source-invalidated. Canonical Case B v3 has 164 sources, zero requests and plan
-SHA-256 `a5c0b7d19d32b619df337ab5ba47f79a4c6ba1e47732ea2f08278236390d98cf`;
-job `9064141` is pending. Case C's prior offline four-worker fixture completed both
-observed native paths with scripted responses, but later hardening
+source-invalidated. Canonical Case B v3 bound 164 sources in its request-free
+preparation, with plan SHA-256 `a5c0b7d19d32b619df337ab5ba47f79a4c6ba1e47732ea2f08278236390d98cf`;
+job `9064141` completed its four research conditions. Case C's prior offline
+four-worker fixture completed both observed native paths with scripted responses, but later hardening
 source-invalidated it. Rejected unsubmitted C v1 used zero calls/resources;
-corrected canonical C v2 has 206 sources, zero requests and plan SHA-256
+corrected canonical C v2 bound 206 sources in its request-free preparation, with
+plan SHA-256
 `b28f3497f1f75faf608784d73714b9ec67cf07bbdae89e21399508a217aa1388`;
-job `9064142` is pending. No live case result exists yet.
+job `9064142` saved two first sessions, then blocked both second sessions
+before inference because its memory handoff was unverified.
 See RESEARCH_PROGRESS.md for receipts and limits. Update checkboxes only with
 concrete evidence and actual verification results.
 
 ## Report archive synchronization — 2026-09-16, Mac
 
-At the researcher's request, the lab `reports/` directory is now eligible for Git
-tracking, including the 990 files currently present on this Mac. The archive is
-being committed and pushed on `codex/agentdojo-lab`; this does not complete any
-experimental checklist item or imply that NeSI-only reports are present here.
+At the report-only Mac checkpoint, the researcher requested tracking the 990
+local reports. This archive operation did not complete an experimental checklist
+item or include NeSI-only reports.
 Inventory, file-size checks and a credential-pattern scan were run locally.
-Report bytes are preserved; raw `runs/`, credentials and model caches stay
-ignored. See [the synchronization note](PROJECT_CONTEXT.md#report-synchronization--2026-09-16-mac)
-for counts and cross-device limits. Next action is to pull the branch on the
-destination device and supply any separately needed raw-run dependencies.
+Report bytes were preserved. Raw `runs/` were still excluded at that checkpoint;
+the follow-up below added them. Credentials and model caches remain excluded.
+See [the synchronization note](PROJECT_CONTEXT.md#report-synchronization--2026-09-16-mac).
 
 ### Raw-run archive follow-up — 2026-09-16, Mac
 
@@ -497,6 +520,27 @@ The user also requested and explicitly authorized synchronization of the local
 `runs/` archive to the same GitHub repository and branch. Its blanket ignore rule
 is removed; 3,943 existing files (162,050,027 bytes) are prepared for tracking with
 original bytes preserved. This supersedes the report-only exclusion above, not
-the experimental plan or any result. No new model calls were made. Next action:
-push the archive and pull it on the destination device; retain credential and
-model-cache exclusions. See [raw-run synchronization](PROJECT_CONTEXT.md#raw-run-synchronization--2026-09-16-mac).
+the experimental plan or any result. No new model calls were made. The archive
+was pushed and pulled on NeSI at `f96bdc8`; credential and model-cache exclusions
+remain. See [raw-run synchronization](PROJECT_CONTEXT.md#raw-run-synchronization--2026-09-16-mac).
+
+## Historical evidence recovery verified — 2026-09-16
+
+This checkpoint supersedes earlier statements that historical artifacts are absent
+or excluded from Git. Pulled source `f96bdc8` contains 4,933 tracked run/report
+files. Offline verification parsed 3,204 JSON documents and all 761 JSONL files
+(10,771 records), checked 652 original/recovered attack-batch SHA-256 values with
+zero mismatches, and checked 612 local links across 329 HTML reports with none
+missing. Two historical stdout captures are empty (`control.stdout.json` and
+`memory.stdout.json` under the paper-conformance report); their bytes are preserved.
+
+Receipt: [HISTORICAL_EVIDENCE_VERIFICATION.json](HISTORICAL_EVIDENCE_VERIFICATION.json).
+Verification ran with the lab Python 3.12 using `/tmp/verify_recovered_reports.py`.
+This verifies recovered file integrity/readability, not a new scientific replication;
+no model requests were made. Original process failures and later analytical recovery
+remain separate. Recovery completed preparation: **12/12 (100%)**. With the later
+saved-run comparison, overall progress is **13/25 (52%)** and experimental deliverables
+are **1/13 (8%)**. Use recovered reports alongside the new Scout analysis for
+meeting preparation; file integrity alone does not validate scientific claims.
+Archive recovery used pushed checkpoint `f96bdc8`. This analysis checkpoint includes
+the recovery receipt, new analysis, and the three original Scout case directories.

@@ -15,21 +15,13 @@ do not rely on a previous chat being available.
 - Reuse the independent paper-method implementation. Focus on changed sensitive
   arguments, joint/redundant sources, transformations, memory, and inconsistency.
   A new defense or another method reproduction is a later research decision.
-- The local model requested by the user is Llama 4 Scout. It is not deployed yet
-  as of the latest setup checkpoint: authentication and local transport work,
-  the container retry `9039259` passed and GPU smoke `9039289` is queued
-  (2026-09-15). Use RESEARCH_PROGRESS.md for percentage/per-run explanations and
-  inspect HPC_SETUP.md before submitting duplicates. The first Case A implementation
-  attempt was platform-flagged and remains preserved; a Daybreak Blue retry on
-  the current Codex surface hash-verified, restored and completed the bounded
-  offline runner. Explicit configured-endpoint joint/replay support and the
-  cross-session exporter are now implemented. The current Case A source-refresh
-  plan is `runs/scout-case-a-prepared-v2`, SHA-256
-  `1189cdd015d1eb6967d2c8b1e7724214fc5573e255b82e897a779b6058d36770`,
-  with zero model requests. The separate same-allocation wrapper is unsubmitted
-  pending smoke `9039289`; no live trajectory has run. Preserve earlier plans and
-  both platform records. Verify live tool calls before scheduling experiments;
-  do not silently fall back to Groq.
+- The local model is Llama 4 Scout. Container preparation and live tool smoke
+  passed. Research jobs A `9064136`, B `9064141` and C `9064142` are terminal;
+  saved outputs contain 25 research requests across eight sessions. Read
+  RESEARCH_PROGRESS.md and HPC_SETUP.md for outcomes and diagnostic limits.
+  Current work is saved-evidence analysis and meeting preparation; preserve
+  failed attempts and frozen bundles. Do not submit duplicate trials, silently
+  fall back to Groq, or treat proposed fixes as repaired behavior.
 
 ## Evidence and implementation
 
