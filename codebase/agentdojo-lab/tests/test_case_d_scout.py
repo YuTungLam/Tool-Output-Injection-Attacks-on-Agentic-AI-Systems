@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import copy
 import json
+import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -103,6 +106,53 @@ def test_prepare_and_verify_are_request_free_and_non_mutating(tmp_path, monkeypa
         output, case_d.SCRIPT_PATH.resolve(), run_verifier=False
     ) == plan
     assert {path.name: path.read_bytes() for path in output.iterdir()} == before
+
+
+def test_plan_only_source_bundle_verifies_prepared_case(tmp_path):
+    prepared = tmp_path / "prepared"
+    plan = case_d.prepare(prepared)
+    bundle = tmp_path / "bundle"
+    for relative in plan["source_hashes"]:
+        source = ROOT / relative
+        destination = bundle / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+
+    bundled_files = {
+        str(path.relative_to(bundle)) for path in bundle.rglob("*") if path.is_file()
+    }
+    assert bundled_files == set(plan["source_hashes"])
+    assert "hpc/scout-smoke-case-b.sbatch" not in bundled_files
+    assert "hpc/case_b_batch.py" not in bundled_files
+
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in {"LOCAL_LLM_API_KEY", "GROQ_API_KEY", "HF_TOKEN", "HUGGING_FACE_HUB_TOKEN"}
+    }
+    environment.update(
+        HF_HUB_OFFLINE="1",
+        TRANSFORMERS_OFFLINE="1",
+        PYTHONPATH=os.pathsep.join(
+            (
+                str(bundle / "vendor/agentdojo/src"),
+                str(bundle / "src"),
+                str(bundle / "scripts"),
+            )
+        ),
+    )
+    result = subprocess.run(
+        [sys.executable, str(bundle / "scripts/run_case_d_scout.py"), "verify", str(prepared)],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=120,
+        check=False,
+        env=environment,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "verified_prepared_plan" in result.stdout
 
 
 def test_case_d_context_restores_case_b_engine_globals():

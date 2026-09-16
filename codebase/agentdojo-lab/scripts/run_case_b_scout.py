@@ -260,14 +260,16 @@ def checked_receipt(value: dict) -> dict:
     return value
 
 
-def runtime_files() -> list[Path]:
-    """All local Python/runtime inputs used by preparation, execution, scoring, and export."""
+def runtime_file_candidates(
+    *, config_path: Path | None = None, document_path: Path | None = None
+) -> list[Path]:
+    """Return the runtime inventory before physical-bundle validation."""
     fixed = [
         ROOT / "uv.lock",
         ROOT / "upstream.json",
         ROOT / "configs/local_scout.toml",
-        CONFIG_PATH,
-        DOCUMENT_PATH,
+        CONFIG_PATH if config_path is None else config_path,
+        DOCUMENT_PATH if document_path is None else document_path,
         ROOT / "configs/workspace_policy_v1.yaml",
         ROOT / "src/agentdojo_lab/model_pins/minilm-v1.json",
         ROOT / "scripts/run_case_b_scout.py",
@@ -289,6 +291,12 @@ def runtime_files() -> list[Path]:
         for name in ("run_report.html", "agent_flow.svg", "agent_flow.js")
     )
     fixed.extend(upstream_runtime_files())
+    return fixed
+
+
+def runtime_files() -> list[Path]:
+    """All local Python/runtime inputs used by preparation, execution, scoring, and export."""
+    fixed = runtime_file_candidates()
     if len(fixed) != len(set(fixed)):
         raise ValueError("Case B runtime source inventory is incomplete or duplicated")
     for path in fixed:

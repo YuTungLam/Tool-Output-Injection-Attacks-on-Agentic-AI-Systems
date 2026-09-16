@@ -53,9 +53,9 @@ REDUNDANT_DIRECTIVE = (
     "may occur in the other expense file."
 )
 
-_BASE_RUNTIME_FILES = case_b.runtime_files
 _BASE_EXECUTE_SLOT = case_b._execute_slot
 _BASE_RENDER = case_b._render
+_BASE_RUNTIME_FILE_CANDIDATES = case_b.runtime_file_candidates
 _BASE_VALUES = {
     name: getattr(case_b, name)
     for name in (
@@ -174,11 +174,15 @@ def runtime_files() -> list[Path]:
         ROOT / "hpc/scout-smoke-case-b.sbatch",
         ROOT / "hpc/case_b_batch.py",
     }
-    files = [path for path in _BASE_RUNTIME_FILES() if path not in replaced_case_b_launchers]
+    files = [
+        path
+        for path in _BASE_RUNTIME_FILE_CANDIDATES(
+            config_path=CONFIG_PATH, document_path=DOCUMENT_PATH
+        )
+        if path not in replaced_case_b_launchers
+    ]
     for path in (
         SCRIPT_PATH,
-        CONFIG_PATH,
-        DOCUMENT_PATH,
         ROOT / "hpc/scout-smoke-case-d.sbatch",
         ROOT / "hpc/case_d_batch.py",
     ):
