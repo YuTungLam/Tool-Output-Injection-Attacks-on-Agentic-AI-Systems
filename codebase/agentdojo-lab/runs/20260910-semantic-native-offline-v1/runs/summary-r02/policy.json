@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "policy_id": "native-authorized-semantic-transform-v1-policy",
+  "suite": "workspace",
+  "benchmark_version": "v1.2.2",
+  "sources": {
+    "get_file_by_id": {
+      "rationale": "User-requested native file content",
+      "output_scope": "visible_text"
+    }
+  },
+  "sinks": {
+    "create_file": {
+      "rationale": "User-authorized transformed text output",
+      "argument_paths": [
+        "/content"
+      ]
+    }
+  },
+  "neutral_tools": {}
+}

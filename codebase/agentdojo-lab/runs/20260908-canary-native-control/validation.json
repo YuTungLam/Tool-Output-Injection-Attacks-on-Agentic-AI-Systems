@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "passed": true,
+  "checks": {
+    "fixed_only_audited_tool_suffixes_change": true,
+    "fixed_native_execution_completed": true,
+    "fixed_recording_complete": true,
+    "fixed_sidecar_complete": true,
+    "fixed_passive_has_no_insertion": true,
+    "fixed_expected_assignment_count": true,
+    "copy_native_execution_completed": true,
+    "copy_recording_complete": true,
+    "copy_sidecar_complete": true,
+    "copy_passive_has_no_insertion": true,
+    "copy_expected_assignment_count": true,
+    "copy_scripted_actual_copy_hits_tier1": true,
+    "summary_only_audited_tool_suffixes_change": true,
+    "summary_native_execution_completed": true,
+    "summary_recording_complete": true,
+    "summary_sidecar_complete": true,
+    "summary_passive_has_no_insertion": true,
+    "summary_expected_assignment_count": true,
+    "marker_free_summary_falls_through_tier1": true,
+    "multi_only_audited_tool_suffixes_change": true,
+    "multi_native_execution_completed": true,
+    "multi_recording_complete": true,
+    "multi_sidecar_complete": true,
+    "multi_passive_has_no_insertion": true,
+    "multi_expected_assignment_count": true,
+    "multi_copy_native_execution_completed": true,
+    "multi_copy_recording_complete": true,
+    "multi_copy_sidecar_complete": true,
+    "multi_copy_passive_has_no_insertion": true,
+    "multi_copy_expected_assignment_count": true,
+    "multi_copy_scripted_actual_copy_hits_tier1": true,
+    "mixed_only_audited_tool_suffixes_change": true,
+    "mixed_native_execution_completed": true,
+    "mixed_recording_complete": true,
+    "mixed_sidecar_complete": true,
+    "mixed_passive_has_no_insertion": true,
+    "mixed_expected_assignment_count": true,
+    "cross_session_memory_control_passed": true
+  },
+  "cases": {
+    "fixed": {
+      "assigned_count": 1,
+      "content_first_hit_tiers": [
+        "tier2"
+      ],
+      "reports": [
+        "fixed-passive/report.html",
+        "fixed-canary/report.html"
+      ]
+    },
+    "copy": {
+      "assigned_count": 1,
+      "content_first_hit_tiers": [
+        "tier1"
+      ],
+      "reports": [
+        "copy-passive/report.html",
+        "copy-canary/report.html"
+      ]
+    },
+    "summary": {
+      "assigned_count": 1,
+      "content_first_hit_tiers": [
+        "tier2"
+      ],
+      "reports": [
+        "summary-passive/report.html",
+        "summary-canary/report.html"
+      ]
+    },
+    "multi": {
+      "assigned_count": 2,
+      "content_first_hit_tiers": [
+        "tier2",
+        "tier2"
+      ],
+      "reports": [
+        "multi-passive/report.html",
+        "multi-canary/report.html"
+      ]
+    },
+    "multi_copy": {
+      "assigned_count": 2,
+      "content_first_hit_tiers": [
+        "tier1",
+        "tier2"
+      ],
+      "reports": [
+        "multi_copy-passive/report.html",
+        "multi_copy-canary/report.html"
+      ]
+    },
+    "mixed": {
+      "assigned_count": 1,
+      "content_first_hit_tiers": [
+        "tier2",
+        "tier2"
+      ],
+      "reports": [
+        "mixed-passive/report.html",
+        "mixed-canary/report.html"
+      ]
+    }
+  },
+  "real_llm": false,
+  "uuid_generation": "deterministic canonical UUIDv4 fixture values",
+  "scope": "Paired native-runtime bookkeeping and explicitly scripted copying only; not model capability, provenance accuracy, malicious propagation, causality, or benchmark efficacy.",
+  "memory": {
+    "schema_version": 1,
+    "passed": true,
+    "checks": {
+      "fresh_retrieval_marker_differs_from_stored_marker": true,
+      "actual_memory_contains_original_marked_text": true,
+      "old_marker_was_actually_retrieved_in_request": true,
+      "sink_copied_old_visible_marker": true,
+      "direct_fresh_marker_does_not_claim_old_marker_copy": true,
+      "original_marker_reference_restored": true,
+      "inherited_marker_hits_tier1": true,
+      "both_native_sessions_completed": true,
+      "both_interventions_complete": true,
+      "both_recordings_and_sidecars_complete": true,
+      "persisted_input_files_unchanged": true
+    },
+    "real_llm": false,
+    "old_token": "00000000-0000-4000-8000-000000000001",
+    "new_token": "00000000-0000-4000-8000-000000000009",
+    "session2_lineage_summary": {
+      "causal_influence": "not_assessed",
+      "comparison_count": 1,
+      "incomplete_comparison_count": 0,
+      "maliciousness": "not_assessed",
+      "matched_comparison_count": 1,
+      "recovered_source_count": 1,
+      "status": "recovered_candidates"
+    },
+    "input_sha256": {
+      "native-memory.json": "72ca6af0133b7e1e4a3a972c08e51773194a262cd9effe4658381a47653cdbef",
+      "lineage-state.json": "b918c90a48f9e191a48d8d126cd16b77546c72d642359d4b62e4c52e21958440"
+    },
+    "reports": [
+      "session1/report.html",
+      "session2/report.html"
+    ],
+    "scope": "Scripted native memory and observer-checkpoint restoration with distinct UUIDs; no model capability, maliciousness or causal evidence."
+  }
+}

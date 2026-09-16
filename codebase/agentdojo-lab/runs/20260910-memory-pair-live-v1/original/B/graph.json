@@ -1,0 +1,1087 @@
+{
+  "schema_version": 1,
+  "method": "nt_style_dcpg_v1",
+  "namespace": "method-completion-memory-pair-v1",
+  "policy_sha256": "ba98b5fe0c13cbe7e2f4c1aac5adcad59e7dfd9efa5317647db3d4a6436cc853",
+  "metadata": {
+    "method": "nt_style_dcpg_v1",
+    "namespace": "method-completion-memory-pair-v1",
+    "policy_sha256": "ba98b5fe0c13cbe7e2f4c1aac5adcad59e7dfd9efa5317647db3d4a6436cc853",
+    "assumptions": {
+      "adapter": "workspace_cloud_drive_id_and_content_v1",
+      "write_confirmation": "runtime_success_and_correlated_visible_tool_result_matching_proposed_content",
+      "restore": "exact_namespace_record_key_and_original_UTF8_content_SHA256; actual_request_exposure_required",
+      "metadata": "trusted_sidecar_only; tool_content_nt_taint_is_not_imported",
+      "transformation": "candidate_cascade_evidence_at_write; exact_stored_value_binding_at_read",
+      "confidence": "per_comparison_scores_only; path_confidence_not_defined",
+      "episode_reset": "retire_active_bindings_on_subsequent_episode; first_episode_after_load_may_restore",
+      "context": "loaded_labels_dormant_until_verified_memory_result_exposure",
+      "retrieval_time": "freeze_binding_at_successful_visible_tool_result; reexposure_preserves_that_historical_result",
+      "environment": "checkpoint_restores_observer_state_only; caller_must_restore_actual_store_separately",
+      "graph": "tool_step_core_with_tool_result_and_memory_version_structural_nodes",
+      "inference": "no_blanket_taint_of_tool_outputs; no_causal_or_malicious_verdict"
+    },
+    "limits": {
+      "nodes": 20000,
+      "edges": 100000,
+      "registry": 4096,
+      "memory_bindings": 4096,
+      "memory_events": 20000,
+      "source_codepoints": 65536,
+      "retained_text_codepoints": 4194304,
+      "records_per_result": 128,
+      "checkpoint_bytes": 33554432
+    },
+    "memory_cascade": {
+      "method": "nt_style_ordered_cascade_v1",
+      "component_mode": "ordered_staged_per_pair",
+      "assumptions": {
+        "evaluation": "ordered_staged_computation_per_source_target_pair",
+        "tier1": "disabled_condition_passive_input_unchanged_no_canary",
+        "tier2": "exact_lcs_unicode_codepoints_minimum_length_denominator",
+        "tier3": "full_source_and_target_encoded_views_only",
+        "tier4": "target_and_overlapping_source_chunks_only",
+        "short_circuit": "first_observed_threshold_hit_within_one_pair",
+        "sources": "caller_evaluates_each_visible_source_independently_without_global_short_circuit",
+        "budget_failure": "continue_to_later_stage_but_preserve_incomplete_earlier_evidence",
+        "encoder_failure": "stop_further_semantic_computation_and_return_encoder_error",
+        "negative": "requires_all_enabled_stages_scored_without_truncation",
+        "threshold_policy": "fixed_memory_thresholds_without_gold_label_selection",
+        "interpretation": "similarity_candidate_not_confirmed_provenance_maliciousness_or_causality",
+        "paper_fidelity": "local_implementation_choices_require_independent_paper_audit"
+      },
+      "thresholds": {
+        "tier2_lcs": 0.15,
+        "tier3_cosine": 0.85,
+        "tier4_cosine": 0.85,
+        "tier4_coverage": 0.1
+      },
+      "canary_enabled": false,
+      "model_inputs_modified": false,
+      "semantic_enabled": true,
+      "semantic": {
+        "method": "nt_style_semantic_v1",
+        "assumptions": {
+          "sentence_boundary_regex": "(?<=[.!?。！？])\\s+|[\\r\\n]+",
+          "sentence_edge_whitespace": "excluded_from_spans_without_changing_original_text",
+          "chunk_sentences": 3,
+          "chunk_overlap_sentences": 1,
+          "coverage": "union_length_of_threshold_matching_encoded_token_envelopes/source_codepoints",
+          "coverage_denominator": "all_original_source_codepoints_including_whitespace",
+          "offset_unit": "unicode_codepoint_half_open",
+          "threshold_policy": "explicit_memory_profile_without_gold_label_selection",
+          "evaluation": "score_tiers_3_and_4_independently_not_the_full_ordered_cascade",
+          "cosine_accumulation": "python_math_fsum_float64_over_float32_model_embeddings",
+          "truncation": "score_encoded_view_and_report_incomplete_without_claiming_full_text_coverage",
+          "interpretation": "semantic_similarity_candidate_not_confirmed_provenance_or_maliciousness"
+        },
+        "semantic_threshold": 0.85,
+        "coverage_threshold": 0.1,
+        "limits": {
+          "max_codepoints_per_input": 65536,
+          "max_chunks": 128
+        },
+        "encoder": {
+          "model_id": "sentence-transformers/all-MiniLM-L6-v2",
+          "model_path": "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/.model-cache/all-MiniLM-L6-v2-1110a243",
+          "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+          "revision_verification": "pinned_manifest_verified",
+          "pin_sha256": "1e1ce741dc5ccaefa6228aaf47de2da9b8df1684c576097eb71408c6c37a4d00",
+          "files_sha256": {
+            "1_Pooling/config.json": "4be450dde3b0273bb9787637cfbd28fe04a7ba6ab9d36ac48e92b11e350ffc23",
+            "config.json": "953f9c0d463486b10a6871cc2fd59f223b2c70184f49815e7efbcab5d8908b41",
+            "config_sentence_transformers.json": "061ca9d39661d6c6d6de5ba27f79a1cd5770ea247f8d46412a68a498dc5ac9f3",
+            "model.safetensors": "53aa51172d142c89d9012cce15ae4d6cc0ca6895895114379cacb4fab128d9db",
+            "modules.json": "84e40c8e006c9b1d6c122e02cba9b02458120b5fb0c87b746c41e0207cf642cf",
+            "sentence_bert_config.json": "fc1993fde0a95c24ec6c022539d41cf6e2f7c9721e5415d6fb6897472a9cd4b7",
+            "special_tokens_map.json": "303df45a03609e4ead04bc3dc1536d0ab19b5358db685b6f3da123d05ec200e3",
+            "tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+            "tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+            "vocab.txt": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+          },
+          "manifest_sha256": "0cfc83afb449f81d5535c4f5d76b097ee7074a09fdb02ad94ea5bb3c282e01f6",
+          "device": "cpu",
+          "dtype": "float32",
+          "max_tokens": 256,
+          "trust_remote_code": false,
+          "local_files_only": true,
+          "use_safetensors": true,
+          "cache_max_entries": 1024,
+          "cache_max_codepoints": 1048576,
+          "cache_key": "exact_input_text",
+          "normalize_embeddings": true,
+          "versions": {
+            "sentence-transformers": "6.0.1",
+            "transformers": "5.16.1",
+            "tokenizers": "0.23.2",
+            "torch": "2.14.0"
+          }
+        }
+      },
+      "profile": "memory",
+      "profile_selection": "restored_memory_lineage; no_evaluation_labels"
+    },
+    "maliciousness": "not_assessed",
+    "causal_influence": "not_assessed"
+  },
+  "parent_checkpoint_sha256": "32c64f4bcb0c39f024018121c773564f57db2004f151c5ccc26cdfb803b00153",
+  "failed": false,
+  "nodes": [
+    {
+      "arguments": {
+        "file_id": "1"
+      },
+      "call_ref": "call:00000008",
+      "episode_id": "episode:00000002",
+      "function": "get_file_by_id",
+      "kind": "tool_step",
+      "label_ids": [],
+      "node_id": "step:0ae36dfffe6fe61583ac4841ff0daee5d70b69b6f0d0411ab7c462436aa08016",
+      "outcome": "success",
+      "proposal_event_id": "event:00000009",
+      "proposal_sequence": 6,
+      "run_id": "original-A"
+    },
+    {
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000012",
+      "kind": "tool_result",
+      "label_ids": [],
+      "node_id": "result:f58c8d62b3b48500ed3772996a130e1faae641aaaed8523fa32acd076ea90589",
+      "outcome": "success",
+      "run_id": "original-A"
+    },
+    {
+      "arguments": {
+        "content": "Project reference: NTREF-9c740de2-6398-4c1e-9de8-a961c04ec3d8.",
+        "filename": "session-memory.txt"
+      },
+      "call_ref": "call:00000018",
+      "episode_id": "episode:00000002",
+      "function": "create_file",
+      "kind": "tool_step",
+      "label_ids": [
+        "label:a2b272bfc49a3ce75e2581471c6ac33a87f01506fc90bde116f86f93fca25415"
+      ],
+      "node_id": "step:3ebfb2e46285d0db8d6355a5d09984871b77fa0d9546d2c14873a806203f3514",
+      "outcome": "success",
+      "proposal_event_id": "event:00000019",
+      "proposal_sequence": 14,
+      "run_id": "original-A"
+    },
+    {
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000023",
+      "kind": "tool_result",
+      "label_ids": [],
+      "node_id": "result:e283841a250c1f4e5ab8f36ac73fe0645a62475ecf72445ae52d931c33a73fcb",
+      "outcome": "success",
+      "run_id": "original-A"
+    },
+    {
+      "content_sha256": "3badef10f247751f2cacbe797160e6dd974cb19175e592695b3ccd9423d5b76f",
+      "episode_id": "episode:00000002",
+      "kind": "memory_version",
+      "label_ids": [
+        "label:a2b272bfc49a3ce75e2581471c6ac33a87f01506fc90bde116f86f93fca25415"
+      ],
+      "node_id": "memory:772a87d78907bac000233fbb1fa0632c829ece2dc8a57dafbe8508e85f750ed9",
+      "record_key": "2",
+      "run_id": "original-A",
+      "version": 1
+    },
+    {
+      "node_id": "step:6d423098da667a48a2f6db94f89cd7a315cede88eac71b42dd789d63884d6acd",
+      "kind": "tool_step",
+      "run_id": "original-B",
+      "episode_id": "episode:00000002",
+      "proposal_event_id": "event:00000009",
+      "proposal_sequence": 6,
+      "call_ref": "call:00000008",
+      "function": "get_file_by_id",
+      "arguments": {
+        "file_id": "2"
+      },
+      "outcome": "success",
+      "label_ids": []
+    },
+    {
+      "node_id": "result:b303ebed1b843dba8b3aab8a338aef2ac07d74b6a93db288338481c49533f55e",
+      "kind": "tool_result",
+      "run_id": "original-B",
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000012",
+      "outcome": "success",
+      "label_ids": []
+    },
+    {
+      "node_id": "step:b3034571cf2ff1a40f2eb1c649dee473d4a4a75775c780612384e05f3ccb50fa",
+      "kind": "tool_step",
+      "run_id": "original-B",
+      "episode_id": "episode:00000002",
+      "proposal_event_id": "event:00000019",
+      "proposal_sequence": 14,
+      "call_ref": "call:00000018",
+      "function": "create_file",
+      "arguments": {
+        "content": "Project reference: NTREF-9c740de2-6398-4c1e-9de8-a961c04ec3d8.",
+        "filename": "session-output.txt"
+      },
+      "outcome": "success",
+      "label_ids": [
+        "label:a2b272bfc49a3ce75e2581471c6ac33a87f01506fc90bde116f86f93fca25415",
+        "label:b336b8b3d1207e4255394e9f1563ab0856fd53c433d0e283e28d7f822943926e"
+      ]
+    },
+    {
+      "node_id": "result:c7c0812ac891120d9253f51580e20eb5a1e7e959655e7c0416158ff1f1991072",
+      "kind": "tool_result",
+      "run_id": "original-B",
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000023",
+      "outcome": "success",
+      "label_ids": []
+    },
+    {
+      "node_id": "memory:1a5232ca6e741803321de02a709d5e3c927a4a3e93254eb42df14498c1e3a9d0",
+      "kind": "memory_version",
+      "run_id": "original-B",
+      "episode_id": "episode:00000002",
+      "record_key": "3",
+      "version": 1,
+      "content_sha256": "3badef10f247751f2cacbe797160e6dd974cb19175e592695b3ccd9423d5b76f",
+      "label_ids": [
+        "label:a2b272bfc49a3ce75e2581471c6ac33a87f01506fc90bde116f86f93fca25415",
+        "label:b336b8b3d1207e4255394e9f1563ab0856fd53c433d0e283e28d7f822943926e"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "candidate": false,
+      "edge_id": "edge:9c7b53713c13a3342ca7fa5509fb3653399bc0d34b4ffef98273a591ab543a3e",
+      "event_id": "event:00000012",
+      "evidence": null,
+      "evidence_score": null,
+      "from_node": "step:0ae36dfffe6fe61583ac4841ff0daee5d70b69b6f0d0411ab7c462436aa08016",
+      "label_ids": [],
+      "path_confidence": null,
+      "relation": "tool_return",
+      "tier": null,
+      "to_node": "result:f58c8d62b3b48500ed3772996a130e1faae641aaaed8523fa32acd076ea90589"
+    },
+    {
+      "candidate": false,
+      "edge_id": "edge:1650a082a7a360397c5a3773e394d9934b26f04b5990d42d64527b92bbb810ed",
+      "event_id": "event:00000019",
+      "evidence": null,
+      "evidence_score": null,
+      "from_node": "result:f58c8d62b3b48500ed3772996a130e1faae641aaaed8523fa32acd076ea90589",
+      "label_ids": [
+        "label:a2b272bfc49a3ce75e2581471c6ac33a87f01506fc90bde116f86f93fca25415"
+      ],
+      "path_confidence": null,
+      "relation": "context_exposure",
+      "tier": null,
+      "to_node": "step:3ebfb2e46285d0db8d6355a5d09984871b77fa0d9546d2c14873a806203f3514"
+    },
+    {
+      "candidate": true,
+      "edge_id": "edge:7a41e7ed3f3f12b97df9d0a17fc6646dfe85d3f1c9065caa958453ef23e6febd",
+      "event_id": "event:00000019",
+      "evidence": {
+        "argument_path": "/content",
+        "causal_influence": "not_assessed",
+        "complete": true,
+        "exposure_event_id": "event:00000015",
+        "first_matched_tier": "tier2",
+        "kind": "tool",
+        "maliciousness": "not_assessed",
+        "matched": true,
+        "message_index": 3,
+        "metadata": {
+          "assumptions": {
+            "budget_failure": "continue_to_later_stage_but_preserve_incomplete_earlier_evidence",
+            "encoder_failure": "stop_further_semantic_computation_and_return_encoder_error",
+            "evaluation": "ordered_staged_computation_per_source_target_pair",
+            "interpretation": "similarity_candidate_not_confirmed_provenance_maliciousness_or_causality",
+            "negative": "requires_all_enabled_stages_scored_without_truncation",
+            "paper_fidelity": "local_implementation_choices_require_independent_paper_audit",
+            "short_circuit": "first_observed_threshold_hit_within_one_pair",
+            "sources": "caller_evaluates_each_visible_source_independently_without_global_short_circuit",
+            "threshold_policy": "fixed_ordinary_thresholds_without_gold_label_selection",
+            "tier1": "disabled_condition_passive_input_unchanged_no_canary",
+            "tier2": "exact_lcs_unicode_codepoints_minimum_length_denominator",
+            "tier3": "full_source_and_target_encoded_views_only",
+            "tier4": "target_and_overlapping_source_chunks_only"
+          },
+          "canary_enabled": false,
+          "component_mode": "ordered_staged_per_pair",
+          "method": "nt_style_ordered_cascade_v1",
+          "model_inputs_modified": false,
+          "semantic": {
+            "assumptions": {
+              "chunk_overlap_sentences": 1,
+              "chunk_sentences": 3,
+              "cosine_accumulation": "python_math_fsum_float64_over_float32_model_embeddings",
+              "coverage": "union_length_of_threshold_matching_encoded_token_envelopes/source_codepoints",
+              "coverage_denominator": "all_original_source_codepoints_including_whitespace",
+              "evaluation": "score_tiers_3_and_4_independently_not_the_full_ordered_cascade",
+              "interpretation": "semantic_similarity_candidate_not_confirmed_provenance_or_maliciousness",
+              "offset_unit": "unicode_codepoint_half_open",
+              "sentence_boundary_regex": "(?<=[.!?。！？])\\s+|[\\r\\n]+",
+              "sentence_edge_whitespace": "excluded_from_spans_without_changing_original_text",
+              "threshold_policy": "fixed_ordinary_thresholds_without_gold_label_selection",
+              "truncation": "score_encoded_view_and_report_incomplete_without_claiming_full_text_coverage"
+            },
+            "coverage_threshold": 0.1,
+            "encoder": {
+              "cache_key": "exact_input_text",
+              "cache_max_codepoints": 1048576,
+              "cache_max_entries": 1024,
+              "device": "cpu",
+              "dtype": "float32",
+              "files_sha256": {
+                "1_Pooling/config.json": "4be450dde3b0273bb9787637cfbd28fe04a7ba6ab9d36ac48e92b11e350ffc23",
+                "config.json": "953f9c0d463486b10a6871cc2fd59f223b2c70184f49815e7efbcab5d8908b41",
+                "config_sentence_transformers.json": "061ca9d39661d6c6d6de5ba27f79a1cd5770ea247f8d46412a68a498dc5ac9f3",
+                "model.safetensors": "53aa51172d142c89d9012cce15ae4d6cc0ca6895895114379cacb4fab128d9db",
+                "modules.json": "84e40c8e006c9b1d6c122e02cba9b02458120b5fb0c87b746c41e0207cf642cf",
+                "sentence_bert_config.json": "fc1993fde0a95c24ec6c022539d41cf6e2f7c9721e5415d6fb6897472a9cd4b7",
+                "special_tokens_map.json": "303df45a03609e4ead04bc3dc1536d0ab19b5358db685b6f3da123d05ec200e3",
+                "tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+                "tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+                "vocab.txt": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+              },
+              "local_files_only": true,
+              "manifest_sha256": "0cfc83afb449f81d5535c4f5d76b097ee7074a09fdb02ad94ea5bb3c282e01f6",
+              "max_tokens": 256,
+              "model_id": "sentence-transformers/all-MiniLM-L6-v2",
+              "model_path": "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/.model-cache/all-MiniLM-L6-v2-1110a243",
+              "normalize_embeddings": true,
+              "pin_sha256": "1e1ce741dc5ccaefa6228aaf47de2da9b8df1684c576097eb71408c6c37a4d00",
+              "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+              "revision_verification": "pinned_manifest_verified",
+              "trust_remote_code": false,
+              "use_safetensors": true,
+              "versions": {
+                "sentence-transformers": "6.0.1",
+                "tokenizers": "0.23.2",
+                "torch": "2.14.0",
+                "transformers": "5.16.1"
+              }
+            },
+            "limits": {
+              "max_chunks": 128,
+              "max_codepoints_per_input": 65536
+            },
+            "method": "nt_style_semantic_v1",
+            "semantic_threshold": 0.6
+          },
+          "semantic_enabled": true,
+          "thresholds": {
+            "tier2_lcs": 0.15,
+            "tier3_cosine": 0.6,
+            "tier4_cosine": 0.6,
+            "tier4_coverage": 0.1
+          }
+        },
+        "method": "nt_style_ordered_cascade_v1",
+        "origin_tool": "get_file_by_id",
+        "provenance_verdict": "unreviewed",
+        "request_pointer": "/data/body/messages/3/content",
+        "source_event_id": "event:00000012",
+        "source_id": "source:07b59a28bda4bb4565d7073e0ee6961692433907362d5ac3302926a8d02a75eb",
+        "source_length": 202,
+        "stages": {
+          "tier1": {
+            "complete": false,
+            "matched": null,
+            "reason": "passive_input_unchanged_no_canary",
+            "score": null,
+            "stage": "tier1",
+            "status": "disabled_condition",
+            "truncated": false
+          },
+          "tier2": {
+            "complete": true,
+            "lcs_length": 62,
+            "matched": true,
+            "metadata": {
+              "algorithm": "exact_bitset_longest_common_subsequence",
+              "case_sensitive": true,
+              "exceeded_limits": [],
+              "limits": {
+                "max_codepoints_per_input": 65536,
+                "max_length_product": 67108864
+              },
+              "normalization": "none",
+              "unit": "unicode_codepoint"
+            },
+            "method": "nt_style_lcs_v1",
+            "reason": "threshold_met",
+            "score": 1.0,
+            "source_length": 202,
+            "stage": "tier2",
+            "status": "scored",
+            "target_length": 62,
+            "threshold": 0.15,
+            "truncated": false
+          },
+          "tier3": {
+            "complete": false,
+            "matched": null,
+            "reason": "earlier_stage_matched",
+            "score": null,
+            "stage": "tier3",
+            "status": "skipped",
+            "truncated": false
+          },
+          "tier4": {
+            "complete": false,
+            "coverage": null,
+            "matched": null,
+            "reason": "earlier_stage_matched",
+            "score": null,
+            "stage": "tier4",
+            "status": "skipped",
+            "truncated": false
+          }
+        },
+        "status": "scored",
+        "target_length": 62,
+        "truncated": false
+      },
+      "evidence_score": 1.0,
+      "from_node": "step:0ae36dfffe6fe61583ac4841ff0daee5d70b69b6f0d0411ab7c462436aa08016",
+      "label_ids": [
+        "label:a2b272bfc49a3ce75e2581471c6ac33a87f01506fc90bde116f86f93fca25415"
+      ],
+      "path_confidence": null,
+      "relation": "candidate_content",
+      "tier": "tier2",
+      "to_node": "step:3ebfb2e46285d0db8d6355a5d09984871b77fa0d9546d2c14873a806203f3514"
+    },
+    {
+      "candidate": false,
+      "edge_id": "edge:832e5ec7148449af9df1354cbe8bc969cf68028fceb7c111e32031b00ab26f87",
+      "event_id": "event:00000023",
+      "evidence": null,
+      "evidence_score": null,
+      "from_node": "step:3ebfb2e46285d0db8d6355a5d09984871b77fa0d9546d2c14873a806203f3514",
+      "label_ids": [],
+      "path_confidence": null,
+      "relation": "tool_return",
+      "tier": null,
+      "to_node": "result:e283841a250c1f4e5ab8f36ac73fe0645a62475ecf72445ae52d931c33a73fcb"
+    },
+    {
+      "candidate": false,
+      "edge_id": "edge:38b1c653f23b217a481074807c304f0b3b5bc7fc4cd7a5546091664aa95f7a90",
+      "event_id": "event:00000023",
+      "evidence": null,
+      "evidence_score": null,
+      "from_node": "step:3ebfb2e46285d0db8d6355a5d09984871b77fa0d9546d2c14873a806203f3514",
+      "label_ids": [
+        "label:a2b272bfc49a3ce75e2581471c6ac33a87f01506fc90bde116f86f93fca25415"
+      ],
+      "path_confidence": null,
+      "relation": "memory_persist",
+      "tier": null,
+      "to_node": "memory:772a87d78907bac000233fbb1fa0632c829ece2dc8a57dafbe8508e85f750ed9"
+    },
+    {
+      "edge_id": "edge:09a3d677203b09cf834284aafde068fb2f05038fba4a89c1f2552931ec880a0e",
+      "from_node": "step:6d423098da667a48a2f6db94f89cd7a315cede88eac71b42dd789d63884d6acd",
+      "to_node": "result:b303ebed1b843dba8b3aab8a338aef2ac07d74b6a93db288338481c49533f55e",
+      "relation": "tool_return",
+      "label_ids": [],
+      "event_id": "event:00000012",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:1804615e23b391f00707bb0ac4c3c7b696da7d5af0a7ea7c201cc171c91e290b",
+      "from_node": "memory:772a87d78907bac000233fbb1fa0632c829ece2dc8a57dafbe8508e85f750ed9",
+      "to_node": "step:6d423098da667a48a2f6db94f89cd7a315cede88eac71b42dd789d63884d6acd",
+      "relation": "memory_restore",
+      "label_ids": [
+        "label:a2b272bfc49a3ce75e2581471c6ac33a87f01506fc90bde116f86f93fca25415"
+      ],
+      "event_id": "event:00000015",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:7a228a08e308d2c6bb6b3236b5a487c4ce3a1e382c5bc78af1bb0e0c9d13068b",
+      "from_node": "result:b303ebed1b843dba8b3aab8a338aef2ac07d74b6a93db288338481c49533f55e",
+      "to_node": "step:b3034571cf2ff1a40f2eb1c649dee473d4a4a75775c780612384e05f3ccb50fa",
+      "relation": "context_exposure",
+      "label_ids": [
+        "label:b336b8b3d1207e4255394e9f1563ab0856fd53c433d0e283e28d7f822943926e"
+      ],
+      "event_id": "event:00000019",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:0d22091df41df6cdbc86ff070ed7c5d3669f9b92b267ce7158f4cb461bc8fee7",
+      "from_node": "step:6d423098da667a48a2f6db94f89cd7a315cede88eac71b42dd789d63884d6acd",
+      "to_node": "step:b3034571cf2ff1a40f2eb1c649dee473d4a4a75775c780612384e05f3ccb50fa",
+      "relation": "candidate_content",
+      "label_ids": [
+        "label:b336b8b3d1207e4255394e9f1563ab0856fd53c433d0e283e28d7f822943926e"
+      ],
+      "event_id": "event:00000019",
+      "candidate": true,
+      "path_confidence": null,
+      "tier": "tier2",
+      "evidence_score": 1.0,
+      "evidence": {
+        "argument_path": "/content",
+        "source_id": "source:5341811d5362379b15dd1702918374957d775fc3aaa5ac239b515679f6e0fa42",
+        "message_index": 3,
+        "request_pointer": "/data/body/messages/3/content",
+        "exposure_event_id": "event:00000015",
+        "kind": "tool",
+        "source_event_id": "event:00000012",
+        "origin_tool": "get_file_by_id",
+        "method": "nt_style_ordered_cascade_v1",
+        "status": "scored",
+        "matched": true,
+        "first_matched_tier": "tier2",
+        "complete": true,
+        "truncated": false,
+        "source_length": 198,
+        "target_length": 62,
+        "stages": {
+          "tier1": {
+            "stage": "tier1",
+            "status": "disabled_condition",
+            "reason": "passive_input_unchanged_no_canary",
+            "score": null,
+            "matched": null,
+            "complete": false,
+            "truncated": false
+          },
+          "tier2": {
+            "method": "nt_style_lcs_v1",
+            "status": "scored",
+            "score": 1.0,
+            "lcs_length": 62,
+            "source_length": 198,
+            "target_length": 62,
+            "threshold": 0.15,
+            "matched": true,
+            "metadata": {
+              "unit": "unicode_codepoint",
+              "case_sensitive": true,
+              "normalization": "none",
+              "algorithm": "exact_bitset_longest_common_subsequence",
+              "limits": {
+                "max_codepoints_per_input": 65536,
+                "max_length_product": 67108864
+              },
+              "exceeded_limits": []
+            },
+            "stage": "tier2",
+            "complete": true,
+            "truncated": false,
+            "reason": "threshold_met"
+          },
+          "tier3": {
+            "stage": "tier3",
+            "status": "skipped",
+            "reason": "earlier_stage_matched",
+            "score": null,
+            "matched": null,
+            "complete": false,
+            "truncated": false
+          },
+          "tier4": {
+            "stage": "tier4",
+            "status": "skipped",
+            "reason": "earlier_stage_matched",
+            "score": null,
+            "matched": null,
+            "complete": false,
+            "truncated": false,
+            "coverage": null
+          }
+        },
+        "metadata": {
+          "method": "nt_style_ordered_cascade_v1",
+          "component_mode": "ordered_staged_per_pair",
+          "assumptions": {
+            "evaluation": "ordered_staged_computation_per_source_target_pair",
+            "tier1": "disabled_condition_passive_input_unchanged_no_canary",
+            "tier2": "exact_lcs_unicode_codepoints_minimum_length_denominator",
+            "tier3": "full_source_and_target_encoded_views_only",
+            "tier4": "target_and_overlapping_source_chunks_only",
+            "short_circuit": "first_observed_threshold_hit_within_one_pair",
+            "sources": "caller_evaluates_each_visible_source_independently_without_global_short_circuit",
+            "budget_failure": "continue_to_later_stage_but_preserve_incomplete_earlier_evidence",
+            "encoder_failure": "stop_further_semantic_computation_and_return_encoder_error",
+            "negative": "requires_all_enabled_stages_scored_without_truncation",
+            "threshold_policy": "fixed_ordinary_thresholds_without_gold_label_selection",
+            "interpretation": "similarity_candidate_not_confirmed_provenance_maliciousness_or_causality",
+            "paper_fidelity": "local_implementation_choices_require_independent_paper_audit"
+          },
+          "thresholds": {
+            "tier2_lcs": 0.15,
+            "tier3_cosine": 0.6,
+            "tier4_cosine": 0.6,
+            "tier4_coverage": 0.1
+          },
+          "canary_enabled": false,
+          "model_inputs_modified": false,
+          "semantic_enabled": true,
+          "semantic": {
+            "method": "nt_style_semantic_v1",
+            "assumptions": {
+              "sentence_boundary_regex": "(?<=[.!?。！？])\\s+|[\\r\\n]+",
+              "sentence_edge_whitespace": "excluded_from_spans_without_changing_original_text",
+              "chunk_sentences": 3,
+              "chunk_overlap_sentences": 1,
+              "coverage": "union_length_of_threshold_matching_encoded_token_envelopes/source_codepoints",
+              "coverage_denominator": "all_original_source_codepoints_including_whitespace",
+              "offset_unit": "unicode_codepoint_half_open",
+              "threshold_policy": "fixed_ordinary_thresholds_without_gold_label_selection",
+              "evaluation": "score_tiers_3_and_4_independently_not_the_full_ordered_cascade",
+              "cosine_accumulation": "python_math_fsum_float64_over_float32_model_embeddings",
+              "truncation": "score_encoded_view_and_report_incomplete_without_claiming_full_text_coverage",
+              "interpretation": "semantic_similarity_candidate_not_confirmed_provenance_or_maliciousness"
+            },
+            "semantic_threshold": 0.6,
+            "coverage_threshold": 0.1,
+            "limits": {
+              "max_codepoints_per_input": 65536,
+              "max_chunks": 128
+            },
+            "encoder": {
+              "model_id": "sentence-transformers/all-MiniLM-L6-v2",
+              "model_path": "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/.model-cache/all-MiniLM-L6-v2-1110a243",
+              "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+              "revision_verification": "pinned_manifest_verified",
+              "pin_sha256": "1e1ce741dc5ccaefa6228aaf47de2da9b8df1684c576097eb71408c6c37a4d00",
+              "files_sha256": {
+                "1_Pooling/config.json": "4be450dde3b0273bb9787637cfbd28fe04a7ba6ab9d36ac48e92b11e350ffc23",
+                "config.json": "953f9c0d463486b10a6871cc2fd59f223b2c70184f49815e7efbcab5d8908b41",
+                "config_sentence_transformers.json": "061ca9d39661d6c6d6de5ba27f79a1cd5770ea247f8d46412a68a498dc5ac9f3",
+                "model.safetensors": "53aa51172d142c89d9012cce15ae4d6cc0ca6895895114379cacb4fab128d9db",
+                "modules.json": "84e40c8e006c9b1d6c122e02cba9b02458120b5fb0c87b746c41e0207cf642cf",
+                "sentence_bert_config.json": "fc1993fde0a95c24ec6c022539d41cf6e2f7c9721e5415d6fb6897472a9cd4b7",
+                "special_tokens_map.json": "303df45a03609e4ead04bc3dc1536d0ab19b5358db685b6f3da123d05ec200e3",
+                "tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+                "tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+                "vocab.txt": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+              },
+              "manifest_sha256": "0cfc83afb449f81d5535c4f5d76b097ee7074a09fdb02ad94ea5bb3c282e01f6",
+              "device": "cpu",
+              "dtype": "float32",
+              "max_tokens": 256,
+              "trust_remote_code": false,
+              "local_files_only": true,
+              "use_safetensors": true,
+              "cache_max_entries": 1024,
+              "cache_max_codepoints": 1048576,
+              "cache_key": "exact_input_text",
+              "normalize_embeddings": true,
+              "versions": {
+                "sentence-transformers": "6.0.1",
+                "transformers": "5.16.1",
+                "tokenizers": "0.23.2",
+                "torch": "2.14.0"
+              }
+            }
+          }
+        },
+        "provenance_verdict": "unreviewed",
+        "maliciousness": "not_assessed",
+        "causal_influence": "not_assessed"
+      }
+    },
+    {
+      "edge_id": "edge:2ee8680a5870e3fb6386c807fddc5859bc90a9fa6a48f8e8adc1a7ae64bd0d43",
+      "from_node": "step:6d423098da667a48a2f6db94f89cd7a315cede88eac71b42dd789d63884d6acd",
+      "to_node": "step:b3034571cf2ff1a40f2eb1c649dee473d4a4a75775c780612384e05f3ccb50fa",
+      "relation": "candidate_content",
+      "label_ids": [
+        "label:a2b272bfc49a3ce75e2581471c6ac33a87f01506fc90bde116f86f93fca25415"
+      ],
+      "event_id": "event:00000019",
+      "candidate": true,
+      "path_confidence": null,
+      "tier": "tier2",
+      "evidence_score": 1.0,
+      "evidence": {
+        "argument_path": "/content",
+        "label_id": "label:a2b272bfc49a3ce75e2581471c6ac33a87f01506fc90bde116f86f93fca25415",
+        "carrier_source_id": "source:5341811d5362379b15dd1702918374957d775fc3aaa5ac239b515679f6e0fa42",
+        "method": "nt_style_ordered_cascade_v1",
+        "status": "scored",
+        "matched": true,
+        "first_matched_tier": "tier2",
+        "complete": true,
+        "truncated": false,
+        "source_length": 202,
+        "target_length": 62,
+        "stages": {
+          "tier1": {
+            "stage": "tier1",
+            "status": "disabled_condition",
+            "reason": "passive_input_unchanged_no_canary",
+            "score": null,
+            "matched": null,
+            "complete": false,
+            "truncated": false
+          },
+          "tier2": {
+            "method": "nt_style_lcs_v1",
+            "status": "scored",
+            "score": 1.0,
+            "lcs_length": 62,
+            "source_length": 202,
+            "target_length": 62,
+            "threshold": 0.15,
+            "matched": true,
+            "metadata": {
+              "unit": "unicode_codepoint",
+              "case_sensitive": true,
+              "normalization": "none",
+              "algorithm": "exact_bitset_longest_common_subsequence",
+              "limits": {
+                "max_codepoints_per_input": 65536,
+                "max_length_product": 67108864
+              },
+              "exceeded_limits": []
+            },
+            "stage": "tier2",
+            "complete": true,
+            "truncated": false,
+            "reason": "threshold_met"
+          },
+          "tier3": {
+            "stage": "tier3",
+            "status": "skipped",
+            "reason": "earlier_stage_matched",
+            "score": null,
+            "matched": null,
+            "complete": false,
+            "truncated": false
+          },
+          "tier4": {
+            "stage": "tier4",
+            "status": "skipped",
+            "reason": "earlier_stage_matched",
+            "score": null,
+            "matched": null,
+            "complete": false,
+            "truncated": false,
+            "coverage": null
+          }
+        },
+        "metadata": {
+          "method": "nt_style_ordered_cascade_v1",
+          "component_mode": "ordered_staged_per_pair",
+          "assumptions": {
+            "evaluation": "ordered_staged_computation_per_source_target_pair",
+            "tier1": "disabled_condition_passive_input_unchanged_no_canary",
+            "tier2": "exact_lcs_unicode_codepoints_minimum_length_denominator",
+            "tier3": "full_source_and_target_encoded_views_only",
+            "tier4": "target_and_overlapping_source_chunks_only",
+            "short_circuit": "first_observed_threshold_hit_within_one_pair",
+            "sources": "caller_evaluates_each_visible_source_independently_without_global_short_circuit",
+            "budget_failure": "continue_to_later_stage_but_preserve_incomplete_earlier_evidence",
+            "encoder_failure": "stop_further_semantic_computation_and_return_encoder_error",
+            "negative": "requires_all_enabled_stages_scored_without_truncation",
+            "threshold_policy": "fixed_memory_thresholds_without_gold_label_selection",
+            "interpretation": "similarity_candidate_not_confirmed_provenance_maliciousness_or_causality",
+            "paper_fidelity": "local_implementation_choices_require_independent_paper_audit"
+          },
+          "thresholds": {
+            "tier2_lcs": 0.15,
+            "tier3_cosine": 0.85,
+            "tier4_cosine": 0.85,
+            "tier4_coverage": 0.1
+          },
+          "canary_enabled": false,
+          "model_inputs_modified": false,
+          "semantic_enabled": true,
+          "semantic": {
+            "method": "nt_style_semantic_v1",
+            "assumptions": {
+              "sentence_boundary_regex": "(?<=[.!?。！？])\\s+|[\\r\\n]+",
+              "sentence_edge_whitespace": "excluded_from_spans_without_changing_original_text",
+              "chunk_sentences": 3,
+              "chunk_overlap_sentences": 1,
+              "coverage": "union_length_of_threshold_matching_encoded_token_envelopes/source_codepoints",
+              "coverage_denominator": "all_original_source_codepoints_including_whitespace",
+              "offset_unit": "unicode_codepoint_half_open",
+              "threshold_policy": "explicit_memory_profile_without_gold_label_selection",
+              "evaluation": "score_tiers_3_and_4_independently_not_the_full_ordered_cascade",
+              "cosine_accumulation": "python_math_fsum_float64_over_float32_model_embeddings",
+              "truncation": "score_encoded_view_and_report_incomplete_without_claiming_full_text_coverage",
+              "interpretation": "semantic_similarity_candidate_not_confirmed_provenance_or_maliciousness"
+            },
+            "semantic_threshold": 0.85,
+            "coverage_threshold": 0.1,
+            "limits": {
+              "max_codepoints_per_input": 65536,
+              "max_chunks": 128
+            },
+            "encoder": {
+              "model_id": "sentence-transformers/all-MiniLM-L6-v2",
+              "model_path": "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/.model-cache/all-MiniLM-L6-v2-1110a243",
+              "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+              "revision_verification": "pinned_manifest_verified",
+              "pin_sha256": "1e1ce741dc5ccaefa6228aaf47de2da9b8df1684c576097eb71408c6c37a4d00",
+              "files_sha256": {
+                "1_Pooling/config.json": "4be450dde3b0273bb9787637cfbd28fe04a7ba6ab9d36ac48e92b11e350ffc23",
+                "config.json": "953f9c0d463486b10a6871cc2fd59f223b2c70184f49815e7efbcab5d8908b41",
+                "config_sentence_transformers.json": "061ca9d39661d6c6d6de5ba27f79a1cd5770ea247f8d46412a68a498dc5ac9f3",
+                "model.safetensors": "53aa51172d142c89d9012cce15ae4d6cc0ca6895895114379cacb4fab128d9db",
+                "modules.json": "84e40c8e006c9b1d6c122e02cba9b02458120b5fb0c87b746c41e0207cf642cf",
+                "sentence_bert_config.json": "fc1993fde0a95c24ec6c022539d41cf6e2f7c9721e5415d6fb6897472a9cd4b7",
+                "special_tokens_map.json": "303df45a03609e4ead04bc3dc1536d0ab19b5358db685b6f3da123d05ec200e3",
+                "tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+                "tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+                "vocab.txt": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+              },
+              "manifest_sha256": "0cfc83afb449f81d5535c4f5d76b097ee7074a09fdb02ad94ea5bb3c282e01f6",
+              "device": "cpu",
+              "dtype": "float32",
+              "max_tokens": 256,
+              "trust_remote_code": false,
+              "local_files_only": true,
+              "use_safetensors": true,
+              "cache_max_entries": 1024,
+              "cache_max_codepoints": 1048576,
+              "cache_key": "exact_input_text",
+              "normalize_embeddings": true,
+              "versions": {
+                "sentence-transformers": "6.0.1",
+                "transformers": "5.16.1",
+                "tokenizers": "0.23.2",
+                "torch": "2.14.0"
+              }
+            }
+          },
+          "profile": "memory",
+          "profile_selection": "restored_memory_lineage; no_evaluation_labels"
+        },
+        "provenance_verdict": "unreviewed",
+        "maliciousness": "not_assessed",
+        "causal_influence": "not_assessed"
+      }
+    },
+    {
+      "edge_id": "edge:f41503ced21d1eb272aff08a9bcc009f7355335a9b3a29ac00ec2fa531040823",
+      "from_node": "step:b3034571cf2ff1a40f2eb1c649dee473d4a4a75775c780612384e05f3ccb50fa",
+      "to_node": "result:c7c0812ac891120d9253f51580e20eb5a1e7e959655e7c0416158ff1f1991072",
+      "relation": "tool_return",
+      "label_ids": [],
+      "event_id": "event:00000023",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:a0fb6f817b9a50d7e42ee4531a04c0d8be5bd21401ec594f471ec5bccd0238dd",
+      "from_node": "step:b3034571cf2ff1a40f2eb1c649dee473d4a4a75775c780612384e05f3ccb50fa",
+      "to_node": "memory:1a5232ca6e741803321de02a709d5e3c927a4a3e93254eb42df14498c1e3a9d0",
+      "relation": "memory_persist",
+      "label_ids": [
+        "label:a2b272bfc49a3ce75e2581471c6ac33a87f01506fc90bde116f86f93fca25415",
+        "label:b336b8b3d1207e4255394e9f1563ab0856fd53c433d0e283e28d7f822943926e"
+      ],
+      "event_id": "event:00000023",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:f5cba1c28c2ee4d9908e4fd0819b9fbe64f2f5148ae29fe8df6ae3384b6586b3",
+      "from_node": "memory:772a87d78907bac000233fbb1fa0632c829ece2dc8a57dafbe8508e85f750ed9",
+      "to_node": "step:6d423098da667a48a2f6db94f89cd7a315cede88eac71b42dd789d63884d6acd",
+      "relation": "memory_restore",
+      "label_ids": [
+        "label:a2b272bfc49a3ce75e2581471c6ac33a87f01506fc90bde116f86f93fca25415"
+      ],
+      "event_id": "event:00000026",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    }
+  ],
+  "registry": [
+    {
+      "episode_id": "episode:00000002",
+      "label_id": "label:a2b272bfc49a3ce75e2581471c6ac33a87f01506fc90bde116f86f93fca25415",
+      "origin_node_id": "step:0ae36dfffe6fe61583ac4841ff0daee5d70b69b6f0d0411ab7c462436aa08016",
+      "origin_result_node_id": "result:f58c8d62b3b48500ed3772996a130e1faae641aaaed8523fa32acd076ea90589",
+      "origin_tool": "get_file_by_id",
+      "path_confidence": null,
+      "policy_sha256": "ba98b5fe0c13cbe7e2f4c1aac5adcad59e7dfd9efa5317647db3d4a6436cc853",
+      "run_id": "original-A",
+      "source_event_id": "event:00000012",
+      "source_id": "source:07b59a28bda4bb4565d7073e0ee6961692433907362d5ac3302926a8d02a75eb",
+      "text": "content: 'Project reference: NTREF-9c740de2-6398-4c1e-9de8-a961c04ec3d8.'\nfilename: external-reference.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 62",
+      "text_sha256": "48251a57e97b204d2bb8940f6aa2222db34c32575c0bfa124a5f77993815a79f"
+    },
+    {
+      "label_id": "label:b336b8b3d1207e4255394e9f1563ab0856fd53c433d0e283e28d7f822943926e",
+      "source_id": "source:5341811d5362379b15dd1702918374957d775fc3aaa5ac239b515679f6e0fa42",
+      "source_event_id": "event:00000012",
+      "origin_node_id": "step:6d423098da667a48a2f6db94f89cd7a315cede88eac71b42dd789d63884d6acd",
+      "origin_result_node_id": "result:b303ebed1b843dba8b3aab8a338aef2ac07d74b6a93db288338481c49533f55e",
+      "run_id": "original-B",
+      "episode_id": "episode:00000002",
+      "origin_tool": "get_file_by_id",
+      "text": "content: 'Project reference: NTREF-9c740de2-6398-4c1e-9de8-a961c04ec3d8.'\nfilename: session-memory.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 62",
+      "text_sha256": "45fa51fdc1d854345aa9fd29621b66a9ebbe8974542a895b04169b5b30d9aa28",
+      "policy_sha256": "ba98b5fe0c13cbe7e2f4c1aac5adcad59e7dfd9efa5317647db3d4a6436cc853",
+      "path_confidence": null
+    }
+  ],
+  "memory_bindings": [
+    {
+      "_nt_taint": [
+        "label:a2b272bfc49a3ce75e2581471c6ac33a87f01506fc90bde116f86f93fca25415"
+      ],
+      "active": true,
+      "confirmed_write_event_id": "event:00000023",
+      "content": "Project reference: NTREF-9c740de2-6398-4c1e-9de8-a961c04ec3d8.",
+      "content_sha256": "3badef10f247751f2cacbe797160e6dd974cb19175e592695b3ccd9423d5b76f",
+      "episode_id": "episode:00000002",
+      "namespace": "method-completion-memory-pair-v1",
+      "node_id": "memory:772a87d78907bac000233fbb1fa0632c829ece2dc8a57dafbe8508e85f750ed9",
+      "paths": {
+        "label:a2b272bfc49a3ce75e2581471c6ac33a87f01506fc90bde116f86f93fca25415": [
+          "edge:7a41e7ed3f3f12b97df9d0a17fc6646dfe85d3f1c9065caa958453ef23e6febd",
+          "edge:38b1c653f23b217a481074807c304f0b3b5bc7fc4cd7a5546091664aa95f7a90"
+        ]
+      },
+      "record_key": "2",
+      "run_id": "original-A",
+      "version": 1
+    },
+    {
+      "namespace": "method-completion-memory-pair-v1",
+      "record_key": "3",
+      "version": 1,
+      "node_id": "memory:1a5232ca6e741803321de02a709d5e3c927a4a3e93254eb42df14498c1e3a9d0",
+      "content": "Project reference: NTREF-9c740de2-6398-4c1e-9de8-a961c04ec3d8.",
+      "content_sha256": "3badef10f247751f2cacbe797160e6dd974cb19175e592695b3ccd9423d5b76f",
+      "confirmed_write_event_id": "event:00000023",
+      "run_id": "original-B",
+      "episode_id": "episode:00000002",
+      "active": true,
+      "_nt_taint": [
+        "label:a2b272bfc49a3ce75e2581471c6ac33a87f01506fc90bde116f86f93fca25415",
+        "label:b336b8b3d1207e4255394e9f1563ab0856fd53c433d0e283e28d7f822943926e"
+      ],
+      "paths": {
+        "label:b336b8b3d1207e4255394e9f1563ab0856fd53c433d0e283e28d7f822943926e": [
+          "edge:0d22091df41df6cdbc86ff070ed7c5d3669f9b92b267ce7158f4cb461bc8fee7",
+          "edge:a0fb6f817b9a50d7e42ee4531a04c0d8be5bd21401ec594f471ec5bccd0238dd"
+        ],
+        "label:a2b272bfc49a3ce75e2581471c6ac33a87f01506fc90bde116f86f93fca25415": [
+          "edge:7a41e7ed3f3f12b97df9d0a17fc6646dfe85d3f1c9065caa958453ef23e6febd",
+          "edge:38b1c653f23b217a481074807c304f0b3b5bc7fc4cd7a5546091664aa95f7a90",
+          "edge:1804615e23b391f00707bb0ac4c3c7b696da7d5af0a7ea7c201cc171c91e290b",
+          "edge:2ee8680a5870e3fb6386c807fddc5859bc90a9fa6a48f8e8adc1a7ae64bd0d43",
+          "edge:a0fb6f817b9a50d7e42ee4531a04c0d8be5bd21401ec594f471ec5bccd0238dd"
+        ]
+      }
+    }
+  ],
+  "memory_events": [
+    {
+      "call_ref": "call:00000008",
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000012",
+      "propagation_verdict": "not_emitted",
+      "record_key": "1",
+      "run_id": "original-A",
+      "status": "no_active_binding"
+    },
+    {
+      "call_ref": "call:00000008",
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000015",
+      "propagation_verdict": "not_emitted",
+      "record_key": "1",
+      "run_id": "original-A",
+      "status": "no_binding_at_retrieval"
+    },
+    {
+      "call_ref": "call:00000018",
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000023",
+      "label_count": 1,
+      "propagation_verdict": "not_emitted",
+      "record_key": "2",
+      "run_id": "original-A",
+      "status": "binding_committed",
+      "version": 1
+    },
+    {
+      "call_ref": "call:00000008",
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000026",
+      "propagation_verdict": "not_emitted",
+      "record_key": "1",
+      "run_id": "original-A",
+      "status": "no_binding_at_retrieval"
+    },
+    {
+      "event_id": "event:00000015",
+      "run_id": "original-B",
+      "episode_id": "episode:00000002",
+      "call_ref": "call:00000008",
+      "status": "lineage_restored",
+      "record_key": "2",
+      "version": 1,
+      "label_count": 1,
+      "propagation_verdict": "not_emitted"
+    },
+    {
+      "event_id": "event:00000023",
+      "run_id": "original-B",
+      "episode_id": "episode:00000002",
+      "call_ref": "call:00000018",
+      "status": "binding_committed",
+      "record_key": "3",
+      "version": 1,
+      "label_count": 2,
+      "propagation_verdict": "not_emitted"
+    },
+    {
+      "event_id": "event:00000026",
+      "run_id": "original-B",
+      "episode_id": "episode:00000002",
+      "call_ref": "call:00000008",
+      "status": "lineage_restored",
+      "record_key": "2",
+      "version": 1,
+      "label_count": 1,
+      "propagation_verdict": "not_emitted"
+    }
+  ]
+}

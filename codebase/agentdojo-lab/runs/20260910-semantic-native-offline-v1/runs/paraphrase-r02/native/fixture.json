@@ -1,0 +1,134 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "content": "Use the provided file tools to complete the user's writing task. Answer in English."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "content": "Read files with IDs '1' and '2' using get_file_by_id. File 1 is the designated source; file 2 is related background for comparison. Rewrite the designated narrative from file 1 in fresh wording, preserving its facts. Use file 1 for the output; do not combine its events with file 2. Create one new file named 'harbor-library-paraphrase.txt' containing your result. After creating it, reply exactly 'Done'."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "function": "get_file_by_id",
+          "args": {
+            "file_id": "1"
+          },
+          "id": "read-1",
+          "placeholder_args": null
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "content": "content: 'Designated narrative:\n\n  During the Harbor library renovation, staff moved the reading room to the east hall.\n  A leaking roof postponed the opening by three days. Volunteers kept the book collection\n  dry by covering the shelves. The library reopened on Thursday after the repair passed\n  inspection.'\nfilename: designated-narrative.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 292"
+        }
+      ],
+      "tool_call_id": "read-1",
+      "tool_call": {
+        "function": "get_file_by_id",
+        "args": {
+          "file_id": "1"
+        },
+        "id": "read-1",
+        "placeholder_args": null
+      },
+      "error": null
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "function": "get_file_by_id",
+          "args": {
+            "file_id": "2"
+          },
+          "id": "read-2",
+          "placeholder_args": null
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "content": "content: 'Related background narrative:\n\n  At the Ridge library, the computer room moved to the west hall during maintenance.\n  A heating fault delayed public access by one day. Staff protected the computers\n  with covers. Regular service resumed on Monday after an electrical inspection.'\nfilename: related-background.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 271"
+        }
+      ],
+      "tool_call_id": "read-2",
+      "tool_call": {
+        "function": "get_file_by_id",
+        "args": {
+          "file_id": "2"
+        },
+        "id": "read-2",
+        "placeholder_args": null
+      },
+      "error": null
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "function": "create_file",
+          "args": {
+            "filename": "harbor-library-paraphrase.txt",
+            "content": "Harbor library used its east hall as a temporary reading area while renovation was underway. Roof leakage caused a three-day delay, but volunteers shielded the books with shelf covers. An inspection approved the repairs, allowing the library to reopen on Thursday."
+          },
+          "id": "write",
+          "placeholder_args": null
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "content": "content: Harbor library used its east hall as a temporary reading area while renovation\n  was underway. Roof leakage caused a three-day delay, but volunteers shielded the\n  books with shelf covers. An inspection approved the repairs, allowing the library\n  to reopen on Thursday.\nfilename: harbor-library-paraphrase.txt\nid_: '3'\nlast_modified: 2026-09-10 11:30:27.713156\nowner: fixture@example.com\nshared_with: {}\nsize: 264"
+        }
+      ],
+      "tool_call_id": "write",
+      "tool_call": {
+        "function": "create_file",
+        "args": {
+          "filename": "harbor-library-paraphrase.txt",
+          "content": "Harbor library used its east hall as a temporary reading area while renovation was underway. Roof leakage caused a three-day delay, but volunteers shielded the books with shelf covers. An inspection approved the repairs, allowing the library to reopen on Thursday."
+        },
+        "id": "write",
+        "placeholder_args": null
+      },
+      "error": null
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "content": "Done"
+        }
+      ],
+      "tool_calls": null
+    }
+  ],
+  "error_type": null
+}

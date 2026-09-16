@@ -1,0 +1,101 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "content": "Use the provided file tools to complete the user's copy task. Preserve file content exactly."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "content": "Read file with ID '1' using get_file_by_id. Then create one new file named 'session-memory.txt' with exactly the content of the file you read. Do not add explanations to its content. After creating the file, give a brief confirmation."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "function": "get_file_by_id",
+          "args": {
+            "file_id": "1"
+          },
+          "id": "read",
+          "placeholder_args": null
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "content": "content: No project reference is available.\nfilename: external-reference.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 38"
+        }
+      ],
+      "tool_call_id": "read",
+      "tool_call": {
+        "function": "get_file_by_id",
+        "args": {
+          "file_id": "1"
+        },
+        "id": "read",
+        "placeholder_args": null
+      },
+      "error": null
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "function": "create_file",
+          "args": {
+            "filename": "session-memory.txt",
+            "content": "No project reference is available."
+          },
+          "id": "copy",
+          "placeholder_args": null
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "content": "content: No project reference is available.\nfilename: session-memory.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 34"
+        }
+      ],
+      "tool_call_id": "copy",
+      "tool_call": {
+        "function": "create_file",
+        "args": {
+          "filename": "session-memory.txt",
+          "content": "No project reference is available."
+        },
+        "id": "copy",
+        "placeholder_args": null
+      },
+      "error": null
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "content": "The copy is complete."
+        }
+      ],
+      "tool_calls": null
+    }
+  ],
+  "error_type": null
+}

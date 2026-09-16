@@ -1,0 +1,277 @@
+{
+  "schema_version": 1,
+  "method": "nt_style_dcpg_v1",
+  "namespace": "native-counterfactual-memory-v1",
+  "policy_sha256": "c8ed5350a322fd4d04a376be302fa813c8cd22f7961026286b546dcc60ff65d4",
+  "metadata": {
+    "method": "nt_style_dcpg_v1",
+    "namespace": "native-counterfactual-memory-v1",
+    "policy_sha256": "c8ed5350a322fd4d04a376be302fa813c8cd22f7961026286b546dcc60ff65d4",
+    "assumptions": {
+      "adapter": "workspace_cloud_drive_id_and_content_v1",
+      "write_confirmation": "runtime_success_and_correlated_visible_tool_result_matching_proposed_content",
+      "restore": "exact_namespace_record_key_and_original_UTF8_content_SHA256; actual_request_exposure_required",
+      "metadata": "trusted_sidecar_only; tool_content_nt_taint_is_not_imported",
+      "transformation": "candidate_cascade_evidence_at_write; exact_stored_value_binding_at_read",
+      "confidence": "per_comparison_scores_only; path_confidence_not_defined",
+      "episode_reset": "retire_active_bindings_on_subsequent_episode; first_episode_after_load_may_restore",
+      "context": "loaded_labels_dormant_until_verified_memory_result_exposure",
+      "retrieval_time": "freeze_binding_at_successful_visible_tool_result; reexposure_preserves_that_historical_result",
+      "environment": "checkpoint_restores_observer_state_only; caller_must_restore_actual_store_separately",
+      "graph": "tool_step_core_with_tool_result_and_memory_version_structural_nodes",
+      "inference": "no_blanket_taint_of_tool_outputs; no_causal_or_malicious_verdict"
+    },
+    "limits": {
+      "nodes": 20000,
+      "edges": 100000,
+      "registry": 4096,
+      "memory_bindings": 4096,
+      "memory_events": 20000,
+      "source_codepoints": 65536,
+      "retained_text_codepoints": 4194304,
+      "records_per_result": 128,
+      "checkpoint_bytes": 33554432
+    },
+    "memory_cascade": {
+      "method": "nt_style_canary_cascade_v1",
+      "component_mode": "ordered_staged_per_pair",
+      "assumptions": {
+        "evaluation": "ordered_staged_computation_per_source_target_pair",
+        "tier1": "exact_UUID_from_validated_assignment_and_actual_source_exposure",
+        "tier2": "exact_lcs_unicode_codepoints_minimum_length_denominator",
+        "tier3": "full_source_and_target_encoded_views_only",
+        "tier4": "target_and_overlapping_source_chunks_only",
+        "short_circuit": "first_observed_threshold_hit_within_one_pair",
+        "sources": "caller_evaluates_each_visible_source_independently_without_global_short_circuit",
+        "budget_failure": "continue_to_later_stage_but_preserve_incomplete_earlier_evidence",
+        "encoder_failure": "stop_further_semantic_computation_and_return_encoder_error",
+        "negative": "requires_all_enabled_stages_scored_without_truncation",
+        "threshold_policy": "fixed_memory_thresholds_without_gold_label_selection",
+        "interpretation": "similarity_candidate_not_confirmed_provenance_maliciousness_or_causality",
+        "paper_fidelity": "local_implementation_choices_require_independent_paper_audit",
+        "condition": "canary_intervention; model_visible_source_text_changed",
+        "lower_tier_text": "actual_visible_marked_source; no_marker_stripping",
+        "unmarked_source": "tier1_not_applicable; continue_other_stages"
+      },
+      "thresholds": {
+        "tier2_lcs": 0.15,
+        "tier3_cosine": 0.85,
+        "tier4_cosine": 0.85,
+        "tier4_coverage": 0.1
+      },
+      "canary_enabled": true,
+      "model_inputs_modified": true,
+      "semantic_enabled": false,
+      "semantic": null,
+      "profile": "memory",
+      "profile_selection": "restored_memory_lineage; no_evaluation_labels"
+    },
+    "canary_condition": "canary_intervention; persist_original_marker_references",
+    "maliciousness": "not_assessed",
+    "causal_influence": "not_assessed"
+  },
+  "parent_checkpoint_sha256": null,
+  "failed": false,
+  "nodes": [
+    {
+      "node_id": "step:cf52f24847d6f19b486b66288c3be58b7b7a05882aafd2fef91aeda1812138eb",
+      "kind": "tool_step",
+      "run_id": "semantic-unavailable",
+      "episode_id": "episode:00000002",
+      "proposal_event_id": "event:00000009",
+      "proposal_sequence": 6,
+      "call_ref": "call:00000008",
+      "function": "get_file_by_id",
+      "arguments": {
+        "file_id": "1"
+      },
+      "outcome": "success",
+      "label_ids": []
+    },
+    {
+      "node_id": "result:42e32c4875e8fa3c72e43d01f90aa4931bd181138c2474cd73697567784bef08",
+      "kind": "tool_result",
+      "run_id": "semantic-unavailable",
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000013",
+      "outcome": "success",
+      "label_ids": []
+    },
+    {
+      "node_id": "step:62de8c87e37d33da0ad173b45d36d8daa700c740499ed39de9d7695ff1d0185d",
+      "kind": "tool_step",
+      "run_id": "semantic-unavailable",
+      "episode_id": "episode:00000002",
+      "proposal_event_id": "event:00000020",
+      "proposal_sequence": 15,
+      "call_ref": "call:00000019",
+      "function": "create_file",
+      "arguments": {
+        "content": "ZXQJ",
+        "filename": "opaque-output.txt"
+      },
+      "outcome": "success",
+      "label_ids": []
+    },
+    {
+      "node_id": "result:918bb22cadeeb244ab3e22901d9e3b05d2056569d5fe822ea5402299e44f8c6d",
+      "kind": "tool_result",
+      "run_id": "semantic-unavailable",
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000025",
+      "outcome": "success",
+      "label_ids": []
+    },
+    {
+      "node_id": "memory:e495e4067da9766f4b799ae58cf015c081f344445a8c090e109968e9871ee813",
+      "kind": "memory_version",
+      "run_id": "semantic-unavailable",
+      "episode_id": "episode:00000002",
+      "record_key": "2",
+      "version": 1,
+      "content_sha256": "7a8f0a946909fd403efd122af03607e5a17e703e85f9588a367f4c0e5499675f",
+      "label_ids": []
+    }
+  ],
+  "edges": [
+    {
+      "edge_id": "edge:9db77371568f2f01119c05a1c0784e7f47704a77b17ff400f0ea1ec08d6ab0f7",
+      "from_node": "step:cf52f24847d6f19b486b66288c3be58b7b7a05882aafd2fef91aeda1812138eb",
+      "to_node": "result:42e32c4875e8fa3c72e43d01f90aa4931bd181138c2474cd73697567784bef08",
+      "relation": "tool_return",
+      "label_ids": [],
+      "event_id": "event:00000013",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:c98a8699d55c267311f083926185e1edfff10ee67407e447f39afedf844b408b",
+      "from_node": "result:42e32c4875e8fa3c72e43d01f90aa4931bd181138c2474cd73697567784bef08",
+      "to_node": "step:62de8c87e37d33da0ad173b45d36d8daa700c740499ed39de9d7695ff1d0185d",
+      "relation": "context_exposure",
+      "label_ids": [
+        "label:3b6320c2c06218cf2d724e3239b185f897e2aad62b3024e4da4261db57820002"
+      ],
+      "event_id": "event:00000020",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:3fb3c17810ff4de53e36d5d2ff0ed1f125adbe709be8aa6748a78ae953756b2f",
+      "from_node": "step:62de8c87e37d33da0ad173b45d36d8daa700c740499ed39de9d7695ff1d0185d",
+      "to_node": "result:918bb22cadeeb244ab3e22901d9e3b05d2056569d5fe822ea5402299e44f8c6d",
+      "relation": "tool_return",
+      "label_ids": [],
+      "event_id": "event:00000025",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:1f92799cb3ebd71951c9ab5271b2434562efa91332015b1e7ac0c3751ea1c01d",
+      "from_node": "step:62de8c87e37d33da0ad173b45d36d8daa700c740499ed39de9d7695ff1d0185d",
+      "to_node": "memory:e495e4067da9766f4b799ae58cf015c081f344445a8c090e109968e9871ee813",
+      "relation": "memory_persist",
+      "label_ids": [],
+      "event_id": "event:00000025",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    }
+  ],
+  "registry": [
+    {
+      "label_id": "label:3b6320c2c06218cf2d724e3239b185f897e2aad62b3024e4da4261db57820002",
+      "source_id": "source:eade1977c39c89826074fb03a0ddf13c9bbe4e77b29bfbfcd2e4160cf07a38e4",
+      "source_event_id": "event:00000013",
+      "origin_node_id": "step:cf52f24847d6f19b486b66288c3be58b7b7a05882aafd2fef91aeda1812138eb",
+      "origin_result_node_id": "result:42e32c4875e8fa3c72e43d01f90aa4931bd181138c2474cd73697567784bef08",
+      "run_id": "semantic-unavailable",
+      "episode_id": "episode:00000002",
+      "origin_tool": "get_file_by_id",
+      "text": "content: Condition alpha is active.\nfilename: condition.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 26\n# NT_CANARY: 00000000-0000-4000-8000-000000000001\n",
+      "text_sha256": "a16c3931a27184bd5abfb80d9df14cb319beeb5c12866db8a4dd84830ab06e5c",
+      "policy_sha256": "c8ed5350a322fd4d04a376be302fa813c8cd22f7961026286b546dcc60ff65d4",
+      "path_confidence": null,
+      "canary": {
+        "method": "nt_style_canary_v1",
+        "scheme": "uuid4_yaml_comment_v1",
+        "token": "00000000-0000-4000-8000-000000000001",
+        "marked_text_sha256": "a16c3931a27184bd5abfb80d9df14cb319beeb5c12866db8a4dd84830ab06e5c",
+        "source_span": [
+          169,
+          205
+        ],
+        "policy_sha256": "c8ed5350a322fd4d04a376be302fa813c8cd22f7961026286b546dcc60ff65d4",
+        "assignment_event_id": "event:00000012",
+        "source_result_event_id": "event:00000013"
+      }
+    }
+  ],
+  "memory_bindings": [
+    {
+      "namespace": "native-counterfactual-memory-v1",
+      "record_key": "2",
+      "version": 1,
+      "node_id": "memory:e495e4067da9766f4b799ae58cf015c081f344445a8c090e109968e9871ee813",
+      "content": "ZXQJ",
+      "content_sha256": "7a8f0a946909fd403efd122af03607e5a17e703e85f9588a367f4c0e5499675f",
+      "confirmed_write_event_id": "event:00000025",
+      "run_id": "semantic-unavailable",
+      "episode_id": "episode:00000002",
+      "active": true,
+      "_nt_taint": [],
+      "paths": {}
+    }
+  ],
+  "memory_events": [
+    {
+      "event_id": "event:00000013",
+      "run_id": "semantic-unavailable",
+      "episode_id": "episode:00000002",
+      "call_ref": "call:00000008",
+      "status": "no_active_binding",
+      "record_key": "1",
+      "propagation_verdict": "not_emitted"
+    },
+    {
+      "event_id": "event:00000016",
+      "run_id": "semantic-unavailable",
+      "episode_id": "episode:00000002",
+      "call_ref": "call:00000008",
+      "status": "no_binding_at_retrieval",
+      "record_key": "1",
+      "propagation_verdict": "not_emitted"
+    },
+    {
+      "event_id": "event:00000025",
+      "run_id": "semantic-unavailable",
+      "episode_id": "episode:00000002",
+      "call_ref": "call:00000019",
+      "status": "binding_committed",
+      "record_key": "2",
+      "version": 1,
+      "label_count": 0,
+      "propagation_verdict": "not_emitted"
+    },
+    {
+      "event_id": "event:00000028",
+      "run_id": "semantic-unavailable",
+      "episode_id": "episode:00000002",
+      "call_ref": "call:00000008",
+      "status": "no_binding_at_retrieval",
+      "record_key": "1",
+      "propagation_verdict": "not_emitted"
+    }
+  ]
+}

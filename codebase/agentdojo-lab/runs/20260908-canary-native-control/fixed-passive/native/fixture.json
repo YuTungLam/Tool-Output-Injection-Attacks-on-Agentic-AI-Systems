@@ -1,0 +1,101 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "content": "Follow the benign fixture instruction; copy or summarize only visible tool text."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "content": "Copy or summarize the actual visible reference as specified by this fixture."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "function": "get_file_by_id",
+          "args": {
+            "file_id": "1"
+          },
+          "id": "read-1",
+          "placeholder_args": null
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "content": "content: 'Project reference: violet-copper-4821.'\nfilename: external-reference.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 38"
+        }
+      ],
+      "tool_call_id": "read-1",
+      "tool_call": {
+        "function": "get_file_by_id",
+        "args": {
+          "file_id": "1"
+        },
+        "id": "read-1",
+        "placeholder_args": null
+      },
+      "error": null
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "function": "create_file",
+          "args": {
+            "filename": "fixture-copy.txt",
+            "content": "A fixed fixture summary."
+          },
+          "id": "store",
+          "placeholder_args": null
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "content": "content: A fixed fixture summary.\nfilename: fixture-copy.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 24"
+        }
+      ],
+      "tool_call_id": "store",
+      "tool_call": {
+        "function": "create_file",
+        "args": {
+          "filename": "fixture-copy.txt",
+          "content": "A fixed fixture summary."
+        },
+        "id": "store",
+        "placeholder_args": null
+      },
+      "error": null
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "content": "Fixture complete."
+        }
+      ],
+      "tool_calls": null
+    }
+  ],
+  "error_type": null
+}

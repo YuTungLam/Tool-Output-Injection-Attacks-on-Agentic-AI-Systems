@@ -1,0 +1,855 @@
+{
+  "schema_version": 1,
+  "method": "nt_style_dcpg_v1",
+  "namespace": "native-fixture-drive-v1",
+  "policy_sha256": "ba98b5fe0c13cbe7e2f4c1aac5adcad59e7dfd9efa5317647db3d4a6436cc853",
+  "metadata": {
+    "method": "nt_style_dcpg_v1",
+    "namespace": "native-fixture-drive-v1",
+    "policy_sha256": "ba98b5fe0c13cbe7e2f4c1aac5adcad59e7dfd9efa5317647db3d4a6436cc853",
+    "assumptions": {
+      "adapter": "workspace_cloud_drive_id_and_content_v1",
+      "write_confirmation": "runtime_success_and_correlated_visible_tool_result_matching_proposed_content",
+      "restore": "exact_namespace_record_key_and_original_UTF8_content_SHA256; actual_request_exposure_required",
+      "metadata": "trusted_sidecar_only; tool_content_nt_taint_is_not_imported",
+      "transformation": "candidate_cascade_evidence_at_write; exact_stored_value_binding_at_read",
+      "confidence": "per_comparison_scores_only; path_confidence_not_defined",
+      "episode_reset": "retire_active_bindings_on_subsequent_episode; first_episode_after_load_may_restore",
+      "context": "loaded_labels_dormant_until_verified_memory_result_exposure",
+      "retrieval_time": "freeze_binding_at_successful_visible_tool_result; reexposure_preserves_that_historical_result",
+      "environment": "checkpoint_restores_observer_state_only; caller_must_restore_actual_store_separately",
+      "graph": "tool_step_core_with_tool_result_and_memory_version_structural_nodes",
+      "inference": "no_blanket_taint_of_tool_outputs; no_causal_or_malicious_verdict"
+    },
+    "limits": {
+      "nodes": 20000,
+      "edges": 100000,
+      "registry": 4096,
+      "memory_bindings": 4096,
+      "memory_events": 20000,
+      "source_codepoints": 65536,
+      "retained_text_codepoints": 4194304,
+      "records_per_result": 128,
+      "checkpoint_bytes": 33554432
+    },
+    "memory_cascade": {
+      "method": "nt_style_ordered_cascade_v1",
+      "component_mode": "ordered_staged_per_pair",
+      "assumptions": {
+        "evaluation": "ordered_staged_computation_per_source_target_pair",
+        "tier1": "disabled_condition_passive_input_unchanged_no_canary",
+        "tier2": "exact_lcs_unicode_codepoints_minimum_length_denominator",
+        "tier3": "full_source_and_target_encoded_views_only",
+        "tier4": "target_and_overlapping_source_chunks_only",
+        "short_circuit": "first_observed_threshold_hit_within_one_pair",
+        "sources": "caller_evaluates_each_visible_source_independently_without_global_short_circuit",
+        "budget_failure": "continue_to_later_stage_but_preserve_incomplete_earlier_evidence",
+        "encoder_failure": "stop_further_semantic_computation_and_return_encoder_error",
+        "negative": "requires_all_enabled_stages_scored_without_truncation",
+        "threshold_policy": "fixed_memory_thresholds_without_gold_label_selection",
+        "interpretation": "similarity_candidate_not_confirmed_provenance_maliciousness_or_causality",
+        "paper_fidelity": "local_implementation_choices_require_independent_paper_audit"
+      },
+      "thresholds": {
+        "tier2_lcs": 0.15,
+        "tier3_cosine": 0.85,
+        "tier4_cosine": 0.85,
+        "tier4_coverage": 0.1
+      },
+      "canary_enabled": false,
+      "model_inputs_modified": false,
+      "semantic_enabled": false,
+      "semantic": null,
+      "profile": "memory",
+      "profile_selection": "restored_memory_lineage; no_evaluation_labels"
+    },
+    "maliciousness": "not_assessed",
+    "causal_influence": "not_assessed"
+  },
+  "parent_checkpoint_sha256": "89c0604add4b3e4af3727148e61723eeaa16add0ec1b788d55d53da3b9e9287b",
+  "failed": false,
+  "nodes": [
+    {
+      "arguments": {
+        "file_id": "1"
+      },
+      "call_ref": "call:00000008",
+      "episode_id": "episode:00000002",
+      "function": "get_file_by_id",
+      "kind": "tool_step",
+      "label_ids": [],
+      "node_id": "step:a7c3904c2eb4283d9595a7c5b4eca19f3db91c03d6d7189e30b6eef872fdaae8",
+      "outcome": "success",
+      "proposal_event_id": "event:00000009",
+      "proposal_sequence": 6,
+      "run_id": "session1-traced"
+    },
+    {
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000012",
+      "kind": "tool_result",
+      "label_ids": [],
+      "node_id": "result:c1ea6fb5287433cd28a8bbf62ba2efe37181d71533d659d95406a4de01c7a1b1",
+      "outcome": "success",
+      "run_id": "session1-traced"
+    },
+    {
+      "arguments": {
+        "content": "Project reference: violet-copper-4821.",
+        "filename": "session-memory.txt"
+      },
+      "call_ref": "call:00000018",
+      "episode_id": "episode:00000002",
+      "function": "create_file",
+      "kind": "tool_step",
+      "label_ids": [
+        "label:b5a1a0cd05422e82770c00793c89f4e8484c15a41d9206d9e5568d9aa8509795"
+      ],
+      "node_id": "step:12fcf155c0eca58323e0f8262221df89e1628db8291d328c4d6ad20c03699370",
+      "outcome": "success",
+      "proposal_event_id": "event:00000019",
+      "proposal_sequence": 14,
+      "run_id": "session1-traced"
+    },
+    {
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000023",
+      "kind": "tool_result",
+      "label_ids": [],
+      "node_id": "result:338f89769466aec0560d63b0b663fe1eafa02b9fa874b7d60b05cfdeb6bf6645",
+      "outcome": "success",
+      "run_id": "session1-traced"
+    },
+    {
+      "content_sha256": "4c6dc91ea974f68e9c40e805bf28eb0e330aced200048ee7d32d1deb38ec6cb4",
+      "episode_id": "episode:00000002",
+      "kind": "memory_version",
+      "label_ids": [
+        "label:b5a1a0cd05422e82770c00793c89f4e8484c15a41d9206d9e5568d9aa8509795"
+      ],
+      "node_id": "memory:fb7e95b94eca16d79aa310be1da41b3741ee453fbb72ff14f47e824cd32bc4c3",
+      "record_key": "2",
+      "run_id": "session1-traced",
+      "version": 1
+    },
+    {
+      "node_id": "step:4efdf78d482fe851bb7ab710c183e8706adff7b26385516cc70811c23870126c",
+      "kind": "tool_step",
+      "run_id": "session2-traced",
+      "episode_id": "episode:00000002",
+      "proposal_event_id": "event:00000009",
+      "proposal_sequence": 6,
+      "call_ref": "call:00000008",
+      "function": "get_file_by_id",
+      "arguments": {
+        "file_id": "2"
+      },
+      "outcome": "success",
+      "label_ids": []
+    },
+    {
+      "node_id": "result:211c0e9e83fc8d37d3b3b5fa16569884725c0daccfde491cc6086180315cece3",
+      "kind": "tool_result",
+      "run_id": "session2-traced",
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000012",
+      "outcome": "success",
+      "label_ids": []
+    },
+    {
+      "node_id": "step:1a350315dcedd458e4c46bb21fba9b9c85ff7a27bc2e7d984496986b86219ba7",
+      "kind": "tool_step",
+      "run_id": "session2-traced",
+      "episode_id": "episode:00000002",
+      "proposal_event_id": "event:00000019",
+      "proposal_sequence": 14,
+      "call_ref": "call:00000018",
+      "function": "create_file",
+      "arguments": {
+        "content": "Project reference: violet-copper-4821.",
+        "filename": "session-memory.txt"
+      },
+      "outcome": "success",
+      "label_ids": [
+        "label:7cd586b70ef12d26447380e577627a3112a2796b0371c46d4db114737edae6e8",
+        "label:b5a1a0cd05422e82770c00793c89f4e8484c15a41d9206d9e5568d9aa8509795"
+      ]
+    },
+    {
+      "node_id": "result:3a6228de11ab2ef86ef078cfd94b88130ff50e7e1f3419441b3cde10bc91a4bb",
+      "kind": "tool_result",
+      "run_id": "session2-traced",
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000023",
+      "outcome": "success",
+      "label_ids": []
+    },
+    {
+      "node_id": "memory:8c476003a02ed8c00aa590c066b025b4e15bb41238e59276d3cf115922c39240",
+      "kind": "memory_version",
+      "run_id": "session2-traced",
+      "episode_id": "episode:00000002",
+      "record_key": "3",
+      "version": 1,
+      "content_sha256": "4c6dc91ea974f68e9c40e805bf28eb0e330aced200048ee7d32d1deb38ec6cb4",
+      "label_ids": [
+        "label:7cd586b70ef12d26447380e577627a3112a2796b0371c46d4db114737edae6e8",
+        "label:b5a1a0cd05422e82770c00793c89f4e8484c15a41d9206d9e5568d9aa8509795"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "candidate": false,
+      "edge_id": "edge:b46b0f2ece00444f19a7dbb8be82325f0abe2722729adafd33f02143a48918a5",
+      "event_id": "event:00000012",
+      "evidence": null,
+      "evidence_score": null,
+      "from_node": "step:a7c3904c2eb4283d9595a7c5b4eca19f3db91c03d6d7189e30b6eef872fdaae8",
+      "label_ids": [],
+      "path_confidence": null,
+      "relation": "tool_return",
+      "tier": null,
+      "to_node": "result:c1ea6fb5287433cd28a8bbf62ba2efe37181d71533d659d95406a4de01c7a1b1"
+    },
+    {
+      "candidate": false,
+      "edge_id": "edge:d7ee5161c6620d4ca32f50b42301d20933c84befd177bce3905b4febf4ad3151",
+      "event_id": "event:00000019",
+      "evidence": null,
+      "evidence_score": null,
+      "from_node": "result:c1ea6fb5287433cd28a8bbf62ba2efe37181d71533d659d95406a4de01c7a1b1",
+      "label_ids": [
+        "label:b5a1a0cd05422e82770c00793c89f4e8484c15a41d9206d9e5568d9aa8509795"
+      ],
+      "path_confidence": null,
+      "relation": "context_exposure",
+      "tier": null,
+      "to_node": "step:12fcf155c0eca58323e0f8262221df89e1628db8291d328c4d6ad20c03699370"
+    },
+    {
+      "candidate": true,
+      "edge_id": "edge:564d2e0e45485886dea84409886755914825f2b6fc581498f4a71fad3cbaefc3",
+      "event_id": "event:00000019",
+      "evidence": {
+        "argument_path": "/content",
+        "causal_influence": "not_assessed",
+        "complete": true,
+        "exposure_event_id": "event:00000015",
+        "first_matched_tier": "tier2",
+        "kind": "tool",
+        "maliciousness": "not_assessed",
+        "matched": true,
+        "message_index": 3,
+        "metadata": {
+          "assumptions": {
+            "budget_failure": "continue_to_later_stage_but_preserve_incomplete_earlier_evidence",
+            "encoder_failure": "stop_further_semantic_computation_and_return_encoder_error",
+            "evaluation": "ordered_staged_computation_per_source_target_pair",
+            "interpretation": "similarity_candidate_not_confirmed_provenance_maliciousness_or_causality",
+            "negative": "requires_all_enabled_stages_scored_without_truncation",
+            "paper_fidelity": "local_implementation_choices_require_independent_paper_audit",
+            "short_circuit": "first_observed_threshold_hit_within_one_pair",
+            "sources": "caller_evaluates_each_visible_source_independently_without_global_short_circuit",
+            "threshold_policy": "fixed_ordinary_thresholds_without_gold_label_selection",
+            "tier1": "disabled_condition_passive_input_unchanged_no_canary",
+            "tier2": "exact_lcs_unicode_codepoints_minimum_length_denominator",
+            "tier3": "full_source_and_target_encoded_views_only",
+            "tier4": "target_and_overlapping_source_chunks_only"
+          },
+          "canary_enabled": false,
+          "component_mode": "ordered_staged_per_pair",
+          "method": "nt_style_ordered_cascade_v1",
+          "model_inputs_modified": false,
+          "semantic": null,
+          "semantic_enabled": false,
+          "thresholds": {
+            "tier2_lcs": 0.15,
+            "tier3_cosine": 0.6,
+            "tier4_cosine": 0.6,
+            "tier4_coverage": 0.1
+          }
+        },
+        "method": "nt_style_ordered_cascade_v1",
+        "origin_tool": "get_file_by_id",
+        "provenance_verdict": "unreviewed",
+        "request_pointer": "/data/body/messages/3/content",
+        "source_event_id": "event:00000012",
+        "source_id": "source:b2f43a0b0eef02b93cf2cdd445bc754ec1d01a6140d3b213153ed9ba4edde974",
+        "source_length": 178,
+        "stages": {
+          "tier1": {
+            "complete": false,
+            "matched": null,
+            "reason": "passive_input_unchanged_no_canary",
+            "score": null,
+            "stage": "tier1",
+            "status": "disabled_condition",
+            "truncated": false
+          },
+          "tier2": {
+            "complete": true,
+            "lcs_length": 38,
+            "matched": true,
+            "metadata": {
+              "algorithm": "exact_bitset_longest_common_subsequence",
+              "case_sensitive": true,
+              "exceeded_limits": [],
+              "limits": {
+                "max_codepoints_per_input": 65536,
+                "max_length_product": 67108864
+              },
+              "normalization": "none",
+              "unit": "unicode_codepoint"
+            },
+            "method": "nt_style_lcs_v1",
+            "reason": "threshold_met",
+            "score": 1.0,
+            "source_length": 178,
+            "stage": "tier2",
+            "status": "scored",
+            "target_length": 38,
+            "threshold": 0.15,
+            "truncated": false
+          },
+          "tier3": {
+            "complete": false,
+            "matched": null,
+            "reason": "earlier_stage_matched",
+            "score": null,
+            "stage": "tier3",
+            "status": "skipped",
+            "truncated": false
+          },
+          "tier4": {
+            "complete": false,
+            "coverage": null,
+            "matched": null,
+            "reason": "earlier_stage_matched",
+            "score": null,
+            "stage": "tier4",
+            "status": "skipped",
+            "truncated": false
+          }
+        },
+        "status": "scored",
+        "target_length": 38,
+        "truncated": false
+      },
+      "evidence_score": 1.0,
+      "from_node": "step:a7c3904c2eb4283d9595a7c5b4eca19f3db91c03d6d7189e30b6eef872fdaae8",
+      "label_ids": [
+        "label:b5a1a0cd05422e82770c00793c89f4e8484c15a41d9206d9e5568d9aa8509795"
+      ],
+      "path_confidence": null,
+      "relation": "candidate_content",
+      "tier": "tier2",
+      "to_node": "step:12fcf155c0eca58323e0f8262221df89e1628db8291d328c4d6ad20c03699370"
+    },
+    {
+      "candidate": false,
+      "edge_id": "edge:b429f0c5d8ad63c1e4c2aacc131b5e809e8d941fef46fa52ad5265fbf182990b",
+      "event_id": "event:00000023",
+      "evidence": null,
+      "evidence_score": null,
+      "from_node": "step:12fcf155c0eca58323e0f8262221df89e1628db8291d328c4d6ad20c03699370",
+      "label_ids": [],
+      "path_confidence": null,
+      "relation": "tool_return",
+      "tier": null,
+      "to_node": "result:338f89769466aec0560d63b0b663fe1eafa02b9fa874b7d60b05cfdeb6bf6645"
+    },
+    {
+      "candidate": false,
+      "edge_id": "edge:0e44b4cf5cbd5ed9bfc82bf13a440ce3bb556fb5fd592b7911857639063f7d64",
+      "event_id": "event:00000023",
+      "evidence": null,
+      "evidence_score": null,
+      "from_node": "step:12fcf155c0eca58323e0f8262221df89e1628db8291d328c4d6ad20c03699370",
+      "label_ids": [
+        "label:b5a1a0cd05422e82770c00793c89f4e8484c15a41d9206d9e5568d9aa8509795"
+      ],
+      "path_confidence": null,
+      "relation": "memory_persist",
+      "tier": null,
+      "to_node": "memory:fb7e95b94eca16d79aa310be1da41b3741ee453fbb72ff14f47e824cd32bc4c3"
+    },
+    {
+      "edge_id": "edge:315cd8ccab4b0ae7f626f5b3c62212ffc23af25a2f82bbe05ba70e6ae43d8b71",
+      "from_node": "step:4efdf78d482fe851bb7ab710c183e8706adff7b26385516cc70811c23870126c",
+      "to_node": "result:211c0e9e83fc8d37d3b3b5fa16569884725c0daccfde491cc6086180315cece3",
+      "relation": "tool_return",
+      "label_ids": [],
+      "event_id": "event:00000012",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:a1cec094a8b599c94f0a42d2c9c781cb978d1e5fd52222128ddebae62b249ca6",
+      "from_node": "memory:fb7e95b94eca16d79aa310be1da41b3741ee453fbb72ff14f47e824cd32bc4c3",
+      "to_node": "step:4efdf78d482fe851bb7ab710c183e8706adff7b26385516cc70811c23870126c",
+      "relation": "memory_restore",
+      "label_ids": [
+        "label:b5a1a0cd05422e82770c00793c89f4e8484c15a41d9206d9e5568d9aa8509795"
+      ],
+      "event_id": "event:00000015",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:302c10ae396d1e8e058c2fbf3f6f13a2a9ffbfd7d847358c6e0abcd150bacbf6",
+      "from_node": "result:211c0e9e83fc8d37d3b3b5fa16569884725c0daccfde491cc6086180315cece3",
+      "to_node": "step:1a350315dcedd458e4c46bb21fba9b9c85ff7a27bc2e7d984496986b86219ba7",
+      "relation": "context_exposure",
+      "label_ids": [
+        "label:7cd586b70ef12d26447380e577627a3112a2796b0371c46d4db114737edae6e8"
+      ],
+      "event_id": "event:00000019",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:8e99108bc0c0678cc9bde142d1b87f9441410d73da32312bfd322e7b5c5161c6",
+      "from_node": "step:4efdf78d482fe851bb7ab710c183e8706adff7b26385516cc70811c23870126c",
+      "to_node": "step:1a350315dcedd458e4c46bb21fba9b9c85ff7a27bc2e7d984496986b86219ba7",
+      "relation": "candidate_content",
+      "label_ids": [
+        "label:7cd586b70ef12d26447380e577627a3112a2796b0371c46d4db114737edae6e8"
+      ],
+      "event_id": "event:00000019",
+      "candidate": true,
+      "path_confidence": null,
+      "tier": "tier2",
+      "evidence_score": 1.0,
+      "evidence": {
+        "argument_path": "/content",
+        "source_id": "source:e36b2713eb306c077d6330ffa9cc17fce4356c94b1a5eaf422911b2ca1303369",
+        "message_index": 3,
+        "request_pointer": "/data/body/messages/3/content",
+        "exposure_event_id": "event:00000015",
+        "kind": "tool",
+        "source_event_id": "event:00000012",
+        "origin_tool": "get_file_by_id",
+        "method": "nt_style_ordered_cascade_v1",
+        "status": "scored",
+        "matched": true,
+        "first_matched_tier": "tier2",
+        "complete": true,
+        "truncated": false,
+        "source_length": 174,
+        "target_length": 38,
+        "stages": {
+          "tier1": {
+            "stage": "tier1",
+            "status": "disabled_condition",
+            "reason": "passive_input_unchanged_no_canary",
+            "score": null,
+            "matched": null,
+            "complete": false,
+            "truncated": false
+          },
+          "tier2": {
+            "method": "nt_style_lcs_v1",
+            "status": "scored",
+            "score": 1.0,
+            "lcs_length": 38,
+            "source_length": 174,
+            "target_length": 38,
+            "threshold": 0.15,
+            "matched": true,
+            "metadata": {
+              "unit": "unicode_codepoint",
+              "case_sensitive": true,
+              "normalization": "none",
+              "algorithm": "exact_bitset_longest_common_subsequence",
+              "limits": {
+                "max_codepoints_per_input": 65536,
+                "max_length_product": 67108864
+              },
+              "exceeded_limits": []
+            },
+            "stage": "tier2",
+            "complete": true,
+            "truncated": false,
+            "reason": "threshold_met"
+          },
+          "tier3": {
+            "stage": "tier3",
+            "status": "skipped",
+            "reason": "earlier_stage_matched",
+            "score": null,
+            "matched": null,
+            "complete": false,
+            "truncated": false
+          },
+          "tier4": {
+            "stage": "tier4",
+            "status": "skipped",
+            "reason": "earlier_stage_matched",
+            "score": null,
+            "matched": null,
+            "complete": false,
+            "truncated": false,
+            "coverage": null
+          }
+        },
+        "metadata": {
+          "method": "nt_style_ordered_cascade_v1",
+          "component_mode": "ordered_staged_per_pair",
+          "assumptions": {
+            "evaluation": "ordered_staged_computation_per_source_target_pair",
+            "tier1": "disabled_condition_passive_input_unchanged_no_canary",
+            "tier2": "exact_lcs_unicode_codepoints_minimum_length_denominator",
+            "tier3": "full_source_and_target_encoded_views_only",
+            "tier4": "target_and_overlapping_source_chunks_only",
+            "short_circuit": "first_observed_threshold_hit_within_one_pair",
+            "sources": "caller_evaluates_each_visible_source_independently_without_global_short_circuit",
+            "budget_failure": "continue_to_later_stage_but_preserve_incomplete_earlier_evidence",
+            "encoder_failure": "stop_further_semantic_computation_and_return_encoder_error",
+            "negative": "requires_all_enabled_stages_scored_without_truncation",
+            "threshold_policy": "fixed_ordinary_thresholds_without_gold_label_selection",
+            "interpretation": "similarity_candidate_not_confirmed_provenance_maliciousness_or_causality",
+            "paper_fidelity": "local_implementation_choices_require_independent_paper_audit"
+          },
+          "thresholds": {
+            "tier2_lcs": 0.15,
+            "tier3_cosine": 0.6,
+            "tier4_cosine": 0.6,
+            "tier4_coverage": 0.1
+          },
+          "canary_enabled": false,
+          "model_inputs_modified": false,
+          "semantic_enabled": false,
+          "semantic": null
+        },
+        "provenance_verdict": "unreviewed",
+        "maliciousness": "not_assessed",
+        "causal_influence": "not_assessed"
+      }
+    },
+    {
+      "edge_id": "edge:ea86ab25547d1fa0dd7c5d0786669aea1f753dda860827a9f5b2c8840fe7890b",
+      "from_node": "step:4efdf78d482fe851bb7ab710c183e8706adff7b26385516cc70811c23870126c",
+      "to_node": "step:1a350315dcedd458e4c46bb21fba9b9c85ff7a27bc2e7d984496986b86219ba7",
+      "relation": "candidate_content",
+      "label_ids": [
+        "label:b5a1a0cd05422e82770c00793c89f4e8484c15a41d9206d9e5568d9aa8509795"
+      ],
+      "event_id": "event:00000019",
+      "candidate": true,
+      "path_confidence": null,
+      "tier": "tier2",
+      "evidence_score": 1.0,
+      "evidence": {
+        "argument_path": "/content",
+        "label_id": "label:b5a1a0cd05422e82770c00793c89f4e8484c15a41d9206d9e5568d9aa8509795",
+        "carrier_source_id": "source:e36b2713eb306c077d6330ffa9cc17fce4356c94b1a5eaf422911b2ca1303369",
+        "method": "nt_style_ordered_cascade_v1",
+        "status": "scored",
+        "matched": true,
+        "first_matched_tier": "tier2",
+        "complete": true,
+        "truncated": false,
+        "source_length": 178,
+        "target_length": 38,
+        "stages": {
+          "tier1": {
+            "stage": "tier1",
+            "status": "disabled_condition",
+            "reason": "passive_input_unchanged_no_canary",
+            "score": null,
+            "matched": null,
+            "complete": false,
+            "truncated": false
+          },
+          "tier2": {
+            "method": "nt_style_lcs_v1",
+            "status": "scored",
+            "score": 1.0,
+            "lcs_length": 38,
+            "source_length": 178,
+            "target_length": 38,
+            "threshold": 0.15,
+            "matched": true,
+            "metadata": {
+              "unit": "unicode_codepoint",
+              "case_sensitive": true,
+              "normalization": "none",
+              "algorithm": "exact_bitset_longest_common_subsequence",
+              "limits": {
+                "max_codepoints_per_input": 65536,
+                "max_length_product": 67108864
+              },
+              "exceeded_limits": []
+            },
+            "stage": "tier2",
+            "complete": true,
+            "truncated": false,
+            "reason": "threshold_met"
+          },
+          "tier3": {
+            "stage": "tier3",
+            "status": "skipped",
+            "reason": "earlier_stage_matched",
+            "score": null,
+            "matched": null,
+            "complete": false,
+            "truncated": false
+          },
+          "tier4": {
+            "stage": "tier4",
+            "status": "skipped",
+            "reason": "earlier_stage_matched",
+            "score": null,
+            "matched": null,
+            "complete": false,
+            "truncated": false,
+            "coverage": null
+          }
+        },
+        "metadata": {
+          "method": "nt_style_ordered_cascade_v1",
+          "component_mode": "ordered_staged_per_pair",
+          "assumptions": {
+            "evaluation": "ordered_staged_computation_per_source_target_pair",
+            "tier1": "disabled_condition_passive_input_unchanged_no_canary",
+            "tier2": "exact_lcs_unicode_codepoints_minimum_length_denominator",
+            "tier3": "full_source_and_target_encoded_views_only",
+            "tier4": "target_and_overlapping_source_chunks_only",
+            "short_circuit": "first_observed_threshold_hit_within_one_pair",
+            "sources": "caller_evaluates_each_visible_source_independently_without_global_short_circuit",
+            "budget_failure": "continue_to_later_stage_but_preserve_incomplete_earlier_evidence",
+            "encoder_failure": "stop_further_semantic_computation_and_return_encoder_error",
+            "negative": "requires_all_enabled_stages_scored_without_truncation",
+            "threshold_policy": "fixed_memory_thresholds_without_gold_label_selection",
+            "interpretation": "similarity_candidate_not_confirmed_provenance_maliciousness_or_causality",
+            "paper_fidelity": "local_implementation_choices_require_independent_paper_audit"
+          },
+          "thresholds": {
+            "tier2_lcs": 0.15,
+            "tier3_cosine": 0.85,
+            "tier4_cosine": 0.85,
+            "tier4_coverage": 0.1
+          },
+          "canary_enabled": false,
+          "model_inputs_modified": false,
+          "semantic_enabled": false,
+          "semantic": null,
+          "profile": "memory",
+          "profile_selection": "restored_memory_lineage; no_evaluation_labels"
+        },
+        "provenance_verdict": "unreviewed",
+        "maliciousness": "not_assessed",
+        "causal_influence": "not_assessed"
+      }
+    },
+    {
+      "edge_id": "edge:12f4254fe9018fa75c8a1e2d29815ca6fbf3c91eb9693f782159b7480d752d8b",
+      "from_node": "step:1a350315dcedd458e4c46bb21fba9b9c85ff7a27bc2e7d984496986b86219ba7",
+      "to_node": "result:3a6228de11ab2ef86ef078cfd94b88130ff50e7e1f3419441b3cde10bc91a4bb",
+      "relation": "tool_return",
+      "label_ids": [],
+      "event_id": "event:00000023",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:b11d3ee68b40149338047e32f395b5db124bab931c4f642c12df37199c9071a1",
+      "from_node": "step:1a350315dcedd458e4c46bb21fba9b9c85ff7a27bc2e7d984496986b86219ba7",
+      "to_node": "memory:8c476003a02ed8c00aa590c066b025b4e15bb41238e59276d3cf115922c39240",
+      "relation": "memory_persist",
+      "label_ids": [
+        "label:7cd586b70ef12d26447380e577627a3112a2796b0371c46d4db114737edae6e8",
+        "label:b5a1a0cd05422e82770c00793c89f4e8484c15a41d9206d9e5568d9aa8509795"
+      ],
+      "event_id": "event:00000023",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:4aa68ab030bb80b0efd00225249f648426b6be3bd96d2b2d39e7bc429318431b",
+      "from_node": "memory:fb7e95b94eca16d79aa310be1da41b3741ee453fbb72ff14f47e824cd32bc4c3",
+      "to_node": "step:4efdf78d482fe851bb7ab710c183e8706adff7b26385516cc70811c23870126c",
+      "relation": "memory_restore",
+      "label_ids": [
+        "label:b5a1a0cd05422e82770c00793c89f4e8484c15a41d9206d9e5568d9aa8509795"
+      ],
+      "event_id": "event:00000026",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    }
+  ],
+  "registry": [
+    {
+      "episode_id": "episode:00000002",
+      "label_id": "label:b5a1a0cd05422e82770c00793c89f4e8484c15a41d9206d9e5568d9aa8509795",
+      "origin_node_id": "step:a7c3904c2eb4283d9595a7c5b4eca19f3db91c03d6d7189e30b6eef872fdaae8",
+      "origin_result_node_id": "result:c1ea6fb5287433cd28a8bbf62ba2efe37181d71533d659d95406a4de01c7a1b1",
+      "origin_tool": "get_file_by_id",
+      "path_confidence": null,
+      "policy_sha256": "ba98b5fe0c13cbe7e2f4c1aac5adcad59e7dfd9efa5317647db3d4a6436cc853",
+      "run_id": "session1-traced",
+      "source_event_id": "event:00000012",
+      "source_id": "source:b2f43a0b0eef02b93cf2cdd445bc754ec1d01a6140d3b213153ed9ba4edde974",
+      "text": "content: 'Project reference: violet-copper-4821.'\nfilename: external-reference.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 38",
+      "text_sha256": "639a88f336db354c1ab13d677e1ca44878f5ef45d2b608d40972a0e5df10cb6e"
+    },
+    {
+      "label_id": "label:7cd586b70ef12d26447380e577627a3112a2796b0371c46d4db114737edae6e8",
+      "source_id": "source:e36b2713eb306c077d6330ffa9cc17fce4356c94b1a5eaf422911b2ca1303369",
+      "source_event_id": "event:00000012",
+      "origin_node_id": "step:4efdf78d482fe851bb7ab710c183e8706adff7b26385516cc70811c23870126c",
+      "origin_result_node_id": "result:211c0e9e83fc8d37d3b3b5fa16569884725c0daccfde491cc6086180315cece3",
+      "run_id": "session2-traced",
+      "episode_id": "episode:00000002",
+      "origin_tool": "get_file_by_id",
+      "text": "content: 'Project reference: violet-copper-4821.'\nfilename: session-memory.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 38",
+      "text_sha256": "cbc5b0169c6a79899370b1db7cf4a0dd3b2cf6fc4c7864e2711d6be09eab3afc",
+      "policy_sha256": "ba98b5fe0c13cbe7e2f4c1aac5adcad59e7dfd9efa5317647db3d4a6436cc853",
+      "path_confidence": null
+    }
+  ],
+  "memory_bindings": [
+    {
+      "_nt_taint": [
+        "label:b5a1a0cd05422e82770c00793c89f4e8484c15a41d9206d9e5568d9aa8509795"
+      ],
+      "active": true,
+      "confirmed_write_event_id": "event:00000023",
+      "content": "Project reference: violet-copper-4821.",
+      "content_sha256": "4c6dc91ea974f68e9c40e805bf28eb0e330aced200048ee7d32d1deb38ec6cb4",
+      "episode_id": "episode:00000002",
+      "namespace": "native-fixture-drive-v1",
+      "node_id": "memory:fb7e95b94eca16d79aa310be1da41b3741ee453fbb72ff14f47e824cd32bc4c3",
+      "paths": {
+        "label:b5a1a0cd05422e82770c00793c89f4e8484c15a41d9206d9e5568d9aa8509795": [
+          "edge:564d2e0e45485886dea84409886755914825f2b6fc581498f4a71fad3cbaefc3",
+          "edge:0e44b4cf5cbd5ed9bfc82bf13a440ce3bb556fb5fd592b7911857639063f7d64"
+        ]
+      },
+      "record_key": "2",
+      "run_id": "session1-traced",
+      "version": 1
+    },
+    {
+      "namespace": "native-fixture-drive-v1",
+      "record_key": "3",
+      "version": 1,
+      "node_id": "memory:8c476003a02ed8c00aa590c066b025b4e15bb41238e59276d3cf115922c39240",
+      "content": "Project reference: violet-copper-4821.",
+      "content_sha256": "4c6dc91ea974f68e9c40e805bf28eb0e330aced200048ee7d32d1deb38ec6cb4",
+      "confirmed_write_event_id": "event:00000023",
+      "run_id": "session2-traced",
+      "episode_id": "episode:00000002",
+      "active": true,
+      "_nt_taint": [
+        "label:7cd586b70ef12d26447380e577627a3112a2796b0371c46d4db114737edae6e8",
+        "label:b5a1a0cd05422e82770c00793c89f4e8484c15a41d9206d9e5568d9aa8509795"
+      ],
+      "paths": {
+        "label:7cd586b70ef12d26447380e577627a3112a2796b0371c46d4db114737edae6e8": [
+          "edge:8e99108bc0c0678cc9bde142d1b87f9441410d73da32312bfd322e7b5c5161c6",
+          "edge:b11d3ee68b40149338047e32f395b5db124bab931c4f642c12df37199c9071a1"
+        ],
+        "label:b5a1a0cd05422e82770c00793c89f4e8484c15a41d9206d9e5568d9aa8509795": [
+          "edge:564d2e0e45485886dea84409886755914825f2b6fc581498f4a71fad3cbaefc3",
+          "edge:0e44b4cf5cbd5ed9bfc82bf13a440ce3bb556fb5fd592b7911857639063f7d64",
+          "edge:a1cec094a8b599c94f0a42d2c9c781cb978d1e5fd52222128ddebae62b249ca6",
+          "edge:ea86ab25547d1fa0dd7c5d0786669aea1f753dda860827a9f5b2c8840fe7890b",
+          "edge:b11d3ee68b40149338047e32f395b5db124bab931c4f642c12df37199c9071a1"
+        ]
+      }
+    }
+  ],
+  "memory_events": [
+    {
+      "call_ref": "call:00000008",
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000012",
+      "propagation_verdict": "not_emitted",
+      "record_key": "1",
+      "run_id": "session1-traced",
+      "status": "no_active_binding"
+    },
+    {
+      "call_ref": "call:00000008",
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000015",
+      "propagation_verdict": "not_emitted",
+      "record_key": "1",
+      "run_id": "session1-traced",
+      "status": "no_binding_at_retrieval"
+    },
+    {
+      "call_ref": "call:00000018",
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000023",
+      "label_count": 1,
+      "propagation_verdict": "not_emitted",
+      "record_key": "2",
+      "run_id": "session1-traced",
+      "status": "binding_committed",
+      "version": 1
+    },
+    {
+      "call_ref": "call:00000008",
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000026",
+      "propagation_verdict": "not_emitted",
+      "record_key": "1",
+      "run_id": "session1-traced",
+      "status": "no_binding_at_retrieval"
+    },
+    {
+      "event_id": "event:00000015",
+      "run_id": "session2-traced",
+      "episode_id": "episode:00000002",
+      "call_ref": "call:00000008",
+      "status": "lineage_restored",
+      "record_key": "2",
+      "version": 1,
+      "label_count": 1,
+      "propagation_verdict": "not_emitted"
+    },
+    {
+      "event_id": "event:00000023",
+      "run_id": "session2-traced",
+      "episode_id": "episode:00000002",
+      "call_ref": "call:00000018",
+      "status": "binding_committed",
+      "record_key": "3",
+      "version": 1,
+      "label_count": 2,
+      "propagation_verdict": "not_emitted"
+    },
+    {
+      "event_id": "event:00000026",
+      "run_id": "session2-traced",
+      "episode_id": "episode:00000002",
+      "call_ref": "call:00000008",
+      "status": "lineage_restored",
+      "record_key": "2",
+      "version": 1,
+      "label_count": 1,
+      "propagation_verdict": "not_emitted"
+    }
+  ]
+}

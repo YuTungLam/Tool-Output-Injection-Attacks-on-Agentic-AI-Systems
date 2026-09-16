@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "mode": "offline-fixture",
+  "real_llm": false,
+  "started_at": "2026-09-08T01:44:53.992818+00:00",
+  "config": {
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "benchmark_version": "v1.2.2",
+    "suite": "workspace",
+    "user_tasks": [
+      "user_task_0"
+    ],
+    "temperature": 0.0,
+    "reasoning_effort": null,
+    "max_completion_tokens": 4096,
+    "max_tool_rounds": 8,
+    "request_timeout_seconds": 60.0,
+    "record_events": true,
+    "online_provenance": true,
+    "semantic_model": ".model-cache/all-MiniLM-L6-v2-1110a243",
+    "semantic_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "pacing_tokens_per_minute": null
+  },
+  "upstream": {
+    "repository": "https://github.com/ethz-spylab/agentdojo.git",
+    "commit": "089ed468cf3ed0322acc66b0211f26d9d90dbf60",
+    "package_version": "0.1.35",
+    "benchmark_version": "v1.2.2",
+    "actual_commit": "089ed468cf3ed0322acc66b0211f26d9d90dbf60",
+    "modified": false,
+    "pin_matches": true
+  },
+  "python": "3.12.14",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "uv_lock_sha256": "bead7fd77ae87e31d1d0e0ce4a246b1c8f575a3b3b94c2604ab26f9fe081da6c",
+  "endpoint": "in-process mock transport",
+  "sdk_max_retries": 0,
+  "request_pacing": {
+    "enabled": false,
+    "tokens_per_minute": null,
+    "window_seconds": null
+  },
+  "adapter": "groq-text-v1",
+  "event_recording": {
+    "enabled": true,
+    "schema_version": 1
+  },
+  "online_provenance": {
+    "enabled": true,
+    "mode": "synchronous_observation; independent_all_pairs",
+    "semantic": {
+      "method": "nt_style_semantic_v1",
+      "assumptions": {
+        "sentence_boundary_regex": "(?<=[.!?。！？])\\s+|[\\r\\n]+",
+        "sentence_edge_whitespace": "excluded_from_spans_without_changing_original_text",
+        "chunk_sentences": 3,
+        "chunk_overlap_sentences": 1,
+        "coverage": "union_length_of_threshold_matching_encoded_token_envelopes/source_codepoints",
+        "coverage_denominator": "all_original_source_codepoints_including_whitespace",
+        "offset_unit": "unicode_codepoint_half_open",
+        "threshold_policy": "fixed_ordinary_thresholds_without_gold_label_selection",
+        "evaluation": "score_tiers_3_and_4_independently_not_the_full_ordered_cascade",
+        "cosine_accumulation": "python_math_fsum_float64_over_float32_model_embeddings",
+        "truncation": "score_encoded_view_and_report_incomplete_without_claiming_full_text_coverage",
+        "interpretation": "semantic_similarity_candidate_not_confirmed_provenance_or_maliciousness"
+      },
+      "semantic_threshold": 0.6,
+      "coverage_threshold": 0.1,
+      "limits": {
+        "max_codepoints_per_input": 65536,
+        "max_chunks": 128
+      },
+      "encoder": {
+        "model_id": "sentence-transformers/all-MiniLM-L6-v2",
+        "model_path": "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/.model-cache/all-MiniLM-L6-v2-1110a243",
+        "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+        "revision_verification": "pinned_manifest_verified",
+        "pin_sha256": "1e1ce741dc5ccaefa6228aaf47de2da9b8df1684c576097eb71408c6c37a4d00",
+        "files_sha256": {
+          "1_Pooling/config.json": "4be450dde3b0273bb9787637cfbd28fe04a7ba6ab9d36ac48e92b11e350ffc23",
+          "config.json": "953f9c0d463486b10a6871cc2fd59f223b2c70184f49815e7efbcab5d8908b41",
+          "config_sentence_transformers.json": "061ca9d39661d6c6d6de5ba27f79a1cd5770ea247f8d46412a68a498dc5ac9f3",
+          "model.safetensors": "53aa51172d142c89d9012cce15ae4d6cc0ca6895895114379cacb4fab128d9db",
+          "modules.json": "84e40c8e006c9b1d6c122e02cba9b02458120b5fb0c87b746c41e0207cf642cf",
+          "sentence_bert_config.json": "fc1993fde0a95c24ec6c022539d41cf6e2f7c9721e5415d6fb6897472a9cd4b7",
+          "special_tokens_map.json": "303df45a03609e4ead04bc3dc1536d0ab19b5358db685b6f3da123d05ec200e3",
+          "tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+          "tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+          "vocab.txt": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+        },
+        "manifest_sha256": "0cfc83afb449f81d5535c4f5d76b097ee7074a09fdb02ad94ea5bb3c282e01f6",
+        "device": "cpu",
+        "dtype": "float32",
+        "max_tokens": 256,
+        "trust_remote_code": false,
+        "local_files_only": true,
+        "use_safetensors": true,
+        "cache_max_entries": 1024,
+        "cache_max_codepoints": 1048576,
+        "cache_key": "exact_input_text",
+        "normalize_embeddings": true,
+        "versions": {
+          "sentence-transformers": "6.0.1",
+          "transformers": "5.16.1",
+          "tokenizers": "0.23.2",
+          "torch": "2.14.0"
+        }
+      }
+    },
+    "implementation_sha256": {
+      "recording.py": "7d3345a9506d1cab013980af373e9d1f7da7e71da8483ab7eda17646144e0d1a",
+      "observation.py": "8327ce3289cae200ea21ba3fa05391c96850ecd6daedc78e572ed4efb533cfe4",
+      "online.py": "b4781d277d42921dacd88b1ea2bcc5e912ec3517570210730098262445fea8a3",
+      "provenance.py": "1b5af0c808b6d9df9cbbadb032d8f728273b8a0bb289a40e00d923bcf0ac0437",
+      "lexical.py": "8fb0880ca2367a8e95a9fda330856dccaa4a3444e652b5e46abdae4a65c45c15",
+      "semantic.py": "a37740f0db8430d2eed9d8faac1aa826737d967a9417bb828e4a9b6681eb7167"
+    },
+    "timing_scope": "Model loading excluded; callback compute and flush add latency; no hard deadline"
+  },
+  "attack": null,
+  "defense": null,
+  "notes": [
+    "Offline fixture results validate plumbing only, not model capability.",
+    "Native suite runner may execute a pipeline up to three times total if no final text is returned.",
+    "events.jsonl captures outbound HTTP JSON and top-level runtime boundaries when enabled.",
+    "Recording observes execution; it does not establish source attribution or causality."
+  ]
+}

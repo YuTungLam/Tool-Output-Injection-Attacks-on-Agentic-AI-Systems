@@ -415,8 +415,8 @@ do not travel with a clone.
 ## Moving between devices
 
 Git syncs tracked code, configurations, and these context files on the selected
-branch. As requested on 2026-09-16, lab `reports/` is tracked. It still ignores
-`.env`, lab `runs/`, `.venv/`, `.model-cache/`, and `vendor/`. Root `/docs/` and `/CODEX_HANDOFF.md` are also ignored, which is why
+branch. As requested on 2026-09-16, lab `reports/` and `runs/` are tracked. It
+still ignores `.env`, `.venv/`, `.model-cache/`, and `vendor/`. Root `/docs/` and `/CODEX_HANDOFF.md` are also ignored, which is why
 the durable context lives in these root files instead.
 
 For old experiments, transfer selected complete batch directories and their
@@ -453,3 +453,28 @@ Verification: all 990 staged reports match local bytes exactly after applying
 passes for the edited guidance and configuration; the full archive check flags
 pre-existing whitespace in generated artifacts, preserved intentionally. No
 model runs or application tests were needed for this archive-only change.
+
+## Raw-run synchronization — 2026-09-16, Mac
+
+The researcher subsequently requested that `runs/` also travel with Git and
+explicitly authorized pushing this archive to
+`YuTungLam/Tool-Output-Injection-Attacks-on-Agentic-AI-Systems`, branch
+`codex/agentdojo-lab`. This supersedes the report-only synchronization limit
+above. The local inventory contains 3,943 files totaling 162,050,027 bytes; the
+largest is 1,363,377 bytes, and there are no symlinks. A credential-pattern scan
+found no common provider keys or private keys. Credential-field matches are
+status values and offline/synthetic test values. Raw `.bin` files include retained
+artifact byte snapshots, not model weights. Byte-preserving Git attributes cover
+both runs and reports. No historical experiment was rerun.
+
+Reports commit `31d839c` already matches the local origin tracking reference.
+Next action: commit and push the raw-run archive, then pull the same branch on
+the destination device. Only files present on this Mac are included; NeSI-only
+artifacts still require synchronization from that device. Existing absolute-path
+links may still need the original layout. Check the session handoff for the
+verified push result.
+
+Validation: scoped `git diff --cached --check` passes for changed guidance and
+configuration. The full archive check reports pre-existing generated-artifact
+whitespace, retained intentionally. No application tests are claimed for this
+archive-only change.

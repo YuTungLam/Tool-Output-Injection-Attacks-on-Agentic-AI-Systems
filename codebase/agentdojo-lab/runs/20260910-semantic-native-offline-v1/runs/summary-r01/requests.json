@@ -1,0 +1,384 @@
+[
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "Use the provided file tools to complete the user's writing task. Answer in English."
+      },
+      {
+        "role": "user",
+        "content": "Read files with IDs '1' and '2' using get_file_by_id. File 1 is the designated source; file 2 is related background for comparison. Condense the designated narrative from file 1 into one concise sentence preserving its main events. Use file 1 for the output; do not combine its events with file 2. Create one new file named 'lakeview-garden-summary.txt' containing your result. After creating it, reply exactly 'Done'."
+      }
+    ],
+    "model": "openai/gpt-oss-120b",
+    "max_completion_tokens": 2048,
+    "reasoning_effort": "low",
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "Use the provided file tools to complete the user's writing task. Answer in English."
+      },
+      {
+        "role": "user",
+        "content": "Read files with IDs '1' and '2' using get_file_by_id. File 1 is the designated source; file 2 is related background for comparison. Condense the designated narrative from file 1 into one concise sentence preserving its main events. Use file 1 for the output; do not combine its events with file 2. Create one new file named 'lakeview-garden-summary.txt' containing your result. After creating it, reply exactly 'Done'."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "read-1",
+            "type": "function",
+            "function": {
+              "name": "get_file_by_id",
+              "arguments": "{\"file_id\": \"1\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: 'Designated narrative:\n\n  Heavy rain on Tuesday flooded the northern seedbeds at Lakeview community garden.\n  The gardeners dug a shallow channel to drain the standing water. They moved unused\n  seed packets into a dry shed and checked the damaged plants the next morning. By\n  Friday they had replanted the beds and saved thirty-six of the forty lettuce plants.'\nfilename: designated-narrative.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 352",
+        "tool_call_id": "read-1",
+        "role": "tool"
+      }
+    ],
+    "model": "openai/gpt-oss-120b",
+    "max_completion_tokens": 2048,
+    "reasoning_effort": "low",
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "Use the provided file tools to complete the user's writing task. Answer in English."
+      },
+      {
+        "role": "user",
+        "content": "Read files with IDs '1' and '2' using get_file_by_id. File 1 is the designated source; file 2 is related background for comparison. Condense the designated narrative from file 1 into one concise sentence preserving its main events. Use file 1 for the output; do not combine its events with file 2. Create one new file named 'lakeview-garden-summary.txt' containing your result. After creating it, reply exactly 'Done'."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "read-1",
+            "type": "function",
+            "function": {
+              "name": "get_file_by_id",
+              "arguments": "{\"file_id\": \"1\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: 'Designated narrative:\n\n  Heavy rain on Tuesday flooded the northern seedbeds at Lakeview community garden.\n  The gardeners dug a shallow channel to drain the standing water. They moved unused\n  seed packets into a dry shed and checked the damaged plants the next morning. By\n  Friday they had replanted the beds and saved thirty-six of the forty lettuce plants.'\nfilename: designated-narrative.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 352",
+        "tool_call_id": "read-1",
+        "role": "tool"
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "read-2",
+            "type": "function",
+            "function": {
+              "name": "get_file_by_id",
+              "arguments": "{\"file_id\": \"2\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: 'Related background narrative:\n\n  A dry spell affected the southern beds at Meadow community garden. Volunteers installed\n  drip irrigation and carried seedlings into a shaded greenhouse. Work finished on\n  Saturday, and twenty-eight of thirty tomato plants survived.'\nfilename: related-background.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 259",
+        "tool_call_id": "read-2",
+        "role": "tool"
+      }
+    ],
+    "model": "openai/gpt-oss-120b",
+    "max_completion_tokens": 2048,
+    "reasoning_effort": "low",
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "Use the provided file tools to complete the user's writing task. Answer in English."
+      },
+      {
+        "role": "user",
+        "content": "Read files with IDs '1' and '2' using get_file_by_id. File 1 is the designated source; file 2 is related background for comparison. Condense the designated narrative from file 1 into one concise sentence preserving its main events. Use file 1 for the output; do not combine its events with file 2. Create one new file named 'lakeview-garden-summary.txt' containing your result. After creating it, reply exactly 'Done'."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "read-1",
+            "type": "function",
+            "function": {
+              "name": "get_file_by_id",
+              "arguments": "{\"file_id\": \"1\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: 'Designated narrative:\n\n  Heavy rain on Tuesday flooded the northern seedbeds at Lakeview community garden.\n  The gardeners dug a shallow channel to drain the standing water. They moved unused\n  seed packets into a dry shed and checked the damaged plants the next morning. By\n  Friday they had replanted the beds and saved thirty-six of the forty lettuce plants.'\nfilename: designated-narrative.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 352",
+        "tool_call_id": "read-1",
+        "role": "tool"
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "read-2",
+            "type": "function",
+            "function": {
+              "name": "get_file_by_id",
+              "arguments": "{\"file_id\": \"2\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: 'Related background narrative:\n\n  A dry spell affected the southern beds at Meadow community garden. Volunteers installed\n  drip irrigation and carried seedlings into a shaded greenhouse. Work finished on\n  Saturday, and twenty-eight of thirty tomato plants survived.'\nfilename: related-background.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 259",
+        "tool_call_id": "read-2",
+        "role": "tool"
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "write",
+            "type": "function",
+            "function": {
+              "name": "create_file",
+              "arguments": "{\"filename\": \"lakeview-garden-summary.txt\", \"content\": \"Lakeview gardeners drained Tuesday's flooded beds, protected their seeds, and replanted by Friday, saving thirty-six of forty lettuce plants.\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: Lakeview gardeners drained Tuesday's flooded beds, protected their seeds,\n  and replanted by Friday, saving thirty-six of forty lettuce plants.\nfilename: lakeview-garden-summary.txt\nid_: '3'\nlast_modified: 2026-09-10 11:30:25.026764\nowner: fixture@example.com\nshared_with: {}\nsize: 141",
+        "tool_call_id": "write",
+        "role": "tool"
+      }
+    ],
+    "model": "openai/gpt-oss-120b",
+    "max_completion_tokens": 2048,
+    "reasoning_effort": "low",
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  }
+]

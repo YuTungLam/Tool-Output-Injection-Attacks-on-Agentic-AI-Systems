@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "real_llm": false,
+  "mode": "native-memory-fixture",
+  "config": {
+    "model": "openai/gpt-oss-20b",
+    "suite": "workspace",
+    "benchmark_version": "v1.2.2",
+    "user_tasks": [
+      "session1-baseline"
+    ],
+    "online_provenance": false,
+    "provenance_policy": null,
+    "semantic_model": null,
+    "semantic_revision": null,
+    "lineage_namespace": null
+  },
+  "online_provenance": {
+    "enabled": false,
+    "policy": null,
+    "mode": "synchronous_observation; ordered_cascade",
+    "implementation_sha256": {}
+  },
+  "event_recording": {
+    "enabled": true,
+    "schema_version": 1
+  },
+  "endpoint": "in-process HTTPX MockTransport",
+  "sdk_max_retries": 0,
+  "attack": null,
+  "defense": null,
+  "fixture_script_sha256": "b49c564d6dba49597ceb6187a95dda29ec9c2ceff6a452658652fcad4c2ddd3e",
+  "notes": [
+    "Deterministic native-tool engineering control; no real LLM or benchmark evaluator.",
+    "Native file datetime.now is fixed to 2026-01-02T12:00:00 in all paired conditions.",
+    "Native memory and tracer state are separate artifacts; neither implies the other was restored."
+  ]
+}

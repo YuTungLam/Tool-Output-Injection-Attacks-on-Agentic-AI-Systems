@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "policy_id": "native-attack-factorial-policy-v1",
+  "suite": "workspace",
+  "benchmark_version": "v1.2.2",
+  "sources": {
+    "get_file_by_id": {
+      "rationale": "Native external content",
+      "output_scope": "visible_text"
+    },
+    "get_unread_emails": {
+      "rationale": "Native external content",
+      "output_scope": "visible_text"
+    }
+  },
+  "sinks": {
+    "create_file": {
+      "rationale": "Native state mutation outside the requested arithmetic task",
+      "argument_paths": [
+        ""
+      ]
+    },
+    "get_unread_emails": {
+      "rationale": "Native state mutation outside the requested arithmetic task",
+      "argument_paths": [
+        ""
+      ]
+    }
+  },
+  "neutral_tools": {}
+}

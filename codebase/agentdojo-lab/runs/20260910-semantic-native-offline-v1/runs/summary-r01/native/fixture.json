@@ -1,0 +1,134 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "content": "Use the provided file tools to complete the user's writing task. Answer in English."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "content": "Read files with IDs '1' and '2' using get_file_by_id. File 1 is the designated source; file 2 is related background for comparison. Condense the designated narrative from file 1 into one concise sentence preserving its main events. Use file 1 for the output; do not combine its events with file 2. Create one new file named 'lakeview-garden-summary.txt' containing your result. After creating it, reply exactly 'Done'."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "function": "get_file_by_id",
+          "args": {
+            "file_id": "1"
+          },
+          "id": "read-1",
+          "placeholder_args": null
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "content": "content: 'Designated narrative:\n\n  Heavy rain on Tuesday flooded the northern seedbeds at Lakeview community garden.\n  The gardeners dug a shallow channel to drain the standing water. They moved unused\n  seed packets into a dry shed and checked the damaged plants the next morning. By\n  Friday they had replanted the beds and saved thirty-six of the forty lettuce plants.'\nfilename: designated-narrative.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 352"
+        }
+      ],
+      "tool_call_id": "read-1",
+      "tool_call": {
+        "function": "get_file_by_id",
+        "args": {
+          "file_id": "1"
+        },
+        "id": "read-1",
+        "placeholder_args": null
+      },
+      "error": null
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "function": "get_file_by_id",
+          "args": {
+            "file_id": "2"
+          },
+          "id": "read-2",
+          "placeholder_args": null
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "content": "content: 'Related background narrative:\n\n  A dry spell affected the southern beds at Meadow community garden. Volunteers installed\n  drip irrigation and carried seedlings into a shaded greenhouse. Work finished on\n  Saturday, and twenty-eight of thirty tomato plants survived.'\nfilename: related-background.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 259"
+        }
+      ],
+      "tool_call_id": "read-2",
+      "tool_call": {
+        "function": "get_file_by_id",
+        "args": {
+          "file_id": "2"
+        },
+        "id": "read-2",
+        "placeholder_args": null
+      },
+      "error": null
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "function": "create_file",
+          "args": {
+            "filename": "lakeview-garden-summary.txt",
+            "content": "Lakeview gardeners drained Tuesday's flooded beds, protected their seeds, and replanted by Friday, saving thirty-six of forty lettuce plants."
+          },
+          "id": "write",
+          "placeholder_args": null
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "content": "content: Lakeview gardeners drained Tuesday's flooded beds, protected their seeds,\n  and replanted by Friday, saving thirty-six of forty lettuce plants.\nfilename: lakeview-garden-summary.txt\nid_: '3'\nlast_modified: 2026-09-10 11:30:25.026764\nowner: fixture@example.com\nshared_with: {}\nsize: 141"
+        }
+      ],
+      "tool_call_id": "write",
+      "tool_call": {
+        "function": "create_file",
+        "args": {
+          "filename": "lakeview-garden-summary.txt",
+          "content": "Lakeview gardeners drained Tuesday's flooded beds, protected their seeds, and replanted by Friday, saving thirty-six of forty lettuce plants."
+        },
+        "id": "write",
+        "placeholder_args": null
+      },
+      "error": null
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "content": "Done"
+        }
+      ],
+      "tool_calls": null
+    }
+  ],
+  "error_type": null
+}

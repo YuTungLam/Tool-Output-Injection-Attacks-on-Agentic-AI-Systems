@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "mode": "live-groq",
+  "real_llm": true,
+  "started_at": "2026-09-07T00:41:12.848228+00:00",
+  "config": {
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "benchmark_version": "v1.2.2",
+    "suite": "workspace",
+    "user_tasks": [
+      "user_task_0"
+    ],
+    "temperature": 0.0,
+    "reasoning_effort": "low",
+    "max_completion_tokens": 4096,
+    "max_tool_rounds": 8,
+    "request_timeout_seconds": 60.0,
+    "record_events": true
+  },
+  "upstream": {
+    "repository": "https://github.com/ethz-spylab/agentdojo.git",
+    "commit": "089ed468cf3ed0322acc66b0211f26d9d90dbf60",
+    "package_version": "0.1.35",
+    "benchmark_version": "v1.2.2",
+    "actual_commit": "089ed468cf3ed0322acc66b0211f26d9d90dbf60",
+    "modified": false,
+    "pin_matches": true
+  },
+  "python": "3.12.14",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "uv_lock_sha256": "095c42b9fde2ccb0e9d45e765873ec37142ce18344b5bbe8aee834ae86848370",
+  "endpoint": "https://api.groq.com/openai/v1",
+  "sdk_max_retries": 0,
+  "adapter": "groq-text-v1",
+  "event_recording": {
+    "enabled": true,
+    "schema_version": 1
+  },
+  "attack": null,
+  "defense": null,
+  "notes": [
+    "Clean tasks using the native AgentDojo pipeline and evaluator.",
+    "Native suite runner may execute a pipeline up to three times total if no final text is returned.",
+    "events.jsonl captures outbound HTTP JSON and top-level runtime boundaries when enabled.",
+    "Recording observes execution; it does not establish source attribution or causality."
+  ]
+}

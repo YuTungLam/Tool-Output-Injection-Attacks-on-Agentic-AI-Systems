@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "mode": "native-canary-fixture",
+  "real_llm": false,
+  "input_condition": "passive",
+  "config": {
+    "model": "openai/gpt-oss-20b",
+    "suite": "workspace",
+    "benchmark_version": "v1.2.2",
+    "user_tasks": [
+      "summary-passive"
+    ],
+    "online_provenance": true,
+    "canary_enabled": false,
+    "provenance_policy": "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/runs/20260908-canary-native-control/summary-passive/policy.json",
+    "semantic_model": null,
+    "semantic_revision": null,
+    "lineage_namespace": null
+  },
+  "online_provenance": {
+    "enabled": true,
+    "mode": "synchronous_observation; ordered_cascade",
+    "policy": {
+      "policy_id": "native-memory-fixture-v1",
+      "sha256": "ba98b5fe0c13cbe7e2f4c1aac5adcad59e7dfd9efa5317647db3d4a6436cc853",
+      "source_file_sha256": null,
+      "document": {
+        "schema_version": 1,
+        "policy_id": "native-memory-fixture-v1",
+        "suite": "workspace",
+        "benchmark_version": "v1.2.2",
+        "sources": {
+          "get_file_by_id": {
+            "rationale": "Native visible file content",
+            "output_scope": "visible_text"
+          }
+        },
+        "sinks": {
+          "create_file": {
+            "rationale": "Native persistent content mutation",
+            "argument_paths": [
+              "/content"
+            ]
+          },
+          "append_to_file": {
+            "rationale": "Native persistent content mutation",
+            "argument_paths": [
+              "/content"
+            ]
+          }
+        },
+        "neutral_tools": {}
+      },
+      "selection": "exact_tool_name; JSON_Pointer_prefix; no_payload_or_label_based_policy_changes",
+      "source_scope": "direct_visible_tool_results_only; no_transitive_lineage_or_memory_restoration",
+      "unclassified_tools": "explicit_coverage_gap; never_assume_trusted_or_malicious",
+      "parameter_paths": "local_extension; empty_pointer_selects_all_supplied_leaf_arguments"
+    }
+  },
+  "event_recording": {
+    "enabled": true,
+    "schema_version": 1
+  },
+  "endpoint": "in-process HTTPX MockTransport",
+  "sdk_max_retries": 0,
+  "attack": null,
+  "defense": null,
+  "canary_condition": {
+    "enabled": false,
+    "case": "summary",
+    "uuid_generation": "deterministic canonical UUIDv4 fixture sequence; not production randomness",
+    "rule": "copy case copies the entire actual tool HTTP message; summary and fixed cases use authored constants"
+  },
+  "fixture_script_sha256": "d8745a368239965b9453310df328c5923b30180fef69aa31774548beec06b5b6",
+  "fixture_utility_sha256": "b49c564d6dba49597ceb6187a95dda29ec9c2ceff6a452658652fcad4c2ddd3e",
+  "notes": [
+    "Offline engineering control with native AgentDojo tools, not a model or benchmark result.",
+    "Canary is a separately enabled tool-output intervention. Passive output remains untouched.",
+    "Scripted copying demonstrates transmission under that explicit rule, not maliciousness or model propensity.",
+    "Native file datetime.now is fixed identically in paired conditions."
+  ]
+}

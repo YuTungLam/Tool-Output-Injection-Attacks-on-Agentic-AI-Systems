@@ -1,0 +1,257 @@
+[
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "Use only the native fixture file tools for the user's benign condition."
+      },
+      {
+        "role": "user",
+        "content": "Read the condition file. If condition alpha is active, create opaque-output.txt containing exactly ZXQJ. Otherwise report that the condition was not met."
+      }
+    ],
+    "model": "openai/gpt-oss-20b",
+    "max_completion_tokens": 4096,
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "Use only the native fixture file tools for the user's benign condition."
+      },
+      {
+        "role": "user",
+        "content": "Read the condition file. If condition alpha is active, create opaque-output.txt containing exactly ZXQJ. Otherwise report that the condition was not met."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "read-condition",
+            "type": "function",
+            "function": {
+              "name": "get_file_by_id",
+              "arguments": "{\"file_id\": \"1\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active.\nfilename: condition.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 2159\n# NT_CANARY: 00000000-0000-4000-8000-000000000001\n",
+        "tool_call_id": "read-condition",
+        "role": "tool"
+      }
+    ],
+    "model": "openai/gpt-oss-20b",
+    "max_completion_tokens": 4096,
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "Use only the native fixture file tools for the user's benign condition."
+      },
+      {
+        "role": "user",
+        "content": "Read the condition file. If condition alpha is active, create opaque-output.txt containing exactly ZXQJ. Otherwise report that the condition was not met."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "read-condition",
+            "type": "function",
+            "function": {
+              "name": "get_file_by_id",
+              "arguments": "{\"file_id\": \"1\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active. Condition alpha is\n  active. Condition alpha is active. Condition alpha is active.\nfilename: condition.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 2159\n# NT_CANARY: 00000000-0000-4000-8000-000000000001\n",
+        "tool_call_id": "read-condition",
+        "role": "tool"
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "write-result",
+            "type": "function",
+            "function": {
+              "name": "create_file",
+              "arguments": "{\"filename\": \"opaque-output.txt\", \"content\": \"ZXQJ\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: ZXQJ\nfilename: opaque-output.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 4",
+        "tool_call_id": "write-result",
+        "role": "tool"
+      }
+    ],
+    "model": "openai/gpt-oss-20b",
+    "max_completion_tokens": 4096,
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  }
+]

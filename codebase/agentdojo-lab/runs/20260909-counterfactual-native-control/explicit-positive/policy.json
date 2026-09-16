@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "policy_id": "native-counterfactual-fixture-v1",
+  "suite": "workspace",
+  "benchmark_version": "v1.2.2",
+  "sources": {
+    "get_file_by_id": {
+      "rationale": "Native external condition file",
+      "output_scope": "visible_text"
+    }
+  },
+  "sinks": {
+    "create_file": {
+      "rationale": "Native conditional file write",
+      "argument_paths": [
+        "/content"
+      ]
+    }
+  },
+  "neutral_tools": {}
+}

@@ -1,0 +1,101 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "content": "Use the provided file tools to complete the user's copy task. Preserve file content exactly."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "content": "Read file with ID '2' using get_file_by_id. Then create one new file named 'session-output.txt' with exactly the content of the file you read. Do not add explanations to its content. After creating the file, give a brief confirmation."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "function": "get_file_by_id",
+          "args": {
+            "file_id": "2"
+          },
+          "id": "fc_093ba7cc-6340-4b2a-a93f-8cc16df3a7e1",
+          "placeholder_args": null
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "content": "content: No project reference is available.\nfilename: session-memory.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 34"
+        }
+      ],
+      "tool_call_id": "fc_093ba7cc-6340-4b2a-a93f-8cc16df3a7e1",
+      "tool_call": {
+        "function": "get_file_by_id",
+        "args": {
+          "file_id": "2"
+        },
+        "id": "fc_093ba7cc-6340-4b2a-a93f-8cc16df3a7e1",
+        "placeholder_args": null
+      },
+      "error": null
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "function": "create_file",
+          "args": {
+            "content": "No project reference is available.",
+            "filename": "session-output.txt"
+          },
+          "id": "fc_024c2333-c4a2-4eb8-9150-af11a1ed0666",
+          "placeholder_args": null
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "content": "content: No project reference is available.\nfilename: session-output.txt\nid_: '3'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 34"
+        }
+      ],
+      "tool_call_id": "fc_024c2333-c4a2-4eb8-9150-af11a1ed0666",
+      "tool_call": {
+        "function": "create_file",
+        "args": {
+          "content": "No project reference is available.",
+          "filename": "session-output.txt"
+        },
+        "id": "fc_024c2333-c4a2-4eb8-9150-af11a1ed0666",
+        "placeholder_args": null
+      },
+      "error": null
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "content": "The file **session-output.txt** has been created with the requested content."
+        }
+      ],
+      "tool_calls": null
+    }
+  ],
+  "error_type": null
+}

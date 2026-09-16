@@ -1,0 +1,636 @@
+{
+  "schema_version": 1,
+  "method": "nt_style_dcpg_v1",
+  "namespace": "native-authorized-semantic-transform-v1:paraphrase-r01",
+  "policy_sha256": "b9e84b920afaf7ad37231b327a62010df47017b270f1166199822b939bbf08ac",
+  "metadata": {
+    "method": "nt_style_dcpg_v1",
+    "namespace": "native-authorized-semantic-transform-v1:paraphrase-r01",
+    "policy_sha256": "b9e84b920afaf7ad37231b327a62010df47017b270f1166199822b939bbf08ac",
+    "assumptions": {
+      "adapter": "workspace_cloud_drive_id_and_content_v1",
+      "write_confirmation": "runtime_success_and_correlated_visible_tool_result_matching_proposed_content",
+      "restore": "exact_namespace_record_key_and_original_UTF8_content_SHA256; actual_request_exposure_required",
+      "metadata": "trusted_sidecar_only; tool_content_nt_taint_is_not_imported",
+      "transformation": "candidate_cascade_evidence_at_write; exact_stored_value_binding_at_read",
+      "confidence": "per_comparison_scores_only; path_confidence_not_defined",
+      "episode_reset": "retire_active_bindings_on_subsequent_episode; first_episode_after_load_may_restore",
+      "context": "loaded_labels_dormant_until_verified_memory_result_exposure",
+      "retrieval_time": "freeze_binding_at_successful_visible_tool_result; reexposure_preserves_that_historical_result",
+      "environment": "checkpoint_restores_observer_state_only; caller_must_restore_actual_store_separately",
+      "graph": "tool_step_core_with_tool_result_and_memory_version_structural_nodes",
+      "inference": "no_blanket_taint_of_tool_outputs; no_causal_or_malicious_verdict"
+    },
+    "limits": {
+      "nodes": 20000,
+      "edges": 100000,
+      "registry": 4096,
+      "memory_bindings": 4096,
+      "memory_events": 20000,
+      "source_codepoints": 65536,
+      "retained_text_codepoints": 4194304,
+      "records_per_result": 128,
+      "checkpoint_bytes": 33554432
+    },
+    "memory_cascade": {
+      "method": "nt_style_ordered_cascade_v1",
+      "component_mode": "ordered_staged_per_pair",
+      "assumptions": {
+        "evaluation": "ordered_staged_computation_per_source_target_pair",
+        "tier1": "disabled_condition_passive_input_unchanged_no_canary",
+        "tier2": "exact_lcs_unicode_codepoints_minimum_length_denominator",
+        "tier3": "full_source_and_target_encoded_views_only",
+        "tier4": "target_and_overlapping_source_chunks_only",
+        "short_circuit": "first_observed_threshold_hit_within_one_pair",
+        "sources": "caller_evaluates_each_visible_source_independently_without_global_short_circuit",
+        "budget_failure": "continue_to_later_stage_but_preserve_incomplete_earlier_evidence",
+        "encoder_failure": "stop_further_semantic_computation_and_return_encoder_error",
+        "negative": "requires_all_enabled_stages_scored_without_truncation",
+        "threshold_policy": "fixed_memory_thresholds_without_gold_label_selection",
+        "interpretation": "similarity_candidate_not_confirmed_provenance_maliciousness_or_causality",
+        "paper_fidelity": "local_implementation_choices_require_independent_paper_audit"
+      },
+      "thresholds": {
+        "tier2_lcs": 0.15,
+        "tier3_cosine": 0.85,
+        "tier4_cosine": 0.85,
+        "tier4_coverage": 0.1
+      },
+      "canary_enabled": false,
+      "model_inputs_modified": false,
+      "semantic_enabled": false,
+      "semantic": null,
+      "profile": "memory",
+      "profile_selection": "restored_memory_lineage; no_evaluation_labels"
+    },
+    "maliciousness": "not_assessed",
+    "causal_influence": "not_assessed"
+  },
+  "parent_checkpoint_sha256": null,
+  "failed": false,
+  "nodes": [
+    {
+      "node_id": "step:8844a2f44615f3e03d530aa41e2349d5ada198abf4a00308e8f4c1e9ea3cc84c",
+      "kind": "tool_step",
+      "run_id": "paraphrase-r01",
+      "episode_id": "episode:00000002",
+      "proposal_event_id": "event:00000009",
+      "proposal_sequence": 6,
+      "call_ref": "call:00000008",
+      "function": "get_file_by_id",
+      "arguments": {
+        "file_id": "1"
+      },
+      "outcome": "success",
+      "label_ids": []
+    },
+    {
+      "node_id": "result:6d949717aec5c6896f4716206d9a1c9df3317df045cc135bc8333eea5227d0ee",
+      "kind": "tool_result",
+      "run_id": "paraphrase-r01",
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000012",
+      "outcome": "success",
+      "label_ids": []
+    },
+    {
+      "node_id": "step:f1e89666dcb5fb83f06d794cc37833324aa95b11473d050e180395dcbcdf0e1b",
+      "kind": "tool_step",
+      "run_id": "paraphrase-r01",
+      "episode_id": "episode:00000002",
+      "proposal_event_id": "event:00000019",
+      "proposal_sequence": 14,
+      "call_ref": "call:00000018",
+      "function": "get_file_by_id",
+      "arguments": {
+        "file_id": "2"
+      },
+      "outcome": "success",
+      "label_ids": []
+    },
+    {
+      "node_id": "result:337d64a1287ff72a1f476eb00ce9a1c9040b857ef03504cc72dcf62d74999974",
+      "kind": "tool_result",
+      "run_id": "paraphrase-r01",
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000022",
+      "outcome": "success",
+      "label_ids": []
+    },
+    {
+      "node_id": "step:e87a9b2d735982cabd54e63f75bb7011911c2f3e4f5037aa786f60a76b350792",
+      "kind": "tool_step",
+      "run_id": "paraphrase-r01",
+      "episode_id": "episode:00000002",
+      "proposal_event_id": "event:00000030",
+      "proposal_sequence": 23,
+      "call_ref": "call:00000029",
+      "function": "create_file",
+      "arguments": {
+        "content": "Harbor library used its east hall as a temporary reading area while renovation was underway. Roof leakage caused a three-day delay, but volunteers shielded the books with shelf covers. An inspection approved the repairs, allowing the library to reopen on Thursday.",
+        "filename": "harbor-library-paraphrase.txt"
+      },
+      "outcome": "success",
+      "label_ids": [
+        "label:dce628f69776f43d73e1cba0fb6856adb7d1d474f11d78963ae0bf1a89563e17",
+        "label:e119ecc0f1240b3a79d7851496309ad67c8a93a324b74a9eb9e363d500ca2f99"
+      ]
+    },
+    {
+      "node_id": "result:bf4f85af78df1eece6120c5cc7814e7ee89e8352184e92dea07944a1805de06c",
+      "kind": "tool_result",
+      "run_id": "paraphrase-r01",
+      "episode_id": "episode:00000002",
+      "event_id": "event:00000034",
+      "outcome": "success",
+      "label_ids": []
+    },
+    {
+      "node_id": "memory:1485002ec39b67489a4b628ff5172a649e7b1e6e0dd10e81f7a4dd21bb62635c",
+      "kind": "memory_version",
+      "run_id": "paraphrase-r01",
+      "episode_id": "episode:00000002",
+      "record_key": "3",
+      "version": 1,
+      "content_sha256": "f2a562d348ac84e8d6a038525d1adc7f11e9c88a3a3fcf9955fd8578176de46d",
+      "label_ids": [
+        "label:dce628f69776f43d73e1cba0fb6856adb7d1d474f11d78963ae0bf1a89563e17",
+        "label:e119ecc0f1240b3a79d7851496309ad67c8a93a324b74a9eb9e363d500ca2f99"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "edge_id": "edge:afa0a960656f139de8202cb115e1d62d37dd19fc666018d15b1b8047f1d2b91a",
+      "from_node": "step:8844a2f44615f3e03d530aa41e2349d5ada198abf4a00308e8f4c1e9ea3cc84c",
+      "to_node": "result:6d949717aec5c6896f4716206d9a1c9df3317df045cc135bc8333eea5227d0ee",
+      "relation": "tool_return",
+      "label_ids": [],
+      "event_id": "event:00000012",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:31f3d10db5f6dd2864e68f03a89c686804ffd56059250e7245142625c928fee8",
+      "from_node": "result:6d949717aec5c6896f4716206d9a1c9df3317df045cc135bc8333eea5227d0ee",
+      "to_node": "step:f1e89666dcb5fb83f06d794cc37833324aa95b11473d050e180395dcbcdf0e1b",
+      "relation": "context_exposure",
+      "label_ids": [
+        "label:e119ecc0f1240b3a79d7851496309ad67c8a93a324b74a9eb9e363d500ca2f99"
+      ],
+      "event_id": "event:00000019",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:710da30a36e4f2b39199bb9d922a11573fa1ce015d42beb994435bf5fe0b4462",
+      "from_node": "step:f1e89666dcb5fb83f06d794cc37833324aa95b11473d050e180395dcbcdf0e1b",
+      "to_node": "result:337d64a1287ff72a1f476eb00ce9a1c9040b857ef03504cc72dcf62d74999974",
+      "relation": "tool_return",
+      "label_ids": [],
+      "event_id": "event:00000022",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:13f3f518d282c119bfa9752d9ff3eb40c436f4ac20f84bd4e88155a343b4b284",
+      "from_node": "result:6d949717aec5c6896f4716206d9a1c9df3317df045cc135bc8333eea5227d0ee",
+      "to_node": "step:e87a9b2d735982cabd54e63f75bb7011911c2f3e4f5037aa786f60a76b350792",
+      "relation": "context_exposure",
+      "label_ids": [
+        "label:e119ecc0f1240b3a79d7851496309ad67c8a93a324b74a9eb9e363d500ca2f99"
+      ],
+      "event_id": "event:00000030",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:b38222624dc4cb2c9fb25e882f7dff8b23aad00a65f293089e681c666831d34f",
+      "from_node": "result:337d64a1287ff72a1f476eb00ce9a1c9040b857ef03504cc72dcf62d74999974",
+      "to_node": "step:e87a9b2d735982cabd54e63f75bb7011911c2f3e4f5037aa786f60a76b350792",
+      "relation": "context_exposure",
+      "label_ids": [
+        "label:dce628f69776f43d73e1cba0fb6856adb7d1d474f11d78963ae0bf1a89563e17"
+      ],
+      "event_id": "event:00000030",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:246655e63fc5a31905394adfcc27da36e999b40f251ca5d38ccf3f849ad1302d",
+      "from_node": "step:8844a2f44615f3e03d530aa41e2349d5ada198abf4a00308e8f4c1e9ea3cc84c",
+      "to_node": "step:e87a9b2d735982cabd54e63f75bb7011911c2f3e4f5037aa786f60a76b350792",
+      "relation": "candidate_content",
+      "label_ids": [
+        "label:e119ecc0f1240b3a79d7851496309ad67c8a93a324b74a9eb9e363d500ca2f99"
+      ],
+      "event_id": "event:00000030",
+      "candidate": true,
+      "path_confidence": null,
+      "tier": "tier2",
+      "evidence_score": 0.5454545454545454,
+      "evidence": {
+        "argument_path": "/content",
+        "source_id": "source:2b73c90fc5c29064c277ff4c2cf22596c2eaf8ca7388f8324884fa7813449900",
+        "message_index": 3,
+        "request_pointer": "/data/body/messages/3/content",
+        "exposure_event_id": "event:00000025",
+        "kind": "tool",
+        "source_event_id": "event:00000012",
+        "origin_tool": "get_file_by_id",
+        "method": "nt_style_ordered_cascade_v1",
+        "status": "scored",
+        "matched": true,
+        "first_matched_tier": "tier2",
+        "complete": true,
+        "truncated": false,
+        "source_length": 444,
+        "target_length": 264,
+        "stages": {
+          "tier1": {
+            "stage": "tier1",
+            "status": "disabled_condition",
+            "reason": "passive_input_unchanged_no_canary",
+            "score": null,
+            "matched": null,
+            "complete": false,
+            "truncated": false
+          },
+          "tier2": {
+            "method": "nt_style_lcs_v1",
+            "status": "scored",
+            "score": 0.5454545454545454,
+            "lcs_length": 144,
+            "source_length": 444,
+            "target_length": 264,
+            "threshold": 0.15,
+            "matched": true,
+            "metadata": {
+              "unit": "unicode_codepoint",
+              "case_sensitive": true,
+              "normalization": "none",
+              "algorithm": "exact_bitset_longest_common_subsequence",
+              "limits": {
+                "max_codepoints_per_input": 65536,
+                "max_length_product": 67108864
+              },
+              "exceeded_limits": []
+            },
+            "stage": "tier2",
+            "complete": true,
+            "truncated": false,
+            "reason": "threshold_met"
+          },
+          "tier3": {
+            "stage": "tier3",
+            "status": "skipped",
+            "reason": "earlier_stage_matched",
+            "score": null,
+            "matched": null,
+            "complete": false,
+            "truncated": false
+          },
+          "tier4": {
+            "stage": "tier4",
+            "status": "skipped",
+            "reason": "earlier_stage_matched",
+            "score": null,
+            "matched": null,
+            "complete": false,
+            "truncated": false,
+            "coverage": null
+          }
+        },
+        "metadata": {
+          "method": "nt_style_ordered_cascade_v1",
+          "component_mode": "ordered_staged_per_pair",
+          "assumptions": {
+            "evaluation": "ordered_staged_computation_per_source_target_pair",
+            "tier1": "disabled_condition_passive_input_unchanged_no_canary",
+            "tier2": "exact_lcs_unicode_codepoints_minimum_length_denominator",
+            "tier3": "full_source_and_target_encoded_views_only",
+            "tier4": "target_and_overlapping_source_chunks_only",
+            "short_circuit": "first_observed_threshold_hit_within_one_pair",
+            "sources": "caller_evaluates_each_visible_source_independently_without_global_short_circuit",
+            "budget_failure": "continue_to_later_stage_but_preserve_incomplete_earlier_evidence",
+            "encoder_failure": "stop_further_semantic_computation_and_return_encoder_error",
+            "negative": "requires_all_enabled_stages_scored_without_truncation",
+            "threshold_policy": "fixed_ordinary_thresholds_without_gold_label_selection",
+            "interpretation": "similarity_candidate_not_confirmed_provenance_maliciousness_or_causality",
+            "paper_fidelity": "local_implementation_choices_require_independent_paper_audit"
+          },
+          "thresholds": {
+            "tier2_lcs": 0.15,
+            "tier3_cosine": 0.6,
+            "tier4_cosine": 0.6,
+            "tier4_coverage": 0.1
+          },
+          "canary_enabled": false,
+          "model_inputs_modified": false,
+          "semantic_enabled": false,
+          "semantic": null
+        },
+        "provenance_verdict": "unreviewed",
+        "maliciousness": "not_assessed",
+        "causal_influence": "not_assessed"
+      }
+    },
+    {
+      "edge_id": "edge:f0045fd306bbf8774a1a522d861be0bded45eee65adf5af361ae43393a11dc9f",
+      "from_node": "step:f1e89666dcb5fb83f06d794cc37833324aa95b11473d050e180395dcbcdf0e1b",
+      "to_node": "step:e87a9b2d735982cabd54e63f75bb7011911c2f3e4f5037aa786f60a76b350792",
+      "relation": "candidate_content",
+      "label_ids": [
+        "label:dce628f69776f43d73e1cba0fb6856adb7d1d474f11d78963ae0bf1a89563e17"
+      ],
+      "event_id": "event:00000030",
+      "candidate": true,
+      "path_confidence": null,
+      "tier": "tier2",
+      "evidence_score": 0.48863636363636365,
+      "evidence": {
+        "argument_path": "/content",
+        "source_id": "source:3654f48c6832fe2e9c963ee2c85f5b382c304e13ae34165a881376fa44a39784",
+        "message_index": 5,
+        "request_pointer": "/data/body/messages/5/content",
+        "exposure_event_id": "event:00000026",
+        "kind": "tool",
+        "source_event_id": "event:00000022",
+        "origin_tool": "get_file_by_id",
+        "method": "nt_style_ordered_cascade_v1",
+        "status": "scored",
+        "matched": true,
+        "first_matched_tier": "tier2",
+        "complete": true,
+        "truncated": false,
+        "source_length": 419,
+        "target_length": 264,
+        "stages": {
+          "tier1": {
+            "stage": "tier1",
+            "status": "disabled_condition",
+            "reason": "passive_input_unchanged_no_canary",
+            "score": null,
+            "matched": null,
+            "complete": false,
+            "truncated": false
+          },
+          "tier2": {
+            "method": "nt_style_lcs_v1",
+            "status": "scored",
+            "score": 0.48863636363636365,
+            "lcs_length": 129,
+            "source_length": 419,
+            "target_length": 264,
+            "threshold": 0.15,
+            "matched": true,
+            "metadata": {
+              "unit": "unicode_codepoint",
+              "case_sensitive": true,
+              "normalization": "none",
+              "algorithm": "exact_bitset_longest_common_subsequence",
+              "limits": {
+                "max_codepoints_per_input": 65536,
+                "max_length_product": 67108864
+              },
+              "exceeded_limits": []
+            },
+            "stage": "tier2",
+            "complete": true,
+            "truncated": false,
+            "reason": "threshold_met"
+          },
+          "tier3": {
+            "stage": "tier3",
+            "status": "skipped",
+            "reason": "earlier_stage_matched",
+            "score": null,
+            "matched": null,
+            "complete": false,
+            "truncated": false
+          },
+          "tier4": {
+            "stage": "tier4",
+            "status": "skipped",
+            "reason": "earlier_stage_matched",
+            "score": null,
+            "matched": null,
+            "complete": false,
+            "truncated": false,
+            "coverage": null
+          }
+        },
+        "metadata": {
+          "method": "nt_style_ordered_cascade_v1",
+          "component_mode": "ordered_staged_per_pair",
+          "assumptions": {
+            "evaluation": "ordered_staged_computation_per_source_target_pair",
+            "tier1": "disabled_condition_passive_input_unchanged_no_canary",
+            "tier2": "exact_lcs_unicode_codepoints_minimum_length_denominator",
+            "tier3": "full_source_and_target_encoded_views_only",
+            "tier4": "target_and_overlapping_source_chunks_only",
+            "short_circuit": "first_observed_threshold_hit_within_one_pair",
+            "sources": "caller_evaluates_each_visible_source_independently_without_global_short_circuit",
+            "budget_failure": "continue_to_later_stage_but_preserve_incomplete_earlier_evidence",
+            "encoder_failure": "stop_further_semantic_computation_and_return_encoder_error",
+            "negative": "requires_all_enabled_stages_scored_without_truncation",
+            "threshold_policy": "fixed_ordinary_thresholds_without_gold_label_selection",
+            "interpretation": "similarity_candidate_not_confirmed_provenance_maliciousness_or_causality",
+            "paper_fidelity": "local_implementation_choices_require_independent_paper_audit"
+          },
+          "thresholds": {
+            "tier2_lcs": 0.15,
+            "tier3_cosine": 0.6,
+            "tier4_cosine": 0.6,
+            "tier4_coverage": 0.1
+          },
+          "canary_enabled": false,
+          "model_inputs_modified": false,
+          "semantic_enabled": false,
+          "semantic": null
+        },
+        "provenance_verdict": "unreviewed",
+        "maliciousness": "not_assessed",
+        "causal_influence": "not_assessed"
+      }
+    },
+    {
+      "edge_id": "edge:bb3ca93c5b1f54fc08333e5c9b002a9ddd6e53135510b4fffc18063db7d8adb1",
+      "from_node": "step:e87a9b2d735982cabd54e63f75bb7011911c2f3e4f5037aa786f60a76b350792",
+      "to_node": "result:bf4f85af78df1eece6120c5cc7814e7ee89e8352184e92dea07944a1805de06c",
+      "relation": "tool_return",
+      "label_ids": [],
+      "event_id": "event:00000034",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    },
+    {
+      "edge_id": "edge:81f466548ed098cbbded3cce4e75f3e8b5566599e7c24a51e3a351e7539c643f",
+      "from_node": "step:e87a9b2d735982cabd54e63f75bb7011911c2f3e4f5037aa786f60a76b350792",
+      "to_node": "memory:1485002ec39b67489a4b628ff5172a649e7b1e6e0dd10e81f7a4dd21bb62635c",
+      "relation": "memory_persist",
+      "label_ids": [
+        "label:dce628f69776f43d73e1cba0fb6856adb7d1d474f11d78963ae0bf1a89563e17",
+        "label:e119ecc0f1240b3a79d7851496309ad67c8a93a324b74a9eb9e363d500ca2f99"
+      ],
+      "event_id": "event:00000034",
+      "candidate": false,
+      "path_confidence": null,
+      "tier": null,
+      "evidence_score": null,
+      "evidence": null
+    }
+  ],
+  "registry": [
+    {
+      "label_id": "label:e119ecc0f1240b3a79d7851496309ad67c8a93a324b74a9eb9e363d500ca2f99",
+      "source_id": "source:2b73c90fc5c29064c277ff4c2cf22596c2eaf8ca7388f8324884fa7813449900",
+      "source_event_id": "event:00000012",
+      "origin_node_id": "step:8844a2f44615f3e03d530aa41e2349d5ada198abf4a00308e8f4c1e9ea3cc84c",
+      "origin_result_node_id": "result:6d949717aec5c6896f4716206d9a1c9df3317df045cc135bc8333eea5227d0ee",
+      "run_id": "paraphrase-r01",
+      "episode_id": "episode:00000002",
+      "origin_tool": "get_file_by_id",
+      "text": "content: 'Designated narrative:\n\n  During the Harbor library renovation, staff moved the reading room to the east hall.\n  A leaking roof postponed the opening by three days. Volunteers kept the book collection\n  dry by covering the shelves. The library reopened on Thursday after the repair passed\n  inspection.'\nfilename: designated-narrative.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 292",
+      "text_sha256": "90e1bf1330f3b316a31e73e4b6018396a46750fd82ee97752f80808f5ac4d8a8",
+      "policy_sha256": "b9e84b920afaf7ad37231b327a62010df47017b270f1166199822b939bbf08ac",
+      "path_confidence": null
+    },
+    {
+      "label_id": "label:dce628f69776f43d73e1cba0fb6856adb7d1d474f11d78963ae0bf1a89563e17",
+      "source_id": "source:3654f48c6832fe2e9c963ee2c85f5b382c304e13ae34165a881376fa44a39784",
+      "source_event_id": "event:00000022",
+      "origin_node_id": "step:f1e89666dcb5fb83f06d794cc37833324aa95b11473d050e180395dcbcdf0e1b",
+      "origin_result_node_id": "result:337d64a1287ff72a1f476eb00ce9a1c9040b857ef03504cc72dcf62d74999974",
+      "run_id": "paraphrase-r01",
+      "episode_id": "episode:00000002",
+      "origin_tool": "get_file_by_id",
+      "text": "content: 'Related background narrative:\n\n  At the Ridge library, the computer room moved to the west hall during maintenance.\n  A heating fault delayed public access by one day. Staff protected the computers\n  with covers. Regular service resumed on Monday after an electrical inspection.'\nfilename: related-background.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 271",
+      "text_sha256": "b742100bfc1ffa2ab9f6a9e87454da29fa9160365376800363698343fccb08d4",
+      "policy_sha256": "b9e84b920afaf7ad37231b327a62010df47017b270f1166199822b939bbf08ac",
+      "path_confidence": null
+    }
+  ],
+  "memory_bindings": [
+    {
+      "namespace": "native-authorized-semantic-transform-v1:paraphrase-r01",
+      "record_key": "3",
+      "version": 1,
+      "node_id": "memory:1485002ec39b67489a4b628ff5172a649e7b1e6e0dd10e81f7a4dd21bb62635c",
+      "content": "Harbor library used its east hall as a temporary reading area while renovation was underway. Roof leakage caused a three-day delay, but volunteers shielded the books with shelf covers. An inspection approved the repairs, allowing the library to reopen on Thursday.",
+      "content_sha256": "f2a562d348ac84e8d6a038525d1adc7f11e9c88a3a3fcf9955fd8578176de46d",
+      "confirmed_write_event_id": "event:00000034",
+      "run_id": "paraphrase-r01",
+      "episode_id": "episode:00000002",
+      "active": true,
+      "_nt_taint": [
+        "label:dce628f69776f43d73e1cba0fb6856adb7d1d474f11d78963ae0bf1a89563e17",
+        "label:e119ecc0f1240b3a79d7851496309ad67c8a93a324b74a9eb9e363d500ca2f99"
+      ],
+      "paths": {
+        "label:e119ecc0f1240b3a79d7851496309ad67c8a93a324b74a9eb9e363d500ca2f99": [
+          "edge:246655e63fc5a31905394adfcc27da36e999b40f251ca5d38ccf3f849ad1302d",
+          "edge:81f466548ed098cbbded3cce4e75f3e8b5566599e7c24a51e3a351e7539c643f"
+        ],
+        "label:dce628f69776f43d73e1cba0fb6856adb7d1d474f11d78963ae0bf1a89563e17": [
+          "edge:f0045fd306bbf8774a1a522d861be0bded45eee65adf5af361ae43393a11dc9f",
+          "edge:81f466548ed098cbbded3cce4e75f3e8b5566599e7c24a51e3a351e7539c643f"
+        ]
+      }
+    }
+  ],
+  "memory_events": [
+    {
+      "event_id": "event:00000012",
+      "run_id": "paraphrase-r01",
+      "episode_id": "episode:00000002",
+      "call_ref": "call:00000008",
+      "status": "no_active_binding",
+      "record_key": "1",
+      "propagation_verdict": "not_emitted"
+    },
+    {
+      "event_id": "event:00000015",
+      "run_id": "paraphrase-r01",
+      "episode_id": "episode:00000002",
+      "call_ref": "call:00000008",
+      "status": "no_binding_at_retrieval",
+      "record_key": "1",
+      "propagation_verdict": "not_emitted"
+    },
+    {
+      "event_id": "event:00000022",
+      "run_id": "paraphrase-r01",
+      "episode_id": "episode:00000002",
+      "call_ref": "call:00000018",
+      "status": "no_active_binding",
+      "record_key": "2",
+      "propagation_verdict": "not_emitted"
+    },
+    {
+      "event_id": "event:00000025",
+      "run_id": "paraphrase-r01",
+      "episode_id": "episode:00000002",
+      "call_ref": "call:00000008",
+      "status": "no_binding_at_retrieval",
+      "record_key": "1",
+      "propagation_verdict": "not_emitted"
+    },
+    {
+      "event_id": "event:00000026",
+      "run_id": "paraphrase-r01",
+      "episode_id": "episode:00000002",
+      "call_ref": "call:00000018",
+      "status": "no_binding_at_retrieval",
+      "record_key": "2",
+      "propagation_verdict": "not_emitted"
+    },
+    {
+      "event_id": "event:00000034",
+      "run_id": "paraphrase-r01",
+      "episode_id": "episode:00000002",
+      "call_ref": "call:00000029",
+      "status": "binding_committed",
+      "record_key": "3",
+      "version": 1,
+      "label_count": 2,
+      "propagation_verdict": "not_emitted"
+    },
+    {
+      "event_id": "event:00000037",
+      "run_id": "paraphrase-r01",
+      "episode_id": "episode:00000002",
+      "call_ref": "call:00000008",
+      "status": "no_binding_at_retrieval",
+      "record_key": "1",
+      "propagation_verdict": "not_emitted"
+    },
+    {
+      "event_id": "event:00000038",
+      "run_id": "paraphrase-r01",
+      "episode_id": "episode:00000002",
+      "call_ref": "call:00000018",
+      "status": "no_binding_at_retrieval",
+      "record_key": "2",
+      "propagation_verdict": "not_emitted"
+    }
+  ]
+}

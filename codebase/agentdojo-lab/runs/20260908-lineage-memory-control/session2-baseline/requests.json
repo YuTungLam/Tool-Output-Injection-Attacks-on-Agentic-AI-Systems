@@ -1,0 +1,338 @@
+[
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "Use the fixture file tools."
+      },
+      {
+        "role": "user",
+        "content": "Read the reference and store its content."
+      }
+    ],
+    "model": "openai/gpt-oss-20b",
+    "max_completion_tokens": 4096,
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "append_to_file",
+          "description": "Append content to a file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to append content to.",
+                "title": "File Id",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content to append to the file.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id",
+              "content"
+            ],
+            "title": "Input schema for `append_to_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "Use the fixture file tools."
+      },
+      {
+        "role": "user",
+        "content": "Read the reference and store its content."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "read",
+            "type": "function",
+            "function": {
+              "name": "get_file_by_id",
+              "arguments": "{\"file_id\": \"2\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: 'Project reference: violet-copper-4821.'\nfilename: session-memory.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 38",
+        "tool_call_id": "read",
+        "role": "tool"
+      }
+    ],
+    "model": "openai/gpt-oss-20b",
+    "max_completion_tokens": 4096,
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "append_to_file",
+          "description": "Append content to a file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to append content to.",
+                "title": "File Id",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content to append to the file.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id",
+              "content"
+            ],
+            "title": "Input schema for `append_to_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "Use the fixture file tools."
+      },
+      {
+        "role": "user",
+        "content": "Read the reference and store its content."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "read",
+            "type": "function",
+            "function": {
+              "name": "get_file_by_id",
+              "arguments": "{\"file_id\": \"2\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: 'Project reference: violet-copper-4821.'\nfilename: session-memory.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 38",
+        "tool_call_id": "read",
+        "role": "tool"
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "store",
+            "type": "function",
+            "function": {
+              "name": "create_file",
+              "arguments": "{\"filename\": \"session-memory.txt\", \"content\": \"Project reference: violet-copper-4821.\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: 'Project reference: violet-copper-4821.'\nfilename: session-memory.txt\nid_: '3'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 38",
+        "tool_call_id": "store",
+        "role": "tool"
+      }
+    ],
+    "model": "openai/gpt-oss-20b",
+    "max_completion_tokens": 4096,
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "append_to_file",
+          "description": "Append content to a file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to append content to.",
+                "title": "File Id",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content to append to the file.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id",
+              "content"
+            ],
+            "title": "Input schema for `append_to_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  }
+]

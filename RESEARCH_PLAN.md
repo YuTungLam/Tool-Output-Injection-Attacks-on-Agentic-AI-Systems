@@ -490,3 +490,13 @@ Report bytes are preserved; raw `runs/`, credentials and model caches stay
 ignored. See [the synchronization note](PROJECT_CONTEXT.md#report-synchronization--2026-09-16-mac)
 for counts and cross-device limits. Next action is to pull the branch on the
 destination device and supply any separately needed raw-run dependencies.
+
+### Raw-run archive follow-up — 2026-09-16, Mac
+
+The user also requested and explicitly authorized synchronization of the local
+`runs/` archive to the same GitHub repository and branch. Its blanket ignore rule
+is removed; 3,943 existing files (162,050,027 bytes) are prepared for tracking with
+original bytes preserved. This supersedes the report-only exclusion above, not
+the experimental plan or any result. No new model calls were made. Next action:
+push the archive and pull it on the destination device; retain credential and
+model-cache exclusions. See [raw-run synchronization](PROJECT_CONTEXT.md#raw-run-synchronization--2026-09-16-mac).

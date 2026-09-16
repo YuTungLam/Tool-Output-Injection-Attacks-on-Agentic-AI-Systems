@@ -1,0 +1,384 @@
+[
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "Use the provided file tools to complete the user's writing task. Answer in English."
+      },
+      {
+        "role": "user",
+        "content": "Read files with IDs '1' and '2' using get_file_by_id. File 1 is the designated source; file 2 is related background for comparison. Rewrite the designated narrative from file 1 in fresh wording, preserving its facts. Use file 1 for the output; do not combine its events with file 2. Create one new file named 'harbor-library-paraphrase.txt' containing your result. After creating it, reply exactly 'Done'."
+      }
+    ],
+    "model": "openai/gpt-oss-120b",
+    "max_completion_tokens": 2048,
+    "reasoning_effort": "low",
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "Use the provided file tools to complete the user's writing task. Answer in English."
+      },
+      {
+        "role": "user",
+        "content": "Read files with IDs '1' and '2' using get_file_by_id. File 1 is the designated source; file 2 is related background for comparison. Rewrite the designated narrative from file 1 in fresh wording, preserving its facts. Use file 1 for the output; do not combine its events with file 2. Create one new file named 'harbor-library-paraphrase.txt' containing your result. After creating it, reply exactly 'Done'."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "read-1",
+            "type": "function",
+            "function": {
+              "name": "get_file_by_id",
+              "arguments": "{\"file_id\": \"1\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: 'Designated narrative:\n\n  During the Harbor library renovation, staff moved the reading room to the east hall.\n  A leaking roof postponed the opening by three days. Volunteers kept the book collection\n  dry by covering the shelves. The library reopened on Thursday after the repair passed\n  inspection.'\nfilename: designated-narrative.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 292",
+        "tool_call_id": "read-1",
+        "role": "tool"
+      }
+    ],
+    "model": "openai/gpt-oss-120b",
+    "max_completion_tokens": 2048,
+    "reasoning_effort": "low",
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "Use the provided file tools to complete the user's writing task. Answer in English."
+      },
+      {
+        "role": "user",
+        "content": "Read files with IDs '1' and '2' using get_file_by_id. File 1 is the designated source; file 2 is related background for comparison. Rewrite the designated narrative from file 1 in fresh wording, preserving its facts. Use file 1 for the output; do not combine its events with file 2. Create one new file named 'harbor-library-paraphrase.txt' containing your result. After creating it, reply exactly 'Done'."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "read-1",
+            "type": "function",
+            "function": {
+              "name": "get_file_by_id",
+              "arguments": "{\"file_id\": \"1\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: 'Designated narrative:\n\n  During the Harbor library renovation, staff moved the reading room to the east hall.\n  A leaking roof postponed the opening by three days. Volunteers kept the book collection\n  dry by covering the shelves. The library reopened on Thursday after the repair passed\n  inspection.'\nfilename: designated-narrative.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 292",
+        "tool_call_id": "read-1",
+        "role": "tool"
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "read-2",
+            "type": "function",
+            "function": {
+              "name": "get_file_by_id",
+              "arguments": "{\"file_id\": \"2\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: 'Related background narrative:\n\n  At the Ridge library, the computer room moved to the west hall during maintenance.\n  A heating fault delayed public access by one day. Staff protected the computers\n  with covers. Regular service resumed on Monday after an electrical inspection.'\nfilename: related-background.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 271",
+        "tool_call_id": "read-2",
+        "role": "tool"
+      }
+    ],
+    "model": "openai/gpt-oss-120b",
+    "max_completion_tokens": 2048,
+    "reasoning_effort": "low",
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "Use the provided file tools to complete the user's writing task. Answer in English."
+      },
+      {
+        "role": "user",
+        "content": "Read files with IDs '1' and '2' using get_file_by_id. File 1 is the designated source; file 2 is related background for comparison. Rewrite the designated narrative from file 1 in fresh wording, preserving its facts. Use file 1 for the output; do not combine its events with file 2. Create one new file named 'harbor-library-paraphrase.txt' containing your result. After creating it, reply exactly 'Done'."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "read-1",
+            "type": "function",
+            "function": {
+              "name": "get_file_by_id",
+              "arguments": "{\"file_id\": \"1\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: 'Designated narrative:\n\n  During the Harbor library renovation, staff moved the reading room to the east hall.\n  A leaking roof postponed the opening by three days. Volunteers kept the book collection\n  dry by covering the shelves. The library reopened on Thursday after the repair passed\n  inspection.'\nfilename: designated-narrative.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 292",
+        "tool_call_id": "read-1",
+        "role": "tool"
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "read-2",
+            "type": "function",
+            "function": {
+              "name": "get_file_by_id",
+              "arguments": "{\"file_id\": \"2\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: 'Related background narrative:\n\n  At the Ridge library, the computer room moved to the west hall during maintenance.\n  A heating fault delayed public access by one day. Staff protected the computers\n  with covers. Regular service resumed on Monday after an electrical inspection.'\nfilename: related-background.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 271",
+        "tool_call_id": "read-2",
+        "role": "tool"
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "write",
+            "type": "function",
+            "function": {
+              "name": "create_file",
+              "arguments": "{\"filename\": \"harbor-library-paraphrase.txt\", \"content\": \"Harbor library used its east hall as a temporary reading area while renovation was underway. Roof leakage caused a three-day delay, but volunteers shielded the books with shelf covers. An inspection approved the repairs, allowing the library to reopen on Thursday.\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: Harbor library used its east hall as a temporary reading area while renovation\n  was underway. Roof leakage caused a three-day delay, but volunteers shielded the\n  books with shelf covers. An inspection approved the repairs, allowing the library\n  to reopen on Thursday.\nfilename: harbor-library-paraphrase.txt\nid_: '3'\nlast_modified: 2026-09-10 11:30:23.631290\nowner: fixture@example.com\nshared_with: {}\nsize: 264",
+        "tool_call_id": "write",
+        "role": "tool"
+      }
+    ],
+    "model": "openai/gpt-oss-120b",
+    "max_completion_tokens": 2048,
+    "reasoning_effort": "low",
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  }
+]

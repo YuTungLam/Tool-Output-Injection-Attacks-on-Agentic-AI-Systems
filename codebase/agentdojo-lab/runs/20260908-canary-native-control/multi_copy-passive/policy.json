@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "policy_id": "native-memory-fixture-v1",
+  "suite": "workspace",
+  "benchmark_version": "v1.2.2",
+  "sources": {
+    "get_file_by_id": {
+      "rationale": "Native visible file content",
+      "output_scope": "visible_text"
+    }
+  },
+  "sinks": {
+    "create_file": {
+      "rationale": "Native persistent content mutation",
+      "argument_paths": [
+        "/content"
+      ]
+    },
+    "append_to_file": {
+      "rationale": "Native persistent content mutation",
+      "argument_paths": [
+        "/content"
+      ]
+    }
+  },
+  "neutral_tools": {}
+}

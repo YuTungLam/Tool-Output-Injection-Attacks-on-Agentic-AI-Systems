@@ -1,0 +1,101 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "content": "Use the provided file tools to complete the user's copy task. Preserve file content exactly."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "content": "Read file with ID '2' using get_file_by_id. Then create one new file named 'session-output.txt' with exactly the content of the file you read. Do not add explanations to its content. After creating the file, give a brief confirmation."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "function": "get_file_by_id",
+          "args": {
+            "file_id": "2"
+          },
+          "id": "fc_2d83a84e-11ec-459b-a117-3e50c29961d3",
+          "placeholder_args": null
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "content": "content: 'Project reference: NTREF-9c740de2-6398-4c1e-9de8-a961c04ec3d8.'\nfilename: session-memory.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 62"
+        }
+      ],
+      "tool_call_id": "fc_2d83a84e-11ec-459b-a117-3e50c29961d3",
+      "tool_call": {
+        "function": "get_file_by_id",
+        "args": {
+          "file_id": "2"
+        },
+        "id": "fc_2d83a84e-11ec-459b-a117-3e50c29961d3",
+        "placeholder_args": null
+      },
+      "error": null
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "function": "create_file",
+          "args": {
+            "content": "Project reference: NTREF-9c740de2-6398-4c1e-9de8-a961c04ec3d8.",
+            "filename": "session-output.txt"
+          },
+          "id": "fc_4ba2ffc5-3a0e-45b9-9c25-848190f07864",
+          "placeholder_args": null
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "content": "content: 'Project reference: NTREF-9c740de2-6398-4c1e-9de8-a961c04ec3d8.'\nfilename: session-output.txt\nid_: '3'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 62"
+        }
+      ],
+      "tool_call_id": "fc_4ba2ffc5-3a0e-45b9-9c25-848190f07864",
+      "tool_call": {
+        "function": "create_file",
+        "args": {
+          "content": "Project reference: NTREF-9c740de2-6398-4c1e-9de8-a961c04ec3d8.",
+          "filename": "session-output.txt"
+        },
+        "id": "fc_4ba2ffc5-3a0e-45b9-9c25-848190f07864",
+        "placeholder_args": null
+      },
+      "error": null
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "content": "The file **session-output.txt** has been created with the requested content."
+        }
+      ],
+      "tool_calls": null
+    }
+  ],
+  "error_type": null
+}
