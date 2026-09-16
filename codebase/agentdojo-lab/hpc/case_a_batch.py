@@ -40,6 +40,27 @@ REQUIRED_RUNTIME_KEYS = (
     "scripts/run_case_a_scout.py",
 )
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+SERVER_TERM_GRACE_SECONDS = 10
+SERVER_KILL_GRACE_SECONDS = 10
+PROCESS_SNAPSHOT_NAMES = {
+    "before_term": "case-a-server-before-term.ps",
+    "after_term_grace": "case-a-server-after-term-grace.ps",
+    "after_kill_grace": "case-a-server-after-kill-grace.ps",
+    "final": "case-a-server-final.ps",
+}
+
+
+class ValidationFailure(ValueError):
+    """A terminal-evidence failure with a stable machine-readable check name."""
+
+    def __init__(self, check: str, message: str) -> None:
+        super().__init__(message)
+        self.check = check
+
+
+def require_check(check: str, condition: bool, message: str) -> None:
+    if not condition:
+        raise ValidationFailure(check, message)
 
 
 def receipt(path: Path) -> dict:
@@ -656,6 +677,75 @@ def check_server(
     return value
 
 
+def process_group_snapshot(path: Path, *, parent: Path, name: str, pgid: int) -> dict:
+    """Validate and summarize a credential-safe process-group observation."""
+    require_path(path, parent, name)
+    if path.is_symlink() or not path.is_file():
+        raise ValueError("Case A process snapshot must be a physical regular file")
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if len(lines) < 2 or lines[1] != "pid\tppid\tpgid\tsid\tstat\tcomm":
+        raise ValueError("Case A process snapshot has an invalid header")
+    status_fields = lines[0].split("\t")
+    if len(status_fields) != 2 or status_fields[0] != "probe_status":
+        raise ValueError("Case A process snapshot has an invalid probe status")
+    probe_status = status_fields[1]
+    if probe_status not in {"passed", "failed"}:
+        raise ValueError("Case A process snapshot has an unknown probe status")
+    processes = []
+    for line in lines[2:]:
+        fields = line.split(maxsplit=5)
+        if len(fields) != 6 or any(not item.isdecimal() for item in fields[:4]):
+            raise ValueError("Case A process snapshot contains a malformed process row")
+        pid, ppid, observed_pgid, sid = (int(item) for item in fields[:4])
+        if observed_pgid != pgid:
+            raise ValueError("Case A process snapshot contains a different process group")
+        processes.append(
+            {
+                "pid": pid,
+                "ppid": ppid,
+                "pgid": observed_pgid,
+                "sid": sid,
+                "stat": fields[4],
+                "comm": fields[5],
+            }
+        )
+    if probe_status == "failed" and processes:
+        raise ValueError("A failed Case A process probe cannot contain observed processes")
+    return {
+        **receipt(path),
+        "probe_status": probe_status,
+        "process_count": len(processes),
+        "processes": processes,
+    }
+
+
+def cleanup_observation(
+    output: Path,
+    *,
+    server_pid: int,
+    snapshot_paths: dict[str, Path | None],
+) -> dict:
+    supplied = {key: path for key, path in snapshot_paths.items() if path is not None}
+    if not supplied:
+        return {"status": "not_recorded"}
+    if set(supplied) != set(PROCESS_SNAPSHOT_NAMES):
+        raise ValueError("Case A cleanup process snapshots must be supplied as a complete set")
+    parent = output.parent.resolve()
+    snapshots = {
+        key: process_group_snapshot(
+            supplied[key], parent=parent, name=PROCESS_SNAPSHOT_NAMES[key], pgid=server_pid
+        )
+        for key in PROCESS_SNAPSHOT_NAMES
+    }
+    return {
+        "status": "recorded",
+        "server_process_group": server_pid,
+        "term_grace_seconds": SERVER_TERM_GRACE_SECONDS,
+        "kill_grace_seconds": SERVER_KILL_GRACE_SECONDS,
+        "snapshots": snapshots,
+    }
+
+
 def record_cleanup(
     output: Path,
     *,
@@ -668,7 +758,21 @@ def record_cleanup(
     case_kill_sent: bool = False,
     case_stopped: bool = True,
     job_id: str = "",
+    before_term_snapshot: Path | None = None,
+    after_term_snapshot: Path | None = None,
+    after_kill_snapshot: Path | None = None,
+    final_snapshot: Path | None = None,
 ) -> dict:
+    observation = cleanup_observation(
+        output,
+        server_pid=server_pid,
+        snapshot_paths={
+            "before_term": before_term_snapshot,
+            "after_term_grace": after_term_snapshot,
+            "after_kill_grace": after_kill_snapshot,
+            "final": final_snapshot,
+        },
+    )
     value = {
         "protocol": PROTOCOL,
         "slurm_job_id": job_id,
@@ -682,6 +786,7 @@ def record_cleanup(
             "kill_sent": case_kill_sent,
             "stopped": case_stopped,
         },
+        "process_group_observation": observation,
     }
     write_exclusive(output, value)
     return value
@@ -707,6 +812,94 @@ def count_slot_attempts(path: Path) -> int:
         ):
             raise ValueError("Case A SDK attempts must be sequential JSON objects")
     return len(lines)
+
+
+def validate_common_terminal_evidence(
+    *,
+    phase: dict,
+    cleanup: dict,
+    smoke: dict,
+    native: dict,
+    synthetic_count: object,
+    native_count: object,
+) -> None:
+    """Apply shared terminal checks one at a time so failures remain diagnosable."""
+    require_check(
+        "phase.protocol",
+        phase.get("protocol") == PROTOCOL,
+        f"Expected phase.protocol={PROTOCOL!r}; got {phase.get('protocol')!r}",
+    )
+    require_check(
+        "cleanup.status",
+        cleanup.get("status") == "server_stopped",
+        "Expected cleanup.status='server_stopped'; "
+        f"got {cleanup.get('status')!r}",
+    )
+    require_check(
+        "cleanup.protocol",
+        cleanup.get("protocol") == PROTOCOL,
+        f"Expected cleanup.protocol={PROTOCOL!r}; got {cleanup.get('protocol')!r}",
+    )
+    require_check(
+        "cleanup.slurm_job_id",
+        cleanup.get("slurm_job_id") == phase.get("slurm_job_id"),
+        "Cleanup and phase Slurm job IDs differ",
+    )
+    require_check(
+        "phase.server_pid",
+        type(phase.get("server_pid")) is int and phase["server_pid"] > 1,
+        f"Expected phase.server_pid to be an integer greater than 1; got {phase.get('server_pid')!r}",
+    )
+    require_check(
+        "cleanup.server_pid",
+        cleanup.get("server_pid") == phase.get("server_pid"),
+        "Cleanup and phase server process IDs differ",
+    )
+    require_check(
+        "cleanup.case_process.stopped",
+        cleanup.get("case_process", {}).get("stopped") is True,
+        "Expected cleanup.case_process.stopped=true",
+    )
+    require_check(
+        "smoke.protocol",
+        smoke.get("protocol") == SMOKE_PROTOCOL,
+        f"Expected smoke.protocol={SMOKE_PROTOCOL!r}; got {smoke.get('protocol')!r}",
+    )
+    require_check(
+        "smoke.status",
+        smoke.get("status") == "passed",
+        f"Expected smoke.status='passed'; got {smoke.get('status')!r}",
+    )
+    require_check(
+        "smoke.requests_started",
+        synthetic_count == SYNTHETIC_REQUEST_LIMIT,
+        f"Expected {SYNTHETIC_REQUEST_LIMIT} synthetic requests; got {synthetic_count!r}",
+    )
+    require_check(
+        "native.protocol",
+        native.get("protocol") == NATIVE_PROTOCOL,
+        f"Expected native.protocol={NATIVE_PROTOCOL!r}; got {native.get('protocol')!r}",
+    )
+    require_check(
+        "native.status",
+        native.get("status") == "passed",
+        f"Expected native.status='passed'; got {native.get('status')!r}",
+    )
+    require_check(
+        "native.slurm_job_id",
+        native.get("slurm_job_id") == phase.get("slurm_job_id"),
+        "Native smoke and phase Slurm job IDs differ",
+    )
+    require_check(
+        "native.native_requests_started",
+        type(native_count) is int and 0 <= native_count <= NATIVE_REQUEST_LIMIT,
+        f"Expected 0..{NATIVE_REQUEST_LIMIT} native requests; got {native_count!r}",
+    )
+    require_check(
+        "native.checks.no_online_auditors",
+        native.get("checks", {}).get("no_online_auditors") is True,
+        "Expected native.checks.no_online_auditors=true",
+    )
 
 
 def validate_phase_sources(
@@ -1003,6 +1196,7 @@ def finalize(
             "cleanup": str(cleanup_path.resolve()),
         },
     }
+    validation_stage = "terminal_input_paths"
     try:
         smoke_root = smoke_path.parent.resolve()
         require_path(output, smoke_root, "case-a-batch-summary.json")
@@ -1016,8 +1210,10 @@ def finalize(
             or smoke_root.is_relative_to(case_root)
         ):
             raise ValueError("Case and smoke terminal evidence paths must be separate")
+        validation_stage = "scheduler_decision"
         phase = read(phase_path)
         validate_scheduler_decision(phase)
+        validation_stage = "terminal_input_receipts"
         smoke = read(smoke_path)
         native = read(native_path)
         cleanup = read(cleanup_path)
@@ -1029,26 +1225,17 @@ def finalize(
             wrapper_exit=receipt(wrapper_exit_path),
             cleanup=receipt(cleanup_path),
         )
-        common_valid = (
-            phase.get("protocol") == PROTOCOL
-            and cleanup.get("status") == "server_stopped"
-            and cleanup.get("protocol") == PROTOCOL
-            and cleanup.get("slurm_job_id") == phase.get("slurm_job_id")
-            and cleanup.get("server_pid") == phase.get("server_pid")
-            and type(phase.get("server_pid")) is int
-            and phase["server_pid"] > 1
-            and cleanup.get("case_process", {}).get("stopped") is True
-            and smoke.get("protocol") == SMOKE_PROTOCOL
-            and smoke.get("status") == "passed"
-            and synthetic_count == SYNTHETIC_REQUEST_LIMIT
-            and native.get("status") == "passed"
-            and native.get("protocol") == NATIVE_PROTOCOL
-            and native.get("slurm_job_id") == phase.get("slurm_job_id")
-            and type(native_count) is int
-            and 0 <= native_count <= NATIVE_REQUEST_LIMIT
-            and native.get("checks", {}).get("no_online_auditors") is True
+        validation_stage = "common_terminal_evidence"
+        validate_common_terminal_evidence(
+            phase=phase,
+            cleanup=cleanup,
+            smoke=smoke,
+            native=native,
+            synthetic_count=synthetic_count,
+            native_count=native_count,
         )
         if str(phase.get("status", "")).startswith("unstarted_"):
+            validation_stage = "unstarted_terminal_chain"
             validate_unstarted_chain(
                 phase=phase,
                 pre_smoke_path=pre_smoke_path,
@@ -1061,8 +1248,12 @@ def finalize(
                 case_plan_path=case_plan_path,
                 binding_validator=binding_validator,
             )
-            if not common_valid or wrapper_exit != 3:
-                raise ValueError("Unstarted terminal evidence is inconsistent")
+            validation_stage = "unstarted_wrapper_exit"
+            require_check(
+                "wrapper_exit_code",
+                wrapper_exit == 3,
+                f"Expected unstarted wrapper exit code 3; got {wrapper_exit!r}",
+            )
             value.update(
                 status="terminal_case_unstarted",
                 framework_status="case_not_started_after_smoke",
@@ -1091,8 +1282,10 @@ def finalize(
             write_exclusive(output, value)
             return value
 
+        validation_stage = "server_check_receipt"
         server_check = read(server_check_path)
         value["server_check"] = receipt(server_check_path)
+        validation_stage = "case_terminal_chain"
         plan, case, slot_counts = validate_case_chain(
             phase=phase,
             pre_smoke_path=pre_smoke_path,
@@ -1110,25 +1303,75 @@ def finalize(
         )
         case_count = case.get("reserved_sdk_attempts")
         counts = (synthetic_count, native_count, case_count)
+        validation_stage = "request_count_shape"
         if any(type(count) is not int or count < 0 for count in counts):
             raise ValueError("Request counts must be nonnegative integers")
         total = sum(counts)
-        if (
-            phase.get("status") != "reserved_before_case_calls"
-            or server_check.get("status") != "passed"
-            or server_check.get("slurm_job_id") != phase.get("slurm_job_id")
-            or server_check.get("endpoint") != plan["config"]["base_url"]
-            or not common_valid
-            or wrapper_exit != 0
-            or any(type(count) is not int or not 0 <= count <= 8 for count in slot_counts)
-            or sum(slot_counts) != case_count
-            or case_count > CASE_REQUEST_LIMIT
-            or total > TOTAL_REQUEST_LIMIT
-            or plan.get("limits", {}).get("online_auditor_requests") != 0
-            or plan.get("limits", {}).get("sdk_max_retries") != 0
-            or plan.get("config", {}).get("online_causal_audit", False) is not False
-        ):
-            raise ValueError("Smoke-plus-Case-A completion violates its fixed evidence or request bounds")
+        validation_stage = "completion_bounds"
+        completion_checks = (
+            (
+                "phase.status",
+                phase.get("status") == "reserved_before_case_calls",
+                "Expected phase.status='reserved_before_case_calls'",
+            ),
+            (
+                "server_check.status",
+                server_check.get("status") == "passed",
+                "Expected server_check.status='passed'",
+            ),
+            (
+                "server_check.slurm_job_id",
+                server_check.get("slurm_job_id") == phase.get("slurm_job_id"),
+                "Server check and phase Slurm job IDs differ",
+            ),
+            (
+                "server_check.endpoint",
+                server_check.get("endpoint") == plan["config"]["base_url"],
+                "Server-check endpoint differs from the prepared plan",
+            ),
+            (
+                "wrapper_exit_code",
+                wrapper_exit == 0,
+                f"Expected wrapper exit code 0; got {wrapper_exit!r}",
+            ),
+            (
+                "case.slot_request_bounds",
+                all(type(count) is int and 0 <= count <= 8 for count in slot_counts),
+                f"Expected each Case A slot request count in 0..8; got {slot_counts!r}",
+            ),
+            (
+                "case.slot_request_total",
+                sum(slot_counts) == case_count,
+                "Case A slot request counts do not sum to the case total",
+            ),
+            (
+                "case.request_limit",
+                case_count <= CASE_REQUEST_LIMIT,
+                f"Case A request count {case_count!r} exceeds {CASE_REQUEST_LIMIT}",
+            ),
+            (
+                "total_generation_request_limit",
+                total <= TOTAL_REQUEST_LIMIT,
+                f"Total request count {total!r} exceeds {TOTAL_REQUEST_LIMIT}",
+            ),
+            (
+                "plan.online_auditor_requests",
+                plan.get("limits", {}).get("online_auditor_requests") == 0,
+                "Expected zero online auditor requests",
+            ),
+            (
+                "plan.sdk_max_retries",
+                plan.get("limits", {}).get("sdk_max_retries") == 0,
+                "Expected zero SDK retries",
+            ),
+            (
+                "plan.online_causal_audit",
+                plan.get("config", {}).get("online_causal_audit", False) is False,
+                "Expected online causal audit to remain disabled",
+            ),
+        )
+        for check, condition, message in completion_checks:
+            require_check(check, condition, message)
         value.update(
             status="complete_all_slots_terminal",
             framework_status="case_runner_all_slots_terminal",
@@ -1167,7 +1410,15 @@ def finalize(
             },
         )
     except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as error:
-        value["error_type"] = type(error).__name__
+        error_type = "ValueError" if isinstance(error, ValidationFailure) else type(error).__name__
+        value["error_type"] = error_type
+        value["error_message"] = str(error)
+        value["failure"] = {
+            "stage": validation_stage,
+            "check": getattr(error, "check", None),
+            "error_type": error_type,
+            "message": str(error),
+        }
     write_exclusive(output, value)
     return value
 
@@ -1223,6 +1474,10 @@ def main(argv=None) -> int:
     cleanup.add_argument("--case-term-sent", choices=("true", "false"), default="false")
     cleanup.add_argument("--case-kill-sent", choices=("true", "false"), default="false")
     cleanup.add_argument("--case-stopped", choices=("true", "false"), default="true")
+    cleanup.add_argument("--before-term-snapshot", type=Path)
+    cleanup.add_argument("--after-term-snapshot", type=Path)
+    cleanup.add_argument("--after-kill-snapshot", type=Path)
+    cleanup.add_argument("--final-snapshot", type=Path)
     cleanup.add_argument("--job-id", required=True)
     finish = commands.add_parser("finalize")
     for name in (
@@ -1293,6 +1548,10 @@ def main(argv=None) -> int:
             case_kill_sent=args.case_kill_sent == "true",
             case_stopped=args.case_stopped == "true",
             job_id=args.job_id,
+            before_term_snapshot=args.before_term_snapshot,
+            after_term_snapshot=args.after_term_snapshot,
+            after_kill_snapshot=args.after_kill_snapshot,
+            final_snapshot=args.final_snapshot,
         )
         return 0 if result["status"] == "server_stopped" else 1
     result = finalize(

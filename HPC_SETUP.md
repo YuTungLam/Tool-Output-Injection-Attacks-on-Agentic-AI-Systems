@@ -9,7 +9,8 @@
 > coverage assessment and the meeting packet. Causal, repeated and cross-session
 > claims remain incomplete. All three jobs are terminal: **25 research requests**
 > total, with zero additional requests in this reporting continuation.
-> Runtime defects remain diagnosed, not repaired.
+> Case A cleanup diagnostics, Case B blocker reporting and Case C per-call
+> reporting are now repaired prospectively. Saved outcomes and counts are unchanged.
 
 Last updated: **2026-09-16 UTC**. The CPU lab and pinned MiniLM files have been
 restored, and the offline native-tool fixture passes. Hugging Face login and
@@ -537,20 +538,22 @@ must remain visible failures. None of these checks is an attack experiment.
 
 ## Remaining evidence and diagnostics
 
-- Case A's two completed sessions have been compared. Finalizer failure leaves
-  shutdown evidence unconfirmed; inspect this orchestration defect without
-  discarding saved outputs or claiming a repair.
+- Case A's two completed sessions have been compared. The finalizer and wrapper
+  are repaired prospectively: future runs record the exact failed check and four
+  bounded process-group snapshots. Job `9064136` remains shutdown-unconfirmed.
 - Case B's four conditions are saved. The both-only target outcome and all-four
   utility failures need qualified interpretation; repetition and causal-method
   coverage remain outstanding.
 - Case C read/exposed its sources and made two memory writes per first session.
-  Exact-one validator assumptions rejected the handoff and hid aggregate exposure;
-  both second sessions made zero requests. A complete cross-session path is absent.
+  Reporting now preserves every read/exposure/write while exact-one aggregates
+  become unknown with cardinality reasons. The handoff remains blocked and both
+  second sessions made zero requests. A complete cross-session path is absent.
 - Historical raw run/report bundles are recovered and integrity-checked at
   `f96bdc8`; the verification receipt does not certify every old scientific claim.
 
-Current work is offline analysis and meeting preparation. Changes to validators,
-models, protocols, or experiments have not been made by this review.
+The meeting packet and prospective diagnostics are complete. These code repairs
+do not change frozen inputs, saved outcomes or experimental counts. No new model,
+scheduler or native experimental action occurred.
 
 The starter primary and judge both use local Scout, with independent endpoint
 configuration. A different judge requires a new explicit model condition. The

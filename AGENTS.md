@@ -19,8 +19,10 @@ do not rely on a previous chat being available.
   passed. Research jobs A `9064136`, B `9064141` and C `9064142` are terminal;
   saved outputs contain 25 research requests across eight sessions. Read
   RESEARCH_PROGRESS.md and HPC_SETUP.md for outcomes and diagnostic limits.
-  Current work is saved-evidence analysis and meeting preparation; preserve
-  failed attempts and frozen bundles. Do not submit duplicate trials, silently
+  The meeting packet is ready. Case A cleanup diagnostics, Case B interpretation
+  blockers and Case C per-call/unknown reporting are repaired prospectively;
+  saved outcomes remain unchanged. Preserve failed attempts and frozen bundles.
+  Do not submit duplicate trials, silently
   fall back to Groq, or treat proposed fixes as repaired behavior.
 
 ## Evidence and implementation

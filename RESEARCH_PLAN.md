@@ -9,7 +9,8 @@
 > coverage assessment and the meeting packet. Causal, repeated and cross-session
 > claims remain incomplete. All three jobs are terminal: **25 research requests**
 > total, with zero additional requests in this reporting continuation.
-> Runtime defects remain diagnosed, not repaired.
+> Case A cleanup diagnostics, Case B blocker reporting and Case C per-call
+> reporting are now repaired prospectively. Saved outcomes and counts are unchanged.
 
 Plan date: 2026-09-14; checklist reviewed 2026-09-16; run status updated
 2026-09-16 (NeSI local date). Status: **implementation and live Scout smoke
@@ -97,8 +98,9 @@ scores.
 - [ ] **Complete propagation flowcharts:** link source → entry point → first
   divergence → intermediate propagation → memory/tools → final action. Case-specific
   charts now show recorded A/B/C stages and missing endpoints in the meeting
-  packet. The full requested path evidence remains partial: B's exact first
-  divergence is not separately established there and C has no second-session path.
+  packet. A and B now have complete observed within-session source-to-state paths.
+  The full requested path evidence remains partial because C has no handoff,
+  second-session retrieval or final sink.
 - [x] **Assess NeuroTaint's coverage:** compare recovered and missing path segments
   against recorded execution evidence, including final task/attack outcomes.
   The eight-session coverage table and event-indexed assessment account for
@@ -578,8 +580,9 @@ The nine unchecked items retain their original criteria in the
 [deliverable ledger](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/deliverables.json).
 The independent coverage assessment completed; the separate archived judge/replay
 review and independent full acceptance review were blocked by platform
-cybersecurity-risk flags and are not counted as completed reviews. No new
-inference, scheduler allocation, runtime repair or replacement trial occurred.
+cybersecurity-risk flags and are not counted as completed reviews. At this packet
+checkpoint no new inference, scheduler allocation, runtime repair or replacement
+trial had occurred; the later prospective code repairs are recorded below.
 
 Fresh offline verification checked eight event audits, 25 request-ledger entries,
 96 terminal-bound hashes and 206 unchanged raw files. The coverage assessment's
@@ -589,3 +592,25 @@ local link and checklist-accounting checks pass. See the
 No application regression suite or browser visual QA is claimed for this report.
 Synchronization started from pushed `f528341`; the packet and current status
 documents are the changes in this continuation, with raw evidence unchanged.
+
+## Prospective code-repair milestone — 2026-09-16
+
+Concrete infrastructure and reporting defects are fixed while all frozen evidence
+and acceptance criteria remain intact:
+
+- Case A records precise finalizer failures and credential-safe process-group
+  snapshots before/after bounded TERM/KILL grace periods. Shutdown confirmation
+  is not weakened.
+- Case B enumerates per-condition interpretation blockers and displays task utility.
+  The saved four-arm result has four `utility_failed` blockers.
+- Case C separates all observed per-call evidence from its exact-one selection.
+  Multiple reads/writes now yield unknown selected fields and a specific blocked
+  handoff, never a favorable retrospective selection.
+- Packet charts now fully map the observed A/B source-to-state paths and display
+  C's absent fresh-session path. Item 10 stays partial because that path did not run.
+
+Verification passed 202 HPC tests plus 25 subtests, 32 Case B tests, 38 Case C
+runner tests and 47 Case C HPC tests, with scoped Ruff, compilation, Bash syntax
+and whitespace checks. No new checkbox is completed by these software repairs;
+progress stays **4/13 experimental** and **16/25 overall**. The remaining nine
+items need valid new observations or independent evidence, not changes to labels.

@@ -717,6 +717,81 @@ def completion_fixture(
     return paths
 
 
+def write_process_snapshot(path, *, pgid, rows=(), status="passed"):
+    path.write_text(
+        "\n".join(
+            (
+                f"probe_status\t{status}",
+                "pid\tppid\tpgid\tsid\tstat\tcomm",
+                *(f"{pid} {ppid} {pgid} {sid} {stat} {comm}" for pid, ppid, sid, stat, comm in rows),
+                "",
+            )
+        )
+    )
+
+
+def test_cleanup_records_bounded_process_group_observations(tmp_path):
+    snapshots = {}
+    for key, name in case_a_batch.PROCESS_SNAPSHOT_NAMES.items():
+        path = tmp_path / name
+        rows = ((123, 1, 123, "Sl", "vllm worker"),) if key == "before_term" else ()
+        write_process_snapshot(path, pgid=123, rows=rows)
+        snapshots[key] = path
+
+    result = case_a_batch.record_cleanup(
+        tmp_path / "case-a-cleanup.json",
+        server_pid=123,
+        term_sent=True,
+        kill_sent=True,
+        stopped=True,
+        job_id="42",
+        before_term_snapshot=snapshots["before_term"],
+        after_term_snapshot=snapshots["after_term_grace"],
+        after_kill_snapshot=snapshots["after_kill_grace"],
+        final_snapshot=snapshots["final"],
+    )
+
+    observation = result["process_group_observation"]
+    assert observation["status"] == "recorded"
+    assert observation["term_grace_seconds"] == 10
+    assert observation["kill_grace_seconds"] == 10
+    assert observation["snapshots"]["before_term"]["process_count"] == 1
+    assert observation["snapshots"]["before_term"]["processes"][0]["comm"] == "vllm worker"
+    assert observation["snapshots"]["final"]["process_count"] == 0
+
+
+def test_cleanup_rejects_partial_or_mismatched_process_group_observations(tmp_path):
+    before = tmp_path / case_a_batch.PROCESS_SNAPSHOT_NAMES["before_term"]
+    write_process_snapshot(before, pgid=999, rows=((999, 1, 999, "S", "python"),))
+    with pytest.raises(ValueError, match="complete set"):
+        case_a_batch.record_cleanup(
+            tmp_path / "case-a-cleanup.json",
+            server_pid=123,
+            term_sent=True,
+            kill_sent=False,
+            stopped=False,
+            before_term_snapshot=before,
+        )
+
+    snapshots = {}
+    for key, name in case_a_batch.PROCESS_SNAPSHOT_NAMES.items():
+        path = tmp_path / name
+        write_process_snapshot(path, pgid=999, rows=((999, 1, 999, "S", "python"),))
+        snapshots[key] = path
+    with pytest.raises(ValueError, match="different process group"):
+        case_a_batch.record_cleanup(
+            tmp_path / "case-a-cleanup.json",
+            server_pid=123,
+            term_sent=True,
+            kill_sent=True,
+            stopped=False,
+            before_term_snapshot=snapshots["before_term"],
+            after_term_snapshot=snapshots["after_term_grace"],
+            after_kill_snapshot=snapshots["after_kill_grace"],
+            final_snapshot=snapshots["final"],
+        )
+
+
 def test_final_receipt_accounts_for_requests_cleanup_and_separate_outcome(tmp_path):
     paths = completion_fixture(tmp_path)
     output = paths["smoke_path"].parent / "case-a-batch-summary.json"
@@ -736,6 +811,29 @@ def test_final_receipt_accounts_for_requests_cleanup_and_separate_outcome(tmp_pa
     with pytest.raises(FileExistsError):
         case_a_batch.finalize(output, **paths)
     assert output.read_bytes() == before
+
+
+def test_final_receipt_identifies_cleanup_status_failure(tmp_path):
+    paths = completion_fixture(tmp_path)
+    cleanup = json.loads(paths["cleanup_path"].read_text())
+    cleanup["status"] = "server_cleanup_unconfirmed"
+    paths["cleanup_path"].write_text(json.dumps(cleanup))
+
+    result = case_a_batch.finalize(
+        paths["smoke_path"].parent / "case-a-batch-summary.json", **paths
+    )
+
+    assert result["status"] == "incomplete"
+    assert result["error_type"] == "ValueError"
+    assert result["error_message"] == (
+        "Expected cleanup.status='server_stopped'; got 'server_cleanup_unconfirmed'"
+    )
+    assert result["failure"] == {
+        "stage": "common_terminal_evidence",
+        "check": "cleanup.status",
+        "error_type": "ValueError",
+        "message": result["error_message"],
+    }
 
 
 @pytest.mark.parametrize(
@@ -1025,6 +1123,16 @@ def test_wrapper_is_separate_bounded_and_hardens_shared_smoke_cleanup():
         "(( SCOUT_SERVER_PID <= 1 ))",
         "(( CASE_A_PROCESS_PID > 1 ))",
         "valid_server_pid=true",
+        "snapshot_process_group()",
+        "case-a-server-before-term.ps",
+        "case-a-server-after-term-grace.ps",
+        "case-a-server-after-kill-grace.ps",
+        "case-a-server-final.ps",
+        "ps -eo pid=,ppid=,pgid=,sid=,stat=,comm=",
+        '--before-term-snapshot "$CASE_A_SERVER_BEFORE_TERM"',
+        '--after-term-snapshot "$CASE_A_SERVER_AFTER_TERM"',
+        '--after-kill-snapshot "$CASE_A_SERVER_AFTER_KILL"',
+        '--final-snapshot "$CASE_A_SERVER_FINAL"',
     ):
         assert fragment in wrapper
     assert 'dirname -- "${BASH_SOURCE[0]}"' not in wrapper
@@ -1066,3 +1174,4 @@ def test_wrapper_is_separate_bounded_and_hardens_shared_smoke_cleanup():
     assert case_a_batch.TOTAL_REQUEST_LIMIT == 24
     assert case_a_batch.WALLTIME_SECONDS == 7200
     assert case_a_batch.CASE_REQUEST_LIMIT == 16
+    assert wrapper.count('for _ in {1..10}; do') >= 3

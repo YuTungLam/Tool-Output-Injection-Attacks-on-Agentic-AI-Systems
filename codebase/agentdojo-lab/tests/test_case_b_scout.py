@@ -450,6 +450,9 @@ def test_fixture_runs_fixed_schedule_once_in_four_distinct_processes(fixture_bat
     assert all(row["returncode"] == 0 for row in summary["slots"])
     assert all(row["terminal"]["pid"] == row["worker_pid"] for row in summary["slots"])
     assert all(row["process_identity_status"] == "verified_distinct_worker" for row in summary["slots"])
+    rendered = (output / "index.html").read_text(encoding="utf-8")
+    assert "<th>Task utility</th>" in rendered
+    assert rendered.count("<td>passed</td>") == 4
 
 
 def test_fixture_binds_source_exposure_successful_create_and_native_state(fixture_batch):
@@ -482,6 +485,7 @@ def test_fixture_binds_source_exposure_successful_create_and_native_state(fixtur
             "observed_source_ids": ["1", "2"],
             "complete": True,
         },
+        "interpretation_blocks": [],
         "joint_pattern_interpretation_eligible": True,
         "causal_conclusion": "not_established_by_four_distinct_single_repetition_processes",
         "construction_relation_is_not_causality": True,
@@ -808,6 +812,7 @@ def test_joint_interpretation_requires_balanced_exposure_and_passing_utility(fix
     }
     assert joint["status"] == "outcome_pattern_recorded_joint_interpretation_withheld"
     assert joint["all_arms_utility_evaluable_and_passed"] is False
+    assert joint["interpretation_blocks"] == ["utility_failed:both"]
     assert joint["joint_pattern_interpretation_eligible"] is False
 
     unbalanced_slots = copy.deepcopy(summary["slots"])
@@ -815,12 +820,14 @@ def test_joint_interpretation_requires_balanced_exposure_and_passing_utility(fix
     joint = case_b._joint_pattern(unbalanced_slots, live=True)
     assert joint["status"] == "outcome_pattern_recorded_joint_interpretation_withheld"
     assert joint["all_arms_source_exposure_balanced"] is False
+    assert joint["interpretation_blocks"] == ["source_exposure_unbalanced_or_unknown:a_only"]
     assert joint["joint_pattern_interpretation_eligible"] is False
 
     incomplete_analysis_slots = copy.deepcopy(summary["slots"])
     incomplete_analysis_slots[2]["terminal"]["outcome_analysis_complete"] = False
     joint = case_b._joint_pattern(incomplete_analysis_slots, live=True)
     assert joint["arm_outcome_analysis_complete"]["b_only"] is False
+    assert joint["interpretation_blocks"] == ["outcome_analysis_incomplete:b_only"]
     assert joint["joint_pattern_interpretation_eligible"] is False
 
     reused_worker_slots = copy.deepcopy(summary["slots"])
@@ -830,6 +837,7 @@ def test_joint_interpretation_requires_balanced_exposure_and_passing_utility(fix
         row["process_identity_status"] = "verified_distinct_worker"
     joint = case_b._joint_pattern(reused_worker_slots, live=True)
     assert joint["all_arms_distinct_verified_workers"] is False
+    assert joint["interpretation_blocks"] == ["worker_process_isolation_unverified"]
     assert joint["status"] == "outcome_pattern_recorded_joint_interpretation_withheld"
     assert joint["joint_pattern_interpretation_eligible"] is False
 
@@ -872,6 +880,7 @@ def test_late_source_exposure_cannot_support_positive_joint_interpretation(fixtu
         "neither": False,
     }
     assert joint["both_arm_target_pre_sink_source_witnesses"]["complete"] is False
+    assert joint["interpretation_blocks"] == ["both_arm_pre_sink_source_witnesses_incomplete"]
     assert joint["status"] == "outcome_pattern_recorded_joint_interpretation_withheld"
     assert joint["joint_pattern_interpretation_eligible"] is False
 

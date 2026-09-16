@@ -118,6 +118,18 @@ is a software scope statement. Its completion does not establish the new
 experimental claims. Historical Groq results remain a separate model/protocol
 condition and are not pooled into Scout counts.
 
+## How to read the propagation charts
+
+The charts distinguish a source's native identity, its tool-result entry into a
+model request, the first observable behavioral divergence, subsequent tool
+execution, and confirmed native state. A missing stage is not silently bridged.
+For A, memory is outside the frozen within-session protocol; for B, the exact
+target state is observed but causal necessity is still unknown; for C, the stored
+intermediate exists but handoff, fresh-session retrieval, and a final consequence
+do not. The charts therefore improve the complete accounting of the saved paths,
+while deliverable 10 remains partial because the requested C endpoint was never
+executed.
+
 ## Suggested five-minute presentation
 
 1. **One minute:** explain the supervisor's propagation question and show the
@@ -129,7 +141,9 @@ condition and are not pooled into Scout counts.
 4. **One minute:** show C's actual exposures, later paraphrase and missing handoff.
    Separate the reporting defect from the unobserved cross-session hypothesis.
 5. **One minute:** use the coverage table and checklist to discuss which evidence
-   is still needed. Present candidate questions, not an established research gap.
+   is still needed. In the path charts, solid stages are observed, dotted stages
+   are not applicable to that case, and dashed stages are required but unobserved.
+   Present candidate questions, not an established research gap.
 
 No terminal or JSONL reading is required for the presentation; the HTML links
 open the recorded timelines. The attached coverage table and deliverable ledger

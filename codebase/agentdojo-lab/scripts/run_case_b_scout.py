@@ -1447,6 +1447,26 @@ def _joint_pattern(slots: list[dict], *, live: bool) -> dict:
     interpretation_eligible = base_interpretation_eligible and (
         not positive_pattern or both_pre_sink_witnesses_complete
     )
+    interpretation_blocks = []
+    for condition in CONDITIONS:
+        if primary_complete[condition] is not True:
+            interpretation_blocks.append(f"primary_trajectory_incomplete:{condition}")
+        if outcome_analysis_complete[condition] is not True:
+            interpretation_blocks.append(f"outcome_analysis_incomplete:{condition}")
+        if outcomes[condition] is None:
+            interpretation_blocks.append(f"target_outcome_unknown:{condition}")
+        if exposure_balance[condition]["balanced"] is not True:
+            interpretation_blocks.append(f"source_exposure_unbalanced_or_unknown:{condition}")
+        if utility[condition]["evaluable"] is not True:
+            interpretation_blocks.append(f"utility_not_evaluable:{condition}")
+        elif utility[condition]["passed"] is not True:
+            interpretation_blocks.append(f"utility_failed:{condition}")
+    if not all_distinct_verified_workers:
+        interpretation_blocks.append("worker_process_isolation_unverified")
+    if positive_pattern and not both_pre_sink_witnesses_complete:
+        interpretation_blocks.append("both_arm_pre_sink_source_witnesses_incomplete")
+    if interpretation_eligible != (not interpretation_blocks):
+        raise ValueError("Case B interpretation blockers disagree with the eligibility gate")
     if not all_primary_complete or not all_outcomes_determinate:
         status = "unknown_incomplete_or_failed_arm_evidence"
     elif not interpretation_eligible:
@@ -1474,6 +1494,7 @@ def _joint_pattern(slots: list[dict], *, live: bool) -> dict:
             "observed_source_ids": observed_pre_sink_witness_ids,
             "complete": both_pre_sink_witnesses_complete,
         },
+        "interpretation_blocks": interpretation_blocks,
         "joint_pattern_interpretation_eligible": interpretation_eligible,
         "causal_conclusion": "not_established_by_four_distinct_single_repetition_processes",
         "construction_relation_is_not_causality": True,
@@ -1513,10 +1534,18 @@ def _render(output: Path, summary: dict) -> None:
         if report.is_file():
             label = f'<a href="{html.escape(os.path.relpath(report, output), quote=True)}">{label}</a>'
         outcome = slot.get("terminal", {}).get("outcome", {}).get("observed_target_outcome")
+        utility = slot.get("terminal", {}).get("outcome", {}).get("utility", {})
+        utility_label = (
+            "passed"
+            if utility.get("evaluable") is True and utility.get("passed") is True
+            else "failed"
+            if utility.get("evaluable") is True and utility.get("passed") is False
+            else "unknown"
+        )
         rows.append(
             f"<tr><td>{label}</td><td>{html.escape(slot['process_status'])}</td>"
             f"<td>{slot['captured_sdk_attempts']}</td><td>{html.escape(str(outcome))}</td>"
-            f"<td>{html.escape(slot['causal_v2']['status'])}</td></tr>"
+            f"<td>{utility_label}</td><td>{html.escape(slot['causal_v2']['status'])}</td></tr>"
         )
     mode = "Live local Scout" if summary["real_llm"] else "Scripted offline transport fixture"
     (output / "index.html").write_text(
@@ -1527,7 +1556,7 @@ def _render(output: Path, summary: dict) -> None:
         f"<h1>Scout Case B</h1><p>{mode}. All four assigned processes are retained. "
         "Construction correspondence and auditor plans are not causal findings.</p>"
         "<table><tr><th>Condition</th><th>Process</th><th>SDK attempts</th>"
-        "<th>Native target</th><th>Causal-v2 export</th></tr>"
+        "<th>Native target</th><th>Task utility</th><th>Causal-v2 export</th></tr>"
         + "".join(rows)
         + "</table><pre>"
         + html.escape(json.dumps(summary["joint_pattern"], indent=2))

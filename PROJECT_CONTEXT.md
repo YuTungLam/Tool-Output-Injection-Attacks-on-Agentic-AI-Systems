@@ -9,7 +9,8 @@
 > coverage assessment and the meeting packet. Causal, repeated and cross-session
 > claims remain incomplete. All three jobs are terminal: **25 research requests**
 > total, with zero additional requests in this reporting continuation.
-> Runtime defects remain diagnosed, not repaired.
+> Case A cleanup diagnostics, Case B blocker reporting and Case C per-call
+> reporting are now repaired prospectively. Saved outcomes and counts are unchanged.
 
 Last updated: 2026-09-16 (NeSI local date). This is the durable project brief for
 the researcher, supervisor, and future Codex sessions. It records the user's
@@ -538,3 +539,22 @@ At the start of this continuation, HEAD and the origin tracking reference matche
 `f52834161912d569eb045d13286779c74951ebce`. New changes are the meeting packet and
 four current-status documents. Original Scout run directories and prior reports
 remain unchanged; Git history records the new synchronization checkpoint.
+
+## Prospective reporting and cleanup repairs — 2026-09-16
+
+The fixable software problems are repaired without modifying saved evidence.
+Case A finalization now reports the exact failed stage/check/message, and its
+wrapper records four process-group snapshots with a bounded post-KILL grace.
+Confirmed `server_stopped` remains required. Case B now lists interpretation
+blockers per condition; recomputation on the saved summary identifies all four
+failed utility checks. Case C now reports every observed read, exposure and write
+separately from exact-one selection. Its selected fields become unknown on a
+cardinality mismatch, and its handoff remains blocked without choosing a file.
+
+The meeting packet's [repair appendix](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/repairs.md)
+records the behavior and limits. A/B/C focused tests and the full HPC suite pass;
+the exact totals are in RESEARCH_PROGRESS.md. No model request, scheduler job,
+payload change or raw-result edit occurred. These fixes improve future evidence
+quality but do not complete an absent cross-session action, repeated observation,
+causal judgment or systematic research pattern. Progress remains **4/13 (31%)**
+experimental and **16/25 (64%)** overall.

@@ -9,7 +9,8 @@
 > coverage assessment and the meeting packet. Causal, repeated and cross-session
 > claims remain incomplete. All three jobs are terminal: **25 research requests**
 > total, with zero additional requests in this reporting continuation.
-> Runtime defects remain diagnosed, not repaired.
+> Case A cleanup diagnostics, Case B blocker reporting and Case C per-call
+> reporting are now repaired prospectively. Saved outcomes and counts are unchanged.
 
 Status date: 2026-09-16 (NeSI local date). This is a checked snapshot, not a live scheduler display.
 The [supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-16)
@@ -646,8 +647,8 @@ Preparation stays at 12/12; these new completions add no model requests.
 
 The [packet](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/index.html)
 shows all nine remaining items. The complete-path chart item stays partial;
-C's later-session path is absent and B's exact first divergence is not separately
-established in the packet. Repeated consistency and a systematic research gap
+C's later-session path is absent even though A/B observed paths are fully mapped.
+Repeated consistency and a systematic research gap
 remain unestablished. Two extra reviews were blocked by platform cybersecurity-risk
 flags: archived judge/replay analysis and an independent full acceptance review.
 Neither review is counted as complete, and this continuation schedules no attack runs.
@@ -666,3 +667,30 @@ Receipts: [validation](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1
 and [raw-evidence verification](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/verification.json).
 This continuation began from pushed `f528341`; it adds the packet and current
 status updates while preserving original reports and raw results.
+
+## Prospective defect repairs — 2026-09-16
+
+The repair appendix in the
+[meeting packet](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/repairs.md)
+now distinguishes fixed software from missing scientific evidence.
+
+- Case A's finalizer emits `failure.stage`, `failure.check`, type and message.
+  Future cleanup records bounded process-group snapshots before TERM, after TERM,
+  after KILL and at final determination; `server_stopped` remains mandatory.
+- Case B's summary lists exact interpretation blockers. Re-evaluation of the
+  archived four-arm summary reports `utility_failed` for all four conditions.
+- Case C's selected exact-one fields are unknown after multiple calls, while
+  all observed per-call facts remain visible: each branch has two verified reads,
+  three exposures and two verified writes. The handoff stays blocked.
+- The packet charts contain complete observed A/B source-to-state sequences and
+  an explicit missing C continuation. The full chart deliverable remains partial.
+
+Final focused checks passed: **202 HPC tests plus 25 subtests**, **32 Case B
+tests**, **38 Case C runner tests**, and **47 Case C HPC tests**. Ruff and Python
+compilation passed for the changed Python files; Bash syntax passed for the Case A
+wrapper. The first Case B test attempt overlapped concurrent source edits and its
+integrity guard failed as designed; the stable-tree rerun passed all 32 tests.
+
+No raw evidence changed and no model request, GPU allocation, scheduler action,
+payload edit or experimental native action occurred. These repairs do not change
+the completion count: **4/13 experimental (31%)**, **16/25 overall (64%)**.

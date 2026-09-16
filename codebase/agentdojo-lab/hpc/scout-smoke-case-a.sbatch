@@ -136,6 +136,33 @@ CASE_A_PROCESS_STOPPED=true
 CASE_A_WATCHDOG_PID=''
 CASE_A_TERM_MARKER="$SCOUT_RUN_DIR/case-a-term-sent"
 CASE_A_KILL_MARKER="$SCOUT_RUN_DIR/case-a-kill-sent"
+CASE_A_SERVER_BEFORE_TERM="$SCOUT_RUN_DIR/case-a-server-before-term.ps"
+CASE_A_SERVER_AFTER_TERM="$SCOUT_RUN_DIR/case-a-server-after-term-grace.ps"
+CASE_A_SERVER_AFTER_KILL="$SCOUT_RUN_DIR/case-a-server-after-kill-grace.ps"
+CASE_A_SERVER_FINAL="$SCOUT_RUN_DIR/case-a-server-final.ps"
+readonly CASE_A_SERVER_BEFORE_TERM CASE_A_SERVER_AFTER_TERM
+readonly CASE_A_SERVER_AFTER_KILL CASE_A_SERVER_FINAL
+
+snapshot_process_group() {
+    local output=$1
+    local process_group=$2
+    local probe_status=passed
+    local rows=''
+    if [[ "$process_group" =~ ^[0-9]+$ ]] && (( process_group > 1 )); then
+        if ! rows=$(ps -eo pid=,ppid=,pgid=,sid=,stat=,comm= \
+            | awk -v target="$process_group" '$3 == target {print}'); then
+            probe_status=failed
+            rows=''
+        fi
+    else
+        probe_status=failed
+    fi
+    {
+        printf 'probe_status\t%s\n' "$probe_status"
+        printf 'pid\tppid\tpgid\tsid\tstat\tcomm\n'
+        [[ -z "$rows" ]] || printf '%s\n' "$rows"
+    } > "$output"
+}
 
 stop_case_process() {
     if [[ -n "$CASE_A_PROCESS_PID" ]]; then
@@ -175,6 +202,7 @@ stop_server_and_record() {
     if [[ ${SCOUT_SERVER_PID:-} =~ ^[0-9]+$ ]] && (( SCOUT_SERVER_PID > 1 )); then
         valid_server_pid=true
     fi
+    snapshot_process_group "$CASE_A_SERVER_BEFORE_TERM" "$recorded_server_pid"
     if $valid_server_pid && kill -0 -- "-$SCOUT_SERVER_PID" 2>/dev/null; then
         if kill -TERM -- "-$SCOUT_SERVER_PID" 2>/dev/null; then
             server_term=true
@@ -183,18 +211,27 @@ stop_server_and_record() {
             kill -0 -- "-$SCOUT_SERVER_PID" 2>/dev/null || break
             sleep 1
         done
+        snapshot_process_group "$CASE_A_SERVER_AFTER_TERM" "$recorded_server_pid"
         if kill -0 -- "-$SCOUT_SERVER_PID" 2>/dev/null; then
             if kill -KILL -- "-$SCOUT_SERVER_PID" 2>/dev/null; then
                 server_kill=true
             fi
         fi
+        for _ in {1..10}; do
+            kill -0 -- "-$SCOUT_SERVER_PID" 2>/dev/null || break
+            sleep 1
+        done
         wait "$SCOUT_SERVER_PID" 2>/dev/null || true
+    else
+        snapshot_process_group "$CASE_A_SERVER_AFTER_TERM" "$recorded_server_pid"
     fi
+    snapshot_process_group "$CASE_A_SERVER_AFTER_KILL" "$recorded_server_pid"
     if $valid_server_pid && kill -0 -- "-$SCOUT_SERVER_PID" 2>/dev/null; then
         server_stopped=false
     elif ! $valid_server_pid; then
         server_stopped=false
     fi
+    snapshot_process_group "$CASE_A_SERVER_FINAL" "$recorded_server_pid"
     SCOUT_SERVER_PID=''
     local case_term=false case_kill=false
     [[ -e "$CASE_A_TERM_MARKER" ]] && case_term=true
@@ -205,6 +242,10 @@ stop_server_and_record() {
         --kill-sent "$server_kill" --stopped "$server_stopped" \
         --case-pid "$CASE_A_LAUNCHED_PID" --case-term-sent "$case_term" \
         --case-kill-sent "$case_kill" --case-stopped "$CASE_A_PROCESS_STOPPED" \
+        --before-term-snapshot "$CASE_A_SERVER_BEFORE_TERM" \
+        --after-term-snapshot "$CASE_A_SERVER_AFTER_TERM" \
+        --after-kill-snapshot "$CASE_A_SERVER_AFTER_KILL" \
+        --final-snapshot "$CASE_A_SERVER_FINAL" \
         --job-id "$SLURM_JOB_ID" || true
 }
 
