@@ -469,6 +469,38 @@ Ruff, the new script's `bash -n`, and `git diff --check` passed. New finalizer
 checks verify explicit v2 receipt identity and refusal to publish an unknown
 protocol. These checks are separate from the live smoke results above.
 
+## Content-composition argument panel
+
+The prospective second-family panel is specified in
+[`SCOUT-CONTENT-COMPOSITION-ARGUMENT-V1.md`](../SCOUT-CONTENT-COMPOSITION-ARGUMENT-V1.md).
+Its request-free runner freezes 42 scientific slots over two archived prefixes,
+three repetitions, and sham/A/B/joint removal arms. The dedicated
+`scout-smoke-content-composition-argument.sbatch` wrapper requests four A100s for
+3.5 hours, reuses the same-allocation smoke server, and has a 50-generation-call
+combined ceiling. It never executes a returned protocol tool proposal.
+
+Each intervention replaces only the frozen `/content`-contributing fragment in
+every frozen carrier occurrence and preserves all surrounding and non-target
+text. Scientific comparisons score exact `/content` persistence after an
+exact-call sham gate; `/filename` persistence and exact-call reproduction are
+reported separately. Terminal slots with an invalid or unknown response do not
+make the panel scientifically complete. This panel always records supervisor
+item 13 as unestablished by this protocol alone and requires prospective
+combination with the frozen `conditional_action` panel.
+
+Submit this wrapper with explicit distinct absolute `sbatch --output` and
+`sbatch --error` paths. The private site file must resolve the corresponding
+`SCOUT_CONTENT_ARGUMENT_STDOUT` and `SCOUT_CONTENT_ARGUMENT_STDERR` variables to
+those exact paths. The batch gate records authoritative `scontrol` `StdOut` and
+`StdErr` values; planned metadata is not treated as the actual scheduler path.
+The wrapper rejects overlaps among those logs, the smoke/plan/live outputs, and
+all protocol sidecars. Its outer cleanup trap is active before generic smoke
+logic begins preflight, so early failures still attempt an authoritative terminal
+receipt. The wrapper sources its separately named, manifest-bound content smoke helper; it
+does not alter the byte-frozen shared `scout-smoke.sbatch` used by older wrappers.
+All output directories, sidecars, and authoritative logs must be outside and
+disjoint from the immutable copied bundle.
+
 ## Bounds, isolation, and receipts
 
 The server binds `127.0.0.1`, receives a new random key through `VLLM_API_KEY`,

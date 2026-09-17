@@ -682,3 +682,24 @@ The authoritative `scontrol` receipts record stdout as repository-root
 planned log metadata in the builders. The wrappers start automatically when
 allocated. Queue progress is **0/8 allocated** and no terminal result changes
 the checklist: **4/13 experimental (31%)**, **16/25 overall (64%)**.
+
+## Prospective content-composition argument wrapper — 2026-09-17 NZST
+
+`codebase/agentdojo-lab/hpc/scout-smoke-content-composition-argument.sbatch` is prepared but not
+submitted. It requests one Milan node, four A100s, 48 CPUs, 320 GiB and 3.5 hours.
+The same allocation permits four synthetic smoke requests, up to four native
+smoke requests and exactly 42 one-attempt scientific slots, for a ceiling of 50.
+The runner watchdog is 7,800 seconds, the post-smoke reserve is 8,400 seconds,
+each request timeout is 180 seconds, and SDK retries are zero.
+
+The shared `codebase/agentdojo-lab/hpc/scout-smoke.sbatch` retains its frozen SHA-256
+`1e2caa7bd21310f7ce04af46607ad0e077abb56f2ba117691f5ee466a584ee1a`.
+The new wrapper sources a separately named, manifest-bound content-only smoke
+helper so its terminal trap remains installed through preflight, server startup
+and both smoke gates. All plan/live/smoke destinations, five sidecars and the
+explicit `sbatch --output`/`--error` paths must be canonical, pairwise disjoint
+and outside the immutable copied bundle. The batch validator queries and later
+rechecks authoritative `scontrol` `StdOut`/`StdErr`; it never treats a planned
+log name as actual. Request-free preparation and offline tests used no GPU,
+model endpoint or scheduler call. A fresh immutable bundle, reviewed private
+site file and submission receipt are still required before any launch.

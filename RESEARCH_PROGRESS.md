@@ -787,3 +787,23 @@ item 13. A request-free `content_composition` r01/r02 check produced no eligible
 probe because explicit candidates were present and made zero requests. Progress
 therefore remains **4/13 (31%)** `██████░░░░░░░░░░░░░░` experimental and
 **16/25 (64%)** `█████████████░░░░░░░` overall.
+
+## Content-composition argument protocol prepared — 2026-09-17 NZST
+
+The earlier request-free `explicit_candidate_present` result described the old
+no-explicit-candidate planner. The two archived r01/r02 calls now support a
+separately named argument-level panel with exact `/content` source bindings.
+Its request-free plan contains **42/42 frozen slots**
+`████████████████████`, started **0/42 requests**
+`░░░░░░░░░░░░░░░░░░░░`, and no live output.
+
+The protocol preserves the filename while removing only frozen A/B contribution
+fragments, gates comparisons on exact-call sham reproduction, and retains all
+unknown/error rows. The 3.5-hour wrapper permits 42 scientific plus at most eight
+smoke requests, executes no returned protocol tool call, and records
+authoritative scheduler output paths. Focused checks passed **8 runner + 25
+batch tests**; related shared selections passed **347 HPC + 286 causal/replay
+tests**. No model, GPU or Slurm action occurred. This preparation does not change
+item 13 or checklist progress: **4/13 experimental (31%)**
+`██████░░░░░░░░░░░░░░`, **16/25 overall (64%)**
+`█████████████░░░░░░░`.

@@ -650,3 +650,31 @@ construction-scoped. Request-free inspection also found both
 `content_composition` candidates ineligible because an explicit candidate was
 already present; it made zero model requests. All eight jobs remain pending and
 the checklist stays **4/13 experimental (31%)**, **16/25 overall (64%)**.
+
+## Prospective content-composition argument panel — 2026-09-17 NZST
+
+The prior zero-probe result applied only to a planner that searched for calls
+without an explicit candidate. It does not make the archived explicit sensitive
+argument unusable. A separately named protocol now freezes the two archived
+`content_composition` r01/r02 prefixes at proposal event 30, request event 24 and
+call 29, with both exposed Tier-2 sources bound to `create_file` `/content`.
+
+For each candidate and three repetitions, it predeclares a tool-enabled sham,
+three fragment-neutralized replays and three isolated no-tools judgments: 42
+scientific requests, or at most 50 including both smoke gates. The A and B
+interventions replace only `NTFLOW-7e92f5a1-` and `64bd39c8` in every frozen
+carrier occurrence. Surrounding text and the filename remain unchanged;
+`/content` persistence is scored separately from filename and whole-call
+identity. Invalid responses, failed sham reproduction and interruption remain
+unknown. No returned tool proposal is executed.
+
+Request-free construction produced all 42 operation slots with zero requests.
+Focused runner and batch tests passed 8 and 25 tests; related shared HPC and
+causal/replay selections passed 347 and 286 tests. The byte-frozen shared smoke
+wrapper remains unchanged; a manifest-bound content-only helper lets the outer
+protocol trap preserve early-failure receipts. Outputs and authoritative Slurm
+logs must be disjoint from the immutable copied bundle. No GPU, model or
+scheduler action occurred, and no live result exists. This second task-family
+panel cannot establish item 13 alone; it must be combined prospectively with the
+independently frozen `conditional_action` panel. Experimental and overall
+progress remain **4/13 (31%)** and **16/25 (64%)**.

@@ -719,3 +719,31 @@ eligible probes because explicit candidates were present and made zero model
 requests. Both jobs were pending for Priority with provisional Sep 18 06:05 NZST
 starts; all six earlier jobs also remained pending. Progress remains **4/13
 experimental (31%)** and **16/25 overall (64%)**.
+
+## Second-family argument intervention preparation — 2026-09-17 NZST
+
+- [x] Freeze the complete two-prefix `content_composition` inventory, exact
+  proposal/request/call IDs, all 21 archived file hashes per prefix, and the two
+  exposed Tier-2 `/content` source bindings.
+- [x] Implement three repetitions of sham, A removal, B removal, joint removal,
+  and an isolated no-tools judgment for every removal arm.
+- [x] Replace only the exact A/B contribution fragments in all frozen carrier
+  occurrences, preserving surrounding text and filename, and score typed
+  `/content` persistence separately from filename and exact-call identity.
+- [x] Add independent same-allocation validation, conservative unknown handling,
+  authoritative scheduler-I/O receipts, bundle-disjoint output gates, early
+  cleanup finalization, fixed 42/50 request ceilings and a 3.5-hour four-A100
+  wrapper.
+- [x] Verify a 42-slot request-free plan with zero requests and run focused and
+  related regression selections.
+- [ ] After these exact bytes are committed and pushed, build and audit a fresh
+  immutable copy and decide whether to submit it as a new Slurm experiment.
+- [ ] If terminal evidence is collected, combine this second task-family panel
+  prospectively with the independently frozen `conditional_action` panel before
+  assessing item 13.
+
+The older `explicit_candidate_present` zero-probe result remains valid for its
+no-explicit-candidate planner. This new protocol asks a different, predeclared
+argument-level question and does not reinterpret that result. It made no model
+or scheduler request during preparation. Item 13 and the **4/13 experimental,
+16/25 overall** counts remain unchanged.
