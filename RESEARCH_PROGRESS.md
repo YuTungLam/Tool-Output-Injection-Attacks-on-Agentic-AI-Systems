@@ -762,3 +762,28 @@ New terminal results: **0/3** `░░░░░░░░░░░░░░░░�
 The jobs start automatically; no terminal result or new checklist completion is
 claimed. Experimental progress remains **4/13 (31%)** `██████░░░░░░░░░░░░░░`, overall
 **16/25 (64%)** `█████████████░░░░░░░`.
+
+## Joint-source and multi-candidate queue — 2026-09-17 NZST
+
+Pushed source `c062d0f` adds two independently audited protocols. Case E repeats
+the joint-source four-arm construction across three fresh blocks (56 total
+requests including smoke). The multi-candidate panel fixes four candidates and
+three repetitions each of sham, neutralized and no-tools judge arms (44 total
+including smoke). Their final builds made zero model requests and passed exact
+manifest, copied validation, owner-only permission, secret and symlink checks.
+
+Slurm accepted Case E `9129880` at 11:46 NZST and multi-candidate `9129940` at
+11:47 NZST. Both request four A100s for at most 3.5 hours and were **PENDING
+(Priority)** with a provisional Sep 18 06:05 start. All six earlier jobs also
+remain pending.
+
+Current eight-job queue: **0/8 allocated** `░░░░░░░░░░░░░░░░░░░░`.
+New protocol submission: **2/2** `████████████████████`.
+New terminal results: **0/2** `░░░░░░░░░░░░░░░░░░░░`.
+
+Case E can address item 2 only if every frozen gate passes in all three blocks.
+The multi-candidate panel is construction-scoped and cannot by itself complete
+item 13. A request-free `content_composition` r01/r02 check produced no eligible
+probe because explicit candidates were present and made zero requests. Progress
+therefore remains **4/13 (31%)** `██████░░░░░░░░░░░░░░` experimental and
+**16/25 (64%)** `█████████████░░░░░░░` overall.

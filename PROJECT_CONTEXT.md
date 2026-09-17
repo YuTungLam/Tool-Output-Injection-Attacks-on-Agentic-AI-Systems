@@ -625,3 +625,28 @@ The six current jobs start automatically. None is allocated yet. The three new
 protocols are fully submitted, while terminal evidence remains 0/3. The source
 and submission milestone changes no experimental checkbox: **4/13 experimental
 (31%)**, **16/25 overall (64%)** until observed outcomes meet the original criteria.
+
+## Joint-source and multi-candidate follow-ups queued — 2026-09-17 NZST
+
+Pushed commit `c062d0f949d722d9329a06577a4d1788206daeaf` adds two
+prospective protocols. Case E repeats a joint-source construction in three
+independent four-arm blocks (56 requests at most including smoke). The
+multi-candidate protocol freezes four candidates and three sham, neutralized and
+no-tools-judge repetitions per candidate (44 requests at most including smoke).
+
+Case E preparation `runs/scout-case-e-prepared-v1` contains only its plan and
+preparation receipt, binds 165 source hashes and made zero requests. Independent
+final audits returned GO for both owner-only, secret-free, symlink-free bundles.
+Slurm accepted Case E job `9129880` at 11:46 NZST and multi-candidate job
+`9129940` at 11:47 NZST. Each requests four A100s for at most 3.5 hours. Both
+were pending for Priority with a provisional Sep 18 06:05 NZST start. Actual
+Slurm stdout paths are repository-root `scout-case-e-9129880.log` and
+`scout-multi-rj-9129940.log`; submission receipts preserve these authoritative
+paths where they differ from planned log metadata.
+
+Case E can address item 2 only if all strict gates pass in all three blocks. The
+multi-candidate result cannot by itself complete item 13: its conclusion is
+construction-scoped. Request-free inspection also found both
+`content_composition` candidates ineligible because an explicit candidate was
+already present; it made zero model requests. All eight jobs remain pending and
+the checklist stays **4/13 experimental (31%)**, **16/25 overall (64%)**.

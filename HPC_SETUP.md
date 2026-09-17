@@ -648,3 +648,37 @@ The new jobs start automatically when Slurm allocates them. Queue progress is
 **0/6 allocated**; new-protocol submission is **3/3** and terminal evidence is
 **0/3**. No terminal scientific outcome exists yet, so checklist progress remains
 **4/13 experimental (31%)** and **16/25 overall (64%)**.
+
+## Joint-source and multi-candidate jobs submitted — 2026-09-17 NZST
+
+Source `c062d0f949d722d9329a06577a4d1788206daeaf` is pushed to
+`origin/codex/agentdojo-lab`. Case E's request-free canonical preparation is
+`runs/scout-case-e-prepared-v1`; it contains only `plan.json` and
+`preparation.json`, binds 165 source hashes and records zero requests.
+
+| Job | Protocol | Frozen input | Initial state |
+| --- | --- | --- | --- |
+| `9129880` | Case E, three repeated four-arm joint-source blocks | 12-entry manifest `f69e7d4106e...`; site SHA `f1cdf66b8683...` | PENDING (Priority) |
+| `9129940` | four-candidate sham/neutralized/judge triplicates | exact 77-entry manifest `b4013ac5f1db...`; site SHA `fe447ccb10bd...` | PENDING (Priority) |
+
+The final bundle roots are
+`/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-case-e-submission-20260917-v1`
+and
+`/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-multi-repeat-judge-submission-20260917-v1`.
+Their full manifest hashes are `f69e7d4106e39ff06dbbd3904d9d16736ecc39eeb3197e33dbc4bf227f1737ce`
+and `b4013ac5f1db9da438f1da9e00a6b60801c4847d46815733b4235c022839f099`;
+their site-file hashes are `f1cdf66b868307c34adb0c3785af855b82394f6c286b9bbece5baa283d961228`
+and `fe447ccb10bdd1cdc429baa76d0c4a6b12f84a86a39359ce96b5b39626637304`.
+
+Independent final launch audits returned GO: copied validation passed, builds
+made zero model requests, permissions are owner-only, and no credential-like
+content or symlink was found. Slurm accepted the jobs at 11:46 and 11:47 NZST
+respectively. Each requests four A100s with a 3.5-hour ceiling. Both showed zero
+runtime, pending Priority and a provisional Sep 18 06:05 NZST start. The six
+earlier jobs remained pending under their previous 02:04/04:05 estimates.
+
+The authoritative `scontrol` receipts record stdout as repository-root
+`scout-case-e-9129880.log` and `scout-multi-rj-9129940.log`, despite different
+planned log metadata in the builders. The wrappers start automatically when
+allocated. Queue progress is **0/8 allocated** and no terminal result changes
+the checklist: **4/13 experimental (31%)**, **16/25 overall (64%)**.

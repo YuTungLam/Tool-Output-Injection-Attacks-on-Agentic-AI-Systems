@@ -688,7 +688,34 @@ After terminal completion, validate each saved receipt and update the deliverabl
 ledger without replacing failures. C2 can complete items 4, 6 and 10 only if the
 prospectively bound handoff and fresh-session sink are observed. D can complete
 item 3 only if utility, exposure, witnesses and the exact fixed outcome pattern
-pass. Repeat/judge completes the repeated/ambiguity measurements even when the
-result is disagreement or unknown; item 13 remains conditional on an actual
-systematic method limitation. Items 1 and 2 still depend on terminal A/B evidence.
+pass. Repeat/judge can complete item 7 only when at least one pair is determinate;
+an all-unknown panel remains incomplete. Disagreement is retained as evidence,
+and item 13 remains conditional on an actual systematic method limitation. Items
+1 and 2 still depend on terminal A/B evidence.
 Current checkbox progress remains **4/13 experimental** and **16/25 overall**.
+
+## Joint-source and multi-candidate submissions — 2026-09-17 NZST
+
+- [x] Freeze and independently audit Case E: three independent four-arm
+  joint-source blocks, 56 requests at most including smoke.
+- [x] Freeze and independently audit the four-candidate repeat/intervention/judge
+  panel: three repetitions of each arm, 44 requests at most including smoke.
+- [x] Submit Case E as job `9129880` and the multi-candidate panel as job
+  `9129940` from pushed source `c062d0f949d722d9329a06577a4d1788206daeaf`.
+- [ ] Assess their terminal receipts against the frozen acceptance criteria.
+
+The Case E immutable bundle is
+`evidence/scout-case-e-submission-20260917-v1` in the private lab root; its
+12-entry manifest SHA-256 is
+`f69e7d4106e39ff06dbbd3904d9d16736ecc39eeb3197e33dbc4bf227f1737ce`.
+The multi-candidate bundle has an exact 77-entry whole-bundle manifest with
+SHA-256 `b4013ac5f1db9da438f1da9e00a6b60801c4847d46815733b4235c022839f099`.
+Both builds made zero requests and passed owner-only, secret and symlink gates.
+
+Case E may complete item 2 only if all frozen gates pass in all three blocks.
+The multi-candidate protocol remains construction-scoped and cannot alone
+complete item 13. Its request-free `content_composition` r01/r02 check found no
+eligible probes because explicit candidates were present and made zero model
+requests. Both jobs were pending for Priority with provisional Sep 18 06:05 NZST
+starts; all six earlier jobs also remained pending. Progress remains **4/13
+experimental (31%)** and **16/25 overall (64%)**.
