@@ -651,7 +651,7 @@ construction-scoped. Request-free inspection also found both
 already present; it made zero model requests. All eight jobs remain pending and
 the checklist stays **4/13 experimental (31%)**, **16/25 overall (64%)**.
 
-## Prospective content-composition argument panel — 2026-09-17 NZST
+## Content-composition argument panel submitted — 2026-09-17 NZST
 
 The prior zero-probe result applied only to a planner that searched for calls
 without an explicit candidate. It does not make the archived explicit sensitive
@@ -673,8 +673,24 @@ Focused runner and batch tests passed 8 and 25 tests; related shared HPC and
 causal/replay selections passed 347 and 286 tests. The byte-frozen shared smoke
 wrapper remains unchanged; a manifest-bound content-only helper lets the outer
 protocol trap preserve early-failure receipts. Outputs and authoritative Slurm
-logs must be disjoint from the immutable copied bundle. No GPU, model or
-scheduler action occurred, and no live result exists. This second task-family
-panel cannot establish item 13 alone; it must be combined prospectively with the
-independently frozen `conditional_action` panel. Experimental and overall
-progress remain **4/13 (31%)** and **16/25 (64%)**.
+logs must be disjoint from the immutable copied bundle.
+
+Source and remote HEAD now match
+`307869dacad57261a5897d2d4492905342bcf24b`. The strict immutable bundle binds
+exactly 70 entries with manifest SHA-256
+`45b6d316cf699b74323b176585990df269f5b41cdfae83ef18ea482981573c85`;
+the reviewed site SHA-256 is
+`195f5526d700951e663cd14f83c157a571bb6dd20e962fe7c48ede9071859b60`.
+Slurm accepted job `9135588` at 13:19 NZST. It requests four A100s, 48 CPUs,
+320 GiB and 3h 30m. The initial receipt records PENDING (Priority), runtime zero,
+null `AllocTRES`, and a provisional Sep 18 00:17 NZST start. Submission and raw
+`scontrol` receipt hashes are
+`da7ee5562a1863017fcd0362c559280bd31b0a1181b7cf2c7b22ffb55eb23b96`
+and `75ae03a75014ded74b2f201e5a02023324a40564cf94d20d9d10e11d3dfc491a`.
+
+The eight earlier jobs also remained PENDING with 0:00 runtime; their latest
+estimates were Sep 17 16:59, 19:00, 21:00 and 23:00 NZST. Estimates do not prove
+allocation. No terminal content-composition result exists. This second
+task-family panel cannot establish item 13 alone; it must be combined
+prospectively with the independently frozen `conditional_action` panel.
+Experimental and overall progress remain **4/13 (31%)** and **16/25 (64%)**.

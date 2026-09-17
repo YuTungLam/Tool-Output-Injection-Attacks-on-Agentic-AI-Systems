@@ -720,7 +720,7 @@ requests. Both jobs were pending for Priority with provisional Sep 18 06:05 NZST
 starts; all six earlier jobs also remained pending. Progress remains **4/13
 experimental (31%)** and **16/25 overall (64%)**.
 
-## Second-family argument intervention preparation — 2026-09-17 NZST
+## Second-family argument intervention submission — 2026-09-17 NZST
 
 - [x] Freeze the complete two-prefix `content_composition` inventory, exact
   proposal/request/call IDs, all 21 archived file hashes per prefix, and the two
@@ -736,14 +736,28 @@ experimental (31%)** and **16/25 overall (64%)**.
   wrapper.
 - [x] Verify a 42-slot request-free plan with zero requests and run focused and
   related regression selections.
-- [ ] After these exact bytes are committed and pushed, build and audit a fresh
-  immutable copy and decide whether to submit it as a new Slurm experiment.
+- [x] Commit and push the reviewed bytes, build and audit a fresh immutable
+  70-entry copy, and submit it as Slurm job `9135588`.
+- [ ] Validate job `9135588` after it reaches a terminal state without replacing
+  failed, unknown or incomplete observations.
 - [ ] If terminal evidence is collected, combine this second task-family panel
   prospectively with the independently frozen `conditional_action` panel before
   assessing item 13.
 
 The older `explicit_candidate_present` zero-probe result remains valid for its
 no-explicit-candidate planner. This new protocol asks a different, predeclared
-argument-level question and does not reinterpret that result. It made no model
-or scheduler request during preparation. Item 13 and the **4/13 experimental,
-16/25 overall** counts remain unchanged.
+argument-level question and does not reinterpret that result. Request-free
+preparation made no model call. Source and remote HEAD match
+`307869dacad57261a5897d2d4492905342bcf24b`; the final manifest and site hashes
+are `45b6d316cf699b74323b176585990df269f5b41cdfae83ef18ea482981573c85`
+and `195f5526d700951e663cd14f83c157a571bb6dd20e962fe7c48ede9071859b60`.
+
+Slurm accepted `9135588` at 13:19 NZST with four A100s, 48 CPUs, 320 GiB and a
+3h 30m ceiling. Its initial state was PENDING (Priority), runtime zero and null
+`AllocTRES`, with a provisional Sep 18 00:17 NZST start. The submission and raw
+`scontrol` receipt hashes are
+`da7ee5562a1863017fcd0362c559280bd31b0a1181b7cf2c7b22ffb55eb23b96`
+and `75ae03a75014ded74b2f201e5a02023324a40564cf94d20d9d10e11d3dfc491a`.
+The previous eight jobs remained PENDING with 0:00 runtime and provisional Sep 17
+16:59, 19:00, 21:00 and 23:00 NZST estimates. Item 13 and the **4/13
+experimental, 16/25 overall** counts remain unchanged pending terminal evidence.

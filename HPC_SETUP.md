@@ -683,10 +683,11 @@ planned log metadata in the builders. The wrappers start automatically when
 allocated. Queue progress is **0/8 allocated** and no terminal result changes
 the checklist: **4/13 experimental (31%)**, **16/25 overall (64%)**.
 
-## Prospective content-composition argument wrapper — 2026-09-17 NZST
+## Content-composition argument job submitted — 2026-09-17 NZST
 
-`codebase/agentdojo-lab/hpc/scout-smoke-content-composition-argument.sbatch` is prepared but not
-submitted. It requests one Milan node, four A100s, 48 CPUs, 320 GiB and 3.5 hours.
+`codebase/agentdojo-lab/hpc/scout-smoke-content-composition-argument.sbatch` was
+submitted as job `9135588`. It requests one Milan node, four A100s, 48 CPUs,
+320 GiB and 3.5 hours.
 The same allocation permits four synthetic smoke requests, up to four native
 smoke requests and exactly 42 one-attempt scientific slots, for a ceiling of 50.
 The runner watchdog is 7,800 seconds, the post-smoke reserve is 8,400 seconds,
@@ -701,5 +702,22 @@ explicit `sbatch --output`/`--error` paths must be canonical, pairwise disjoint
 and outside the immutable copied bundle. The batch validator queries and later
 rechecks authoritative `scontrol` `StdOut`/`StdErr`; it never treats a planned
 log name as actual. Request-free preparation and offline tests used no GPU,
-model endpoint or scheduler call. A fresh immutable bundle, reviewed private
-site file and submission receipt are still required before any launch.
+model endpoint or scheduler call.
+
+Source and remote HEAD match
+`307869dacad57261a5897d2d4492905342bcf24b`. The immutable submission bundle has
+exactly 70 entries and manifest SHA-256
+`45b6d316cf699b74323b176585990df269f5b41cdfae83ef18ea482981573c85`.
+The reviewed site SHA-256 is
+`195f5526d700951e663cd14f83c157a571bb6dd20e962fe7c48ede9071859b60`.
+Slurm accepted the job at 13:19 NZST. Its initial state was PENDING (Priority),
+runtime zero and null `AllocTRES`, with a provisional Sep 18 00:17 NZST start.
+The submission receipt SHA-256 is
+`da7ee5562a1863017fcd0362c559280bd31b0a1181b7cf2c7b22ffb55eb23b96`;
+the raw initial `scontrol` receipt SHA-256 is
+`75ae03a75014ded74b2f201e5a02023324a40564cf94d20d9d10e11d3dfc491a`.
+
+The previous eight jobs remained PENDING with 0:00 runtime. Their latest
+provisional estimates were Sep 17 16:59, 19:00, 21:00 and 23:00 NZST. Scheduler
+estimates can change and do not prove allocation. No terminal result changes the
+checklist: **4/13 experimental (31%)**, **16/25 overall (64%)**.

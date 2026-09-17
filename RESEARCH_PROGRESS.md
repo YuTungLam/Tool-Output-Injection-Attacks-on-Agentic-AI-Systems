@@ -788,7 +788,7 @@ probe because explicit candidates were present and made zero requests. Progress
 therefore remains **4/13 (31%)** `██████░░░░░░░░░░░░░░` experimental and
 **16/25 (64%)** `█████████████░░░░░░░` overall.
 
-## Content-composition argument protocol prepared — 2026-09-17 NZST
+## Content-composition argument protocol submitted — 2026-09-17 NZST
 
 The earlier request-free `explicit_candidate_present` result described the old
 no-explicit-candidate planner. The two archived r01/r02 calls now support a
@@ -803,7 +803,25 @@ unknown/error rows. The 3.5-hour wrapper permits 42 scientific plus at most eigh
 smoke requests, executes no returned protocol tool call, and records
 authoritative scheduler output paths. Focused checks passed **8 runner + 25
 batch tests**; related shared selections passed **347 HPC + 286 causal/replay
-tests**. No model, GPU or Slurm action occurred. This preparation does not change
-item 13 or checklist progress: **4/13 experimental (31%)**
+tests**.
+
+Source and remote HEAD match `307869dacad57261a5897d2d4492905342bcf24b`.
+The strict build binds exactly 70 entries: manifest SHA-256
+`45b6d316cf699b74323b176585990df269f5b41cdfae83ef18ea482981573c85`
+and site SHA-256
+`195f5526d700951e663cd14f83c157a571bb6dd20e962fe7c48ede9071859b60`.
+Slurm accepted job `9135588` at 13:19 NZST. Its four-A100, 48-CPU, 320-GiB,
+3h30m request was initially PENDING (Priority), runtime zero and null
+`AllocTRES`, with a provisional Sep 18 00:17 NZST start. Submission receipt SHA
+is `da7ee5562a1863017fcd0362c559280bd31b0a1181b7cf2c7b22ffb55eb23b96`;
+raw `scontrol` SHA is
+`75ae03a75014ded74b2f201e5a02023324a40564cf94d20d9d10e11d3dfc491a`.
+
+Submission progress: **1/1** `████████████████████`.
+New terminal evidence: **0/1** `░░░░░░░░░░░░░░░░░░░░`.
+All eight earlier jobs remained PENDING with 0:00 runtime; their latest estimates
+were Sep 17 16:59, 19:00, 21:00 and 23:00 NZST. No estimate establishes
+allocation. No new model request or GPU runtime is recorded at this checkpoint.
+Item 13 and checklist progress remain **4/13 experimental (31%)**
 `██████░░░░░░░░░░░░░░`, **16/25 overall (64%)**
-`█████████████░░░░░░░`.
+`█████████████░░░░░░░` pending terminal evidence.
