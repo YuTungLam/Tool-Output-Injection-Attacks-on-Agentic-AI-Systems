@@ -65,7 +65,8 @@ read -r CCA_ACTUAL_MANIFEST_SHA256 _ < <(sha256sum -- "$CCA_MANIFEST")
 (cd -- "$CCA_BUNDLE_ROOT" && sha256sum --check --strict --status submission-sha256.txt)
 cmp --silent -- "$CCA_EXECUTED_WRAPPER" "$CCA_CANONICAL_WRAPPER" || exit 2
 [[ "$SCOUT_CONTENT_ARGUMENT_RUNNER" == "$CCA_RUNNER" && "$SCOUT_CONTENT_ARGUMENT_CONFIG" == "$CCA_CONFIG" ]] || exit 2
-[[ -x "$SCOUT_LAB_PYTHON" && -f "$CCA_BATCH" && -f "$CCA_RUNNER" && -f "$CCA_CONFIG" ]] || exit 2
+[[ -x "$SCOUT_LAB_PYTHON" && -f "$CCA_BATCH" && -f "$CCA_RUNNER" && -f "$CCA_CONFIG" \
+    && -f "$CCA_HPC_DIR/scout-smoke-content-composition-base.bash" ]] || exit 2
 for path in "$SCOUT_RUN_DIR" "$SCOUT_CONTENT_ARGUMENT_PLAN_DIR" "$SCOUT_CONTENT_ARGUMENT_OUTPUT"; do
     [[ "$path" == /* && ! -e "$path" && ! -L "$path" ]] || exit 2
 done
@@ -73,9 +74,13 @@ done
     && "$SCOUT_RUN_DIR" != "$SCOUT_CONTENT_ARGUMENT_OUTPUT" \
     && "$SCOUT_CONTENT_ARGUMENT_PLAN_DIR" != "$SCOUT_CONTENT_ARGUMENT_OUTPUT" ]] || exit 2
 
-export PYTHONPATH="$CCA_BUNDLE_ROOT/src:$CCA_BUNDLE_ROOT/scripts"
+export PYTHONPATH="$CCA_BUNDLE_ROOT/vendor/agentdojo/src:$CCA_BUNDLE_ROOT/src:$CCA_BUNDLE_ROOT/scripts"
 export PYTHONDONTWRITEBYTECODE=1
 unset LOCAL_LLM_API_KEY APPTAINERENV_VLLM_API_KEY GROQ_API_KEY
+SCOUT_SMOKE_HELPER_DEFINITIONS_ONLY=1
+source "$CCA_HPC_DIR/scout-smoke-content-composition-base.bash"
+unset SCOUT_SMOKE_HELPER_DEFINITIONS_ONLY
+declare -F write_pre_phase_terminal >/dev/null || exit 2
 
 CCA_PRE_SMOKE="${SCOUT_RUN_DIR}.content-composition-argument-pre-smoke.json"
 CCA_PHASE="${SCOUT_RUN_DIR}.content-composition-argument-phase.json"
@@ -116,6 +121,8 @@ CCA_SERVER_TERM=false
 CCA_SERVER_KILL=false
 CCA_SERVER_STOPPED=false
 CCA_WATCHDOG_PID=''
+CCA_WRAPPER_STAGE=plan_only
+SCOUT_SMOKE_STAGE=''
 CCA_SERVER_CHECK="$SCOUT_RUN_DIR/content-composition-argument-server-check.json"
 CCA_RUNNER_STOP_KILL_MARKER="$SCOUT_RUN_DIR/content-composition-argument-cleanup-runner-kill"
 CCA_SERVER_STOP_KILL_MARKER="$SCOUT_RUN_DIR/content-composition-argument-cleanup-server-kill"
@@ -123,31 +130,33 @@ CCA_SERVER_STOP_KILL_MARKER="$SCOUT_RUN_DIR/content-composition-argument-cleanup
 stop_runner() {
     if [[ "$CCA_RUNNER_PID" =~ ^[0-9]+$ ]] && (( CCA_RUNNER_PID > 1 )) \
         && kill -0 -- "-$CCA_RUNNER_PID" 2>/dev/null; then
-        kill -TERM -- "-$CCA_RUNNER_PID" 2>/dev/null || true
-        CCA_RUNNER_TERM=true
-        (
-            sleep 10
-            if kill -KILL -- "-$CCA_RUNNER_PID" 2>/dev/null; then
-                : > "$CCA_RUNNER_STOP_KILL_MARKER"
-            fi
-        ) &
-        local killer=$!
-        wait "$CCA_RUNNER_PID" 2>/dev/null || true
-        kill "$killer" 2>/dev/null || true
-        wait "$killer" 2>/dev/null || true
+        if kill -TERM -- "-$CCA_RUNNER_PID" 2>/dev/null; then
+            CCA_RUNNER_TERM=true
+        fi
+        for _ in {1..10}; do
+            kill -0 -- "-$CCA_RUNNER_PID" 2>/dev/null || break
+            sleep 1
+        done
     fi
-    [[ -e "$CCA_RUNNER_STOP_KILL_MARKER" ]] && CCA_RUNNER_KILL=true
     if [[ "$CCA_RUNNER_PID" =~ ^[0-9]+$ ]] && (( CCA_RUNNER_PID > 1 )) \
         && kill -0 -- "-$CCA_RUNNER_PID" 2>/dev/null; then
-        kill -KILL -- "-$CCA_RUNNER_PID" 2>/dev/null || true
-        CCA_RUNNER_KILL=true
-        wait "$CCA_RUNNER_PID" 2>/dev/null || true
+        if kill -KILL -- "-$CCA_RUNNER_PID" 2>/dev/null; then
+            CCA_RUNNER_KILL=true
+            : > "$CCA_RUNNER_STOP_KILL_MARKER"
+        fi
+        for _ in {1..10}; do
+            kill -0 -- "-$CCA_RUNNER_PID" 2>/dev/null || break
+            sleep 1
+        done
     fi
     if [[ "$CCA_RUNNER_PID" =~ ^[0-9]+$ ]] && (( CCA_RUNNER_PID > 1 )) \
         && kill -0 -- "-$CCA_RUNNER_PID" 2>/dev/null; then
         CCA_RUNNER_STOPPED=false
     else
         CCA_RUNNER_STOPPED=true
+        if [[ "$CCA_RUNNER_PID" =~ ^[0-9]+$ ]] && (( CCA_RUNNER_PID > 1 )); then
+            wait "$CCA_RUNNER_PID" 2>/dev/null || true
+        fi
     fi
 }
 
@@ -155,31 +164,33 @@ stop_server() {
     local server_pid=${SCOUT_SERVER_PID:-0}
     if [[ "$server_pid" =~ ^[0-9]+$ ]] && (( server_pid > 1 )) \
         && kill -0 -- "-$server_pid" 2>/dev/null; then
-        kill -TERM -- "-$server_pid" 2>/dev/null || true
-        CCA_SERVER_TERM=true
-        (
-            sleep 10
-            if kill -KILL -- "-$server_pid" 2>/dev/null; then
-                : > "$CCA_SERVER_STOP_KILL_MARKER"
-            fi
-        ) &
-        local killer=$!
-        wait "$server_pid" 2>/dev/null || true
-        kill "$killer" 2>/dev/null || true
-        wait "$killer" 2>/dev/null || true
+        if kill -TERM -- "-$server_pid" 2>/dev/null; then
+            CCA_SERVER_TERM=true
+        fi
+        for _ in {1..10}; do
+            kill -0 -- "-$server_pid" 2>/dev/null || break
+            sleep 1
+        done
     fi
-    [[ -e "$CCA_SERVER_STOP_KILL_MARKER" ]] && CCA_SERVER_KILL=true
     if [[ "$server_pid" =~ ^[0-9]+$ ]] && (( server_pid > 1 )) \
         && kill -0 -- "-$server_pid" 2>/dev/null; then
-        kill -KILL -- "-$server_pid" 2>/dev/null || true
-        CCA_SERVER_KILL=true
-        wait "$server_pid" 2>/dev/null || true
+        if kill -KILL -- "-$server_pid" 2>/dev/null; then
+            CCA_SERVER_KILL=true
+            : > "$CCA_SERVER_STOP_KILL_MARKER"
+        fi
+        for _ in {1..10}; do
+            kill -0 -- "-$server_pid" 2>/dev/null || break
+            sleep 1
+        done
     fi
     if [[ "$server_pid" =~ ^[0-9]+$ ]] && (( server_pid > 1 )) \
         && kill -0 -- "-$server_pid" 2>/dev/null; then
         CCA_SERVER_STOPPED=false
     else
         CCA_SERVER_STOPPED=true
+        if [[ "$server_pid" =~ ^[0-9]+$ ]] && (( server_pid > 1 )); then
+            wait "$server_pid" 2>/dev/null || true
+        fi
     fi
 }
 
@@ -190,6 +201,7 @@ terminal_cleanup() {
     [[ -n "$CCA_WATCHDOG_PID" ]] && kill "$CCA_WATCHDOG_PID" 2>/dev/null
     [[ -n "$CCA_WATCHDOG_PID" ]] && wait "$CCA_WATCHDOG_PID" 2>/dev/null
     stop_runner
+    mkdir -p -- "$(dirname -- "$CCA_EXIT_FILE")"
     [[ -e "$CCA_EXIT_FILE" ]] || printf '%s\n' "$status" > "$CCA_EXIT_FILE"
     stop_server
     if [[ ! -e "$CCA_CLEANUP" ]]; then
@@ -201,14 +213,24 @@ terminal_cleanup() {
             --runner-kill "$CCA_RUNNER_KILL" --runner-stopped "$CCA_RUNNER_STOPPED"
     fi
     if [[ ! -e "$CCA_FINAL" ]]; then
-        "$SCOUT_LAB_PYTHON" "$CCA_BATCH" finalize \
-            --output "$CCA_FINAL" --phase-path "$CCA_PHASE" \
-            --pre-smoke-path "$CCA_PRE_SMOKE" --smoke-path "$SCOUT_RUN_DIR/smoke.json" \
-            --native-path "$SCOUT_RUN_DIR/native-smoke.json" \
-            --server-check-path "$CCA_SERVER_CHECK" --cleanup-path "$CCA_CLEANUP" \
-            --runner-exit-path "$CCA_EXIT_FILE" --live-dir "$SCOUT_CONTENT_ARGUMENT_OUTPUT" \
-            --job-id "$SLURM_JOB_ID" --expected-stdout "$SCOUT_CONTENT_ARGUMENT_STDOUT" \
-            --expected-stderr "$SCOUT_CONTENT_ARGUMENT_STDERR"
+        if [[ -e "$CCA_PHASE" ]]; then
+            "$SCOUT_LAB_PYTHON" "$CCA_BATCH" finalize \
+                --output "$CCA_FINAL" --phase-path "$CCA_PHASE" \
+                --pre-smoke-path "$CCA_PRE_SMOKE" --smoke-path "$SCOUT_RUN_DIR/smoke.json" \
+                --native-path "$SCOUT_RUN_DIR/native-smoke.json" \
+                --server-check-path "$CCA_SERVER_CHECK" --cleanup-path "$CCA_CLEANUP" \
+                --runner-exit-path "$CCA_EXIT_FILE" --live-dir "$SCOUT_CONTENT_ARGUMENT_OUTPUT" \
+                --job-id "$SLURM_JOB_ID" --expected-stdout "$SCOUT_CONTENT_ARGUMENT_STDOUT" \
+                --expected-stderr "$SCOUT_CONTENT_ARGUMENT_STDERR"
+        else
+            write_pre_phase_terminal "$CCA_FINAL" \
+                'nesi-scout-smoke-content-composition-argument-v1' \
+                "${SCOUT_SMOKE_STAGE:-$CCA_WRAPPER_STAGE}" "$status" \
+                "$SCOUT_RUN_DIR/smoke.json" "$SCOUT_RUN_DIR/native-smoke.json" \
+                "$CCA_PRE_SMOKE" "$CCA_CLEANUP" "$CCA_EXIT_FILE" 42 50 true \
+                "$SLURM_JOB_ID" "$SCOUT_CONTENT_ARGUMENT_STDOUT" \
+                "$SCOUT_CONTENT_ARGUMENT_STDERR"
+        fi
         [[ $? == 0 ]] || { [[ "$status" == 0 ]] && status=1; }
     fi
     unset LOCAL_LLM_API_KEY APPTAINERENV_VLLM_API_KEY GROQ_API_KEY
@@ -220,8 +242,10 @@ trap 'exit 130' INT
 
 
 # Generate and validate the exact request plan without transport before loading Scout.
+CCA_WRAPPER_STAGE=plan_only
 (cd -- "$CCA_BUNDLE_ROOT" && "$SCOUT_LAB_PYTHON" "$CCA_RUNNER" \
     --config "$CCA_CONFIG" --output "$SCOUT_CONTENT_ARGUMENT_PLAN_DIR")
+CCA_WRAPPER_STAGE=pre_smoke_validation
 "$SCOUT_LAB_PYTHON" "$CCA_BATCH" validate \
     --output "$CCA_PRE_SMOKE" --bundle "$CCA_BUNDLE_ROOT" \
     --manifest "$CCA_MANIFEST" --manifest-sha256 "$SCOUT_HPC_MANIFEST_SHA256" \
@@ -238,17 +262,20 @@ trap 'exit 130' INT
 export SCOUT_HPC_DIR="$CCA_HPC_DIR"
 export SCOUT_NATIVE_SMOKE=1
 export SCOUT_PORT=8000
-export SCOUT_CONTENT_ARGUMENT_PARENT_OWNS_TRAPS=1
+export SCOUT_PROTOCOL_PARENT_OWNS_TRAPS=1
 unset SCOUT_SITE_FILE SCOUT_SITE_SHA256
+CCA_WRAPPER_STAGE=smoke
 source "$CCA_HPC_DIR/scout-smoke-content-composition-base.bash"
 if [[ ! ${SCOUT_SERVER_PID:-} =~ ^[0-9]+$ ]] || (( SCOUT_SERVER_PID <= 1 )); then
     SCOUT_SERVER_PID=''
     exit 2
 fi
 export SCOUT_SERVER_PID
+SCOUT_SMOKE_STAGE=''
 
 
 # Require one exact current Slurm record and at least 8,400 seconds remaining.
+CCA_WRAPPER_STAGE=phase_reservation
 CCA_TIME_RECORD=''
 if command -v squeue >/dev/null; then
     CCA_TIME_RECORD=$(squeue -h -j "$SLURM_JOB_ID" -o '%i|%L|%l' 2>/dev/null) || CCA_TIME_RECORD=''
@@ -278,6 +305,7 @@ fi
     --output "$CCA_SERVER_CHECK" --base-url 'http://127.0.0.1:8000/v1' \
     --server-pid "$SCOUT_SERVER_PID" --job-id "$SLURM_JOB_ID"
 
+CCA_WRAPPER_STAGE=repeat_judge
 set +e
 cd -- "$CCA_BUNDLE_ROOT"
 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 \

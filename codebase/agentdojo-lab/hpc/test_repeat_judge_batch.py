@@ -27,7 +27,7 @@ def write_json(path: Path, value: dict) -> None:
 
 def build_bundle(tmp_path: Path) -> tuple[Path, Path]:
     bundle = tmp_path / "bundle"
-    for relative in batch.REQUIRED_BUNDLE_FILES:
+    for relative in batch.required_bundle_files(ROOT):
         source = ROOT / relative
         target = bundle / relative
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -50,6 +50,31 @@ def build_bundle(tmp_path: Path) -> tuple[Path, Path]:
         "".join(f"{value}  {key}\n" for key, value in entries.items()), encoding="utf-8"
     )
     return bundle, manifest
+
+
+@pytest.mark.parametrize(
+    ("relative", "message"),
+    [
+        ("src/agentdojo_lab/runner.py", "native-smoke dependency closure"),
+        (
+            "vendor/agentdojo/src/agentdojo/data/suites/workspace/environment.yaml",
+            "pinned AgentDojo runtime source tree",
+        ),
+    ],
+)
+def test_job_9126776_bundle_rejects_incomplete_native_smoke_closure(
+    tmp_path, relative, message
+):
+    bundle, manifest = build_bundle(tmp_path)
+    (bundle / relative).unlink()
+    entries = batch.snapshot(bundle)
+    entries.pop("submission-sha256.txt")
+    manifest.write_text(
+        "".join(f"{value}  {key}\n" for key, value in entries.items()), encoding="utf-8"
+    )
+
+    with pytest.raises(ValueError, match=message):
+        batch.validate_bundle(bundle, manifest, batch.digest(manifest))
 
 
 def run_copied_plan(bundle: Path, output: Path) -> None:
@@ -440,3 +465,24 @@ def test_terminal_rejects_mutated_or_missing_server_evidence(tmp_path, path, val
     assert final["status"] == "incomplete"
     assert final["failure"]["stage"] == "server_and_live_ledgers"
     assert "server receipt" in final["failure"]["message"]
+
+
+def test_wrapper_freezes_native_smoke_runtime_and_shared_terminal_helper():
+    wrapper = (ROOT / "hpc/scout-smoke-repeat-judge.sbatch").read_text()
+    helper_source = 'source "$RJ_HPC_DIR/scout-smoke-content-composition-base.bash"'
+    definition_source_position = wrapper.index(helper_source)
+    execution_source_position = wrapper.rindex(helper_source)
+    trap_position = wrapper.index("trap terminal_cleanup EXIT")
+
+    assert (
+        'export PYTHONPATH="$RJ_BUNDLE_ROOT/vendor/agentdojo/src:'
+        '$RJ_BUNDLE_ROOT/src:$RJ_BUNDLE_ROOT/scripts"'
+    ) in wrapper
+    assert wrapper.count(helper_source) == 2
+    assert definition_source_position < trap_position < execution_source_position
+    assert "export SCOUT_PROTOCOL_PARENT_OWNS_TRAPS=1" in wrapper
+    assert 'if [[ -e "$RJ_PHASE" ]]; then' in wrapper
+    assert 'else\n            write_pre_phase_terminal "$RJ_FINAL"' in wrapper
+    assert wrapper.count("for _ in {1..10}; do") >= 4
+    assert "local killer=" not in wrapper
+    assert "hpc/scout-smoke-content-composition-base.bash" in batch.REQUIRED_BUNDLE_FILES

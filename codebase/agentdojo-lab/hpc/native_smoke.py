@@ -13,10 +13,12 @@ import json
 import os
 import shlex
 import signal
+import sys
 from pathlib import Path
 from unittest.mock import patch
 from urllib.parse import urlsplit
 
+import agentdojo
 import httpx
 import smoke
 
@@ -145,11 +147,37 @@ def frozen_upstream_binding() -> tuple[dict, dict]:
         current[name] = file_digest(path)
     if current != hashes:
         raise ValueError("Frozen native-smoke source bytes changed after preparation")
+    agentdojo_root = ROOT / "vendor/agentdojo/src/agentdojo"
+    agentdojo_lab_root = ROOT / "src/agentdojo_lab"
+    import_roots = {
+        "agentdojo": agentdojo_root,
+        "agentdojo_lab": agentdojo_lab_root,
+    }
     if (
         Path(__file__).resolve() != ROOT / "hpc/native_smoke.py"
-        or Path(runner.__file__).resolve() != ROOT / "src/agentdojo_lab/runner.py"
+        or Path(runner.__file__).resolve() != agentdojo_lab_root / "runner.py"
+        or Path(agentdojo.__file__).resolve() != agentdojo_root / "__init__.py"
     ):
         raise ValueError("Frozen native-smoke imports escaped the source bundle")
+    for module_name, module in tuple(sys.modules.items()):
+        package = next(
+            (
+                name
+                for name in import_roots
+                if module_name == name or module_name.startswith(name + ".")
+            ),
+            None,
+        )
+        raw_path = getattr(module, "__file__", None)
+        if package is None or raw_path is None:
+            continue
+        module_path = Path(raw_path)
+        if (
+            module_path.is_symlink()
+            or module_path.resolve() != module_path
+            or not module_path.is_relative_to(import_roots[package])
+        ):
+            raise ValueError("Frozen native-smoke imports escaped the source bundle")
 
     expected_upstream = json.loads((ROOT / "upstream.json").read_text(encoding="utf-8"))
     upstream = plan.get("upstream")
@@ -171,6 +199,7 @@ def frozen_upstream_binding() -> tuple[dict, dict]:
         "plan": file_receipt(plan_path),
         "source_files": len(hashes),
         "source_tree_sha256": tree_hash,
+        "import_roots": {name: str(path) for name, path in import_roots.items()},
         "unbound_env_file_absent": True,
         "upstream": upstream,
     }

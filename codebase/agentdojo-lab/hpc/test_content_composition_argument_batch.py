@@ -31,7 +31,7 @@ def write_json(path: Path, value: dict) -> None:
 
 def build_bundle(tmp_path: Path) -> tuple[Path, Path]:
     bundle = tmp_path / "bundle"
-    for relative in batch.REQUIRED_BUNDLE_FILES:
+    for relative in batch.required_bundle_files(ROOT):
         source = ROOT / relative
         target = bundle / relative
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -44,6 +44,31 @@ def build_bundle(tmp_path: Path) -> tuple[Path, Path]:
     manifest = bundle / "submission-sha256.txt"
     manifest.write_text("".join(f"{value}  {key}\n" for key, value in entries.items()), encoding="utf-8")
     return bundle, manifest
+
+
+@pytest.mark.parametrize(
+    ("relative", "message"),
+    [
+        ("src/agentdojo_lab/runner.py", "native-smoke dependency closure"),
+        (
+            "vendor/agentdojo/src/agentdojo/data/suites/workspace/environment.yaml",
+            "pinned AgentDojo runtime source tree",
+        ),
+    ],
+)
+def test_job_9135588_bundle_rejects_incomplete_native_smoke_closure(
+    tmp_path, relative, message
+):
+    bundle, manifest = build_bundle(tmp_path)
+    (bundle / relative).unlink()
+    entries = batch.snapshot(bundle)
+    entries.pop("submission-sha256.txt")
+    manifest.write_text(
+        "".join(f"{value}  {key}\n" for key, value in entries.items()), encoding="utf-8"
+    )
+
+    with pytest.raises(ValueError, match=message):
+        batch.validate_bundle(bundle, manifest, batch.digest(manifest))
 
 
 def run_copied_plan(bundle: Path, output: Path) -> None:
@@ -655,6 +680,92 @@ def test_early_smoke_failure_still_writes_claim_bounded_authoritative_receipt(tm
 
 
 @pytest.mark.parametrize(
+    ("protocol", "repeat_limit", "total_limit", "content_argument"),
+    [
+        ("nesi-scout-smoke-repeat-judge-v1", 9, 17, False),
+        ("nesi-scout-smoke-multi-repeat-judge-v1", 36, 44, False),
+        ("nesi-scout-smoke-content-composition-argument-v1", 42, 50, True),
+    ],
+)
+def test_shared_pre_phase_terminal_records_native_import_failure_without_missing_phase(
+    tmp_path, protocol, repeat_limit, total_limit, content_argument
+):
+    smoke = tmp_path / "smoke.json"
+    write_json(
+        smoke,
+        {
+            "protocol": "nesi-scout-smoke-v1",
+            "status": "passed",
+            "requests_started": 4,
+            "requests": [{"status": "passed"} for _ in range(4)],
+        },
+    )
+    pre_smoke = tmp_path / "pre-smoke.json"
+    cleanup = tmp_path / "cleanup.json"
+    exit_path = tmp_path / "wrapper-exit.txt"
+    write_json(pre_smoke, {"status": "prepared_inputs_validated_before_smoke"})
+    write_json(cleanup, {"status": "cleanup_complete"})
+    exit_path.write_text("1\n", encoding="utf-8")
+    output = tmp_path / "terminal.json"
+    helper = ROOT / "hpc/scout-smoke-content-composition-base.bash"
+    command = """
+set -euo pipefail
+SCOUT_SMOKE_HELPER_DEFINITIONS_ONLY=1
+source "$1"
+unset SCOUT_SMOKE_HELPER_DEFINITIONS_ONLY
+SCOUT_LAB_PYTHON="$2"
+write_pre_phase_terminal "$3" "$4" native_smoke 1 "$5" "$6" "$7" "$8" "$9" \
+    "${10}" "${11}" "${12}" 42 "${13}" "${14}"
+"""
+    stdout = tmp_path / "job.out"
+    stderr = tmp_path / "job.err"
+    result = subprocess.run(
+        [
+            "bash",
+            "-c",
+            command,
+            "bash",
+            str(helper),
+            sys.executable,
+            str(output),
+            protocol,
+            str(smoke),
+            str(tmp_path / "missing-native.json"),
+            str(pre_smoke),
+            str(cleanup),
+            str(exit_path),
+            str(repeat_limit),
+            str(total_limit),
+            str(content_argument).lower(),
+            str(stdout),
+            str(stderr),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    terminal = json.loads(output.read_text(encoding="utf-8"))
+    assert terminal["status"] == "terminal_before_repeat_judge_phase"
+    assert terminal["failure"] == {
+        "stage": "native_smoke",
+        "error_type": "WrapperStageFailure",
+        "message": "Wrapper exited during native_smoke before repeat/judge phase reservation",
+    }
+    assert terminal["requests"] == {
+        "synthetic": 4,
+        "native": 0,
+        "repeat": 0,
+        "total": 4,
+        "limit": total_limit,
+        "accounting_complete": True,
+    }
+    assert "phase" not in terminal["artifacts"]
+    assert terminal["scientific_outcome"]["started"] is False
+    assert ("item_13_status" in terminal) is content_argument
+
+
+@pytest.mark.parametrize(
     ("path", "value"),
     [
         (("model",), "other-model"),
@@ -697,16 +808,29 @@ def test_wrapper_static_resource_reserve_watchdog_and_request_arithmetic():
     assert "sleep 7800" in wrapper
     assert "--expected-stdout" in wrapper and "--expected-stderr" in wrapper
     assert "#SBATCH --error=scout-content-arg-%j.err" in wrapper
-    source_position = wrapper.index('source "$CCA_HPC_DIR/scout-smoke-content-composition-base.bash"')
+    helper_source = 'source "$CCA_HPC_DIR/scout-smoke-content-composition-base.bash"'
+    definition_source_position = wrapper.index(helper_source)
+    source_position = wrapper.rindex(helper_source)
     trap_position = wrapper.index("trap terminal_cleanup EXIT")
+    plan_position = wrapper.index("# Generate and validate the exact request plan")
     unset_pid_position = wrapper.index("unset SCOUT_SERVER_PID")
     cleared_pid_position = wrapper.index("SCOUT_SERVER_PID=''", wrapper.index("CCA_PRE_SMOKE="))
     exported_pid_position = wrapper.index("export SCOUT_SERVER_PID")
-    assert unset_pid_position < cleared_pid_position < trap_position < source_position < exported_pid_position
-    assert "export SCOUT_CONTENT_ARGUMENT_PARENT_OWNS_TRAPS=1" in wrapper
-    assert "[[ ${SCOUT_CONTENT_ARGUMENT_PARENT_OWNS_TRAPS:-0} == 1 ]]" in helper
+    assert unset_pid_position < cleared_pid_position
+    assert definition_source_position < trap_position < plan_position < source_position < exported_pid_position
+    assert "export SCOUT_PROTOCOL_PARENT_OWNS_TRAPS=1" in wrapper
+    assert "[[ ${SCOUT_PROTOCOL_PARENT_OWNS_TRAPS:-0} == 1 ]]" in helper
+    assert "SCOUT_SMOKE_HELPER_DEFINITIONS_ONLY" in helper
     assert "declare -F terminal_cleanup >/dev/null || exit 2" in helper
     assert "trap cleanup EXIT" not in helper
+    assert "SCOUT_SMOKE_STAGE=native_smoke" in helper
+    assert "write_pre_phase_terminal" in helper
+    assert (
+        'export PYTHONPATH="$CCA_BUNDLE_ROOT/vendor/agentdojo/src:'
+        '$CCA_BUNDLE_ROOT/src:$CCA_BUNDLE_ROOT/scripts"'
+    ) in wrapper
+    assert wrapper.count("for _ in {1..10}; do") >= 4
+    assert "local killer=" not in wrapper
     assert hashlib.sha256(generic).hexdigest() == (
         "1e2caa7bd21310f7ce04af46607ad0e077abb56f2ba117691f5ee466a584ee1a"
     )

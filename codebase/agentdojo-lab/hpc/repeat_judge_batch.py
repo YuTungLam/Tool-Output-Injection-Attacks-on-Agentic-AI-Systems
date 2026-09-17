@@ -35,12 +35,54 @@ REPEAT_REQUEST_LIMIT = 9
 TOTAL_REQUEST_LIMIT = 17
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 MAX_MODELS_RESPONSE_BYTES = 1024 * 1024
+NATIVE_SMOKE_LOCAL_DEPENDENCIES = frozenset(
+    {
+        "src/agentdojo_lab/groq_adapter.py",
+        "src/agentdojo_lab/html_report.py",
+        "src/agentdojo_lab/inspection.py",
+        "src/agentdojo_lab/observation.py",
+        "src/agentdojo_lab/offline.py",
+        "src/agentdojo_lab/pacing.py",
+        "src/agentdojo_lab/providers.py",
+        "src/agentdojo_lab/recording.py",
+        "src/agentdojo_lab/runner.py",
+        "src/agentdojo_lab/templates/agent_flow.js",
+        "src/agentdojo_lab/templates/agent_flow.svg",
+        "src/agentdojo_lab/templates/run_report.html",
+        "upstream.json",
+        "vendor/agentdojo/pyproject.toml",
+        "vendor/agentdojo/src/agentdojo/__init__.py",
+    }
+)
+PINNED_AGENTDOJO_RUNTIME_FILE_COUNT = 113
+PINNED_AGENTDOJO_RUNTIME_TREE_SHA256 = (
+    "4c58924aeb917f1daf29a4fcb11d79e716af8baf7266b73c592b39aa93a4edd7"
+)
+PANEL_IMPLEMENTATION_FILES = frozenset(
+    {
+        "scripts/run_scout_repeat_judge.py",
+        "src/agentdojo_lab/__init__.py",
+        "src/agentdojo_lab/causal_replay.py",
+        "src/agentdojo_lab/causal_v2.py",
+        "src/agentdojo_lab/causal_v2_audit.py",
+        "src/agentdojo_lab/counterfactual.py",
+        "src/agentdojo_lab/counterfactual_audit.py",
+        "src/agentdojo_lab/evaluation_review.py",
+        "src/agentdojo_lab/html_report.py",
+        "src/agentdojo_lab/inspection.py",
+        "src/agentdojo_lab/judgment_formats.py",
+        "src/agentdojo_lab/profiles.py",
+        "src/agentdojo_lab/providers.py",
+        "src/agentdojo_lab/scout_repeat_judge.py",
+    }
+)
 REQUIRED_BUNDLE_FILES = {
     "configs/local_scout.toml",
     "configs/scout_repeat_judge_v1.json",
     "hpc/native_smoke.py",
     "hpc/preflight.py",
     "hpc/repeat_judge_batch.py",
+    "hpc/scout-smoke-content-composition-base.bash",
     "hpc/scout-smoke-repeat-judge.sbatch",
     "hpc/scout-smoke.sbatch",
     "hpc/smoke.py",
@@ -61,7 +103,7 @@ REQUIRED_BUNDLE_FILES = {
     "src/agentdojo_lab/providers.py",
     "src/agentdojo_lab/scout_repeat_judge.py",
     "uv.lock",
-}
+} | NATIVE_SMOKE_LOCAL_DEPENDENCIES
 
 
 def canonical(value: object) -> bytes:
@@ -149,6 +191,53 @@ def parse_manifest(path: Path) -> dict[str, str]:
     return entries
 
 
+def native_smoke_dependency_files(root: Path) -> frozenset[str]:
+    """Return the complete frozen source closure needed by native_smoke.py."""
+    root = physical_directory(root, "native-smoke bundle root")
+    missing_local = {
+        relative
+        for relative in NATIVE_SMOKE_LOCAL_DEPENDENCIES
+        if not (root / relative).is_file()
+    }
+    if missing_local:
+        raise ValueError(
+            "Submission bundle lacks the complete native-smoke dependency closure: "
+            f"{sorted(missing_local)!r}"
+        )
+
+    vendor_root = root / "vendor/agentdojo/src/agentdojo"
+    metadata = root / "vendor/agentdojo/pyproject.toml"
+    vendor_files = [
+        metadata,
+        *sorted(
+            path
+            for path in vendor_root.rglob("*")
+            if path.is_file()
+            and not path.is_symlink()
+            and "__pycache__" not in path.parts
+            and path.suffix in {".py", ".txt", ".yaml"}
+        ),
+    ]
+    vendor_receipts = {
+        str(physical_file(path, "pinned AgentDojo runtime source").relative_to(root)): digest(path)
+        for path in vendor_files
+    }
+    runtime_tree_sha256 = hashlib.sha256(canonical(vendor_receipts)).hexdigest()
+    if (
+        len(vendor_receipts) != PINNED_AGENTDOJO_RUNTIME_FILE_COUNT
+        or runtime_tree_sha256 != PINNED_AGENTDOJO_RUNTIME_TREE_SHA256
+    ):
+        raise ValueError(
+            "Submission bundle lacks the complete pinned AgentDojo runtime source tree"
+        )
+    return NATIVE_SMOKE_LOCAL_DEPENDENCIES | frozenset(vendor_receipts)
+
+
+def required_bundle_files(root: Path) -> frozenset[str]:
+    """Return every protocol and native-smoke source required when freezing a bundle."""
+    return frozenset(REQUIRED_BUNDLE_FILES) | native_smoke_dependency_files(root)
+
+
 def validate_bundle(bundle: Path, manifest: Path, manifest_sha256: str) -> dict:
     bundle = physical_directory(bundle, "submission bundle")
     manifest = physical_file(manifest, "submission manifest")
@@ -161,7 +250,7 @@ def validate_bundle(bundle: Path, manifest: Path, manifest_sha256: str) -> dict:
     actual.pop("submission-sha256.txt", None)
     if entries != actual:
         raise ValueError("Submission manifest does not exactly bind the copied bundle")
-    missing = REQUIRED_BUNDLE_FILES - set(entries)
+    missing = required_bundle_files(bundle) - set(entries)
     if missing:
         raise ValueError(f"Submission bundle lacks required runtime files: {sorted(missing)!r}")
     return {
@@ -251,11 +340,7 @@ def validate_plan_only(folder: Path, bundle: Path, runner: Path, config: Path) -
     }:
         raise ValueError("Plan-only transport policy is not the frozen direct loopback policy")
     implementation = plan.get("implementation_hashes", {})
-    expected_implementation = {
-        key: digest(bundle / key)
-        for key in REQUIRED_BUNDLE_FILES
-        if key.startswith("src/agentdojo_lab/") or key == "scripts/run_scout_repeat_judge.py"
-    }
+    expected_implementation = {key: digest(bundle / key) for key in PANEL_IMPLEMENTATION_FILES}
     expected_implementation["protocol_config"] = digest(config)
     if implementation != expected_implementation:
         raise ValueError("Runner implementation inventory differs from the copied bundle")

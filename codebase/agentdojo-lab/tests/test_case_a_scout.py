@@ -213,6 +213,10 @@ def test_frozen_bundle_verifies_without_live_repo_or_vendor_git(tmp_path):
     assert frozen_binding["mode"] == "case_a"
     assert frozen_binding["source_files"] == len(plan["source_hashes"])
     assert frozen_binding["upstream"] == plan["upstream"]
+    assert frozen_binding["import_roots"] == {
+        "agentdojo": str(bundle / "vendor/agentdojo/src/agentdojo"),
+        "agentdojo_lab": str(bundle / "src/agentdojo_lab"),
+    }
 
     linked = bundle / "src/agentdojo_lab/runner.py"
     linked.unlink()

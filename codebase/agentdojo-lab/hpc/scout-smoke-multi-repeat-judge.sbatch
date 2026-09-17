@@ -58,7 +58,8 @@ read -r MRJ_ACTUAL_MANIFEST_SHA256 _ < <(sha256sum -- "$MRJ_MANIFEST")
 (cd -- "$MRJ_BUNDLE_ROOT" && sha256sum --check --strict --status submission-sha256.txt)
 cmp --silent -- "$MRJ_EXECUTED_WRAPPER" "$MRJ_CANONICAL_WRAPPER" || exit 2
 [[ "$SCOUT_MULTI_REPEAT_RUNNER" == "$MRJ_RUNNER" && "$SCOUT_MULTI_REPEAT_CONFIG" == "$MRJ_CONFIG" ]] || exit 2
-[[ -x "$SCOUT_LAB_PYTHON" && -f "$MRJ_BATCH" && -f "$MRJ_RUNNER" && -f "$MRJ_CONFIG" ]] || exit 2
+[[ -x "$SCOUT_LAB_PYTHON" && -f "$MRJ_BATCH" && -f "$MRJ_RUNNER" && -f "$MRJ_CONFIG" \
+    && -f "$MRJ_HPC_DIR/scout-smoke-content-composition-base.bash" ]] || exit 2
 for path in "$SCOUT_RUN_DIR" "$SCOUT_MULTI_REPEAT_PLAN_DIR" "$SCOUT_MULTI_REPEAT_OUTPUT"; do
     [[ "$path" == /* && ! -e "$path" && ! -L "$path" ]] || exit 2
 done
@@ -66,37 +67,18 @@ done
     && "$SCOUT_RUN_DIR" != "$SCOUT_MULTI_REPEAT_OUTPUT" \
     && "$SCOUT_MULTI_REPEAT_PLAN_DIR" != "$SCOUT_MULTI_REPEAT_OUTPUT" ]] || exit 2
 
-export PYTHONPATH="$MRJ_BUNDLE_ROOT/src:$MRJ_BUNDLE_ROOT/scripts"
+export PYTHONPATH="$MRJ_BUNDLE_ROOT/vendor/agentdojo/src:$MRJ_BUNDLE_ROOT/src:$MRJ_BUNDLE_ROOT/scripts"
 export PYTHONDONTWRITEBYTECODE=1
 unset LOCAL_LLM_API_KEY APPTAINERENV_VLLM_API_KEY GROQ_API_KEY
+SCOUT_SMOKE_HELPER_DEFINITIONS_ONLY=1
+source "$MRJ_HPC_DIR/scout-smoke-content-composition-base.bash"
+unset SCOUT_SMOKE_HELPER_DEFINITIONS_ONLY
+declare -F write_pre_phase_terminal >/dev/null || exit 2
 
-# Generate and validate the exact request plan without transport before loading Scout.
-(cd -- "$MRJ_BUNDLE_ROOT" && "$SCOUT_LAB_PYTHON" "$MRJ_RUNNER" \
-    --config "$MRJ_CONFIG" --output "$SCOUT_MULTI_REPEAT_PLAN_DIR")
 MRJ_PRE_SMOKE="${SCOUT_RUN_DIR}.multi-repeat-judge-pre-smoke.json"
 MRJ_PHASE="${SCOUT_RUN_DIR}.multi-repeat-judge-phase.json"
 [[ ! -e "$MRJ_PRE_SMOKE" && ! -e "$MRJ_PHASE" ]] || exit 2
-"$SCOUT_LAB_PYTHON" "$MRJ_BATCH" validate \
-    --output "$MRJ_PRE_SMOKE" --bundle "$MRJ_BUNDLE_ROOT" \
-    --manifest "$MRJ_MANIFEST" --manifest-sha256 "$SCOUT_HPC_MANIFEST_SHA256" \
-    --site "$MRJ_SITE_FILE" --site-sha256 "$MRJ_SITE_SHA256" \
-    --executed-wrapper "$MRJ_EXECUTED_WRAPPER" --plan-dir "$SCOUT_MULTI_REPEAT_PLAN_DIR" \
-    --smoke-dir "$SCOUT_RUN_DIR" --live-dir "$SCOUT_MULTI_REPEAT_OUTPUT" \
-    --runner "$MRJ_RUNNER" --config "$MRJ_CONFIG"
-
-# Source the frozen generic smoke wrapper. Its EXIT trap stays dormant at EOF,
-# leaving its authenticated server alive for the outer protocol.
-export SCOUT_HPC_DIR="$MRJ_HPC_DIR"
-export SCOUT_NATIVE_SMOKE=1
-export SCOUT_PORT=8000
-unset SCOUT_SITE_FILE SCOUT_SITE_SHA256
-source "$MRJ_HPC_DIR/scout-smoke.sbatch"
-if [[ ! ${SCOUT_SERVER_PID:-} =~ ^[0-9]+$ ]] || (( SCOUT_SERVER_PID <= 1 )); then
-    SCOUT_SERVER_PID=''
-    exit 2
-fi
-export SCOUT_SERVER_PID
-
+SCOUT_SERVER_PID=''
 MRJ_RUNNER_PID=0
 MRJ_RUNNER_STOPPED=true
 MRJ_RUNNER_TERM=false
@@ -111,66 +93,72 @@ MRJ_CLEANUP="$SCOUT_RUN_DIR/multi-repeat-judge-cleanup.json"
 MRJ_FINAL="$SCOUT_RUN_DIR/multi-repeat-judge-batch-summary.json"
 MRJ_RUNNER_STOP_KILL_MARKER="$SCOUT_RUN_DIR/multi-repeat-judge-cleanup-runner-kill"
 MRJ_SERVER_STOP_KILL_MARKER="$SCOUT_RUN_DIR/multi-repeat-judge-cleanup-server-kill"
+MRJ_WRAPPER_STAGE=plan_only
+SCOUT_SMOKE_STAGE=''
 
 stop_runner() {
     if [[ "$MRJ_RUNNER_PID" =~ ^[0-9]+$ ]] && (( MRJ_RUNNER_PID > 1 )) \
         && kill -0 -- "-$MRJ_RUNNER_PID" 2>/dev/null; then
-        kill -TERM -- "-$MRJ_RUNNER_PID" 2>/dev/null || true
-        MRJ_RUNNER_TERM=true
-        (
-            sleep 10
-            if kill -KILL -- "-$MRJ_RUNNER_PID" 2>/dev/null; then
-                : > "$MRJ_RUNNER_STOP_KILL_MARKER"
-            fi
-        ) &
-        local killer=$!
-        wait "$MRJ_RUNNER_PID" 2>/dev/null || true
-        kill "$killer" 2>/dev/null || true
-        wait "$killer" 2>/dev/null || true
+        if kill -TERM -- "-$MRJ_RUNNER_PID" 2>/dev/null; then
+            MRJ_RUNNER_TERM=true
+        fi
+        for _ in {1..10}; do
+            kill -0 -- "-$MRJ_RUNNER_PID" 2>/dev/null || break
+            sleep 1
+        done
     fi
-    [[ -e "$MRJ_RUNNER_STOP_KILL_MARKER" ]] && MRJ_RUNNER_KILL=true
     if [[ "$MRJ_RUNNER_PID" =~ ^[0-9]+$ ]] && (( MRJ_RUNNER_PID > 1 )) \
         && kill -0 -- "-$MRJ_RUNNER_PID" 2>/dev/null; then
-        kill -KILL -- "-$MRJ_RUNNER_PID" 2>/dev/null || true
-        MRJ_RUNNER_KILL=true
-        wait "$MRJ_RUNNER_PID" 2>/dev/null || true
+        if kill -KILL -- "-$MRJ_RUNNER_PID" 2>/dev/null; then
+            MRJ_RUNNER_KILL=true
+            : > "$MRJ_RUNNER_STOP_KILL_MARKER"
+        fi
+        for _ in {1..10}; do
+            kill -0 -- "-$MRJ_RUNNER_PID" 2>/dev/null || break
+            sleep 1
+        done
     fi
     if [[ "$MRJ_RUNNER_PID" =~ ^[0-9]+$ ]] && (( MRJ_RUNNER_PID > 1 )) \
         && kill -0 -- "-$MRJ_RUNNER_PID" 2>/dev/null; then
         MRJ_RUNNER_STOPPED=false
     else
         MRJ_RUNNER_STOPPED=true
+        if [[ "$MRJ_RUNNER_PID" =~ ^[0-9]+$ ]] && (( MRJ_RUNNER_PID > 1 )); then
+            wait "$MRJ_RUNNER_PID" 2>/dev/null || true
+        fi
     fi
 }
 
 stop_server() {
     if [[ "$SCOUT_SERVER_PID" =~ ^[0-9]+$ ]] && (( SCOUT_SERVER_PID > 1 )) \
         && kill -0 -- "-$SCOUT_SERVER_PID" 2>/dev/null; then
-        kill -TERM -- "-$SCOUT_SERVER_PID" 2>/dev/null || true
-        MRJ_SERVER_TERM=true
-        (
-            sleep 10
-            if kill -KILL -- "-$SCOUT_SERVER_PID" 2>/dev/null; then
-                : > "$MRJ_SERVER_STOP_KILL_MARKER"
-            fi
-        ) &
-        local killer=$!
-        wait "$SCOUT_SERVER_PID" 2>/dev/null || true
-        kill "$killer" 2>/dev/null || true
-        wait "$killer" 2>/dev/null || true
+        if kill -TERM -- "-$SCOUT_SERVER_PID" 2>/dev/null; then
+            MRJ_SERVER_TERM=true
+        fi
+        for _ in {1..10}; do
+            kill -0 -- "-$SCOUT_SERVER_PID" 2>/dev/null || break
+            sleep 1
+        done
     fi
-    [[ -e "$MRJ_SERVER_STOP_KILL_MARKER" ]] && MRJ_SERVER_KILL=true
     if [[ "$SCOUT_SERVER_PID" =~ ^[0-9]+$ ]] && (( SCOUT_SERVER_PID > 1 )) \
         && kill -0 -- "-$SCOUT_SERVER_PID" 2>/dev/null; then
-        kill -KILL -- "-$SCOUT_SERVER_PID" 2>/dev/null || true
-        MRJ_SERVER_KILL=true
-        wait "$SCOUT_SERVER_PID" 2>/dev/null || true
+        if kill -KILL -- "-$SCOUT_SERVER_PID" 2>/dev/null; then
+            MRJ_SERVER_KILL=true
+            : > "$MRJ_SERVER_STOP_KILL_MARKER"
+        fi
+        for _ in {1..10}; do
+            kill -0 -- "-$SCOUT_SERVER_PID" 2>/dev/null || break
+            sleep 1
+        done
     fi
     if [[ "$SCOUT_SERVER_PID" =~ ^[0-9]+$ ]] && (( SCOUT_SERVER_PID > 1 )) \
         && kill -0 -- "-$SCOUT_SERVER_PID" 2>/dev/null; then
         MRJ_SERVER_STOPPED=false
     else
         MRJ_SERVER_STOPPED=true
+        if [[ "$SCOUT_SERVER_PID" =~ ^[0-9]+$ ]] && (( SCOUT_SERVER_PID > 1 )); then
+            wait "$SCOUT_SERVER_PID" 2>/dev/null || true
+        fi
     fi
 }
 
@@ -181,6 +169,7 @@ terminal_cleanup() {
     [[ -n "$MRJ_WATCHDOG_PID" ]] && kill "$MRJ_WATCHDOG_PID" 2>/dev/null
     [[ -n "$MRJ_WATCHDOG_PID" ]] && wait "$MRJ_WATCHDOG_PID" 2>/dev/null
     stop_runner
+    mkdir -p -- "$(dirname -- "$MRJ_EXIT_FILE")"
     [[ -e "$MRJ_EXIT_FILE" ]] || printf '%s\n' "$status" > "$MRJ_EXIT_FILE"
     stop_server
     if [[ ! -e "$MRJ_CLEANUP" ]]; then
@@ -192,12 +181,20 @@ terminal_cleanup() {
             --runner-kill "$MRJ_RUNNER_KILL" --runner-stopped "$MRJ_RUNNER_STOPPED"
     fi
     if [[ ! -e "$MRJ_FINAL" ]]; then
-        "$SCOUT_LAB_PYTHON" "$MRJ_BATCH" finalize \
-            --output "$MRJ_FINAL" --phase-path "$MRJ_PHASE" \
-            --pre-smoke-path "$MRJ_PRE_SMOKE" --smoke-path "$SCOUT_RUN_DIR/smoke.json" \
-            --native-path "$SCOUT_RUN_DIR/native-smoke.json" \
-            --server-check-path "$MRJ_SERVER_CHECK" --cleanup-path "$MRJ_CLEANUP" \
-            --runner-exit-path "$MRJ_EXIT_FILE" --live-dir "$SCOUT_MULTI_REPEAT_OUTPUT"
+        if [[ -e "$MRJ_PHASE" ]]; then
+            "$SCOUT_LAB_PYTHON" "$MRJ_BATCH" finalize \
+                --output "$MRJ_FINAL" --phase-path "$MRJ_PHASE" \
+                --pre-smoke-path "$MRJ_PRE_SMOKE" --smoke-path "$SCOUT_RUN_DIR/smoke.json" \
+                --native-path "$SCOUT_RUN_DIR/native-smoke.json" \
+                --server-check-path "$MRJ_SERVER_CHECK" --cleanup-path "$MRJ_CLEANUP" \
+                --runner-exit-path "$MRJ_EXIT_FILE" --live-dir "$SCOUT_MULTI_REPEAT_OUTPUT"
+        else
+            write_pre_phase_terminal "$MRJ_FINAL" \
+                'nesi-scout-smoke-multi-repeat-judge-v1' \
+                "${SCOUT_SMOKE_STAGE:-$MRJ_WRAPPER_STAGE}" "$status" \
+                "$SCOUT_RUN_DIR/smoke.json" "$SCOUT_RUN_DIR/native-smoke.json" \
+                "$MRJ_PRE_SMOKE" "$MRJ_CLEANUP" "$MRJ_EXIT_FILE" 36 44 false
+        fi
         [[ $? == 0 ]] || { [[ "$status" == 0 ]] && status=1; }
     fi
     unset LOCAL_LLM_API_KEY APPTAINERENV_VLLM_API_KEY GROQ_API_KEY
@@ -207,7 +204,37 @@ trap terminal_cleanup EXIT
 trap 'exit 143' TERM
 trap 'exit 130' INT
 
+# Generate and validate the exact request plan without transport before loading Scout.
+MRJ_WRAPPER_STAGE=plan_only
+(cd -- "$MRJ_BUNDLE_ROOT" && "$SCOUT_LAB_PYTHON" "$MRJ_RUNNER" \
+    --config "$MRJ_CONFIG" --output "$SCOUT_MULTI_REPEAT_PLAN_DIR")
+MRJ_WRAPPER_STAGE=pre_smoke_validation
+"$SCOUT_LAB_PYTHON" "$MRJ_BATCH" validate \
+    --output "$MRJ_PRE_SMOKE" --bundle "$MRJ_BUNDLE_ROOT" \
+    --manifest "$MRJ_MANIFEST" --manifest-sha256 "$SCOUT_HPC_MANIFEST_SHA256" \
+    --site "$MRJ_SITE_FILE" --site-sha256 "$MRJ_SITE_SHA256" \
+    --executed-wrapper "$MRJ_EXECUTED_WRAPPER" --plan-dir "$SCOUT_MULTI_REPEAT_PLAN_DIR" \
+    --smoke-dir "$SCOUT_RUN_DIR" --live-dir "$SCOUT_MULTI_REPEAT_OUTPUT" \
+    --runner "$MRJ_RUNNER" --config "$MRJ_CONFIG"
+
+# Keep this protocol's terminal trap installed throughout server startup and
+# both smoke gates; the shared helper leaves the authenticated server alive.
+export SCOUT_HPC_DIR="$MRJ_HPC_DIR"
+export SCOUT_NATIVE_SMOKE=1
+export SCOUT_PORT=8000
+export SCOUT_PROTOCOL_PARENT_OWNS_TRAPS=1
+unset SCOUT_SITE_FILE SCOUT_SITE_SHA256
+MRJ_WRAPPER_STAGE=smoke
+source "$MRJ_HPC_DIR/scout-smoke-content-composition-base.bash"
+if [[ ! ${SCOUT_SERVER_PID:-} =~ ^[0-9]+$ ]] || (( SCOUT_SERVER_PID <= 1 )); then
+    SCOUT_SERVER_PID=''
+    exit 2
+fi
+export SCOUT_SERVER_PID
+SCOUT_SMOKE_STAGE=''
+
 # Require one exact current Slurm record and at least 7,800 seconds remaining.
+MRJ_WRAPPER_STAGE=phase_reservation
 MRJ_TIME_RECORD=''
 if command -v squeue >/dev/null; then
     MRJ_TIME_RECORD=$(squeue -h -j "$SLURM_JOB_ID" -o '%i|%L|%l' 2>/dev/null) || MRJ_TIME_RECORD=''
@@ -237,6 +264,7 @@ fi
     --output "$MRJ_SERVER_CHECK" --base-url 'http://127.0.0.1:8000/v1' \
     --server-pid "$SCOUT_SERVER_PID" --job-id "$SLURM_JOB_ID"
 
+MRJ_WRAPPER_STAGE=repeat_judge
 set +e
 cd -- "$MRJ_BUNDLE_ROOT"
 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 \

@@ -1,5 +1,21 @@
 # Project context: Tool Output Injection Attacks
 
+> **Nine-job terminal assessment — 2026-09-17:** All queued Scout jobs are
+> terminal. Cases A, B, C, C2, D and E reached their scientific protocols and
+> retain 62 generation attempts in total. A is a terminal-accepted no-exposure
+> observation and supports no attack-effect inference. C/C2 stop before Session B
+> under their prospective ordering/cardinality gates. E recorded all-false outcomes
+> in all three terminal-bound blocks. None is interpretation-eligible because
+> utility failed. B and D have complete tracked arm
+> summaries, while their terminal collectors failed to bind those summaries, so
+> stronger claims remain unavailable. Repeat/judge, multi-repeat/judge and the
+> content-composition panel each stopped after synthetic smoke and before any
+> protocol request because their frozen bundles omitted the native-smoke import
+> closure. The [terminal analysis](codebase/agentdojo-lab/reports/20260917-scout-terminal-analysis-v1/README.md)
+> and [request-free terminal panel](codebase/agentdojo-lab/reports/20260917-scout-terminal-panel-v2/index.html)
+> preserve every failure and unknown. Experimental progress remains **4/13
+> (31%)**; corrected, separately versioned bundles are the next execution step.
+
 > **Meeting-packet assessment — 2026-09-16:** The
 > [HTML packet](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/index.html)
 > contains all eight Scout session outcomes, observed paths, a tracer-coverage
@@ -12,7 +28,7 @@
 > Case A cleanup diagnostics, Case B blocker reporting and Case C per-call
 > reporting are now repaired prospectively. Saved outcomes and counts are unchanged.
 
-Last updated: 2026-09-17 (report presentation). This is the durable project brief for
+Last updated: 2026-09-17 (nine-job terminal assessment). This is the durable project brief for
 the researcher, supervisor, and future Codex sessions. It records the user's
 initial idea and supervisor guidance, followed by a separately identified
 repository assessment. Update the current-state sections as work progresses;

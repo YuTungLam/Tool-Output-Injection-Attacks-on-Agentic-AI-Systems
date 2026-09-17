@@ -1,5 +1,19 @@
 # Next phase: concrete propagation case studies on NeSI
 
+> **Nine-job terminal assessment — 2026-09-17:** All nine queued jobs reached a
+> Slurm terminal state. Six case protocols retain 62 scientific requests; three
+> repeat/argument panels made zero protocol requests because an incomplete frozen
+> import closure stopped native smoke. A is a terminal-accepted no-exposure
+> observation that supports no attack-effect inference. C/C2 remain blocked before
+> a fresh Session B. E produced all-false outcomes and 0/3 matching joint blocks;
+> all three blocks are interpretation-ineligible because utility failed. B/D
+> tracked arm patterns remain descriptive because their terminal
+> summary binding failed. See the [terminal analysis](codebase/agentdojo-lab/reports/20260917-scout-terminal-analysis-v1/README.md)
+> and [terminal panel](codebase/agentdojo-lab/reports/20260917-scout-terminal-panel-v2/index.html).
+> No old failure was replaced. The checklist remains **4/13 (31%)**; the immediate
+> plan is a corrected 9-call canary followed conditionally by the 36-call and
+> 42-call panels.
+
 > **Meeting-packet assessment — 2026-09-16:** The
 > [HTML packet](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/index.html)
 > contains all eight Scout session outcomes, observed paths, a tracer-coverage
@@ -13,8 +27,8 @@
 > reporting are now repaired prospectively. Saved outcomes and counts are unchanged.
 
 Plan date: 2026-09-14; checklist reviewed 2026-09-16; run status updated
-2026-09-16 (NeSI local date). Status: **implementation and live Scout smoke
-complete; eight research sessions analysed and the meeting packet produced**.
+2026-09-17 (NeSI local date). Status: **all nine queued jobs assessed; corrected
+follow-up bundle validation in progress**.
 The meeting packet and descriptive coverage assessment are now complete.
 This plan follows the researcher's new supervisor guidance in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 

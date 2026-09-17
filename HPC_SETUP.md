@@ -1,5 +1,17 @@
 # NeSI setup and local inference plan
 
+> **Nine-job terminal assessment — 2026-09-17:** Jobs `9123394`, `9123398`,
+> `9123399`, `9126739`, `9126740`, `9126776`, `9129880`, `9129940` and `9135588`
+> are terminal. Every job received four A100s; their elapsed times were 8m09s to
+> 15m57s. A/B/C/C2/D/E reached the case layer and retain 62 scientific requests.
+> Repeat, multi-repeat and content-composition made zero scientific requests: all
+> three passed four synthetic requests, then their partial frozen Python packages
+> shadowed the installed package and could not import `agentdojo_lab.runner`.
+> This is an immutable-bundle defect rather than a GPU/model failure. Fresh bundles
+> must include the complete native-smoke source tree, bind a pristine preparation,
+> verify imports from the copied tree, and preserve terminal evidence for failures
+> before the protocol phase. See the [terminal analysis](codebase/agentdojo-lab/reports/20260917-scout-terminal-analysis-v1/README.md).
+
 > **Meeting-packet assessment — 2026-09-16:** The
 > [HTML packet](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/index.html)
 > contains all eight Scout session outcomes, observed paths, a tracer-coverage
@@ -12,7 +24,7 @@
 > Case A cleanup diagnostics, Case B blocker reporting and Case C per-call
 > reporting are now repaired prospectively. Saved outcomes and counts are unchanged.
 
-Last updated: **2026-09-16 UTC**. The CPU lab and pinned MiniLM files have been
+Last updated: **2026-09-17 UTC**. The CPU lab and pinned MiniLM files have been
 restored, and the offline native-tool fixture passes. Hugging Face login and
 Scout gated-file access are verified. Local transport is implemented; the pinned
 checkpoint is fully downloaded and verified. The first serving-container build

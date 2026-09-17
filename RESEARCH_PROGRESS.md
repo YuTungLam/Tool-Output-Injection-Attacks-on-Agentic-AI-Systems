@@ -1,5 +1,18 @@
 # Research progress and run results
 
+> **Nine-job terminal assessment — 2026-09-17:** All nine queued Scout jobs are
+> terminal. A/B/C/C2/D/E retain **62 research requests**; repeat, multi-repeat and
+> content-composition retain **0 protocol requests** because native smoke failed
+> on an incomplete frozen import closure after 4/4 synthetic requests. This is
+> useful infrastructure evidence, not three scientific negative results. A is a
+> terminal-accepted no-exposure observation that supports no attack-effect
+> inference; C/C2 never reached Session B; E observed all-false outcomes in 3/3
+> blocks, all interpretation-ineligible because utility failed. B/D have
+> descriptive tracked summaries but incomplete terminal binding. The full [English analysis and
+> flowchart](codebase/agentdojo-lab/reports/20260917-scout-terminal-analysis-v1/README.md)
+> and [HTML panel](codebase/agentdojo-lab/reports/20260917-scout-terminal-panel-v2/index.html)
+> preserve failures and unknowns. Experimental progress remains **4/13 (31%)**.
+
 > **Meeting-packet assessment — 2026-09-16:** The
 > [HTML packet](codebase/agentdojo-lab/reports/20260916-meeting-packet-v1/index.html)
 > contains all eight Scout session outcomes, observed paths, a tracer-coverage
@@ -12,7 +25,7 @@
 > Case A cleanup diagnostics, Case B blocker reporting and Case C per-call
 > reporting are now repaired prospectively. Saved outcomes and counts are unchanged.
 
-Status date: 2026-09-16 (NeSI local date). This is a checked snapshot, not a live scheduler display.
+Status date: 2026-09-17 (NeSI local date). This is a checked snapshot, not a live scheduler display.
 The [supervisor checklist](RESEARCH_PLAN.md#supervisor-checklist--checked-2026-09-16)
 is the source of the completion count. Historical ledgers keep their own scope.
 
