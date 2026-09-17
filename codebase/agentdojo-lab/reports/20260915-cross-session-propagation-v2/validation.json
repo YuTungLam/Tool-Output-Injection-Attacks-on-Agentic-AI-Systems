@@ -1,0 +1,66 @@
+{
+  "protocol": "offline-cross-session-propagation-v2-validation-v1",
+  "validated_at_utc": "2026-09-15T03:21:05.633233+00:00",
+  "status": "passed_engineering_control",
+  "command": ".venv/bin/python scripts/report_cross_session_pair.py --clean-a runs/20260915-cross-session-report-source-v1/neutralized/A --clean-b runs/20260915-cross-session-report-source-v1/neutralized/B --attacked-a runs/20260915-cross-session-report-source-v1/original/A --attacked-b runs/20260915-cross-session-report-source-v1/original/B --clean-label neutralized-control --attacked-label marker-control --output reports/20260915-cross-session-propagation-v2",
+  "report": {
+    "path": "/nesi/project/uoa04799/dyu848/repos/Tool-Output-Injection-Attacks-on-Agentic-AI-Systems/codebase/agentdojo-lab/reports/20260915-cross-session-propagation-v2/cross-session.json",
+    "sha256": "e5986b24c126641617ff1c7d95e412d401bea5a51f9019d7a4e06e021c6660df"
+  },
+  "html": {
+    "path": "/nesi/project/uoa04799/dyu848/repos/Tool-Output-Injection-Attacks-on-Agentic-AI-Systems/codebase/agentdojo-lab/reports/20260915-cross-session-propagation-v2/index.html",
+    "sha256": "1af7fd7d367d910b914c2268ccc63b7f86f11d9b1bac294d246eb79d84f01423"
+  },
+  "checks": {
+    "neutralized-control": {
+      "graph_a": "validated",
+      "graph_b": "validated",
+      "graph_a_to_b": "validated",
+      "fresh_b_history": "observed_empty",
+      "path_status": "all_segments_covered",
+      "covered_segments": [
+        8
+      ],
+      "missing_segments": [],
+      "causal_influence": "not_assessed",
+      "attack_success": "unknown"
+    },
+    "marker-control": {
+      "graph_a": "validated",
+      "graph_b": "validated",
+      "graph_a_to_b": "validated",
+      "fresh_b_history": "observed_empty",
+      "path_status": "all_segments_covered",
+      "covered_segments": [
+        8
+      ],
+      "missing_segments": [],
+      "causal_influence": "not_assessed",
+      "attack_success": "unknown"
+    }
+  },
+  "verification": {
+    "root_selected_tests": "74 passed in 40.31s",
+    "independent_review_mutation_classes": 22,
+    "independent_review_result": "all rejected or downgraded; no P1/P2 residual findings",
+    "ruff": "passed",
+    "python_compile": "passed",
+    "git_diff_check": "passed"
+  },
+  "real_llm_requests_started": 0,
+  "interpretation": "Derived engineering control over existing offline exact-copy fixture. It validates typed recorded/candidate path coverage only; causal influence was not assessed and attack success remains unknown.",
+  "implementation": {
+    "src/agentdojo_lab/cross_session_report.py": {
+      "path": "/nesi/project/uoa04799/dyu848/repos/Tool-Output-Injection-Attacks-on-Agentic-AI-Systems/codebase/agentdojo-lab/src/agentdojo_lab/cross_session_report.py",
+      "sha256": "9addd82c68f050c3c4578a948e58dea6cfbbc83909037426bbfb083c0d3a60e7"
+    },
+    "scripts/report_cross_session_pair.py": {
+      "path": "/nesi/project/uoa04799/dyu848/repos/Tool-Output-Injection-Attacks-on-Agentic-AI-Systems/codebase/agentdojo-lab/scripts/report_cross_session_pair.py",
+      "sha256": "11e505404ff4551f0ed0bbba32ac0b2009aa65b5d0934137a1d8de794673b15c"
+    },
+    "tests/test_cross_session_report.py": {
+      "path": "/nesi/project/uoa04799/dyu848/repos/Tool-Output-Injection-Attacks-on-Agentic-AI-Systems/codebase/agentdojo-lab/tests/test_cross_session_report.py",
+      "sha256": "155dfa06523892b6469b4c1bcc4279ed55485e8da3f34dc019381be27522edd7"
+    }
+  }
+}

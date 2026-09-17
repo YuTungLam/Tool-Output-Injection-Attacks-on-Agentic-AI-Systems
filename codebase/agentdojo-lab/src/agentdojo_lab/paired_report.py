@@ -10,6 +10,9 @@ import hashlib
 import html
 import json
 import os
+import re
+import secrets
+from importlib.resources import files
 from pathlib import Path
 from urllib.parse import quote
 
@@ -365,7 +368,7 @@ def _page(result, records, output):
     sections = []
     for arm, record in zip(result["arms"], records, strict=True):
         name = arm["condition"]
-        report = Path(arm["path"]) / "report.html"
+        report = Path(arm.get("report_path", Path(arm["path"]) / "report.html"))
         report_link = "Per-run graph unavailable."
         if report.is_file():
             href = quote(Path(os.path.relpath(report, output)).as_posix(), safe="/")
@@ -399,7 +402,6 @@ def _page(result, records, output):
             f'<details id="{name}-{esc(e["event_id"], quote=True)}"><summary>'
             f"{esc(e['event_id'])} · {esc(e['event_type'])}</summary>{dump(e)}</details>"
             for e in record["events"]
-            if e.get("event_type") not in {"MODEL_REQUEST", "MODEL_RESPONSE"}
         )
         sections.append(
             f"<section><h2>{esc(name)}: {esc(arm['run_id'])}</h2><p>{report_link}</p>"
@@ -421,16 +423,37 @@ def _page(result, records, output):
             "sensitive_paths",
         )
     }
-    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
-<title>Clean and attacked trace pair</title><style>body{{font:16px/1.5 system-ui;max-width:1200px;margin:32px auto;padding:0 20px}}
-table{{border-collapse:collapse;width:100%}}td,th{{padding:8px;border:1px solid #999;text-align:left;vertical-align:top}}
-pre{{white-space:pre-wrap;overflow-wrap:anywhere}}summary{{cursor:pointer}}details{{margin:12px 0}}.table{{overflow-x:auto}}</style></head>
-<body><h1>Clean and attacked trace pair</h1><p>{esc(SCOPE)}</p>{dump(overview)}
-<p>Alignment: {esc(result["alignment"]["status"])}. {esc(result["alignment"]["rule"])}.
-Ambiguous rows show one possible alignment for inspection.</p><div class="table"><table><thead><tr>
-<th>Row</th><th>Alignment</th><th>Tool</th><th>Clean evidence</th><th>Attacked evidence</th><th>Argument changes</th>
-</tr></thead><tbody>{"".join(rows)}</tbody></table></div>{"".join(sections)}</body></html>"""
+    from agentdojo_lab.html_report import _escaped_json
+    from agentdojo_lab.paired_report_data import build_paired_view
+
+    view = build_paired_view(result, records)
+    for arm, model in zip(result["arms"], view["arms"], strict=True):
+        report = Path(arm.get("report_path", Path(arm["path"]) / "report.html"))
+        model["report_href"] = (
+            quote(Path(os.path.relpath(report, output)).as_posix(), safe="/")
+            if report.is_file() else None
+        )
+    legacy = (
+        "<h2>Original comparison and evidence</h2><p>" + esc(SCOPE) + "</p>"
+        + dump(overview)
+        + "<p>Alignment: " + esc(result["alignment"]["status"]) + ". "
+        + esc(result["alignment"]["rule"]) + ".</p>"
+        + '<div class="table"><table><thead><tr><th>Row</th><th>Alignment</th>'
+        + '<th>Tool</th><th>Clean evidence</th><th>Attacked evidence</th>'
+        + '<th>Argument changes</th></tr></thead><tbody>'
+        + "".join(rows) + "</tbody></table></div>" + "".join(sections)
+    )
+    templates = files("agentdojo_lab").joinpath("templates")
+    template = templates.joinpath("paired_report.html").read_text(encoding="utf-8")
+    # Replace trusted presentation assets before inserting inert recorded data.
+    template = template.replace(
+        "@@STYLE@@", templates.joinpath("paired_report.css").read_text(encoding="utf-8")
+    ).replace(
+        "@@SCRIPT@@", templates.joinpath("paired_report.js").read_text(encoding="utf-8")
+    ).replace("@@NONCE@@", secrets.token_urlsafe(24))
+    parts = {"VIEW": _escaped_json(view), "LEGACY": legacy}
+    return re.sub(r"@@(VIEW|LEGACY)@@", lambda match: parts[match[1]], template)
+
 
 
 def export_pair(clean: Path, attacked: Path, output: Path, *, sensitive_paths=None) -> dict:

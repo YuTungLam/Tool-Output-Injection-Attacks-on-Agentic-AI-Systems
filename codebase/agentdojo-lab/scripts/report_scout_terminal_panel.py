@@ -1,4 +1,4 @@
-"""Build a request-free JSON/HTML assessment of eight explicit Scout terminal inputs."""
+"""Build a request-free JSON/HTML assessment of nine explicit Scout terminal inputs."""
 
 from __future__ import annotations
 

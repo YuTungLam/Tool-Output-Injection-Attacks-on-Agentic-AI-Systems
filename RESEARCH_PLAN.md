@@ -761,3 +761,25 @@ and `75ae03a75014ded74b2f201e5a02023324a40564cf94d20d9d10e11d3dfc491a`.
 The previous eight jobs remained PENDING with 0:00 runtime and provisional Sep 17
 16:59, 19:00, 21:00 and 23:00 NZST estimates. Item 13 and the **4/13
 experimental, 16/25 overall** counts remain unchanged pending terminal evidence.
+
+## Graphical presentation milestone — 2026-09-17
+
+- [x] Replace the paired report's default JSON display with clickable clean and
+  attacked SVG paths, synchronized readable event details, word-level differences,
+  and separate source/exposure navigation.
+- [x] Rebuild the single-run template around an interactive recorded-event route
+  and readable cards; retain original evidence and metadata in disclosures.
+- [x] Generate the [visual library](codebase/agentdojo-lab/reports/visual-library-v1/index.html):
+  251 visual runs, four visual comparisons, and 138 clearly labeled archived reports.
+- [x] Verify related tests, escaping and alignment, original source hashes, browser
+  interaction and desktop/mobile layout. See the library's `inventory.json`,
+  `paired-refresh.json`, and `browser-verification.json` receipts.
+- [x] Record the reusable [visualization requirements](codebase/agentdojo-lab/PAIRED-REPORT-VISUALIZATION.md)
+  and [rebuild instructions](codebase/agentdojo-lab/VISUAL-REPORT-LIBRARY.md).
+
+These are presentation substeps, not extra experimental deliverables. The
+six additional completed run folders encountered during the snapshot are included
+for browsing; their scientific acceptance was not assessed here. No model or
+scheduler request was issued by the reporting work. Next action is to inspect
+the graphical views and separately review new terminal results against the frozen
+13-item ledger. This presentation checkpoint remains local and uncommitted.

@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "status": "passed_live_scout_integration",
+  "reviewed_at_utc": "2026-09-15T03:02:32Z",
+  "slurm": {
+    "job_id": "9039289",
+    "state": "COMPLETED",
+    "exit_code": "0:0",
+    "elapsed": "00:09:54",
+    "start": "2026-09-15 14:45 NZST",
+    "end": "2026-09-15 14:55 NZST",
+    "node": "mg15",
+    "allocation": {
+      "gpus": "4 x NVIDIA A100-SXM4-80GB",
+      "allocated_cpus": 96,
+      "requested_memory_gib": 320
+    }
+  },
+  "source": "/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-smoke-20260915-v2",
+  "bindings": {
+    "model_id": "meta-llama/Llama-4-Scout-17B-16E-Instruct",
+    "revision": "92f3b1597a195b523d8d9e5700e57e4fbb8f20d3",
+    "served_model": "llama-4-scout-local",
+    "container_sha256": "2e34131f9ef3257b67e628e735fa76dee506449152f3882bf50204c92e38b6c2",
+    "template_sha256": "524a672eb654846b9ba1ab8a59ad9c3a80e3ad035dd7d01f701c64a71a09385f",
+    "vllm": "0.29.0+cu129",
+    "cuda": "12.9",
+    "context_tokens": 8192
+  },
+  "synthetic_smoke": {
+    "status": "passed",
+    "readiness_poll_attempts": 104,
+    "requests_started": 4,
+    "request_ceiling": 4,
+    "stages": [
+      {"name": "single_tool", "status": "passed", "elapsed_seconds": 2.02374718291685},
+      {"name": "tool_result_round_trip", "status": "passed", "elapsed_seconds": 1.4604528588242829},
+      {"name": "parallel_tools", "status": "passed", "elapsed_seconds": 2.220409180969},
+      {"name": "no_tools_judge", "status": "passed", "elapsed_seconds": 3.45489993179217}
+    ]
+  },
+  "native_smoke": {
+    "status": "passed",
+    "task": "workspace user_task_0",
+    "native_requests_started": 3,
+    "request_ceiling": 4,
+    "task_count": 1,
+    "task_success_count": 1,
+    "evaluable_task_count": 1,
+    "recorded_events": 24,
+    "prompt_tokens": 14021,
+    "completion_tokens": 89,
+    "checks": {
+      "completed": true,
+      "native_utility_passed": true,
+      "one_evaluable_task": true,
+      "request_cap_respected": true,
+      "recording_complete": true,
+      "event_links_valid": true,
+      "native_tool_round_trip": true,
+      "html_exported": true,
+      "no_online_auditors": true
+    }
+  },
+  "combined_generation_requests": {
+    "started": 7,
+    "ceiling": 8
+  },
+  "evidence_sha256": {
+    "preflight.json": "cf6ac029df212ce19a9ab171b0e841e26b13423fa9d86a29588d2ff3c79465ea",
+    "container-runtime.json": "f239a98ceb184be2ff63eaafe68f5e40f46965b38b17b9cb49749d9237bd3f34",
+    "smoke.json": "d7c2b167ab7c1ebd014b16c6fb0cb195323535db2620a5ae921376dd2a287a48",
+    "native-smoke.json": "283361a3e17c8e98f0d71a28fc624be6910243f92e7b01cad5d7c7ac2c8d3192",
+    "job-exit-code.txt": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "scheduler-log": "31cf94502677f83157cfb228ec7ba7cb0dd33623d2aa0975b0ba844c2311fcca"
+  },
+  "interpretation": "Live Scout serving, tool-call formatting, structured judgment, and one benign AgentDojo task passed. This is infrastructure and integration evidence, not an attack trajectory or NeuroTaint accuracy result."
+}

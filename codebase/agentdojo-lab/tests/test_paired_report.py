@@ -191,7 +191,8 @@ def test_only_declared_security_paths_are_labelled_and_namespace_exemption_is_vi
 class Page(HTMLParser):
     def __init__(self):
         super().__init__()
-        self.tags, self.links, self.ids = [], [], set()
+        self.tags, self.links, self.ids, self.scripts = [], [], set(), []
+        self._script = False
 
     def handle_starttag(self, tag, attrs):
         self.tags.append(tag)
@@ -200,6 +201,16 @@ class Page(HTMLParser):
             self.ids.add(values["id"])
         if tag == "a":
             self.links.append(values["href"])
+        if tag == "script":
+            self._script = True
+
+    def handle_endtag(self, tag):
+        if tag == "script":
+            self._script = False
+
+    def handle_data(self, data):
+        if self._script:
+            self.scripts.append(data)
 
 
 def test_native_fixture_export_is_immutable_escaped_and_links_existing_graphs(tmp_path):
@@ -247,7 +258,21 @@ def test_native_fixture_export_is_immutable_escaped_and_links_existing_graphs(tm
     assert json.loads((output / "pair.json").read_text()) == result
     page = Page()
     page.feed((output / "index.html").read_text())
-    assert "script" not in page.tags
+    assert page.tags.count("script") == 2
+    assert "paired-event-data" in page.ids
+    assert "event-list" in page.ids and "event-comparison" in page.ids
+    rendered = (output / "index.html").read_text()
+    assert "Visual paired event explorer" in rendered
+    assert "Clean source evidence" in rendered and "Attacked source evidence" in rendered
+    assert "event-graph" in page.ids and "path-overview" in page.ids
+    assert "Original tables &amp; complete evidence" in rendered
+    assert 'id="original-format" open' not in rendered
+    assert "script-src 'nonce-" in rendered
+    view = json.loads(page.scripts[0])
+    proposal = next(row for row in view["rows"] if row["security_relevant"])
+    assert proposal["event_type"] == "TOOL_CALL_PROPOSED"
+    assert any(change["path"].endswith("/content") for change in proposal["changes"])
+    assert '</pre><script>alert("fixture")</script>' not in rendered
     assert all(
         unquote(link[1:]) in page.ids
         if link.startswith("#")

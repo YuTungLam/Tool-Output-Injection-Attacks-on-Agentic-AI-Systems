@@ -12,7 +12,7 @@
 > Case A cleanup diagnostics, Case B blocker reporting and Case C per-call
 > reporting are now repaired prospectively. Saved outcomes and counts are unchanged.
 
-Last updated: 2026-09-16 (NeSI local date). This is the durable project brief for
+Last updated: 2026-09-17 (report presentation). This is the durable project brief for
 the researcher, supervisor, and future Codex sessions. It records the user's
 initial idea and supervisor guidance, followed by a separately identified
 repository assessment. Update the current-state sections as work progresses;
@@ -694,3 +694,41 @@ allocation. No terminal content-composition result exists. This second
 task-family panel cannot establish item 13 alone; it must be combined
 prospectively with the independently frozen `conditional_action` panel.
 Experimental and overall progress remain **4/13 (31%)** and **16/25 (64%)**.
+
+## Graphical report refresh — 2026-09-17
+
+The researcher requires actual interactive diagrams with readable content, not
+a primarily textual HTML/JSON viewer. Conversation may use Chinese; code, HTML
+and Markdown remain English. The durable requirements are in
+[PAIRED-REPORT-VISUALIZATION.md](codebase/agentdojo-lab/PAIRED-REPORT-VISUALIZATION.md).
+
+The [visual library](codebase/agentdojo-lab/reports/visual-library-v1/index.html)
+contains **251 graphical single-run copies and four graphical paired views**.
+Its final snapshot catalogs 377 original HTML locations plus 16 previously
+unrendered run directories: 393 cards total. Another 138 aggregate, audit and
+other historical reports remain explicitly labeled archived; their inclusion
+does not mean their contents were redesigned. Six newly completed run folders
+appeared during the build and were included as saved evidence, without
+initiating inference or reassessing experimental acceptance criteria.
+
+Paired views provide a two-lane SVG flowchart, source-to-action overview,
+clickable event nodes, word-level argument differences, and separate clean and
+attacked source/exposure references. The Case A v5 page at its existing URL is
+refreshed, with previous HTML bytes backed up in the library. Single-run source
+HTML, raw events and original pair results remain unchanged; historical terminal
+receipts continue to describe their original presentation snapshots.
+
+Commands actually run from the lab: `scripts/build_visual_report_library.py
+--build`, `scripts/refresh_visual_pair_reports.py --update-current`, and
+`scripts/build_visual_report_library.py --catalog-only`, all using `.venv/bin/python`.
+The related pytest selection passed 76 tests; Ruff and JavaScript syntax checks
+passed. Chromium exercised desktop and phone views, event 34/37 selection,
+source navigation and highlighted values. Build checks verified 1,514 source-file
+hash bindings unchanged. Inventory and refresh receipts are stored beside the
+library; browser checks and screenshots are also saved there.
+
+This milestone changes presentation only. Experimental checklist claims are not
+updated from the newly appearing runs by this task. Next: review the new library
+in the browser, and separately assess any new terminal experimental evidence
+against the existing ledger. Source/templates, requirements and generated views
+are local working-tree changes; this continuation did not commit or push them.

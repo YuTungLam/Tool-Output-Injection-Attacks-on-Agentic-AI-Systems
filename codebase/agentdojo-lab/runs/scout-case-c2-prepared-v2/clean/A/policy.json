@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "policy_id": "workspace-direct-visible-v1",
+  "suite": "workspace",
+  "benchmark_version": "v1.2.2",
+  "sources": {
+    "get_unread_emails": {
+      "rationale": "Email retrieval may expose external content; also marks messages as read.",
+      "output_scope": "visible_text"
+    },
+    "get_sent_emails": {
+      "rationale": "Stored email text is external context, including earlier generated or forwarded content.",
+      "output_scope": "visible_text"
+    },
+    "get_received_emails": {
+      "rationale": "Received email may contain third-party content.",
+      "output_scope": "visible_text"
+    },
+    "get_draft_emails": {
+      "rationale": "Stored drafts are external context rather than current user instructions.",
+      "output_scope": "visible_text"
+    },
+    "search_emails": {
+      "rationale": "Search results may expose external email content.",
+      "output_scope": "visible_text"
+    },
+    "search_contacts_by_name": {
+      "rationale": "Stored contact records enter as external tool data.",
+      "output_scope": "visible_text"
+    },
+    "search_contacts_by_email": {
+      "rationale": "Stored contact records enter as external tool data.",
+      "output_scope": "visible_text"
+    },
+    "search_calendar_events": {
+      "rationale": "Calendar entries may contain external titles, descriptions, and participant data.",
+      "output_scope": "visible_text"
+    },
+    "get_day_calendar_events": {
+      "rationale": "Calendar entries enter as external context.",
+      "output_scope": "visible_text"
+    },
+    "search_files_by_filename": {
+      "rationale": "Retrieved file text may include third-party content.",
+      "output_scope": "visible_text"
+    },
+    "get_file_by_id": {
+      "rationale": "Retrieved file text is external data.",
+      "output_scope": "visible_text"
+    },
+    "list_files": {
+      "rationale": "Listed file records enter as external data.",
+      "output_scope": "visible_text"
+    },
+    "search_files": {
+      "rationale": "Retrieved file records may expose third-party content.",
+      "output_scope": "visible_text"
+    }
+  },
+  "sinks": {
+    "send_email": {
+      "rationale": "Sends simulated email, potentially including recipients and attachments.",
+      "argument_paths": [
+        ""
+      ]
+    },
+    "delete_email": {
+      "rationale": "Deletes a simulated email.",
+      "argument_paths": [
+        ""
+      ]
+    },
+    "get_unread_emails": {
+      "rationale": "Marks retrieved messages as read; this source is also a state-changing zero-argument sink.",
+      "argument_paths": [
+        ""
+      ]
+    },
+    "create_calendar_event": {
+      "rationale": "Creates a calendar entry and sends simulated invitations.",
+      "argument_paths": [
+        ""
+      ]
+    },
+    "cancel_calendar_event": {
+      "rationale": "Cancels a calendar entry and sends simulated notifications.",
+      "argument_paths": [
+        ""
+      ]
+    },
+    "reschedule_calendar_event": {
+      "rationale": "Changes calendar times and sends simulated notifications.",
+      "argument_paths": [
+        ""
+      ]
+    },
+    "add_calendar_event_participants": {
+      "rationale": "Changes participants and sends simulated notifications.",
+      "argument_paths": [
+        ""
+      ]
+    },
+    "append_to_file": {
+      "rationale": "Changes a simulated file's content.",
+      "argument_paths": [
+        ""
+      ]
+    },
+    "create_file": {
+      "rationale": "Creates a simulated file.",
+      "argument_paths": [
+        ""
+      ]
+    },
+    "delete_file": {
+      "rationale": "Deletes a simulated file.",
+      "argument_paths": [
+        ""
+      ]
+    },
+    "share_file": {
+      "rationale": "Changes simulated file access permissions.",
+      "argument_paths": [
+        ""
+      ]
+    }
+  },
+  "neutral_tools": {
+    "get_current_day": {
+      "rationale": "Returns the simulator clock; excluded from this external-content source mapping."
+    }
+  }
+}

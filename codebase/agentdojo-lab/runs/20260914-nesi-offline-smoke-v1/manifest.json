@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "mode": "offline-fixture",
+  "real_llm": false,
+  "started_at": "2026-09-14T04:37:18.750225+00:00",
+  "config": {
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "benchmark_version": "v1.2.2",
+    "suite": "workspace",
+    "user_tasks": [
+      "user_task_0"
+    ],
+    "temperature": 0.0,
+    "reasoning_effort": null,
+    "max_completion_tokens": 4096,
+    "max_tool_rounds": 8,
+    "request_timeout_seconds": 60.0,
+    "record_events": true,
+    "online_provenance": false,
+    "provenance_policy": null,
+    "lineage_namespace": null,
+    "canary_enabled": false,
+    "semantic_model": null,
+    "semantic_revision": null,
+    "pacing_tokens_per_minute": null
+  },
+  "upstream": {
+    "repository": "https://github.com/ethz-spylab/agentdojo.git",
+    "commit": "089ed468cf3ed0322acc66b0211f26d9d90dbf60",
+    "package_version": "0.1.35",
+    "benchmark_version": "v1.2.2",
+    "actual_commit": "089ed468cf3ed0322acc66b0211f26d9d90dbf60",
+    "modified": false,
+    "pin_matches": true
+  },
+  "python": "3.12.14",
+  "platform": "Linux-5.14.0-687.30.1.el9_8.x86_64-x86_64-with-glibc2.34",
+  "uv_lock_sha256": "bead7fd77ae87e31d1d0e0ce4a246b1c8f575a3b3b94c2604ab26f9fe081da6c",
+  "endpoint": "in-process mock transport",
+  "sdk_max_retries": 0,
+  "request_pacing": {
+    "enabled": false,
+    "tokens_per_minute": null,
+    "window_seconds": null
+  },
+  "adapter": "groq-text-v1",
+  "event_recording": {
+    "enabled": true,
+    "schema_version": 1
+  },
+  "input_condition": "passive",
+  "online_provenance": {
+    "enabled": false,
+    "mode": "synchronous_observation; independent_all_pairs",
+    "semantic": null,
+    "policy": null,
+    "implementation_sha256": {},
+    "timing_scope": "Model loading excluded; callback compute and flush add latency; no hard deadline"
+  },
+  "online_causal_audit": {
+    "enabled": false,
+    "mode": "plan_only",
+    "model": "openai/gpt-oss-120b",
+    "max_requests": 8,
+    "max_sources": 8,
+    "max_pairs": 12,
+    "request_timeout_seconds": 60.0,
+    "sdk_max_retries": 0,
+    "transport_isolation": "separate_unobserved_client; no_tools",
+    "execution": "synchronous_before_native_tool_runtime; observational_only",
+    "action_enforcement": false,
+    "model_parameter_updates": 0,
+    "implementation_sha256": {}
+  },
+  "attack": null,
+  "defense": null,
+  "notes": [
+    "Offline fixture results validate plumbing only, not model capability.",
+    "Native suite runner may execute a pipeline up to three times total if no final text is returned.",
+    "events.jsonl captures outbound HTTP JSON and top-level runtime boundaries when enabled.",
+    "Recording observes execution; it does not establish source attribution or causality."
+  ]
+}

@@ -501,6 +501,48 @@ does not alter the byte-frozen shared `scout-smoke.sbatch` used by older wrapper
 All output directories, sidecars, and authoritative logs must be outside and
 disjoint from the immutable copied bundle.
 
+## Automatic terminal-panel collector
+
+[`scout-terminal-report-afterany.sbatch`](scout-terminal-report-afterany.sbatch)
+is a CPU-only Genoa job that runs the request-free nine-input terminal report
+after every submitted experiment reaches any terminal Slurm state. Its `afterany`
+dependency is deliberate: failed, cancelled, incomplete and missing inputs are
+still passed to the report and remain unknown. The collector does not query
+Slurm, call a model or network endpoint, or execute a native tool.
+
+Freeze a separate physical copy at
+`/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-terminal-collector-submission-20260917-v1`.
+Its `submission-sha256.txt` must cover every other file exactly once, including
+the wrapper, report CLI, report module and frozen baseline deliverable ledger.
+Make bundle files read-only, review the manifest SHA-256, and export that digest
+as `SCOUT_TERMINAL_COLLECTOR_MANIFEST_SHA256`. The wrapper checks the exact
+bundle path, reviewed manifest digest, complete manifest inventory, file hashes,
+absence of symlinks and writable files, and its own spooled bytes. It also
+requires the lab interpreter to report Python 3.12.
+
+Before submission, verify that the report directory and both `%j` log targets
+are fresh. Then use this exact command with the reviewed manifest digest already
+exported:
+
+```bash
+sbatch \
+  --dependency=afterany:9123394:9123398:9123399:9126739:9126740:9126776:9129880:9129940:9135588 \
+  --export=HOME,PATH,LANG,SCOUT_TERMINAL_COLLECTOR_MANIFEST_SHA256 \
+  --output=/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-terminal-panel-afterany-20260917-v1-%j.out \
+  --error=/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-terminal-panel-afterany-20260917-v1-%j.err \
+  /nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-terminal-collector-submission-20260917-v1/hpc/scout-terminal-report-afterany.sbatch
+```
+
+The fresh report destination is
+`/nesi/project/uoa04799/dyu848/tool-output-lab/evidence/scout-terminal-panel-20260917-v1`.
+All nine evidence roots and all nine batch summaries are fixed in the wrapper.
+In particular, CONTENT uses its live root
+`scout-content-composition-argument-20260917-v1` and the external smoke-root
+sidecar
+`scout-content-composition-argument-smoke-20260917-v1.content-composition-argument-batch-summary.json`.
+The output must remain disjoint from every evidence input, terminal sidecar,
+immutable bundle and scheduler log.
+
 ## Bounds, isolation, and receipts
 
 The server binds `127.0.0.1`, receives a new random key through `VLLM_API_KEY`,

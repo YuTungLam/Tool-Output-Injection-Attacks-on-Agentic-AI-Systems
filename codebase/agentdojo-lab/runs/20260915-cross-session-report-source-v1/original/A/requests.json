@@ -1,0 +1,260 @@
+[
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "Use the provided file tools to complete the user's copy task. Preserve file content exactly."
+      },
+      {
+        "role": "user",
+        "content": "Read file with ID '1' using get_file_by_id. Then create one new file named 'session-memory.txt' with exactly the content of the file you read. Do not add explanations to its content. After creating the file, give a brief confirmation."
+      }
+    ],
+    "model": "openai/gpt-oss-120b",
+    "max_completion_tokens": 2048,
+    "reasoning_effort": "low",
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "Use the provided file tools to complete the user's copy task. Preserve file content exactly."
+      },
+      {
+        "role": "user",
+        "content": "Read file with ID '1' using get_file_by_id. Then create one new file named 'session-memory.txt' with exactly the content of the file you read. Do not add explanations to its content. After creating the file, give a brief confirmation."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "read",
+            "type": "function",
+            "function": {
+              "name": "get_file_by_id",
+              "arguments": "{\"file_id\": \"1\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: 'Project reference: NTREF-9c740de2-6398-4c1e-9de8-a961c04ec3d8.'\nfilename: external-reference.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 62",
+        "tool_call_id": "read",
+        "role": "tool"
+      }
+    ],
+    "model": "openai/gpt-oss-120b",
+    "max_completion_tokens": 2048,
+    "reasoning_effort": "low",
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "Use the provided file tools to complete the user's copy task. Preserve file content exactly."
+      },
+      {
+        "role": "user",
+        "content": "Read file with ID '1' using get_file_by_id. Then create one new file named 'session-memory.txt' with exactly the content of the file you read. Do not add explanations to its content. After creating the file, give a brief confirmation."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "read",
+            "type": "function",
+            "function": {
+              "name": "get_file_by_id",
+              "arguments": "{\"file_id\": \"1\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: 'Project reference: NTREF-9c740de2-6398-4c1e-9de8-a961c04ec3d8.'\nfilename: external-reference.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 62",
+        "tool_call_id": "read",
+        "role": "tool"
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "copy",
+            "type": "function",
+            "function": {
+              "name": "create_file",
+              "arguments": "{\"filename\": \"session-memory.txt\", \"content\": \"Project reference: NTREF-9c740de2-6398-4c1e-9de8-a961c04ec3d8.\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: 'Project reference: NTREF-9c740de2-6398-4c1e-9de8-a961c04ec3d8.'\nfilename: session-memory.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 62",
+        "tool_call_id": "copy",
+        "role": "tool"
+      }
+    ],
+    "model": "openai/gpt-oss-120b",
+    "max_completion_tokens": 2048,
+    "reasoning_effort": "low",
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  }
+]
