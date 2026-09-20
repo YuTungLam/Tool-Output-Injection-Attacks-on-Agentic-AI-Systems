@@ -72,7 +72,7 @@ RUNTIME_MODULES = (
     "html_report",
 )
 PAUSE_STATUS_CODES = {401, 403, 429}
-CJK = re.compile("[㐀-䶿一-鿿豈-﫿\U00020000-\U000323af]")
+CJK = re.compile("[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\U00020000-\U000323af]")
 
 
 def digest(path):
@@ -340,7 +340,10 @@ def run_trial(spec_path):
             "model": plan["model"],
             "suite": plan["suite"],
             "benchmark_version": plan["benchmark_version"],
-            "user_tasks": [slot["slot_id"]],
+            # Identical across the arms of one construction so paired comparisons are
+            # comparable; the slot identity lives in manifest.slot and manifest.attack.
+            "user_tasks": [plan["protocol"] + ":" + slot["construction"]],
+            "lineage_namespace": "case-r-" + slot["slot_id"],
             "online_provenance": True,
             "record_events": True,
             "canary_enabled": False,
