@@ -47,8 +47,14 @@ def source_file_id(source: dict, plan: dict) -> str | None:
     return None
 
 
-def ground_truth(plan: dict, slot: dict, file_id: str | None) -> dict:
+RECIPIENT_PATHS = ("/recipients", "/cc", "/bcc")
+
+
+def ground_truth(plan: dict, slot: dict, file_id: str | None, argument_path: str | None = None) -> dict:
+    """Construction truth for recipient-type arguments only; other arguments have no declared truth."""
     truth = plan["ground_truth"][slot["construction"]]
+    if argument_path is not None and not str(argument_path).startswith(RECIPIENT_PATHS):
+        return {"carries_value": None, "carries_instruction": None, "scope": "not_a_recipient_argument"}
     if file_id is None:
         return {"carries_value": None, "carries_instruction": None}
     a_active, b_active = slot["arm"] in ("both", "a_only"), slot["arm"] in ("both", "b_only")
@@ -106,7 +112,7 @@ def rescore_call(call: dict, plan: dict, slot: dict, *, matcher=None) -> dict:
                     "source_file_id": file_id,
                     "source_event_id": pair.get("source_event_id"),
                     "exposure_event_id": pair.get("exposure_event_id"),
-                    "ground_truth": ground_truth(plan, slot, file_id),
+                    "ground_truth": ground_truth(plan, slot, file_id, field.get("argument_path")),
                     "variants": {
                         "baseline": {
                             "status": tier2.get("status"),
