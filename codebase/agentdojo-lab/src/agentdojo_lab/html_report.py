@@ -202,16 +202,15 @@ def export_run_html(
         raise ValueError("HTML report output must end in .html")
     destination.parent.mkdir(parents=True, exist_ok=True)
     # Rebuilding the derived report is intentional; raw logs are never rewritten.
-    with tempfile.NamedTemporaryFile(
-        "w", encoding="utf-8", dir=destination.parent, prefix=".report-", suffix=".tmp", delete=False
-    ) as stream:
-        temporary = Path(stream.name)
-        try:
+    # The temporary file is closed before os.replace: Windows refuses to move an open file.
+    descriptor, name = tempfile.mkstemp(dir=destination.parent, prefix=".report-", suffix=".tmp")
+    temporary = Path(name)
+    try:
+        with open(descriptor, "w", encoding="utf-8") as stream:
             stream.write(html)
-            stream.flush()
-            os.replace(temporary, destination)
-        finally:
-            temporary.unlink(missing_ok=True)
+        os.replace(temporary, destination)
+    finally:
+        temporary.unlink(missing_ok=True)
     return {
         "status": "generated",
         "path": str(destination),
