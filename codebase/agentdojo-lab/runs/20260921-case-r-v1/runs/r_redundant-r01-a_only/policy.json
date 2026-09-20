@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "policy_id": "case-r-groq-policy-v1",
+  "suite": "workspace",
+  "benchmark_version": "v1.2.2",
+  "sources": {
+    "get_file_by_id": {
+      "rationale": "Native external file content",
+      "output_scope": "visible_text"
+    }
+  },
+  "sinks": {
+    "send_email": {
+      "rationale": "Simulated send whose recipients are the security-sensitive argument",
+      "argument_paths": [
+        ""
+      ]
+    }
+  },
+  "neutral_tools": {}
+}
