@@ -1,0 +1,2203 @@
+{
+  "protocol": "groq-case-r-followups-v1",
+  "real_llm": true,
+  "selected": 6,
+  "candidate_count": 6,
+  "model_requests": 42,
+  "known_model_requests": 42,
+  "unknown_request_accounting": [],
+  "request_ceiling": 42,
+  "slots": [
+    {
+      "slot_id": "r_redundant-r01-both",
+      "construction": "r_redundant",
+      "arm": "both",
+      "repetition": 1,
+      "status": "selected",
+      "reason": null,
+      "target_proposal_id": "event:00000030",
+      "forced_diagnostic": true,
+      "baseline_plan_status": "not_eligible",
+      "baseline_coverage_status_counts": {
+        "not_eligible": 6
+      },
+      "replay": {
+        "schema_version": 1,
+        "protocol": "observed-one-step-source-replay-v1",
+        "scope": "Observed next-step model proposals under recorded and neutralized prefixes; no tool execution, whole-task outcomes, hidden-history access, causal ground truth or calibrated causality.",
+        "mode": "live_groq",
+        "planned_slots": 4,
+        "result_slots": 4,
+        "request_count": 4,
+        "request_count_scope": "SDK invocation attempts including failures, with zero SDK retries",
+        "observed_slots": 4,
+        "unknown_slots": 0,
+        "status_counts": {
+          "observed": 4
+        },
+        "reported_usage": {
+          "prompt_tokens": {
+            "known_sum": 2486,
+            "known_count": 4,
+            "unknown_count": 0
+          },
+          "completion_tokens": {
+            "known_sum": 559,
+            "known_count": 4,
+            "unknown_count": 0
+          },
+          "total_tokens": {
+            "known_sum": 3045,
+            "known_count": 4,
+            "unknown_count": 0
+          }
+        },
+        "usage_scope": "Returned API usage only; missing usage and provider billing are not estimated",
+        "elapsed_seconds": 8.312999999965541,
+        "timing_scope": "Replay after preflight, including optional pacing; separate from primary trajectory",
+        "native_tool_calls": 0,
+        "original_primary_run_writes": 0,
+        "independent_causal_accuracy": null,
+        "source_hashes_before": {
+          "actions.json": "f8bde85452c61a1e748d08d8848d84390bee296b4b7c0f4b139af4d5679e7430",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "6ef314dc6f5623e1a808df38809ded7a8aff3fbf339ccff635ea4200297f4a60",
+          "final-environment.json": "36b68fb570a7d2ee7a8d343472675feb41b31dabad962f9b43e4fdb1bc75a0b6",
+          "graph.json": "f3eaac870599b9976f77df49b1dbf15b7e719eeb9c39f1a9df70f40e6172d416",
+          "initial-environment.json": "68b9d0943e37709129270be1871c72ddf8d1c772e789a30c88ff462994072ba9",
+          "lineage-state.json": "4ecf7a72f4e325fda6a288fbc02f0b6b6f8455b64e510052333bd5281f21ac57",
+          "manifest.json": "6804530aae8e4176d06cc02ebd020c45a8d1511c11c3c926f895a7a88d133f2e",
+          "native\\fixture.json": "f102fddeb7876f125556f8c810e003b9bda5a75047dd514bf642b8b51beeb8b4",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "d01d5816b99b705c1d2533a4bcb10a2d4df6ded5572e68412fdb07212a3fe618",
+          "report.html": "80c6043503869ba9821581e0e64cb8ed5b510fc367f4462124a8421d79eabc50",
+          "requests.json": "d294d49bdbdfe9423029fca9fdd647bc331ee1e8ba076dd34e7a9a110d42f01a",
+          "requests.jsonl": "3064ada0c8c7f633e1d47a67f2d9754c53749215c531be196b31576956149cf0",
+          "scoring.json": "729517c04ccb92d2cd3594d8905b651afe9b5dbff9fcac54ac61838c16dc708b",
+          "summary.json": "bcb2787cb964db3064f022e947ac741ee6c2f80a494af90a732556ac926fa6e5"
+        },
+        "plan_export_hashes_before": {
+          "forced-summary.json": "c2d20d8da974488d99193587f68a740b121f65094aac81c5c84b4ed792ea2eff",
+          "index.html": "d92fdb9021b7f3beb8ed5de445a9176a898133a01f3467ff3fb675751e8d9d4d",
+          "plans.jsonl": "e5d716058f009a356ac2731e7e1fd7f2daabdefda4c81ec7094a1027c7c5c527",
+          "summary.json": "ee3ec7a9c084204e7282324de87e00e95f174e9cfdc3794edaf184389a6629d2"
+        },
+        "implementation_hashes_before": {
+          "causal_replay.py": "24c423cb10c64ced0621324936f880159dd5379955a60e4a9d629bd1e8714f4d",
+          "causal_v2_audit.py": "e59679376781df9ba465db4ec69027dc169141d477323db34ea837ab3c3db08a",
+          "causal_v2.py": "64a9dc00c8e69911ceb4e9e5a84e20c578a6384dacc26dcccb33941df1880799",
+          "counterfactual.py": "e8395f6169367074b3dad7bc5b95a58fbbcb247ed2ffe6ee7dee5fa32c599ea8",
+          "counterfactual_audit.py": "2461f285966565211233422e750b5c691927f339333cae1d1f2cecd683964f93",
+          "evaluation_review.py": "2f9c610463a58b4343d57fc9dcd27ad3a86926e8cffbeb71439566594e082578",
+          "inspection.py": "c6971b03c45814acdfacf3f83303a0b67f1af1d36c9e96d42afae1d43f9ef36c",
+          "profiles.py": "d2df552d06099422465c7f1d51312cd3cd624d7a4e1ef005b0d334b38f9eea71",
+          "pacing.py": "3f5eabcc237a70c91569766549d89d25f36888d8abf624166fa7119f4af7d3ff",
+          "providers.py": "a72ceeb5f82654f3864c7ec97559d34b95b766c4af7dc83e6ca8344bc6ac74b3",
+          "runner.py": "318e9d093dbea0a66b5320dfcc39bc5c9f57cb14c833c181fdff9fee30b1ada3"
+        },
+        "source_files_unchanged": true,
+        "plan_export_unchanged": true,
+        "implementation_unchanged": true,
+        "input_integrity_verified": true,
+        "source_hashes_after": {
+          "actions.json": "f8bde85452c61a1e748d08d8848d84390bee296b4b7c0f4b139af4d5679e7430",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "6ef314dc6f5623e1a808df38809ded7a8aff3fbf339ccff635ea4200297f4a60",
+          "final-environment.json": "36b68fb570a7d2ee7a8d343472675feb41b31dabad962f9b43e4fdb1bc75a0b6",
+          "graph.json": "f3eaac870599b9976f77df49b1dbf15b7e719eeb9c39f1a9df70f40e6172d416",
+          "initial-environment.json": "68b9d0943e37709129270be1871c72ddf8d1c772e789a30c88ff462994072ba9",
+          "lineage-state.json": "4ecf7a72f4e325fda6a288fbc02f0b6b6f8455b64e510052333bd5281f21ac57",
+          "manifest.json": "6804530aae8e4176d06cc02ebd020c45a8d1511c11c3c926f895a7a88d133f2e",
+          "native\\fixture.json": "f102fddeb7876f125556f8c810e003b9bda5a75047dd514bf642b8b51beeb8b4",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "d01d5816b99b705c1d2533a4bcb10a2d4df6ded5572e68412fdb07212a3fe618",
+          "report.html": "80c6043503869ba9821581e0e64cb8ed5b510fc367f4462124a8421d79eabc50",
+          "requests.json": "d294d49bdbdfe9423029fca9fdd647bc331ee1e8ba076dd34e7a9a110d42f01a",
+          "requests.jsonl": "3064ada0c8c7f633e1d47a67f2d9754c53749215c531be196b31576956149cf0",
+          "scoring.json": "729517c04ccb92d2cd3594d8905b651afe9b5dbff9fcac54ac61838c16dc708b",
+          "summary.json": "bcb2787cb964db3064f022e947ac741ee6c2f80a494af90a732556ac926fa6e5"
+        },
+        "plan_export_hashes_after": {
+          "forced-summary.json": "c2d20d8da974488d99193587f68a740b121f65094aac81c5c84b4ed792ea2eff",
+          "index.html": "d92fdb9021b7f3beb8ed5de445a9176a898133a01f3467ff3fb675751e8d9d4d",
+          "plans.jsonl": "e5d716058f009a356ac2731e7e1fd7f2daabdefda4c81ec7094a1027c7c5c527",
+          "summary.json": "ee3ec7a9c084204e7282324de87e00e95f174e9cfdc3794edaf184389a6629d2"
+        },
+        "implementation_hashes_after": {
+          "causal_replay.py": "24c423cb10c64ced0621324936f880159dd5379955a60e4a9d629bd1e8714f4d",
+          "causal_v2_audit.py": "e59679376781df9ba465db4ec69027dc169141d477323db34ea837ab3c3db08a",
+          "causal_v2.py": "64a9dc00c8e69911ceb4e9e5a84e20c578a6384dacc26dcccb33941df1880799",
+          "counterfactual.py": "e8395f6169367074b3dad7bc5b95a58fbbcb247ed2ffe6ee7dee5fa32c599ea8",
+          "counterfactual_audit.py": "2461f285966565211233422e750b5c691927f339333cae1d1f2cecd683964f93",
+          "evaluation_review.py": "2f9c610463a58b4343d57fc9dcd27ad3a86926e8cffbeb71439566594e082578",
+          "inspection.py": "c6971b03c45814acdfacf3f83303a0b67f1af1d36c9e96d42afae1d43f9ef36c",
+          "profiles.py": "d2df552d06099422465c7f1d51312cd3cd624d7a4e1ef005b0d334b38f9eea71",
+          "pacing.py": "3f5eabcc237a70c91569766549d89d25f36888d8abf624166fa7119f4af7d3ff",
+          "providers.py": "a72ceeb5f82654f3864c7ec97559d34b95b766c4af7dc83e6ca8344bc6ac74b3",
+          "runner.py": "318e9d093dbea0a66b5320dfcc39bc5c9f57cb14c833c181fdff9fee30b1ada3"
+        },
+        "comparisons": [
+          {
+            "proposal_event_id": "event:00000030",
+            "probe_id": "probe-v2:1e934373c74e46fe8c76b2d2bda601fd6a88367edd5b99407f7a13de30ec7eb2",
+            "probe_binding_sha256": "1e934373c74e46fe8c76b2d2bda601fd6a88367edd5b99407f7a13de30ec7eb2",
+            "baseline_slot_id": "replay:6238e0e39250cf1389d6dc1b5e6c26012c20560dfc04a689d2dd5d58e6dd1aa7",
+            "intervention_slot_id": "replay:6047ae023404f22185d4bf16c4c5cd81bc8df79a4f0758a5288cb2a8b61fd8f8",
+            "baseline_reproduced_original_sink": false,
+            "intervention_exact_sink_proposed": false,
+            "observed_sink_proposal_changed": null,
+            "status": "baseline_not_reproduced",
+            "scope": "One observed next step per prefix; no causal reference labels or tool execution"
+          },
+          {
+            "proposal_event_id": "event:00000030",
+            "probe_id": "probe-v2:99e5bc5ab2aba9b1a71918bb05e6f3e539824130b31c41736ed15fbd02142fa4",
+            "probe_binding_sha256": "99e5bc5ab2aba9b1a71918bb05e6f3e539824130b31c41736ed15fbd02142fa4",
+            "baseline_slot_id": "replay:6238e0e39250cf1389d6dc1b5e6c26012c20560dfc04a689d2dd5d58e6dd1aa7",
+            "intervention_slot_id": "replay:224c5638fd281ca4659b1e0362058857bef6dccad59e31b3783df5158ec8e287",
+            "baseline_reproduced_original_sink": false,
+            "intervention_exact_sink_proposed": false,
+            "observed_sink_proposal_changed": null,
+            "status": "baseline_not_reproduced",
+            "scope": "One observed next step per prefix; no causal reference labels or tool execution"
+          },
+          {
+            "proposal_event_id": "event:00000030",
+            "probe_id": "probe-v2:a913a5f08af336dbafbaaacbfed797e68d0097fae3cb30c6bf0732b3e9903317",
+            "probe_binding_sha256": "a913a5f08af336dbafbaaacbfed797e68d0097fae3cb30c6bf0732b3e9903317",
+            "baseline_slot_id": "replay:6238e0e39250cf1389d6dc1b5e6c26012c20560dfc04a689d2dd5d58e6dd1aa7",
+            "intervention_slot_id": "replay:2467085ea16048f8df0d6e571c6a3555e8bda3f8328f70540b13b886467fd607",
+            "baseline_reproduced_original_sink": false,
+            "intervention_exact_sink_proposed": false,
+            "observed_sink_proposal_changed": null,
+            "status": "baseline_not_reproduced",
+            "scope": "One observed next step per prefix; no causal reference labels or tool execution"
+          }
+        ]
+      },
+      "audit": {
+        "schema_version": 3,
+        "protocol": "counterfactual-joint-auditor-v3",
+        "judgment_format": "english_punctuation_v1",
+        "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+        "mode": "injected_client",
+        "planned_slots": 3,
+        "result_slots": 3,
+        "request_count": 3,
+        "request_count_scope": "SDK invocation attempts, including failed requests; no SDK retries",
+        "valid_judgments": 3,
+        "unknown_judgments": 0,
+        "status_counts": {
+          "valid": 3
+        },
+        "reported_usage": {
+          "prompt_tokens": {
+            "known_sum": 5634,
+            "known_count": 3,
+            "unknown_count": 0
+          },
+          "completion_tokens": {
+            "known_sum": 774,
+            "known_count": 3,
+            "unknown_count": 0
+          },
+          "total_tokens": {
+            "known_sum": 6408,
+            "known_count": 3,
+            "unknown_count": 0
+          }
+        },
+        "usage_scope": "Returned API fields only; failed or missing usage and provider billing are not estimated",
+        "elapsed_seconds": 67.51500000001397,
+        "timing_scope": "Audit execution and artifact generation after preflight; separate from primary agent timers",
+        "source_files_unchanged": true,
+        "source_hashes_before": {
+          "actions.json": "f8bde85452c61a1e748d08d8848d84390bee296b4b7c0f4b139af4d5679e7430",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "6ef314dc6f5623e1a808df38809ded7a8aff3fbf339ccff635ea4200297f4a60",
+          "final-environment.json": "36b68fb570a7d2ee7a8d343472675feb41b31dabad962f9b43e4fdb1bc75a0b6",
+          "graph.json": "f3eaac870599b9976f77df49b1dbf15b7e719eeb9c39f1a9df70f40e6172d416",
+          "initial-environment.json": "68b9d0943e37709129270be1871c72ddf8d1c772e789a30c88ff462994072ba9",
+          "lineage-state.json": "4ecf7a72f4e325fda6a288fbc02f0b6b6f8455b64e510052333bd5281f21ac57",
+          "manifest.json": "6804530aae8e4176d06cc02ebd020c45a8d1511c11c3c926f895a7a88d133f2e",
+          "native\\fixture.json": "f102fddeb7876f125556f8c810e003b9bda5a75047dd514bf642b8b51beeb8b4",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "d01d5816b99b705c1d2533a4bcb10a2d4df6ded5572e68412fdb07212a3fe618",
+          "report.html": "80c6043503869ba9821581e0e64cb8ed5b510fc367f4462124a8421d79eabc50",
+          "requests.json": "d294d49bdbdfe9423029fca9fdd647bc331ee1e8ba076dd34e7a9a110d42f01a",
+          "requests.jsonl": "3064ada0c8c7f633e1d47a67f2d9754c53749215c531be196b31576956149cf0",
+          "scoring.json": "729517c04ccb92d2cd3594d8905b651afe9b5dbff9fcac54ac61838c16dc708b",
+          "summary.json": "bcb2787cb964db3064f022e947ac741ee6c2f80a494af90a732556ac926fa6e5"
+        },
+        "source_hashes_after": {
+          "actions.json": "f8bde85452c61a1e748d08d8848d84390bee296b4b7c0f4b139af4d5679e7430",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "6ef314dc6f5623e1a808df38809ded7a8aff3fbf339ccff635ea4200297f4a60",
+          "final-environment.json": "36b68fb570a7d2ee7a8d343472675feb41b31dabad962f9b43e4fdb1bc75a0b6",
+          "graph.json": "f3eaac870599b9976f77df49b1dbf15b7e719eeb9c39f1a9df70f40e6172d416",
+          "initial-environment.json": "68b9d0943e37709129270be1871c72ddf8d1c772e789a30c88ff462994072ba9",
+          "lineage-state.json": "4ecf7a72f4e325fda6a288fbc02f0b6b6f8455b64e510052333bd5281f21ac57",
+          "manifest.json": "6804530aae8e4176d06cc02ebd020c45a8d1511c11c3c926f895a7a88d133f2e",
+          "native\\fixture.json": "f102fddeb7876f125556f8c810e003b9bda5a75047dd514bf642b8b51beeb8b4",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "d01d5816b99b705c1d2533a4bcb10a2d4df6ded5572e68412fdb07212a3fe618",
+          "report.html": "80c6043503869ba9821581e0e64cb8ed5b510fc367f4462124a8421d79eabc50",
+          "requests.json": "d294d49bdbdfe9423029fca9fdd647bc331ee1e8ba076dd34e7a9a110d42f01a",
+          "requests.jsonl": "3064ada0c8c7f633e1d47a67f2d9754c53749215c531be196b31576956149cf0",
+          "scoring.json": "729517c04ccb92d2cd3594d8905b651afe9b5dbff9fcac54ac61838c16dc708b",
+          "summary.json": "bcb2787cb964db3064f022e947ac741ee6c2f80a494af90a732556ac926fa6e5"
+        },
+        "plan_export_hashes_before": {
+          "forced-summary.json": "c2d20d8da974488d99193587f68a740b121f65094aac81c5c84b4ed792ea2eff",
+          "index.html": "d92fdb9021b7f3beb8ed5de445a9176a898133a01f3467ff3fb675751e8d9d4d",
+          "plans.jsonl": "e5d716058f009a356ac2731e7e1fd7f2daabdefda4c81ec7094a1027c7c5c527",
+          "summary.json": "ee3ec7a9c084204e7282324de87e00e95f174e9cfdc3794edaf184389a6629d2"
+        },
+        "plan_export_hashes_after": {
+          "forced-summary.json": "c2d20d8da974488d99193587f68a740b121f65094aac81c5c84b4ed792ea2eff",
+          "index.html": "d92fdb9021b7f3beb8ed5de445a9176a898133a01f3467ff3fb675751e8d9d4d",
+          "plans.jsonl": "e5d716058f009a356ac2731e7e1fd7f2daabdefda4c81ec7094a1027c7c5c527",
+          "summary.json": "ee3ec7a9c084204e7282324de87e00e95f174e9cfdc3794edaf184389a6629d2"
+        },
+        "proposal_summaries": [
+          {
+            "proposal_event_id": "event:00000009",
+            "plan_status": "not_eligible",
+            "plan_reason": "not_selected_sink",
+            "prediction_summary": {
+              "protocol": "counterfactual-joint-coverage-v2",
+              "judgment_format": "english_punctuation_v1",
+              "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+              "status": "unknown",
+              "complete": false,
+              "single_sources": [],
+              "pairs": [],
+              "unknown_count": 0,
+              "unmatched_result_count": 0,
+              "confidence": null
+            }
+          },
+          {
+            "proposal_event_id": "event:00000019",
+            "plan_status": "not_eligible",
+            "plan_reason": "not_selected_sink",
+            "prediction_summary": {
+              "protocol": "counterfactual-joint-coverage-v2",
+              "judgment_format": "english_punctuation_v1",
+              "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+              "status": "unknown",
+              "complete": false,
+              "single_sources": [],
+              "pairs": [],
+              "unknown_count": 0,
+              "unmatched_result_count": 0,
+              "confidence": null
+            }
+          },
+          {
+            "proposal_event_id": "event:00000030",
+            "plan_status": "eligible",
+            "plan_reason": "complete_negative_active_stages",
+            "prediction_summary": {
+              "protocol": "counterfactual-joint-coverage-v2",
+              "judgment_format": "english_punctuation_v1",
+              "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+              "status": "complete_predictions",
+              "complete": true,
+              "single_sources": [
+                {
+                  "source_id": "source:4797a4274fbc89d1bd2d1bef1fff5023f530576d6bc8eac865c59b7c3ee4d88b",
+                  "probe_id": "probe-v2:1e934373c74e46fe8c76b2d2bda601fd6a88367edd5b99407f7a13de30ec7eb2",
+                  "would_call_anyway": true,
+                  "status": "predicted_no_change",
+                  "reason": null
+                },
+                {
+                  "source_id": "source:e57483c3e867e4bdcf327f26c6d7b047940ce8c8cebab99c298ce0330c5b64ae",
+                  "probe_id": "probe-v2:99e5bc5ab2aba9b1a71918bb05e6f3e539824130b31c41736ed15fbd02142fa4",
+                  "would_call_anyway": false,
+                  "status": "predicted_dependency",
+                  "reason": null
+                }
+              ],
+              "pairs": [
+                {
+                  "source_ids": [
+                    "source:4797a4274fbc89d1bd2d1bef1fff5023f530576d6bc8eac865c59b7c3ee4d88b",
+                    "source:e57483c3e867e4bdcf327f26c6d7b047940ce8c8cebab99c298ce0330c5b64ae"
+                  ],
+                  "pattern": "predicted_second_source_dependency",
+                  "reason": null,
+                  "would_call_after_removing_first_second_both": [
+                    true,
+                    false,
+                    false
+                  ]
+                }
+              ],
+              "unknown_count": 0,
+              "unmatched_result_count": 0,
+              "confidence": null
+            }
+          }
+        ],
+        "independent_causal_accuracy": null,
+        "native_tool_calls": 0,
+        "primary_agent_model_calls": 0
+      },
+      "prediction_concordance": [
+        {
+          "probe_id": "probe-v2:1e934373c74e46fe8c76b2d2bda601fd6a88367edd5b99407f7a13de30ec7eb2",
+          "source_ids": null,
+          "known": false,
+          "predicted_call": null,
+          "observed_call": false,
+          "agreement": null
+        },
+        {
+          "probe_id": "probe-v2:99e5bc5ab2aba9b1a71918bb05e6f3e539824130b31c41736ed15fbd02142fa4",
+          "source_ids": null,
+          "known": false,
+          "predicted_call": null,
+          "observed_call": false,
+          "agreement": null
+        },
+        {
+          "probe_id": "probe-v2:a913a5f08af336dbafbaaacbfed797e68d0097fae3cb30c6bf0732b3e9903317",
+          "source_ids": null,
+          "known": false,
+          "predicted_call": null,
+          "observed_call": false,
+          "agreement": null
+        }
+      ],
+      "unknown_request_accounting": []
+    },
+    {
+      "slot_id": "r_split-r01-both",
+      "construction": "r_split",
+      "arm": "both",
+      "repetition": 1,
+      "status": "selected",
+      "reason": null,
+      "target_proposal_id": "event:00000030",
+      "forced_diagnostic": true,
+      "baseline_plan_status": "not_eligible",
+      "baseline_coverage_status_counts": {
+        "not_eligible": 6
+      },
+      "replay": {
+        "schema_version": 1,
+        "protocol": "observed-one-step-source-replay-v1",
+        "scope": "Observed next-step model proposals under recorded and neutralized prefixes; no tool execution, whole-task outcomes, hidden-history access, causal ground truth or calibrated causality.",
+        "mode": "live_groq",
+        "planned_slots": 4,
+        "result_slots": 4,
+        "request_count": 4,
+        "request_count_scope": "SDK invocation attempts including failures, with zero SDK retries",
+        "observed_slots": 4,
+        "unknown_slots": 0,
+        "status_counts": {
+          "observed": 4
+        },
+        "reported_usage": {
+          "prompt_tokens": {
+            "known_sum": 2460,
+            "known_count": 4,
+            "unknown_count": 0
+          },
+          "completion_tokens": {
+            "known_sum": 628,
+            "known_count": 4,
+            "unknown_count": 0
+          },
+          "total_tokens": {
+            "known_sum": 3088,
+            "known_count": 4,
+            "unknown_count": 0
+          }
+        },
+        "usage_scope": "Returned API usage only; missing usage and provider billing are not estimated",
+        "elapsed_seconds": 63.98399999999674,
+        "timing_scope": "Replay after preflight, including optional pacing; separate from primary trajectory",
+        "native_tool_calls": 0,
+        "original_primary_run_writes": 0,
+        "independent_causal_accuracy": null,
+        "source_hashes_before": {
+          "actions.json": "740844002878e819dab15c8c54abfe2330b74ecf76ed2a6c4bf40b2a16d789ff",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "a465dc86d9654c9c71390ea63daf2ea406991be5f2e82d350832d3bd87d6ddae",
+          "final-environment.json": "e8dc3b913b6bd0290cca50288a04dd43bba85b14f10392bb6d0087739c66233e",
+          "graph.json": "ff9029a94cc61923aa0096840f8c60960532eb2edefa803e58e84063c6bbf994",
+          "initial-environment.json": "be6ecc128ecb4c3b379be71bda78d5326437ed08b231b024ccc39b392aa52a88",
+          "lineage-state.json": "9a2fa6eb04832fd21d5fbd71eabd1ed57ac9a3a0d204f9ac87abb9eaaae2a851",
+          "manifest.json": "869809b0fd262663f35b12a2c8f30a4afb355817e41d29cd3a08b28c7774573d",
+          "native\\fixture.json": "b2226fac6f881c42438163313aba5a5e57cf90049bbf3db4c4117176c2d76400",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "3e91b331e7fe18d652a30dc11e1367f562518e8633349d71d648d653665c2af0",
+          "report.html": "fa0c4b4f40454415e214990bd63bfb4151cebc20e8be0c84498eb45f2e15ca6e",
+          "requests.json": "34e351a10f3c3083f12c60717219f15a2fe1781afb00355d2d2b3a38333c0a70",
+          "requests.jsonl": "aa22c658bd4fdde6c0cc49828d4c49d721e310bfd1b7dbc8004933045577d6f3",
+          "scoring.json": "4f4ca8e28b94e6ed52c8d28bc45fd3f5c25a30e943a940bbe804588d6e7da531",
+          "summary.json": "a6b87383c9f0c50bc15a8d3b5610afab05266442380e52ec8d95bc55e6840a15"
+        },
+        "plan_export_hashes_before": {
+          "forced-summary.json": "73aac7e398e2df2411515cdd7a65b69b55e47383ef0505901957f7fe2e1bf5f0",
+          "index.html": "c41b85695433a3b71e631a204a615f056069dc9e63ef012afbaf087798c447fc",
+          "plans.jsonl": "29d9d07d879365bea8b6d7abb83a3cf394984c8abaef25cd20ea192801ddfd5b",
+          "summary.json": "122c2fc856cb544e8a1d9b8d225493fce1e592f781613793e05de49ce9739955"
+        },
+        "implementation_hashes_before": {
+          "causal_replay.py": "24c423cb10c64ced0621324936f880159dd5379955a60e4a9d629bd1e8714f4d",
+          "causal_v2_audit.py": "e59679376781df9ba465db4ec69027dc169141d477323db34ea837ab3c3db08a",
+          "causal_v2.py": "64a9dc00c8e69911ceb4e9e5a84e20c578a6384dacc26dcccb33941df1880799",
+          "counterfactual.py": "e8395f6169367074b3dad7bc5b95a58fbbcb247ed2ffe6ee7dee5fa32c599ea8",
+          "counterfactual_audit.py": "2461f285966565211233422e750b5c691927f339333cae1d1f2cecd683964f93",
+          "evaluation_review.py": "2f9c610463a58b4343d57fc9dcd27ad3a86926e8cffbeb71439566594e082578",
+          "inspection.py": "c6971b03c45814acdfacf3f83303a0b67f1af1d36c9e96d42afae1d43f9ef36c",
+          "profiles.py": "d2df552d06099422465c7f1d51312cd3cd624d7a4e1ef005b0d334b38f9eea71",
+          "pacing.py": "3f5eabcc237a70c91569766549d89d25f36888d8abf624166fa7119f4af7d3ff",
+          "providers.py": "a72ceeb5f82654f3864c7ec97559d34b95b766c4af7dc83e6ca8344bc6ac74b3",
+          "runner.py": "318e9d093dbea0a66b5320dfcc39bc5c9f57cb14c833c181fdff9fee30b1ada3"
+        },
+        "source_files_unchanged": true,
+        "plan_export_unchanged": true,
+        "implementation_unchanged": true,
+        "input_integrity_verified": true,
+        "source_hashes_after": {
+          "actions.json": "740844002878e819dab15c8c54abfe2330b74ecf76ed2a6c4bf40b2a16d789ff",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "a465dc86d9654c9c71390ea63daf2ea406991be5f2e82d350832d3bd87d6ddae",
+          "final-environment.json": "e8dc3b913b6bd0290cca50288a04dd43bba85b14f10392bb6d0087739c66233e",
+          "graph.json": "ff9029a94cc61923aa0096840f8c60960532eb2edefa803e58e84063c6bbf994",
+          "initial-environment.json": "be6ecc128ecb4c3b379be71bda78d5326437ed08b231b024ccc39b392aa52a88",
+          "lineage-state.json": "9a2fa6eb04832fd21d5fbd71eabd1ed57ac9a3a0d204f9ac87abb9eaaae2a851",
+          "manifest.json": "869809b0fd262663f35b12a2c8f30a4afb355817e41d29cd3a08b28c7774573d",
+          "native\\fixture.json": "b2226fac6f881c42438163313aba5a5e57cf90049bbf3db4c4117176c2d76400",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "3e91b331e7fe18d652a30dc11e1367f562518e8633349d71d648d653665c2af0",
+          "report.html": "fa0c4b4f40454415e214990bd63bfb4151cebc20e8be0c84498eb45f2e15ca6e",
+          "requests.json": "34e351a10f3c3083f12c60717219f15a2fe1781afb00355d2d2b3a38333c0a70",
+          "requests.jsonl": "aa22c658bd4fdde6c0cc49828d4c49d721e310bfd1b7dbc8004933045577d6f3",
+          "scoring.json": "4f4ca8e28b94e6ed52c8d28bc45fd3f5c25a30e943a940bbe804588d6e7da531",
+          "summary.json": "a6b87383c9f0c50bc15a8d3b5610afab05266442380e52ec8d95bc55e6840a15"
+        },
+        "plan_export_hashes_after": {
+          "forced-summary.json": "73aac7e398e2df2411515cdd7a65b69b55e47383ef0505901957f7fe2e1bf5f0",
+          "index.html": "c41b85695433a3b71e631a204a615f056069dc9e63ef012afbaf087798c447fc",
+          "plans.jsonl": "29d9d07d879365bea8b6d7abb83a3cf394984c8abaef25cd20ea192801ddfd5b",
+          "summary.json": "122c2fc856cb544e8a1d9b8d225493fce1e592f781613793e05de49ce9739955"
+        },
+        "implementation_hashes_after": {
+          "causal_replay.py": "24c423cb10c64ced0621324936f880159dd5379955a60e4a9d629bd1e8714f4d",
+          "causal_v2_audit.py": "e59679376781df9ba465db4ec69027dc169141d477323db34ea837ab3c3db08a",
+          "causal_v2.py": "64a9dc00c8e69911ceb4e9e5a84e20c578a6384dacc26dcccb33941df1880799",
+          "counterfactual.py": "e8395f6169367074b3dad7bc5b95a58fbbcb247ed2ffe6ee7dee5fa32c599ea8",
+          "counterfactual_audit.py": "2461f285966565211233422e750b5c691927f339333cae1d1f2cecd683964f93",
+          "evaluation_review.py": "2f9c610463a58b4343d57fc9dcd27ad3a86926e8cffbeb71439566594e082578",
+          "inspection.py": "c6971b03c45814acdfacf3f83303a0b67f1af1d36c9e96d42afae1d43f9ef36c",
+          "profiles.py": "d2df552d06099422465c7f1d51312cd3cd624d7a4e1ef005b0d334b38f9eea71",
+          "pacing.py": "3f5eabcc237a70c91569766549d89d25f36888d8abf624166fa7119f4af7d3ff",
+          "providers.py": "a72ceeb5f82654f3864c7ec97559d34b95b766c4af7dc83e6ca8344bc6ac74b3",
+          "runner.py": "318e9d093dbea0a66b5320dfcc39bc5c9f57cb14c833c181fdff9fee30b1ada3"
+        },
+        "comparisons": [
+          {
+            "proposal_event_id": "event:00000030",
+            "probe_id": "probe-v2:279737faea1eb8e0716d1a58d958eb54fe01b29ba7789eb7d5fdb46bf2b474bc",
+            "probe_binding_sha256": "279737faea1eb8e0716d1a58d958eb54fe01b29ba7789eb7d5fdb46bf2b474bc",
+            "baseline_slot_id": "replay:4e36433c6a51a70ed402f998aecfeb743e0d8bf02fe667ea1bd28ecc70bb0dd8",
+            "intervention_slot_id": "replay:23684c1b65b332ee230a36f79a822c6148eaa16cd30684e763f44d0d42e9d984",
+            "baseline_reproduced_original_sink": false,
+            "intervention_exact_sink_proposed": false,
+            "observed_sink_proposal_changed": null,
+            "status": "baseline_not_reproduced",
+            "scope": "One observed next step per prefix; no causal reference labels or tool execution"
+          },
+          {
+            "proposal_event_id": "event:00000030",
+            "probe_id": "probe-v2:339fb914a9991741a88acf7a61f57e98ca61683ec88e6391b9974945c68d00f7",
+            "probe_binding_sha256": "339fb914a9991741a88acf7a61f57e98ca61683ec88e6391b9974945c68d00f7",
+            "baseline_slot_id": "replay:4e36433c6a51a70ed402f998aecfeb743e0d8bf02fe667ea1bd28ecc70bb0dd8",
+            "intervention_slot_id": "replay:13bf4f2fe646e63be1baf63d26768fe07c75b5a7665f42c4f4767ebb3b5d9118",
+            "baseline_reproduced_original_sink": false,
+            "intervention_exact_sink_proposed": false,
+            "observed_sink_proposal_changed": null,
+            "status": "baseline_not_reproduced",
+            "scope": "One observed next step per prefix; no causal reference labels or tool execution"
+          },
+          {
+            "proposal_event_id": "event:00000030",
+            "probe_id": "probe-v2:8c76547aa7f3625b90296d49beda37cc4e20a986d030e098e684ebced911e59c",
+            "probe_binding_sha256": "8c76547aa7f3625b90296d49beda37cc4e20a986d030e098e684ebced911e59c",
+            "baseline_slot_id": "replay:4e36433c6a51a70ed402f998aecfeb743e0d8bf02fe667ea1bd28ecc70bb0dd8",
+            "intervention_slot_id": "replay:90e9be12d4175086679d4291a5e650d06a3dec80efc39268a79c7a0b3da3b322",
+            "baseline_reproduced_original_sink": false,
+            "intervention_exact_sink_proposed": false,
+            "observed_sink_proposal_changed": null,
+            "status": "baseline_not_reproduced",
+            "scope": "One observed next step per prefix; no causal reference labels or tool execution"
+          }
+        ]
+      },
+      "audit": {
+        "schema_version": 3,
+        "protocol": "counterfactual-joint-auditor-v3",
+        "judgment_format": "english_punctuation_v1",
+        "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+        "mode": "injected_client",
+        "planned_slots": 3,
+        "result_slots": 3,
+        "request_count": 3,
+        "request_count_scope": "SDK invocation attempts, including failed requests; no SDK retries",
+        "valid_judgments": 3,
+        "unknown_judgments": 0,
+        "status_counts": {
+          "valid": 3
+        },
+        "reported_usage": {
+          "prompt_tokens": {
+            "known_sum": 5598,
+            "known_count": 3,
+            "unknown_count": 0
+          },
+          "completion_tokens": {
+            "known_sum": 784,
+            "known_count": 3,
+            "unknown_count": 0
+          },
+          "total_tokens": {
+            "known_sum": 6382,
+            "known_count": 3,
+            "unknown_count": 0
+          }
+        },
+        "usage_scope": "Returned API fields only; failed or missing usage and provider billing are not estimated",
+        "elapsed_seconds": 67.59400000004098,
+        "timing_scope": "Audit execution and artifact generation after preflight; separate from primary agent timers",
+        "source_files_unchanged": true,
+        "source_hashes_before": {
+          "actions.json": "740844002878e819dab15c8c54abfe2330b74ecf76ed2a6c4bf40b2a16d789ff",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "a465dc86d9654c9c71390ea63daf2ea406991be5f2e82d350832d3bd87d6ddae",
+          "final-environment.json": "e8dc3b913b6bd0290cca50288a04dd43bba85b14f10392bb6d0087739c66233e",
+          "graph.json": "ff9029a94cc61923aa0096840f8c60960532eb2edefa803e58e84063c6bbf994",
+          "initial-environment.json": "be6ecc128ecb4c3b379be71bda78d5326437ed08b231b024ccc39b392aa52a88",
+          "lineage-state.json": "9a2fa6eb04832fd21d5fbd71eabd1ed57ac9a3a0d204f9ac87abb9eaaae2a851",
+          "manifest.json": "869809b0fd262663f35b12a2c8f30a4afb355817e41d29cd3a08b28c7774573d",
+          "native\\fixture.json": "b2226fac6f881c42438163313aba5a5e57cf90049bbf3db4c4117176c2d76400",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "3e91b331e7fe18d652a30dc11e1367f562518e8633349d71d648d653665c2af0",
+          "report.html": "fa0c4b4f40454415e214990bd63bfb4151cebc20e8be0c84498eb45f2e15ca6e",
+          "requests.json": "34e351a10f3c3083f12c60717219f15a2fe1781afb00355d2d2b3a38333c0a70",
+          "requests.jsonl": "aa22c658bd4fdde6c0cc49828d4c49d721e310bfd1b7dbc8004933045577d6f3",
+          "scoring.json": "4f4ca8e28b94e6ed52c8d28bc45fd3f5c25a30e943a940bbe804588d6e7da531",
+          "summary.json": "a6b87383c9f0c50bc15a8d3b5610afab05266442380e52ec8d95bc55e6840a15"
+        },
+        "source_hashes_after": {
+          "actions.json": "740844002878e819dab15c8c54abfe2330b74ecf76ed2a6c4bf40b2a16d789ff",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "a465dc86d9654c9c71390ea63daf2ea406991be5f2e82d350832d3bd87d6ddae",
+          "final-environment.json": "e8dc3b913b6bd0290cca50288a04dd43bba85b14f10392bb6d0087739c66233e",
+          "graph.json": "ff9029a94cc61923aa0096840f8c60960532eb2edefa803e58e84063c6bbf994",
+          "initial-environment.json": "be6ecc128ecb4c3b379be71bda78d5326437ed08b231b024ccc39b392aa52a88",
+          "lineage-state.json": "9a2fa6eb04832fd21d5fbd71eabd1ed57ac9a3a0d204f9ac87abb9eaaae2a851",
+          "manifest.json": "869809b0fd262663f35b12a2c8f30a4afb355817e41d29cd3a08b28c7774573d",
+          "native\\fixture.json": "b2226fac6f881c42438163313aba5a5e57cf90049bbf3db4c4117176c2d76400",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "3e91b331e7fe18d652a30dc11e1367f562518e8633349d71d648d653665c2af0",
+          "report.html": "fa0c4b4f40454415e214990bd63bfb4151cebc20e8be0c84498eb45f2e15ca6e",
+          "requests.json": "34e351a10f3c3083f12c60717219f15a2fe1781afb00355d2d2b3a38333c0a70",
+          "requests.jsonl": "aa22c658bd4fdde6c0cc49828d4c49d721e310bfd1b7dbc8004933045577d6f3",
+          "scoring.json": "4f4ca8e28b94e6ed52c8d28bc45fd3f5c25a30e943a940bbe804588d6e7da531",
+          "summary.json": "a6b87383c9f0c50bc15a8d3b5610afab05266442380e52ec8d95bc55e6840a15"
+        },
+        "plan_export_hashes_before": {
+          "forced-summary.json": "73aac7e398e2df2411515cdd7a65b69b55e47383ef0505901957f7fe2e1bf5f0",
+          "index.html": "c41b85695433a3b71e631a204a615f056069dc9e63ef012afbaf087798c447fc",
+          "plans.jsonl": "29d9d07d879365bea8b6d7abb83a3cf394984c8abaef25cd20ea192801ddfd5b",
+          "summary.json": "122c2fc856cb544e8a1d9b8d225493fce1e592f781613793e05de49ce9739955"
+        },
+        "plan_export_hashes_after": {
+          "forced-summary.json": "73aac7e398e2df2411515cdd7a65b69b55e47383ef0505901957f7fe2e1bf5f0",
+          "index.html": "c41b85695433a3b71e631a204a615f056069dc9e63ef012afbaf087798c447fc",
+          "plans.jsonl": "29d9d07d879365bea8b6d7abb83a3cf394984c8abaef25cd20ea192801ddfd5b",
+          "summary.json": "122c2fc856cb544e8a1d9b8d225493fce1e592f781613793e05de49ce9739955"
+        },
+        "proposal_summaries": [
+          {
+            "proposal_event_id": "event:00000009",
+            "plan_status": "not_eligible",
+            "plan_reason": "not_selected_sink",
+            "prediction_summary": {
+              "protocol": "counterfactual-joint-coverage-v2",
+              "judgment_format": "english_punctuation_v1",
+              "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+              "status": "unknown",
+              "complete": false,
+              "single_sources": [],
+              "pairs": [],
+              "unknown_count": 0,
+              "unmatched_result_count": 0,
+              "confidence": null
+            }
+          },
+          {
+            "proposal_event_id": "event:00000019",
+            "plan_status": "not_eligible",
+            "plan_reason": "not_selected_sink",
+            "prediction_summary": {
+              "protocol": "counterfactual-joint-coverage-v2",
+              "judgment_format": "english_punctuation_v1",
+              "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+              "status": "unknown",
+              "complete": false,
+              "single_sources": [],
+              "pairs": [],
+              "unknown_count": 0,
+              "unmatched_result_count": 0,
+              "confidence": null
+            }
+          },
+          {
+            "proposal_event_id": "event:00000030",
+            "plan_status": "eligible",
+            "plan_reason": "complete_negative_active_stages",
+            "prediction_summary": {
+              "protocol": "counterfactual-joint-coverage-v2",
+              "judgment_format": "english_punctuation_v1",
+              "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+              "status": "complete_predictions",
+              "complete": true,
+              "single_sources": [
+                {
+                  "source_id": "source:09ec2357ea234b2396ae36f5436b942abe5bfa9eee19bbf962e6349c7b181b0e",
+                  "probe_id": "probe-v2:279737faea1eb8e0716d1a58d958eb54fe01b29ba7789eb7d5fdb46bf2b474bc",
+                  "would_call_anyway": false,
+                  "status": "predicted_dependency",
+                  "reason": null
+                },
+                {
+                  "source_id": "source:76ce3553bde8a16a12933a734c50b0beded538d241572d14147b5bb0d3aad4e7",
+                  "probe_id": "probe-v2:339fb914a9991741a88acf7a61f57e98ca61683ec88e6391b9974945c68d00f7",
+                  "would_call_anyway": false,
+                  "status": "predicted_dependency",
+                  "reason": null
+                }
+              ],
+              "pairs": [
+                {
+                  "source_ids": [
+                    "source:09ec2357ea234b2396ae36f5436b942abe5bfa9eee19bbf962e6349c7b181b0e",
+                    "source:76ce3553bde8a16a12933a734c50b0beded538d241572d14147b5bb0d3aad4e7"
+                  ],
+                  "pattern": "predicted_AND_like",
+                  "reason": null,
+                  "would_call_after_removing_first_second_both": [
+                    false,
+                    false,
+                    false
+                  ]
+                }
+              ],
+              "unknown_count": 0,
+              "unmatched_result_count": 0,
+              "confidence": null
+            }
+          }
+        ],
+        "independent_causal_accuracy": null,
+        "native_tool_calls": 0,
+        "primary_agent_model_calls": 0
+      },
+      "prediction_concordance": [
+        {
+          "probe_id": "probe-v2:279737faea1eb8e0716d1a58d958eb54fe01b29ba7789eb7d5fdb46bf2b474bc",
+          "source_ids": null,
+          "known": false,
+          "predicted_call": null,
+          "observed_call": false,
+          "agreement": null
+        },
+        {
+          "probe_id": "probe-v2:339fb914a9991741a88acf7a61f57e98ca61683ec88e6391b9974945c68d00f7",
+          "source_ids": null,
+          "known": false,
+          "predicted_call": null,
+          "observed_call": false,
+          "agreement": null
+        },
+        {
+          "probe_id": "probe-v2:8c76547aa7f3625b90296d49beda37cc4e20a986d030e098e684ebced911e59c",
+          "source_ids": null,
+          "known": false,
+          "predicted_call": null,
+          "observed_call": false,
+          "agreement": null
+        }
+      ],
+      "unknown_request_accounting": []
+    },
+    {
+      "slot_id": "r_redundant-r02-both",
+      "construction": "r_redundant",
+      "arm": "both",
+      "repetition": 2,
+      "status": "selected",
+      "reason": null,
+      "target_proposal_id": "event:00000030",
+      "forced_diagnostic": true,
+      "baseline_plan_status": "not_eligible",
+      "baseline_coverage_status_counts": {
+        "not_eligible": 6
+      },
+      "replay": {
+        "schema_version": 1,
+        "protocol": "observed-one-step-source-replay-v1",
+        "scope": "Observed next-step model proposals under recorded and neutralized prefixes; no tool execution, whole-task outcomes, hidden-history access, causal ground truth or calibrated causality.",
+        "mode": "live_groq",
+        "planned_slots": 4,
+        "result_slots": 4,
+        "request_count": 4,
+        "request_count_scope": "SDK invocation attempts including failures, with zero SDK retries",
+        "observed_slots": 4,
+        "unknown_slots": 0,
+        "status_counts": {
+          "observed": 4
+        },
+        "reported_usage": {
+          "prompt_tokens": {
+            "known_sum": 2486,
+            "known_count": 4,
+            "unknown_count": 0
+          },
+          "completion_tokens": {
+            "known_sum": 579,
+            "known_count": 4,
+            "unknown_count": 0
+          },
+          "total_tokens": {
+            "known_sum": 3065,
+            "known_count": 4,
+            "unknown_count": 0
+          }
+        },
+        "usage_scope": "Returned API usage only; missing usage and provider billing are not estimated",
+        "elapsed_seconds": 63.68700000003446,
+        "timing_scope": "Replay after preflight, including optional pacing; separate from primary trajectory",
+        "native_tool_calls": 0,
+        "original_primary_run_writes": 0,
+        "independent_causal_accuracy": null,
+        "source_hashes_before": {
+          "actions.json": "0d79c565fe9806973443dcf2e459d83f7757ef9e314d63a4245f0804264e7d8f",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "e8241ac0d2a2fd05d87f6ff286ddb41a1a3694364d4a4c2424cb229e959f86f7",
+          "final-environment.json": "dccc0c4de7a163c8d7634e003cb5b293a866834aba4b61315553d5371ea3ee86",
+          "graph.json": "4da793a68eb2976e82c50f954760d10dfcf59cd464d7c5aec2870f8fc9bbb61d",
+          "initial-environment.json": "68b9d0943e37709129270be1871c72ddf8d1c772e789a30c88ff462994072ba9",
+          "lineage-state.json": "95a80f39627870a2175119e5932c9ce86e6049e8a57f2d5cac1b365a332ad584",
+          "manifest.json": "6922b15a844c9a0580491733d5ccd78bf1f71a6269c5ad91d8cc765224be20fa",
+          "native\\fixture.json": "868006c1c5efa3d4605bd6166c470508592451fd36d16b4beaa39938231bd69d",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "bbed42ca7aa9ab49a590e926ac062a9f857f0589dc6f7a2b63e413a6548efec0",
+          "report.html": "2455ce16d144af932706b7a23314a22720427b5b60dcc96b27c085b2083c0846",
+          "requests.json": "dff2900461964283ba414930cb374063579258f28f6e3e7348f2fe7cdfa4cf66",
+          "requests.jsonl": "7b47a1ef11fc8bb399cd3f42faa313a34a5397b96607aa8b570b2c964465eb11",
+          "scoring.json": "4c86bfbd0b53251b2d596b1d145e250f325bfff58ed3acd1a6158200b2b66e54",
+          "summary.json": "0f0283ff7af22bed536096b9fb502e0e1281e9c21fe880b48dda673be3b3707b"
+        },
+        "plan_export_hashes_before": {
+          "forced-summary.json": "d47e7803b29d026375ce7521ee90dc595f221ada709e4ff2a1c0c394001c7083",
+          "index.html": "759f292de2d3a8738d800e7254c7e3d8a6599d9c2284691b116dd9dc165aae1e",
+          "plans.jsonl": "732a63a5abf2de485888cf9db80a73afc9dcc958fae0d58f34a42b289875bb6e",
+          "summary.json": "2cbf5c8b3664637d8b9eb0c215a0c606b314430b8ffac5fdc3525db306d179a4"
+        },
+        "implementation_hashes_before": {
+          "causal_replay.py": "24c423cb10c64ced0621324936f880159dd5379955a60e4a9d629bd1e8714f4d",
+          "causal_v2_audit.py": "e59679376781df9ba465db4ec69027dc169141d477323db34ea837ab3c3db08a",
+          "causal_v2.py": "64a9dc00c8e69911ceb4e9e5a84e20c578a6384dacc26dcccb33941df1880799",
+          "counterfactual.py": "e8395f6169367074b3dad7bc5b95a58fbbcb247ed2ffe6ee7dee5fa32c599ea8",
+          "counterfactual_audit.py": "2461f285966565211233422e750b5c691927f339333cae1d1f2cecd683964f93",
+          "evaluation_review.py": "2f9c610463a58b4343d57fc9dcd27ad3a86926e8cffbeb71439566594e082578",
+          "inspection.py": "c6971b03c45814acdfacf3f83303a0b67f1af1d36c9e96d42afae1d43f9ef36c",
+          "profiles.py": "d2df552d06099422465c7f1d51312cd3cd624d7a4e1ef005b0d334b38f9eea71",
+          "pacing.py": "3f5eabcc237a70c91569766549d89d25f36888d8abf624166fa7119f4af7d3ff",
+          "providers.py": "a72ceeb5f82654f3864c7ec97559d34b95b766c4af7dc83e6ca8344bc6ac74b3",
+          "runner.py": "318e9d093dbea0a66b5320dfcc39bc5c9f57cb14c833c181fdff9fee30b1ada3"
+        },
+        "source_files_unchanged": true,
+        "plan_export_unchanged": true,
+        "implementation_unchanged": true,
+        "input_integrity_verified": true,
+        "source_hashes_after": {
+          "actions.json": "0d79c565fe9806973443dcf2e459d83f7757ef9e314d63a4245f0804264e7d8f",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "e8241ac0d2a2fd05d87f6ff286ddb41a1a3694364d4a4c2424cb229e959f86f7",
+          "final-environment.json": "dccc0c4de7a163c8d7634e003cb5b293a866834aba4b61315553d5371ea3ee86",
+          "graph.json": "4da793a68eb2976e82c50f954760d10dfcf59cd464d7c5aec2870f8fc9bbb61d",
+          "initial-environment.json": "68b9d0943e37709129270be1871c72ddf8d1c772e789a30c88ff462994072ba9",
+          "lineage-state.json": "95a80f39627870a2175119e5932c9ce86e6049e8a57f2d5cac1b365a332ad584",
+          "manifest.json": "6922b15a844c9a0580491733d5ccd78bf1f71a6269c5ad91d8cc765224be20fa",
+          "native\\fixture.json": "868006c1c5efa3d4605bd6166c470508592451fd36d16b4beaa39938231bd69d",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "bbed42ca7aa9ab49a590e926ac062a9f857f0589dc6f7a2b63e413a6548efec0",
+          "report.html": "2455ce16d144af932706b7a23314a22720427b5b60dcc96b27c085b2083c0846",
+          "requests.json": "dff2900461964283ba414930cb374063579258f28f6e3e7348f2fe7cdfa4cf66",
+          "requests.jsonl": "7b47a1ef11fc8bb399cd3f42faa313a34a5397b96607aa8b570b2c964465eb11",
+          "scoring.json": "4c86bfbd0b53251b2d596b1d145e250f325bfff58ed3acd1a6158200b2b66e54",
+          "summary.json": "0f0283ff7af22bed536096b9fb502e0e1281e9c21fe880b48dda673be3b3707b"
+        },
+        "plan_export_hashes_after": {
+          "forced-summary.json": "d47e7803b29d026375ce7521ee90dc595f221ada709e4ff2a1c0c394001c7083",
+          "index.html": "759f292de2d3a8738d800e7254c7e3d8a6599d9c2284691b116dd9dc165aae1e",
+          "plans.jsonl": "732a63a5abf2de485888cf9db80a73afc9dcc958fae0d58f34a42b289875bb6e",
+          "summary.json": "2cbf5c8b3664637d8b9eb0c215a0c606b314430b8ffac5fdc3525db306d179a4"
+        },
+        "implementation_hashes_after": {
+          "causal_replay.py": "24c423cb10c64ced0621324936f880159dd5379955a60e4a9d629bd1e8714f4d",
+          "causal_v2_audit.py": "e59679376781df9ba465db4ec69027dc169141d477323db34ea837ab3c3db08a",
+          "causal_v2.py": "64a9dc00c8e69911ceb4e9e5a84e20c578a6384dacc26dcccb33941df1880799",
+          "counterfactual.py": "e8395f6169367074b3dad7bc5b95a58fbbcb247ed2ffe6ee7dee5fa32c599ea8",
+          "counterfactual_audit.py": "2461f285966565211233422e750b5c691927f339333cae1d1f2cecd683964f93",
+          "evaluation_review.py": "2f9c610463a58b4343d57fc9dcd27ad3a86926e8cffbeb71439566594e082578",
+          "inspection.py": "c6971b03c45814acdfacf3f83303a0b67f1af1d36c9e96d42afae1d43f9ef36c",
+          "profiles.py": "d2df552d06099422465c7f1d51312cd3cd624d7a4e1ef005b0d334b38f9eea71",
+          "pacing.py": "3f5eabcc237a70c91569766549d89d25f36888d8abf624166fa7119f4af7d3ff",
+          "providers.py": "a72ceeb5f82654f3864c7ec97559d34b95b766c4af7dc83e6ca8344bc6ac74b3",
+          "runner.py": "318e9d093dbea0a66b5320dfcc39bc5c9f57cb14c833c181fdff9fee30b1ada3"
+        },
+        "comparisons": [
+          {
+            "proposal_event_id": "event:00000030",
+            "probe_id": "probe-v2:269985ce087ab282bc588172e3a18a1c07280d2a6d792663f99c589d360c3d78",
+            "probe_binding_sha256": "269985ce087ab282bc588172e3a18a1c07280d2a6d792663f99c589d360c3d78",
+            "baseline_slot_id": "replay:445d04df3c3d3f9f90430a73e745bf372a392a063f2360b00430bda991fe1063",
+            "intervention_slot_id": "replay:e5492f836d9734df7db4471ed36d15452706788d727851667daf9a244bf1f0d3",
+            "baseline_reproduced_original_sink": false,
+            "intervention_exact_sink_proposed": false,
+            "observed_sink_proposal_changed": null,
+            "status": "baseline_not_reproduced",
+            "scope": "One observed next step per prefix; no causal reference labels or tool execution"
+          },
+          {
+            "proposal_event_id": "event:00000030",
+            "probe_id": "probe-v2:003c52b38eb7f4630b99ed0f16fba8f674db53d5099887cb2ae521525a58615c",
+            "probe_binding_sha256": "003c52b38eb7f4630b99ed0f16fba8f674db53d5099887cb2ae521525a58615c",
+            "baseline_slot_id": "replay:445d04df3c3d3f9f90430a73e745bf372a392a063f2360b00430bda991fe1063",
+            "intervention_slot_id": "replay:59ea419e012b722cfef91517e162d97bc2b1e82cda5a287548fc35c4a81b7404",
+            "baseline_reproduced_original_sink": false,
+            "intervention_exact_sink_proposed": false,
+            "observed_sink_proposal_changed": null,
+            "status": "baseline_not_reproduced",
+            "scope": "One observed next step per prefix; no causal reference labels or tool execution"
+          },
+          {
+            "proposal_event_id": "event:00000030",
+            "probe_id": "probe-v2:ead04e56f2d37d112bf6ce0d67744086dc572c90f4e8a1147c44dd18de849b01",
+            "probe_binding_sha256": "ead04e56f2d37d112bf6ce0d67744086dc572c90f4e8a1147c44dd18de849b01",
+            "baseline_slot_id": "replay:445d04df3c3d3f9f90430a73e745bf372a392a063f2360b00430bda991fe1063",
+            "intervention_slot_id": "replay:7edc7e8272b8bbcc72ee46e2d283f100f59bfe9b372fa5f6e3191b68a597b4ac",
+            "baseline_reproduced_original_sink": false,
+            "intervention_exact_sink_proposed": false,
+            "observed_sink_proposal_changed": null,
+            "status": "baseline_not_reproduced",
+            "scope": "One observed next step per prefix; no causal reference labels or tool execution"
+          }
+        ]
+      },
+      "audit": {
+        "schema_version": 3,
+        "protocol": "counterfactual-joint-auditor-v3",
+        "judgment_format": "english_punctuation_v1",
+        "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+        "mode": "injected_client",
+        "planned_slots": 3,
+        "result_slots": 3,
+        "request_count": 3,
+        "request_count_scope": "SDK invocation attempts, including failed requests; no SDK retries",
+        "valid_judgments": 3,
+        "unknown_judgments": 0,
+        "status_counts": {
+          "valid": 3
+        },
+        "reported_usage": {
+          "prompt_tokens": {
+            "known_sum": 5520,
+            "known_count": 3,
+            "unknown_count": 0
+          },
+          "completion_tokens": {
+            "known_sum": 769,
+            "known_count": 3,
+            "unknown_count": 0
+          },
+          "total_tokens": {
+            "known_sum": 6289,
+            "known_count": 3,
+            "unknown_count": 0
+          }
+        },
+        "usage_scope": "Returned API fields only; failed or missing usage and provider billing are not estimated",
+        "elapsed_seconds": 68.29700000002049,
+        "timing_scope": "Audit execution and artifact generation after preflight; separate from primary agent timers",
+        "source_files_unchanged": true,
+        "source_hashes_before": {
+          "actions.json": "0d79c565fe9806973443dcf2e459d83f7757ef9e314d63a4245f0804264e7d8f",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "e8241ac0d2a2fd05d87f6ff286ddb41a1a3694364d4a4c2424cb229e959f86f7",
+          "final-environment.json": "dccc0c4de7a163c8d7634e003cb5b293a866834aba4b61315553d5371ea3ee86",
+          "graph.json": "4da793a68eb2976e82c50f954760d10dfcf59cd464d7c5aec2870f8fc9bbb61d",
+          "initial-environment.json": "68b9d0943e37709129270be1871c72ddf8d1c772e789a30c88ff462994072ba9",
+          "lineage-state.json": "95a80f39627870a2175119e5932c9ce86e6049e8a57f2d5cac1b365a332ad584",
+          "manifest.json": "6922b15a844c9a0580491733d5ccd78bf1f71a6269c5ad91d8cc765224be20fa",
+          "native\\fixture.json": "868006c1c5efa3d4605bd6166c470508592451fd36d16b4beaa39938231bd69d",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "bbed42ca7aa9ab49a590e926ac062a9f857f0589dc6f7a2b63e413a6548efec0",
+          "report.html": "2455ce16d144af932706b7a23314a22720427b5b60dcc96b27c085b2083c0846",
+          "requests.json": "dff2900461964283ba414930cb374063579258f28f6e3e7348f2fe7cdfa4cf66",
+          "requests.jsonl": "7b47a1ef11fc8bb399cd3f42faa313a34a5397b96607aa8b570b2c964465eb11",
+          "scoring.json": "4c86bfbd0b53251b2d596b1d145e250f325bfff58ed3acd1a6158200b2b66e54",
+          "summary.json": "0f0283ff7af22bed536096b9fb502e0e1281e9c21fe880b48dda673be3b3707b"
+        },
+        "source_hashes_after": {
+          "actions.json": "0d79c565fe9806973443dcf2e459d83f7757ef9e314d63a4245f0804264e7d8f",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "e8241ac0d2a2fd05d87f6ff286ddb41a1a3694364d4a4c2424cb229e959f86f7",
+          "final-environment.json": "dccc0c4de7a163c8d7634e003cb5b293a866834aba4b61315553d5371ea3ee86",
+          "graph.json": "4da793a68eb2976e82c50f954760d10dfcf59cd464d7c5aec2870f8fc9bbb61d",
+          "initial-environment.json": "68b9d0943e37709129270be1871c72ddf8d1c772e789a30c88ff462994072ba9",
+          "lineage-state.json": "95a80f39627870a2175119e5932c9ce86e6049e8a57f2d5cac1b365a332ad584",
+          "manifest.json": "6922b15a844c9a0580491733d5ccd78bf1f71a6269c5ad91d8cc765224be20fa",
+          "native\\fixture.json": "868006c1c5efa3d4605bd6166c470508592451fd36d16b4beaa39938231bd69d",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "bbed42ca7aa9ab49a590e926ac062a9f857f0589dc6f7a2b63e413a6548efec0",
+          "report.html": "2455ce16d144af932706b7a23314a22720427b5b60dcc96b27c085b2083c0846",
+          "requests.json": "dff2900461964283ba414930cb374063579258f28f6e3e7348f2fe7cdfa4cf66",
+          "requests.jsonl": "7b47a1ef11fc8bb399cd3f42faa313a34a5397b96607aa8b570b2c964465eb11",
+          "scoring.json": "4c86bfbd0b53251b2d596b1d145e250f325bfff58ed3acd1a6158200b2b66e54",
+          "summary.json": "0f0283ff7af22bed536096b9fb502e0e1281e9c21fe880b48dda673be3b3707b"
+        },
+        "plan_export_hashes_before": {
+          "forced-summary.json": "d47e7803b29d026375ce7521ee90dc595f221ada709e4ff2a1c0c394001c7083",
+          "index.html": "759f292de2d3a8738d800e7254c7e3d8a6599d9c2284691b116dd9dc165aae1e",
+          "plans.jsonl": "732a63a5abf2de485888cf9db80a73afc9dcc958fae0d58f34a42b289875bb6e",
+          "summary.json": "2cbf5c8b3664637d8b9eb0c215a0c606b314430b8ffac5fdc3525db306d179a4"
+        },
+        "plan_export_hashes_after": {
+          "forced-summary.json": "d47e7803b29d026375ce7521ee90dc595f221ada709e4ff2a1c0c394001c7083",
+          "index.html": "759f292de2d3a8738d800e7254c7e3d8a6599d9c2284691b116dd9dc165aae1e",
+          "plans.jsonl": "732a63a5abf2de485888cf9db80a73afc9dcc958fae0d58f34a42b289875bb6e",
+          "summary.json": "2cbf5c8b3664637d8b9eb0c215a0c606b314430b8ffac5fdc3525db306d179a4"
+        },
+        "proposal_summaries": [
+          {
+            "proposal_event_id": "event:00000009",
+            "plan_status": "not_eligible",
+            "plan_reason": "not_selected_sink",
+            "prediction_summary": {
+              "protocol": "counterfactual-joint-coverage-v2",
+              "judgment_format": "english_punctuation_v1",
+              "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+              "status": "unknown",
+              "complete": false,
+              "single_sources": [],
+              "pairs": [],
+              "unknown_count": 0,
+              "unmatched_result_count": 0,
+              "confidence": null
+            }
+          },
+          {
+            "proposal_event_id": "event:00000019",
+            "plan_status": "not_eligible",
+            "plan_reason": "not_selected_sink",
+            "prediction_summary": {
+              "protocol": "counterfactual-joint-coverage-v2",
+              "judgment_format": "english_punctuation_v1",
+              "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+              "status": "unknown",
+              "complete": false,
+              "single_sources": [],
+              "pairs": [],
+              "unknown_count": 0,
+              "unmatched_result_count": 0,
+              "confidence": null
+            }
+          },
+          {
+            "proposal_event_id": "event:00000030",
+            "plan_status": "eligible",
+            "plan_reason": "complete_negative_active_stages",
+            "prediction_summary": {
+              "protocol": "counterfactual-joint-coverage-v2",
+              "judgment_format": "english_punctuation_v1",
+              "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+              "status": "complete_predictions",
+              "complete": true,
+              "single_sources": [
+                {
+                  "source_id": "source:20f08636b7fb9f31f66b715f15baf1a1a9f13e73fb6b469a546c0cc4ef302851",
+                  "probe_id": "probe-v2:269985ce087ab282bc588172e3a18a1c07280d2a6d792663f99c589d360c3d78",
+                  "would_call_anyway": true,
+                  "status": "predicted_no_change",
+                  "reason": null
+                },
+                {
+                  "source_id": "source:5a9fbfbcf886990c4f00a2b0ab2de687a1fd38e0269deb659fc8001fef83f7cc",
+                  "probe_id": "probe-v2:003c52b38eb7f4630b99ed0f16fba8f674db53d5099887cb2ae521525a58615c",
+                  "would_call_anyway": true,
+                  "status": "predicted_no_change",
+                  "reason": null
+                }
+              ],
+              "pairs": [
+                {
+                  "source_ids": [
+                    "source:20f08636b7fb9f31f66b715f15baf1a1a9f13e73fb6b469a546c0cc4ef302851",
+                    "source:5a9fbfbcf886990c4f00a2b0ab2de687a1fd38e0269deb659fc8001fef83f7cc"
+                  ],
+                  "pattern": "predicted_redundant_OR_like",
+                  "reason": null,
+                  "would_call_after_removing_first_second_both": [
+                    true,
+                    true,
+                    false
+                  ]
+                }
+              ],
+              "unknown_count": 0,
+              "unmatched_result_count": 0,
+              "confidence": null
+            }
+          }
+        ],
+        "independent_causal_accuracy": null,
+        "native_tool_calls": 0,
+        "primary_agent_model_calls": 0
+      },
+      "prediction_concordance": [
+        {
+          "probe_id": "probe-v2:269985ce087ab282bc588172e3a18a1c07280d2a6d792663f99c589d360c3d78",
+          "source_ids": null,
+          "known": false,
+          "predicted_call": null,
+          "observed_call": false,
+          "agreement": null
+        },
+        {
+          "probe_id": "probe-v2:003c52b38eb7f4630b99ed0f16fba8f674db53d5099887cb2ae521525a58615c",
+          "source_ids": null,
+          "known": false,
+          "predicted_call": null,
+          "observed_call": false,
+          "agreement": null
+        },
+        {
+          "probe_id": "probe-v2:ead04e56f2d37d112bf6ce0d67744086dc572c90f4e8a1147c44dd18de849b01",
+          "source_ids": null,
+          "known": false,
+          "predicted_call": null,
+          "observed_call": false,
+          "agreement": null
+        }
+      ],
+      "unknown_request_accounting": []
+    },
+    {
+      "slot_id": "r_split-r02-both",
+      "construction": "r_split",
+      "arm": "both",
+      "repetition": 2,
+      "status": "selected",
+      "reason": null,
+      "target_proposal_id": "event:00000030",
+      "forced_diagnostic": true,
+      "baseline_plan_status": "not_eligible",
+      "baseline_coverage_status_counts": {
+        "not_eligible": 6
+      },
+      "replay": {
+        "schema_version": 1,
+        "protocol": "observed-one-step-source-replay-v1",
+        "scope": "Observed next-step model proposals under recorded and neutralized prefixes; no tool execution, whole-task outcomes, hidden-history access, causal ground truth or calibrated causality.",
+        "mode": "live_groq",
+        "planned_slots": 4,
+        "result_slots": 4,
+        "request_count": 4,
+        "request_count_scope": "SDK invocation attempts including failures, with zero SDK retries",
+        "observed_slots": 4,
+        "unknown_slots": 0,
+        "status_counts": {
+          "observed": 4
+        },
+        "reported_usage": {
+          "prompt_tokens": {
+            "known_sum": 2460,
+            "known_count": 4,
+            "unknown_count": 0
+          },
+          "completion_tokens": {
+            "known_sum": 504,
+            "known_count": 4,
+            "unknown_count": 0
+          },
+          "total_tokens": {
+            "known_sum": 2964,
+            "known_count": 4,
+            "unknown_count": 0
+          }
+        },
+        "usage_scope": "Returned API usage only; missing usage and provider billing are not estimated",
+        "elapsed_seconds": 62.82800000003772,
+        "timing_scope": "Replay after preflight, including optional pacing; separate from primary trajectory",
+        "native_tool_calls": 0,
+        "original_primary_run_writes": 0,
+        "independent_causal_accuracy": null,
+        "source_hashes_before": {
+          "actions.json": "047414784cb9f4b1e64495d095ecfed5c10be7bb13ebce16bd128b0b85047267",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "3172be3b4039139e6031dcfcc98d03da72cf65b4cd2bcde78cc30d0e37e3cb26",
+          "final-environment.json": "5fd5b1e37de6306111af8071d7cc7e3c33dc649ac10faf9ffb22c1e19b17ed5c",
+          "graph.json": "66136fda0dbcfee565e3653e9d68687f04b341f139622777dc0eee98fa11dfef",
+          "initial-environment.json": "be6ecc128ecb4c3b379be71bda78d5326437ed08b231b024ccc39b392aa52a88",
+          "lineage-state.json": "2711c92226f54ec4cec7a05bb33d9c003867e8d3e74fcd8d34d1b99b669fa4c2",
+          "manifest.json": "84f1b9714f88997e2f988a110dc9361b27a9128e66c74903e66099963e92b237",
+          "native\\fixture.json": "4edef15addde0d12e8a7bf6c310cd439b3f30e78421ba6d48f25dae184647da6",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "b5ca12fb20c4a52d12d3617e703bb34f6ad3426214b36e8bf5bb0e982574301e",
+          "report.html": "cf4b876723239ecfd7b0fae7160ddccde52ff497d69dd5cde32f34d2625a27ef",
+          "requests.json": "fa04436078442e3221ba53c9a2db09fe725fb5cabde53ff2d672e69299f615bf",
+          "requests.jsonl": "6bb5e29af73baea2f10bb267bbf6dde28e64bfff79edc58253069fa5af57887f",
+          "scoring.json": "3e0196544a296695f2a5f9f4490c66a85089f38f43e0072ce1a2c62e5899aa7d",
+          "summary.json": "53b0cbfe9b9c125ba9342b8f981b7c0b331ac198350e108e59dad9520d56a686"
+        },
+        "plan_export_hashes_before": {
+          "forced-summary.json": "090924796b213639016089cd6a98d55aea98c02cde47ef3b040b91be231ec09e",
+          "index.html": "7fbf20d2114f27ce0d832522ad49dce95d59d70ff04601b665d50f60033820e3",
+          "plans.jsonl": "6400bfcd962351f78287aadc6f404b3f8d0a1aaf1462d288a81d65fd00f644d3",
+          "summary.json": "a0b336bf074963b6907f833f50f8561ae95c1c12f5efe92cb2bb9a785e77548a"
+        },
+        "implementation_hashes_before": {
+          "causal_replay.py": "24c423cb10c64ced0621324936f880159dd5379955a60e4a9d629bd1e8714f4d",
+          "causal_v2_audit.py": "e59679376781df9ba465db4ec69027dc169141d477323db34ea837ab3c3db08a",
+          "causal_v2.py": "64a9dc00c8e69911ceb4e9e5a84e20c578a6384dacc26dcccb33941df1880799",
+          "counterfactual.py": "e8395f6169367074b3dad7bc5b95a58fbbcb247ed2ffe6ee7dee5fa32c599ea8",
+          "counterfactual_audit.py": "2461f285966565211233422e750b5c691927f339333cae1d1f2cecd683964f93",
+          "evaluation_review.py": "2f9c610463a58b4343d57fc9dcd27ad3a86926e8cffbeb71439566594e082578",
+          "inspection.py": "c6971b03c45814acdfacf3f83303a0b67f1af1d36c9e96d42afae1d43f9ef36c",
+          "profiles.py": "d2df552d06099422465c7f1d51312cd3cd624d7a4e1ef005b0d334b38f9eea71",
+          "pacing.py": "3f5eabcc237a70c91569766549d89d25f36888d8abf624166fa7119f4af7d3ff",
+          "providers.py": "a72ceeb5f82654f3864c7ec97559d34b95b766c4af7dc83e6ca8344bc6ac74b3",
+          "runner.py": "318e9d093dbea0a66b5320dfcc39bc5c9f57cb14c833c181fdff9fee30b1ada3"
+        },
+        "source_files_unchanged": true,
+        "plan_export_unchanged": true,
+        "implementation_unchanged": true,
+        "input_integrity_verified": true,
+        "source_hashes_after": {
+          "actions.json": "047414784cb9f4b1e64495d095ecfed5c10be7bb13ebce16bd128b0b85047267",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "3172be3b4039139e6031dcfcc98d03da72cf65b4cd2bcde78cc30d0e37e3cb26",
+          "final-environment.json": "5fd5b1e37de6306111af8071d7cc7e3c33dc649ac10faf9ffb22c1e19b17ed5c",
+          "graph.json": "66136fda0dbcfee565e3653e9d68687f04b341f139622777dc0eee98fa11dfef",
+          "initial-environment.json": "be6ecc128ecb4c3b379be71bda78d5326437ed08b231b024ccc39b392aa52a88",
+          "lineage-state.json": "2711c92226f54ec4cec7a05bb33d9c003867e8d3e74fcd8d34d1b99b669fa4c2",
+          "manifest.json": "84f1b9714f88997e2f988a110dc9361b27a9128e66c74903e66099963e92b237",
+          "native\\fixture.json": "4edef15addde0d12e8a7bf6c310cd439b3f30e78421ba6d48f25dae184647da6",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "b5ca12fb20c4a52d12d3617e703bb34f6ad3426214b36e8bf5bb0e982574301e",
+          "report.html": "cf4b876723239ecfd7b0fae7160ddccde52ff497d69dd5cde32f34d2625a27ef",
+          "requests.json": "fa04436078442e3221ba53c9a2db09fe725fb5cabde53ff2d672e69299f615bf",
+          "requests.jsonl": "6bb5e29af73baea2f10bb267bbf6dde28e64bfff79edc58253069fa5af57887f",
+          "scoring.json": "3e0196544a296695f2a5f9f4490c66a85089f38f43e0072ce1a2c62e5899aa7d",
+          "summary.json": "53b0cbfe9b9c125ba9342b8f981b7c0b331ac198350e108e59dad9520d56a686"
+        },
+        "plan_export_hashes_after": {
+          "forced-summary.json": "090924796b213639016089cd6a98d55aea98c02cde47ef3b040b91be231ec09e",
+          "index.html": "7fbf20d2114f27ce0d832522ad49dce95d59d70ff04601b665d50f60033820e3",
+          "plans.jsonl": "6400bfcd962351f78287aadc6f404b3f8d0a1aaf1462d288a81d65fd00f644d3",
+          "summary.json": "a0b336bf074963b6907f833f50f8561ae95c1c12f5efe92cb2bb9a785e77548a"
+        },
+        "implementation_hashes_after": {
+          "causal_replay.py": "24c423cb10c64ced0621324936f880159dd5379955a60e4a9d629bd1e8714f4d",
+          "causal_v2_audit.py": "e59679376781df9ba465db4ec69027dc169141d477323db34ea837ab3c3db08a",
+          "causal_v2.py": "64a9dc00c8e69911ceb4e9e5a84e20c578a6384dacc26dcccb33941df1880799",
+          "counterfactual.py": "e8395f6169367074b3dad7bc5b95a58fbbcb247ed2ffe6ee7dee5fa32c599ea8",
+          "counterfactual_audit.py": "2461f285966565211233422e750b5c691927f339333cae1d1f2cecd683964f93",
+          "evaluation_review.py": "2f9c610463a58b4343d57fc9dcd27ad3a86926e8cffbeb71439566594e082578",
+          "inspection.py": "c6971b03c45814acdfacf3f83303a0b67f1af1d36c9e96d42afae1d43f9ef36c",
+          "profiles.py": "d2df552d06099422465c7f1d51312cd3cd624d7a4e1ef005b0d334b38f9eea71",
+          "pacing.py": "3f5eabcc237a70c91569766549d89d25f36888d8abf624166fa7119f4af7d3ff",
+          "providers.py": "a72ceeb5f82654f3864c7ec97559d34b95b766c4af7dc83e6ca8344bc6ac74b3",
+          "runner.py": "318e9d093dbea0a66b5320dfcc39bc5c9f57cb14c833c181fdff9fee30b1ada3"
+        },
+        "comparisons": [
+          {
+            "proposal_event_id": "event:00000030",
+            "probe_id": "probe-v2:0e180d2fc5b61d7e387d2e992b23fdab81ae47e35d834bbe115dbdfa56ee77d1",
+            "probe_binding_sha256": "0e180d2fc5b61d7e387d2e992b23fdab81ae47e35d834bbe115dbdfa56ee77d1",
+            "baseline_slot_id": "replay:13aeb151a744e0d4fe0b4a598f8040a2bc7c7ed1428111b9ee355a33d7563aaa",
+            "intervention_slot_id": "replay:cb4af53cb96762f59b1d26f4fe58e9c2dabb3e42e17eac9056ca45eb752f9a88",
+            "baseline_reproduced_original_sink": false,
+            "intervention_exact_sink_proposed": false,
+            "observed_sink_proposal_changed": null,
+            "status": "baseline_not_reproduced",
+            "scope": "One observed next step per prefix; no causal reference labels or tool execution"
+          },
+          {
+            "proposal_event_id": "event:00000030",
+            "probe_id": "probe-v2:d8f6cfc808717deb530c1bbaa336f857fc18fe9453f2d120a2301f31129652e0",
+            "probe_binding_sha256": "d8f6cfc808717deb530c1bbaa336f857fc18fe9453f2d120a2301f31129652e0",
+            "baseline_slot_id": "replay:13aeb151a744e0d4fe0b4a598f8040a2bc7c7ed1428111b9ee355a33d7563aaa",
+            "intervention_slot_id": "replay:8965a8f5f95d4c15b24ca17df2eac1a307be09f705bf3f96601f435a244137ec",
+            "baseline_reproduced_original_sink": false,
+            "intervention_exact_sink_proposed": false,
+            "observed_sink_proposal_changed": null,
+            "status": "baseline_not_reproduced",
+            "scope": "One observed next step per prefix; no causal reference labels or tool execution"
+          },
+          {
+            "proposal_event_id": "event:00000030",
+            "probe_id": "probe-v2:33f8a63ed6099a431ad703d172d23d639ca43a8d1b625572eae9d6d95250114b",
+            "probe_binding_sha256": "33f8a63ed6099a431ad703d172d23d639ca43a8d1b625572eae9d6d95250114b",
+            "baseline_slot_id": "replay:13aeb151a744e0d4fe0b4a598f8040a2bc7c7ed1428111b9ee355a33d7563aaa",
+            "intervention_slot_id": "replay:9d16ea585aef011cee276d288ad217ecc7ee5632f66da0f3656aa7758be9a6f2",
+            "baseline_reproduced_original_sink": false,
+            "intervention_exact_sink_proposed": false,
+            "observed_sink_proposal_changed": null,
+            "status": "baseline_not_reproduced",
+            "scope": "One observed next step per prefix; no causal reference labels or tool execution"
+          }
+        ]
+      },
+      "audit": {
+        "schema_version": 3,
+        "protocol": "counterfactual-joint-auditor-v3",
+        "judgment_format": "english_punctuation_v1",
+        "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+        "mode": "injected_client",
+        "planned_slots": 3,
+        "result_slots": 3,
+        "request_count": 3,
+        "request_count_scope": "SDK invocation attempts, including failed requests; no SDK retries",
+        "valid_judgments": 3,
+        "unknown_judgments": 0,
+        "status_counts": {
+          "valid": 3
+        },
+        "reported_usage": {
+          "prompt_tokens": {
+            "known_sum": 5588,
+            "known_count": 3,
+            "unknown_count": 0
+          },
+          "completion_tokens": {
+            "known_sum": 665,
+            "known_count": 3,
+            "unknown_count": 0
+          },
+          "total_tokens": {
+            "known_sum": 6253,
+            "known_count": 3,
+            "unknown_count": 0
+          }
+        },
+        "usage_scope": "Returned API fields only; failed or missing usage and provider billing are not estimated",
+        "elapsed_seconds": 68.54700000002049,
+        "timing_scope": "Audit execution and artifact generation after preflight; separate from primary agent timers",
+        "source_files_unchanged": true,
+        "source_hashes_before": {
+          "actions.json": "047414784cb9f4b1e64495d095ecfed5c10be7bb13ebce16bd128b0b85047267",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "3172be3b4039139e6031dcfcc98d03da72cf65b4cd2bcde78cc30d0e37e3cb26",
+          "final-environment.json": "5fd5b1e37de6306111af8071d7cc7e3c33dc649ac10faf9ffb22c1e19b17ed5c",
+          "graph.json": "66136fda0dbcfee565e3653e9d68687f04b341f139622777dc0eee98fa11dfef",
+          "initial-environment.json": "be6ecc128ecb4c3b379be71bda78d5326437ed08b231b024ccc39b392aa52a88",
+          "lineage-state.json": "2711c92226f54ec4cec7a05bb33d9c003867e8d3e74fcd8d34d1b99b669fa4c2",
+          "manifest.json": "84f1b9714f88997e2f988a110dc9361b27a9128e66c74903e66099963e92b237",
+          "native\\fixture.json": "4edef15addde0d12e8a7bf6c310cd439b3f30e78421ba6d48f25dae184647da6",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "b5ca12fb20c4a52d12d3617e703bb34f6ad3426214b36e8bf5bb0e982574301e",
+          "report.html": "cf4b876723239ecfd7b0fae7160ddccde52ff497d69dd5cde32f34d2625a27ef",
+          "requests.json": "fa04436078442e3221ba53c9a2db09fe725fb5cabde53ff2d672e69299f615bf",
+          "requests.jsonl": "6bb5e29af73baea2f10bb267bbf6dde28e64bfff79edc58253069fa5af57887f",
+          "scoring.json": "3e0196544a296695f2a5f9f4490c66a85089f38f43e0072ce1a2c62e5899aa7d",
+          "summary.json": "53b0cbfe9b9c125ba9342b8f981b7c0b331ac198350e108e59dad9520d56a686"
+        },
+        "source_hashes_after": {
+          "actions.json": "047414784cb9f4b1e64495d095ecfed5c10be7bb13ebce16bd128b0b85047267",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "3172be3b4039139e6031dcfcc98d03da72cf65b4cd2bcde78cc30d0e37e3cb26",
+          "final-environment.json": "5fd5b1e37de6306111af8071d7cc7e3c33dc649ac10faf9ffb22c1e19b17ed5c",
+          "graph.json": "66136fda0dbcfee565e3653e9d68687f04b341f139622777dc0eee98fa11dfef",
+          "initial-environment.json": "be6ecc128ecb4c3b379be71bda78d5326437ed08b231b024ccc39b392aa52a88",
+          "lineage-state.json": "2711c92226f54ec4cec7a05bb33d9c003867e8d3e74fcd8d34d1b99b669fa4c2",
+          "manifest.json": "84f1b9714f88997e2f988a110dc9361b27a9128e66c74903e66099963e92b237",
+          "native\\fixture.json": "4edef15addde0d12e8a7bf6c310cd439b3f30e78421ba6d48f25dae184647da6",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "b5ca12fb20c4a52d12d3617e703bb34f6ad3426214b36e8bf5bb0e982574301e",
+          "report.html": "cf4b876723239ecfd7b0fae7160ddccde52ff497d69dd5cde32f34d2625a27ef",
+          "requests.json": "fa04436078442e3221ba53c9a2db09fe725fb5cabde53ff2d672e69299f615bf",
+          "requests.jsonl": "6bb5e29af73baea2f10bb267bbf6dde28e64bfff79edc58253069fa5af57887f",
+          "scoring.json": "3e0196544a296695f2a5f9f4490c66a85089f38f43e0072ce1a2c62e5899aa7d",
+          "summary.json": "53b0cbfe9b9c125ba9342b8f981b7c0b331ac198350e108e59dad9520d56a686"
+        },
+        "plan_export_hashes_before": {
+          "forced-summary.json": "090924796b213639016089cd6a98d55aea98c02cde47ef3b040b91be231ec09e",
+          "index.html": "7fbf20d2114f27ce0d832522ad49dce95d59d70ff04601b665d50f60033820e3",
+          "plans.jsonl": "6400bfcd962351f78287aadc6f404b3f8d0a1aaf1462d288a81d65fd00f644d3",
+          "summary.json": "a0b336bf074963b6907f833f50f8561ae95c1c12f5efe92cb2bb9a785e77548a"
+        },
+        "plan_export_hashes_after": {
+          "forced-summary.json": "090924796b213639016089cd6a98d55aea98c02cde47ef3b040b91be231ec09e",
+          "index.html": "7fbf20d2114f27ce0d832522ad49dce95d59d70ff04601b665d50f60033820e3",
+          "plans.jsonl": "6400bfcd962351f78287aadc6f404b3f8d0a1aaf1462d288a81d65fd00f644d3",
+          "summary.json": "a0b336bf074963b6907f833f50f8561ae95c1c12f5efe92cb2bb9a785e77548a"
+        },
+        "proposal_summaries": [
+          {
+            "proposal_event_id": "event:00000009",
+            "plan_status": "not_eligible",
+            "plan_reason": "not_selected_sink",
+            "prediction_summary": {
+              "protocol": "counterfactual-joint-coverage-v2",
+              "judgment_format": "english_punctuation_v1",
+              "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+              "status": "unknown",
+              "complete": false,
+              "single_sources": [],
+              "pairs": [],
+              "unknown_count": 0,
+              "unmatched_result_count": 0,
+              "confidence": null
+            }
+          },
+          {
+            "proposal_event_id": "event:00000019",
+            "plan_status": "not_eligible",
+            "plan_reason": "not_selected_sink",
+            "prediction_summary": {
+              "protocol": "counterfactual-joint-coverage-v2",
+              "judgment_format": "english_punctuation_v1",
+              "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+              "status": "unknown",
+              "complete": false,
+              "single_sources": [],
+              "pairs": [],
+              "unknown_count": 0,
+              "unmatched_result_count": 0,
+              "confidence": null
+            }
+          },
+          {
+            "proposal_event_id": "event:00000030",
+            "plan_status": "eligible",
+            "plan_reason": "complete_negative_active_stages",
+            "prediction_summary": {
+              "protocol": "counterfactual-joint-coverage-v2",
+              "judgment_format": "english_punctuation_v1",
+              "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+              "status": "complete_predictions",
+              "complete": true,
+              "single_sources": [
+                {
+                  "source_id": "source:dc01b9761ad0a9c92e9b1882f46c8d14c69d82902289a8e743be3e807ccb2f4b",
+                  "probe_id": "probe-v2:0e180d2fc5b61d7e387d2e992b23fdab81ae47e35d834bbe115dbdfa56ee77d1",
+                  "would_call_anyway": false,
+                  "status": "predicted_dependency",
+                  "reason": null
+                },
+                {
+                  "source_id": "source:f09ef9fd1e63612d911c285b22f9fda46b1f722a6835fb6cdc819c524986fffd",
+                  "probe_id": "probe-v2:d8f6cfc808717deb530c1bbaa336f857fc18fe9453f2d120a2301f31129652e0",
+                  "would_call_anyway": false,
+                  "status": "predicted_dependency",
+                  "reason": null
+                }
+              ],
+              "pairs": [
+                {
+                  "source_ids": [
+                    "source:dc01b9761ad0a9c92e9b1882f46c8d14c69d82902289a8e743be3e807ccb2f4b",
+                    "source:f09ef9fd1e63612d911c285b22f9fda46b1f722a6835fb6cdc819c524986fffd"
+                  ],
+                  "pattern": "predicted_AND_like",
+                  "reason": null,
+                  "would_call_after_removing_first_second_both": [
+                    false,
+                    false,
+                    false
+                  ]
+                }
+              ],
+              "unknown_count": 0,
+              "unmatched_result_count": 0,
+              "confidence": null
+            }
+          }
+        ],
+        "independent_causal_accuracy": null,
+        "native_tool_calls": 0,
+        "primary_agent_model_calls": 0
+      },
+      "prediction_concordance": [
+        {
+          "probe_id": "probe-v2:0e180d2fc5b61d7e387d2e992b23fdab81ae47e35d834bbe115dbdfa56ee77d1",
+          "source_ids": null,
+          "known": false,
+          "predicted_call": null,
+          "observed_call": false,
+          "agreement": null
+        },
+        {
+          "probe_id": "probe-v2:d8f6cfc808717deb530c1bbaa336f857fc18fe9453f2d120a2301f31129652e0",
+          "source_ids": null,
+          "known": false,
+          "predicted_call": null,
+          "observed_call": false,
+          "agreement": null
+        },
+        {
+          "probe_id": "probe-v2:33f8a63ed6099a431ad703d172d23d639ca43a8d1b625572eae9d6d95250114b",
+          "source_ids": null,
+          "known": false,
+          "predicted_call": null,
+          "observed_call": false,
+          "agreement": null
+        }
+      ],
+      "unknown_request_accounting": []
+    },
+    {
+      "slot_id": "r_redundant-r03-both",
+      "construction": "r_redundant",
+      "arm": "both",
+      "repetition": 3,
+      "status": "selected",
+      "reason": null,
+      "target_proposal_id": "event:00000030",
+      "forced_diagnostic": true,
+      "baseline_plan_status": "not_eligible",
+      "baseline_coverage_status_counts": {
+        "not_eligible": 6
+      },
+      "replay": {
+        "schema_version": 1,
+        "protocol": "observed-one-step-source-replay-v1",
+        "scope": "Observed next-step model proposals under recorded and neutralized prefixes; no tool execution, whole-task outcomes, hidden-history access, causal ground truth or calibrated causality.",
+        "mode": "live_groq",
+        "planned_slots": 4,
+        "result_slots": 4,
+        "request_count": 4,
+        "request_count_scope": "SDK invocation attempts including failures, with zero SDK retries",
+        "observed_slots": 4,
+        "unknown_slots": 0,
+        "status_counts": {
+          "observed": 4
+        },
+        "reported_usage": {
+          "prompt_tokens": {
+            "known_sum": 2486,
+            "known_count": 4,
+            "unknown_count": 0
+          },
+          "completion_tokens": {
+            "known_sum": 597,
+            "known_count": 4,
+            "unknown_count": 0
+          },
+          "total_tokens": {
+            "known_sum": 3083,
+            "known_count": 4,
+            "unknown_count": 0
+          }
+        },
+        "usage_scope": "Returned API usage only; missing usage and provider billing are not estimated",
+        "elapsed_seconds": 62.78100000001723,
+        "timing_scope": "Replay after preflight, including optional pacing; separate from primary trajectory",
+        "native_tool_calls": 0,
+        "original_primary_run_writes": 0,
+        "independent_causal_accuracy": null,
+        "source_hashes_before": {
+          "actions.json": "7a60ac8cd74780c903ce9d6005faaf232a04a41ccbacecf0a91506a1bb886288",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "cc382d1f9d31992efaf89eee2881d1261372832cb9bac22306b77bf71ac0a0d9",
+          "final-environment.json": "c7c04103186c13d9d629c2a2e91ab5e4ef7479dfb93217b5102e4001cdb30382",
+          "graph.json": "2bfb187f6953bbdf6a0f3c899e2ae1f01d7fa6a45675ab2f5fd4aef5031c345d",
+          "initial-environment.json": "68b9d0943e37709129270be1871c72ddf8d1c772e789a30c88ff462994072ba9",
+          "lineage-state.json": "c85276f849c4f2cdcabc1492dc374feab5bd490c77a200e35d44ebaeea66074a",
+          "manifest.json": "2f7d1328232095d67c9706153f7d533962bd90ac8a2b4b6230d06442d30c3441",
+          "native\\fixture.json": "53448925c6f75750eb6b64734ca7c6cb5465e0c67d76922bde204eed3ece579c",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "4ecababb1720dba4d2750c18f831c74863d1a1dfda1060d126378f874410e754",
+          "report.html": "01adbbfaac3b53082a42e3566ea1b94135717004a8d2eaa2b0c07a4721435b83",
+          "requests.json": "3fda8da0f0e09b15f88b87c3847aee94801028e028962990ff7e02f2e77485ee",
+          "requests.jsonl": "8b58e304aa404904a2c5937ecaec47d62a1737e5bc7b9ade040086ad1d7c4006",
+          "scoring.json": "367f5c8330af747d3304aedc6b15af5383740b56cdeca60acc78d5d335f499d2",
+          "summary.json": "a8406d12f96bce689157f45de89bc37a431a5c1cb3c0ad2c25a798871f62417e"
+        },
+        "plan_export_hashes_before": {
+          "forced-summary.json": "01f1ac3b4f6a2461159a20a75650909904b7349e864c71b6eddf274efbad94ab",
+          "index.html": "0a7d4d961be30ce560c8e12f47d3375c9d2a3a759e46f58d60af6dbbe5d137fc",
+          "plans.jsonl": "60e4f1d3e5e7bb6d18576e0e32062aa02e6cb1ee11c5ee26adf0386736a7e1ee",
+          "summary.json": "fc96300c1515f5275c5e34de8cd1455735b52eed8ca22a942f49d05e86f7ceff"
+        },
+        "implementation_hashes_before": {
+          "causal_replay.py": "24c423cb10c64ced0621324936f880159dd5379955a60e4a9d629bd1e8714f4d",
+          "causal_v2_audit.py": "e59679376781df9ba465db4ec69027dc169141d477323db34ea837ab3c3db08a",
+          "causal_v2.py": "64a9dc00c8e69911ceb4e9e5a84e20c578a6384dacc26dcccb33941df1880799",
+          "counterfactual.py": "e8395f6169367074b3dad7bc5b95a58fbbcb247ed2ffe6ee7dee5fa32c599ea8",
+          "counterfactual_audit.py": "2461f285966565211233422e750b5c691927f339333cae1d1f2cecd683964f93",
+          "evaluation_review.py": "2f9c610463a58b4343d57fc9dcd27ad3a86926e8cffbeb71439566594e082578",
+          "inspection.py": "c6971b03c45814acdfacf3f83303a0b67f1af1d36c9e96d42afae1d43f9ef36c",
+          "profiles.py": "d2df552d06099422465c7f1d51312cd3cd624d7a4e1ef005b0d334b38f9eea71",
+          "pacing.py": "3f5eabcc237a70c91569766549d89d25f36888d8abf624166fa7119f4af7d3ff",
+          "providers.py": "a72ceeb5f82654f3864c7ec97559d34b95b766c4af7dc83e6ca8344bc6ac74b3",
+          "runner.py": "318e9d093dbea0a66b5320dfcc39bc5c9f57cb14c833c181fdff9fee30b1ada3"
+        },
+        "source_files_unchanged": true,
+        "plan_export_unchanged": true,
+        "implementation_unchanged": true,
+        "input_integrity_verified": true,
+        "source_hashes_after": {
+          "actions.json": "7a60ac8cd74780c903ce9d6005faaf232a04a41ccbacecf0a91506a1bb886288",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "cc382d1f9d31992efaf89eee2881d1261372832cb9bac22306b77bf71ac0a0d9",
+          "final-environment.json": "c7c04103186c13d9d629c2a2e91ab5e4ef7479dfb93217b5102e4001cdb30382",
+          "graph.json": "2bfb187f6953bbdf6a0f3c899e2ae1f01d7fa6a45675ab2f5fd4aef5031c345d",
+          "initial-environment.json": "68b9d0943e37709129270be1871c72ddf8d1c772e789a30c88ff462994072ba9",
+          "lineage-state.json": "c85276f849c4f2cdcabc1492dc374feab5bd490c77a200e35d44ebaeea66074a",
+          "manifest.json": "2f7d1328232095d67c9706153f7d533962bd90ac8a2b4b6230d06442d30c3441",
+          "native\\fixture.json": "53448925c6f75750eb6b64734ca7c6cb5465e0c67d76922bde204eed3ece579c",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "4ecababb1720dba4d2750c18f831c74863d1a1dfda1060d126378f874410e754",
+          "report.html": "01adbbfaac3b53082a42e3566ea1b94135717004a8d2eaa2b0c07a4721435b83",
+          "requests.json": "3fda8da0f0e09b15f88b87c3847aee94801028e028962990ff7e02f2e77485ee",
+          "requests.jsonl": "8b58e304aa404904a2c5937ecaec47d62a1737e5bc7b9ade040086ad1d7c4006",
+          "scoring.json": "367f5c8330af747d3304aedc6b15af5383740b56cdeca60acc78d5d335f499d2",
+          "summary.json": "a8406d12f96bce689157f45de89bc37a431a5c1cb3c0ad2c25a798871f62417e"
+        },
+        "plan_export_hashes_after": {
+          "forced-summary.json": "01f1ac3b4f6a2461159a20a75650909904b7349e864c71b6eddf274efbad94ab",
+          "index.html": "0a7d4d961be30ce560c8e12f47d3375c9d2a3a759e46f58d60af6dbbe5d137fc",
+          "plans.jsonl": "60e4f1d3e5e7bb6d18576e0e32062aa02e6cb1ee11c5ee26adf0386736a7e1ee",
+          "summary.json": "fc96300c1515f5275c5e34de8cd1455735b52eed8ca22a942f49d05e86f7ceff"
+        },
+        "implementation_hashes_after": {
+          "causal_replay.py": "24c423cb10c64ced0621324936f880159dd5379955a60e4a9d629bd1e8714f4d",
+          "causal_v2_audit.py": "e59679376781df9ba465db4ec69027dc169141d477323db34ea837ab3c3db08a",
+          "causal_v2.py": "64a9dc00c8e69911ceb4e9e5a84e20c578a6384dacc26dcccb33941df1880799",
+          "counterfactual.py": "e8395f6169367074b3dad7bc5b95a58fbbcb247ed2ffe6ee7dee5fa32c599ea8",
+          "counterfactual_audit.py": "2461f285966565211233422e750b5c691927f339333cae1d1f2cecd683964f93",
+          "evaluation_review.py": "2f9c610463a58b4343d57fc9dcd27ad3a86926e8cffbeb71439566594e082578",
+          "inspection.py": "c6971b03c45814acdfacf3f83303a0b67f1af1d36c9e96d42afae1d43f9ef36c",
+          "profiles.py": "d2df552d06099422465c7f1d51312cd3cd624d7a4e1ef005b0d334b38f9eea71",
+          "pacing.py": "3f5eabcc237a70c91569766549d89d25f36888d8abf624166fa7119f4af7d3ff",
+          "providers.py": "a72ceeb5f82654f3864c7ec97559d34b95b766c4af7dc83e6ca8344bc6ac74b3",
+          "runner.py": "318e9d093dbea0a66b5320dfcc39bc5c9f57cb14c833c181fdff9fee30b1ada3"
+        },
+        "comparisons": [
+          {
+            "proposal_event_id": "event:00000030",
+            "probe_id": "probe-v2:6987625223bf4ecd44264a68cf2d6d05a09e68c6c6871ace800689d93b013b77",
+            "probe_binding_sha256": "6987625223bf4ecd44264a68cf2d6d05a09e68c6c6871ace800689d93b013b77",
+            "baseline_slot_id": "replay:80901c0e1433555dd9123b4fc1b85bf48fe046d87f891bb552439b5d1bfa142f",
+            "intervention_slot_id": "replay:b9a32c732886751d384d014f891c04698a6343b4ebcf1e1fe464437dd88a867f",
+            "baseline_reproduced_original_sink": false,
+            "intervention_exact_sink_proposed": false,
+            "observed_sink_proposal_changed": null,
+            "status": "baseline_not_reproduced",
+            "scope": "One observed next step per prefix; no causal reference labels or tool execution"
+          },
+          {
+            "proposal_event_id": "event:00000030",
+            "probe_id": "probe-v2:f9702cb2b364e6c931b2bdaa1582806aac809edb0ff0b9b401da98221ff1be38",
+            "probe_binding_sha256": "f9702cb2b364e6c931b2bdaa1582806aac809edb0ff0b9b401da98221ff1be38",
+            "baseline_slot_id": "replay:80901c0e1433555dd9123b4fc1b85bf48fe046d87f891bb552439b5d1bfa142f",
+            "intervention_slot_id": "replay:e0a1e12b157da5ff48872dc742dc0d36b248573af56fb5f32a815923dd8ea8e2",
+            "baseline_reproduced_original_sink": false,
+            "intervention_exact_sink_proposed": false,
+            "observed_sink_proposal_changed": null,
+            "status": "baseline_not_reproduced",
+            "scope": "One observed next step per prefix; no causal reference labels or tool execution"
+          },
+          {
+            "proposal_event_id": "event:00000030",
+            "probe_id": "probe-v2:6b46449a7fda0dee142c69c9a25776fa51bbfbbbf787ae80bbb88878fe906263",
+            "probe_binding_sha256": "6b46449a7fda0dee142c69c9a25776fa51bbfbbbf787ae80bbb88878fe906263",
+            "baseline_slot_id": "replay:80901c0e1433555dd9123b4fc1b85bf48fe046d87f891bb552439b5d1bfa142f",
+            "intervention_slot_id": "replay:3af4bea603dd692053ddb108fba3e6bf2867cea325837d33f5689ad69b94edeb",
+            "baseline_reproduced_original_sink": false,
+            "intervention_exact_sink_proposed": false,
+            "observed_sink_proposal_changed": null,
+            "status": "baseline_not_reproduced",
+            "scope": "One observed next step per prefix; no causal reference labels or tool execution"
+          }
+        ]
+      },
+      "audit": {
+        "schema_version": 3,
+        "protocol": "counterfactual-joint-auditor-v3",
+        "judgment_format": "english_punctuation_v1",
+        "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+        "mode": "injected_client",
+        "planned_slots": 3,
+        "result_slots": 3,
+        "request_count": 3,
+        "request_count_scope": "SDK invocation attempts, including failed requests; no SDK retries",
+        "valid_judgments": 3,
+        "unknown_judgments": 0,
+        "status_counts": {
+          "valid": 3
+        },
+        "reported_usage": {
+          "prompt_tokens": {
+            "known_sum": 5595,
+            "known_count": 3,
+            "unknown_count": 0
+          },
+          "completion_tokens": {
+            "known_sum": 567,
+            "known_count": 3,
+            "unknown_count": 0
+          },
+          "total_tokens": {
+            "known_sum": 6162,
+            "known_count": 3,
+            "unknown_count": 0
+          }
+        },
+        "usage_scope": "Returned API fields only; failed or missing usage and provider billing are not estimated",
+        "elapsed_seconds": 69.51600000000326,
+        "timing_scope": "Audit execution and artifact generation after preflight; separate from primary agent timers",
+        "source_files_unchanged": true,
+        "source_hashes_before": {
+          "actions.json": "7a60ac8cd74780c903ce9d6005faaf232a04a41ccbacecf0a91506a1bb886288",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "cc382d1f9d31992efaf89eee2881d1261372832cb9bac22306b77bf71ac0a0d9",
+          "final-environment.json": "c7c04103186c13d9d629c2a2e91ab5e4ef7479dfb93217b5102e4001cdb30382",
+          "graph.json": "2bfb187f6953bbdf6a0f3c899e2ae1f01d7fa6a45675ab2f5fd4aef5031c345d",
+          "initial-environment.json": "68b9d0943e37709129270be1871c72ddf8d1c772e789a30c88ff462994072ba9",
+          "lineage-state.json": "c85276f849c4f2cdcabc1492dc374feab5bd490c77a200e35d44ebaeea66074a",
+          "manifest.json": "2f7d1328232095d67c9706153f7d533962bd90ac8a2b4b6230d06442d30c3441",
+          "native\\fixture.json": "53448925c6f75750eb6b64734ca7c6cb5465e0c67d76922bde204eed3ece579c",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "4ecababb1720dba4d2750c18f831c74863d1a1dfda1060d126378f874410e754",
+          "report.html": "01adbbfaac3b53082a42e3566ea1b94135717004a8d2eaa2b0c07a4721435b83",
+          "requests.json": "3fda8da0f0e09b15f88b87c3847aee94801028e028962990ff7e02f2e77485ee",
+          "requests.jsonl": "8b58e304aa404904a2c5937ecaec47d62a1737e5bc7b9ade040086ad1d7c4006",
+          "scoring.json": "367f5c8330af747d3304aedc6b15af5383740b56cdeca60acc78d5d335f499d2",
+          "summary.json": "a8406d12f96bce689157f45de89bc37a431a5c1cb3c0ad2c25a798871f62417e"
+        },
+        "source_hashes_after": {
+          "actions.json": "7a60ac8cd74780c903ce9d6005faaf232a04a41ccbacecf0a91506a1bb886288",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "cc382d1f9d31992efaf89eee2881d1261372832cb9bac22306b77bf71ac0a0d9",
+          "final-environment.json": "c7c04103186c13d9d629c2a2e91ab5e4ef7479dfb93217b5102e4001cdb30382",
+          "graph.json": "2bfb187f6953bbdf6a0f3c899e2ae1f01d7fa6a45675ab2f5fd4aef5031c345d",
+          "initial-environment.json": "68b9d0943e37709129270be1871c72ddf8d1c772e789a30c88ff462994072ba9",
+          "lineage-state.json": "c85276f849c4f2cdcabc1492dc374feab5bd490c77a200e35d44ebaeea66074a",
+          "manifest.json": "2f7d1328232095d67c9706153f7d533962bd90ac8a2b4b6230d06442d30c3441",
+          "native\\fixture.json": "53448925c6f75750eb6b64734ca7c6cb5465e0c67d76922bde204eed3ece579c",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "4ecababb1720dba4d2750c18f831c74863d1a1dfda1060d126378f874410e754",
+          "report.html": "01adbbfaac3b53082a42e3566ea1b94135717004a8d2eaa2b0c07a4721435b83",
+          "requests.json": "3fda8da0f0e09b15f88b87c3847aee94801028e028962990ff7e02f2e77485ee",
+          "requests.jsonl": "8b58e304aa404904a2c5937ecaec47d62a1737e5bc7b9ade040086ad1d7c4006",
+          "scoring.json": "367f5c8330af747d3304aedc6b15af5383740b56cdeca60acc78d5d335f499d2",
+          "summary.json": "a8406d12f96bce689157f45de89bc37a431a5c1cb3c0ad2c25a798871f62417e"
+        },
+        "plan_export_hashes_before": {
+          "forced-summary.json": "01f1ac3b4f6a2461159a20a75650909904b7349e864c71b6eddf274efbad94ab",
+          "index.html": "0a7d4d961be30ce560c8e12f47d3375c9d2a3a759e46f58d60af6dbbe5d137fc",
+          "plans.jsonl": "60e4f1d3e5e7bb6d18576e0e32062aa02e6cb1ee11c5ee26adf0386736a7e1ee",
+          "summary.json": "fc96300c1515f5275c5e34de8cd1455735b52eed8ca22a942f49d05e86f7ceff"
+        },
+        "plan_export_hashes_after": {
+          "forced-summary.json": "01f1ac3b4f6a2461159a20a75650909904b7349e864c71b6eddf274efbad94ab",
+          "index.html": "0a7d4d961be30ce560c8e12f47d3375c9d2a3a759e46f58d60af6dbbe5d137fc",
+          "plans.jsonl": "60e4f1d3e5e7bb6d18576e0e32062aa02e6cb1ee11c5ee26adf0386736a7e1ee",
+          "summary.json": "fc96300c1515f5275c5e34de8cd1455735b52eed8ca22a942f49d05e86f7ceff"
+        },
+        "proposal_summaries": [
+          {
+            "proposal_event_id": "event:00000009",
+            "plan_status": "not_eligible",
+            "plan_reason": "not_selected_sink",
+            "prediction_summary": {
+              "protocol": "counterfactual-joint-coverage-v2",
+              "judgment_format": "english_punctuation_v1",
+              "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+              "status": "unknown",
+              "complete": false,
+              "single_sources": [],
+              "pairs": [],
+              "unknown_count": 0,
+              "unmatched_result_count": 0,
+              "confidence": null
+            }
+          },
+          {
+            "proposal_event_id": "event:00000019",
+            "plan_status": "not_eligible",
+            "plan_reason": "not_selected_sink",
+            "prediction_summary": {
+              "protocol": "counterfactual-joint-coverage-v2",
+              "judgment_format": "english_punctuation_v1",
+              "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+              "status": "unknown",
+              "complete": false,
+              "single_sources": [],
+              "pairs": [],
+              "unknown_count": 0,
+              "unmatched_result_count": 0,
+              "confidence": null
+            }
+          },
+          {
+            "proposal_event_id": "event:00000030",
+            "plan_status": "eligible",
+            "plan_reason": "complete_negative_active_stages",
+            "prediction_summary": {
+              "protocol": "counterfactual-joint-coverage-v2",
+              "judgment_format": "english_punctuation_v1",
+              "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+              "status": "complete_predictions",
+              "complete": true,
+              "single_sources": [
+                {
+                  "source_id": "source:8265b110e2ef5e4912d3463f05a208a2ea3fc198ecb8672231883156f5b076b9",
+                  "probe_id": "probe-v2:6987625223bf4ecd44264a68cf2d6d05a09e68c6c6871ace800689d93b013b77",
+                  "would_call_anyway": true,
+                  "status": "predicted_no_change",
+                  "reason": null
+                },
+                {
+                  "source_id": "source:dd0ef197e5fd0854d01e04160ebdfccd8ba2ae1289020fbf2f46b1d2a0a8938b",
+                  "probe_id": "probe-v2:f9702cb2b364e6c931b2bdaa1582806aac809edb0ff0b9b401da98221ff1be38",
+                  "would_call_anyway": false,
+                  "status": "predicted_dependency",
+                  "reason": null
+                }
+              ],
+              "pairs": [
+                {
+                  "source_ids": [
+                    "source:8265b110e2ef5e4912d3463f05a208a2ea3fc198ecb8672231883156f5b076b9",
+                    "source:dd0ef197e5fd0854d01e04160ebdfccd8ba2ae1289020fbf2f46b1d2a0a8938b"
+                  ],
+                  "pattern": "predicted_second_source_dependency",
+                  "reason": null,
+                  "would_call_after_removing_first_second_both": [
+                    true,
+                    false,
+                    false
+                  ]
+                }
+              ],
+              "unknown_count": 0,
+              "unmatched_result_count": 0,
+              "confidence": null
+            }
+          }
+        ],
+        "independent_causal_accuracy": null,
+        "native_tool_calls": 0,
+        "primary_agent_model_calls": 0
+      },
+      "prediction_concordance": [
+        {
+          "probe_id": "probe-v2:6987625223bf4ecd44264a68cf2d6d05a09e68c6c6871ace800689d93b013b77",
+          "source_ids": null,
+          "known": false,
+          "predicted_call": null,
+          "observed_call": false,
+          "agreement": null
+        },
+        {
+          "probe_id": "probe-v2:f9702cb2b364e6c931b2bdaa1582806aac809edb0ff0b9b401da98221ff1be38",
+          "source_ids": null,
+          "known": false,
+          "predicted_call": null,
+          "observed_call": false,
+          "agreement": null
+        },
+        {
+          "probe_id": "probe-v2:6b46449a7fda0dee142c69c9a25776fa51bbfbbbf787ae80bbb88878fe906263",
+          "source_ids": null,
+          "known": false,
+          "predicted_call": null,
+          "observed_call": false,
+          "agreement": null
+        }
+      ],
+      "unknown_request_accounting": []
+    },
+    {
+      "slot_id": "r_split-r03-both",
+      "construction": "r_split",
+      "arm": "both",
+      "repetition": 3,
+      "status": "selected",
+      "reason": null,
+      "target_proposal_id": "event:00000030",
+      "forced_diagnostic": true,
+      "baseline_plan_status": "not_eligible",
+      "baseline_coverage_status_counts": {
+        "not_eligible": 6
+      },
+      "replay": {
+        "schema_version": 1,
+        "protocol": "observed-one-step-source-replay-v1",
+        "scope": "Observed next-step model proposals under recorded and neutralized prefixes; no tool execution, whole-task outcomes, hidden-history access, causal ground truth or calibrated causality.",
+        "mode": "live_groq",
+        "planned_slots": 4,
+        "result_slots": 4,
+        "request_count": 4,
+        "request_count_scope": "SDK invocation attempts including failures, with zero SDK retries",
+        "observed_slots": 4,
+        "unknown_slots": 0,
+        "status_counts": {
+          "observed": 4
+        },
+        "reported_usage": {
+          "prompt_tokens": {
+            "known_sum": 2460,
+            "known_count": 4,
+            "unknown_count": 0
+          },
+          "completion_tokens": {
+            "known_sum": 643,
+            "known_count": 4,
+            "unknown_count": 0
+          },
+          "total_tokens": {
+            "known_sum": 3103,
+            "known_count": 4,
+            "unknown_count": 0
+          }
+        },
+        "usage_scope": "Returned API usage only; missing usage and provider billing are not estimated",
+        "elapsed_seconds": 61.625,
+        "timing_scope": "Replay after preflight, including optional pacing; separate from primary trajectory",
+        "native_tool_calls": 0,
+        "original_primary_run_writes": 0,
+        "independent_causal_accuracy": null,
+        "source_hashes_before": {
+          "actions.json": "047414784cb9f4b1e64495d095ecfed5c10be7bb13ebce16bd128b0b85047267",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "ebd69110d7949205aea3b65b80c0dbd256a03811c26aeda02921ad446065224d",
+          "final-environment.json": "5fd5b1e37de6306111af8071d7cc7e3c33dc649ac10faf9ffb22c1e19b17ed5c",
+          "graph.json": "938d944430d7007f74a159caeabcc64050e15f14f9174ee0b4ed271164d0e304",
+          "initial-environment.json": "be6ecc128ecb4c3b379be71bda78d5326437ed08b231b024ccc39b392aa52a88",
+          "lineage-state.json": "929ed5b2a770ce1cf025a75cf7c0057698c32868367913f5cdf70586ac58ee5a",
+          "manifest.json": "de970d354cbb43a2299d690e3723430c7be0d100bdb849bdf8f040eb534f8b49",
+          "native\\fixture.json": "b17593944acedc6477a245971efdca63cb06e0e5a578751dc34ce2c29680623f",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "cb57c4d8e20e88050e38985092e374938e18dadfb349e6e5c65dc3f9bf96cc21",
+          "report.html": "7e9c27940f2a59b5986962cc8d0f62a0ea94e5eabd858fdd545ef62fdcb4d7cc",
+          "requests.json": "e4f7c53ecc41f16237dca8643ac65b9ed38e6543f08d3a6c7f58a7358547f881",
+          "requests.jsonl": "9b7f2bbba9c829b69fda2228887958d0a68cb11ec28cceeeefd38afb751087f5",
+          "scoring.json": "3e0196544a296695f2a5f9f4490c66a85089f38f43e0072ce1a2c62e5899aa7d",
+          "summary.json": "7486e8be544ef3abdcebe630db1eae40c9982f6bb272617809d549efff6e4abe"
+        },
+        "plan_export_hashes_before": {
+          "forced-summary.json": "9eb3c110e2ff47dc6b3919c555143ef1e51895b8e9a6eb4121c17f317c7b08f6",
+          "index.html": "dbb7941e210496752c11d9423882ad4713d266bcaa48e597c7351395a65a5dec",
+          "plans.jsonl": "9cedae354350ecd49d25c58cfa5bff14b9c416c6d30361f6437fcc18bf7a6f9f",
+          "summary.json": "99bd03e922df14765ed228554ef0a90fd6ea424e465e5b9f0c186f7b52024036"
+        },
+        "implementation_hashes_before": {
+          "causal_replay.py": "24c423cb10c64ced0621324936f880159dd5379955a60e4a9d629bd1e8714f4d",
+          "causal_v2_audit.py": "e59679376781df9ba465db4ec69027dc169141d477323db34ea837ab3c3db08a",
+          "causal_v2.py": "64a9dc00c8e69911ceb4e9e5a84e20c578a6384dacc26dcccb33941df1880799",
+          "counterfactual.py": "e8395f6169367074b3dad7bc5b95a58fbbcb247ed2ffe6ee7dee5fa32c599ea8",
+          "counterfactual_audit.py": "2461f285966565211233422e750b5c691927f339333cae1d1f2cecd683964f93",
+          "evaluation_review.py": "2f9c610463a58b4343d57fc9dcd27ad3a86926e8cffbeb71439566594e082578",
+          "inspection.py": "c6971b03c45814acdfacf3f83303a0b67f1af1d36c9e96d42afae1d43f9ef36c",
+          "profiles.py": "d2df552d06099422465c7f1d51312cd3cd624d7a4e1ef005b0d334b38f9eea71",
+          "pacing.py": "3f5eabcc237a70c91569766549d89d25f36888d8abf624166fa7119f4af7d3ff",
+          "providers.py": "a72ceeb5f82654f3864c7ec97559d34b95b766c4af7dc83e6ca8344bc6ac74b3",
+          "runner.py": "318e9d093dbea0a66b5320dfcc39bc5c9f57cb14c833c181fdff9fee30b1ada3"
+        },
+        "source_files_unchanged": true,
+        "plan_export_unchanged": true,
+        "implementation_unchanged": true,
+        "input_integrity_verified": true,
+        "source_hashes_after": {
+          "actions.json": "047414784cb9f4b1e64495d095ecfed5c10be7bb13ebce16bd128b0b85047267",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "ebd69110d7949205aea3b65b80c0dbd256a03811c26aeda02921ad446065224d",
+          "final-environment.json": "5fd5b1e37de6306111af8071d7cc7e3c33dc649ac10faf9ffb22c1e19b17ed5c",
+          "graph.json": "938d944430d7007f74a159caeabcc64050e15f14f9174ee0b4ed271164d0e304",
+          "initial-environment.json": "be6ecc128ecb4c3b379be71bda78d5326437ed08b231b024ccc39b392aa52a88",
+          "lineage-state.json": "929ed5b2a770ce1cf025a75cf7c0057698c32868367913f5cdf70586ac58ee5a",
+          "manifest.json": "de970d354cbb43a2299d690e3723430c7be0d100bdb849bdf8f040eb534f8b49",
+          "native\\fixture.json": "b17593944acedc6477a245971efdca63cb06e0e5a578751dc34ce2c29680623f",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "cb57c4d8e20e88050e38985092e374938e18dadfb349e6e5c65dc3f9bf96cc21",
+          "report.html": "7e9c27940f2a59b5986962cc8d0f62a0ea94e5eabd858fdd545ef62fdcb4d7cc",
+          "requests.json": "e4f7c53ecc41f16237dca8643ac65b9ed38e6543f08d3a6c7f58a7358547f881",
+          "requests.jsonl": "9b7f2bbba9c829b69fda2228887958d0a68cb11ec28cceeeefd38afb751087f5",
+          "scoring.json": "3e0196544a296695f2a5f9f4490c66a85089f38f43e0072ce1a2c62e5899aa7d",
+          "summary.json": "7486e8be544ef3abdcebe630db1eae40c9982f6bb272617809d549efff6e4abe"
+        },
+        "plan_export_hashes_after": {
+          "forced-summary.json": "9eb3c110e2ff47dc6b3919c555143ef1e51895b8e9a6eb4121c17f317c7b08f6",
+          "index.html": "dbb7941e210496752c11d9423882ad4713d266bcaa48e597c7351395a65a5dec",
+          "plans.jsonl": "9cedae354350ecd49d25c58cfa5bff14b9c416c6d30361f6437fcc18bf7a6f9f",
+          "summary.json": "99bd03e922df14765ed228554ef0a90fd6ea424e465e5b9f0c186f7b52024036"
+        },
+        "implementation_hashes_after": {
+          "causal_replay.py": "24c423cb10c64ced0621324936f880159dd5379955a60e4a9d629bd1e8714f4d",
+          "causal_v2_audit.py": "e59679376781df9ba465db4ec69027dc169141d477323db34ea837ab3c3db08a",
+          "causal_v2.py": "64a9dc00c8e69911ceb4e9e5a84e20c578a6384dacc26dcccb33941df1880799",
+          "counterfactual.py": "e8395f6169367074b3dad7bc5b95a58fbbcb247ed2ffe6ee7dee5fa32c599ea8",
+          "counterfactual_audit.py": "2461f285966565211233422e750b5c691927f339333cae1d1f2cecd683964f93",
+          "evaluation_review.py": "2f9c610463a58b4343d57fc9dcd27ad3a86926e8cffbeb71439566594e082578",
+          "inspection.py": "c6971b03c45814acdfacf3f83303a0b67f1af1d36c9e96d42afae1d43f9ef36c",
+          "profiles.py": "d2df552d06099422465c7f1d51312cd3cd624d7a4e1ef005b0d334b38f9eea71",
+          "pacing.py": "3f5eabcc237a70c91569766549d89d25f36888d8abf624166fa7119f4af7d3ff",
+          "providers.py": "a72ceeb5f82654f3864c7ec97559d34b95b766c4af7dc83e6ca8344bc6ac74b3",
+          "runner.py": "318e9d093dbea0a66b5320dfcc39bc5c9f57cb14c833c181fdff9fee30b1ada3"
+        },
+        "comparisons": [
+          {
+            "proposal_event_id": "event:00000030",
+            "probe_id": "probe-v2:a808e89091229e5cac1ec29d11b1ed045bc2176a3dcb901808d1000ce102c7e9",
+            "probe_binding_sha256": "a808e89091229e5cac1ec29d11b1ed045bc2176a3dcb901808d1000ce102c7e9",
+            "baseline_slot_id": "replay:7754aa9be89af996dd4f7d6c039d6dd68bd4ed9601215acc02c76b0999b09a18",
+            "intervention_slot_id": "replay:3fe019c5eb03f55bf992a9a50e02fadcf18604fc84e9a8f2383ff12c500c9073",
+            "baseline_reproduced_original_sink": false,
+            "intervention_exact_sink_proposed": false,
+            "observed_sink_proposal_changed": null,
+            "status": "baseline_not_reproduced",
+            "scope": "One observed next step per prefix; no causal reference labels or tool execution"
+          },
+          {
+            "proposal_event_id": "event:00000030",
+            "probe_id": "probe-v2:a5dbe8b946ec8c2a3b408eb44027153387d9d1be396c2bcb55cb87fe30894fcb",
+            "probe_binding_sha256": "a5dbe8b946ec8c2a3b408eb44027153387d9d1be396c2bcb55cb87fe30894fcb",
+            "baseline_slot_id": "replay:7754aa9be89af996dd4f7d6c039d6dd68bd4ed9601215acc02c76b0999b09a18",
+            "intervention_slot_id": "replay:bd1c7dcdea71754758348c2f98927e20aae38ec1300a6d55bb25f61d8cfe2e8c",
+            "baseline_reproduced_original_sink": false,
+            "intervention_exact_sink_proposed": false,
+            "observed_sink_proposal_changed": null,
+            "status": "baseline_not_reproduced",
+            "scope": "One observed next step per prefix; no causal reference labels or tool execution"
+          },
+          {
+            "proposal_event_id": "event:00000030",
+            "probe_id": "probe-v2:e160c5396e9ff7733dc9d225037d4f740375b8aa4b2e34b3cca743ba4e9febba",
+            "probe_binding_sha256": "e160c5396e9ff7733dc9d225037d4f740375b8aa4b2e34b3cca743ba4e9febba",
+            "baseline_slot_id": "replay:7754aa9be89af996dd4f7d6c039d6dd68bd4ed9601215acc02c76b0999b09a18",
+            "intervention_slot_id": "replay:686bcf787e455b2452e2ae3cb470f8f92900c2057adf5f6bfb72cc362ad4f3c4",
+            "baseline_reproduced_original_sink": false,
+            "intervention_exact_sink_proposed": false,
+            "observed_sink_proposal_changed": null,
+            "status": "baseline_not_reproduced",
+            "scope": "One observed next step per prefix; no causal reference labels or tool execution"
+          }
+        ]
+      },
+      "audit": {
+        "schema_version": 3,
+        "protocol": "counterfactual-joint-auditor-v3",
+        "judgment_format": "english_punctuation_v1",
+        "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+        "mode": "injected_client",
+        "planned_slots": 3,
+        "result_slots": 3,
+        "request_count": 3,
+        "request_count_scope": "SDK invocation attempts, including failed requests; no SDK retries",
+        "valid_judgments": 3,
+        "unknown_judgments": 0,
+        "status_counts": {
+          "valid": 3
+        },
+        "reported_usage": {
+          "prompt_tokens": {
+            "known_sum": 5536,
+            "known_count": 3,
+            "unknown_count": 0
+          },
+          "completion_tokens": {
+            "known_sum": 790,
+            "known_count": 3,
+            "unknown_count": 0
+          },
+          "total_tokens": {
+            "known_sum": 6326,
+            "known_count": 3,
+            "unknown_count": 0
+          }
+        },
+        "usage_scope": "Returned API fields only; failed or missing usage and provider billing are not estimated",
+        "elapsed_seconds": 70.04700000002049,
+        "timing_scope": "Audit execution and artifact generation after preflight; separate from primary agent timers",
+        "source_files_unchanged": true,
+        "source_hashes_before": {
+          "actions.json": "047414784cb9f4b1e64495d095ecfed5c10be7bb13ebce16bd128b0b85047267",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "ebd69110d7949205aea3b65b80c0dbd256a03811c26aeda02921ad446065224d",
+          "final-environment.json": "5fd5b1e37de6306111af8071d7cc7e3c33dc649ac10faf9ffb22c1e19b17ed5c",
+          "graph.json": "938d944430d7007f74a159caeabcc64050e15f14f9174ee0b4ed271164d0e304",
+          "initial-environment.json": "be6ecc128ecb4c3b379be71bda78d5326437ed08b231b024ccc39b392aa52a88",
+          "lineage-state.json": "929ed5b2a770ce1cf025a75cf7c0057698c32868367913f5cdf70586ac58ee5a",
+          "manifest.json": "de970d354cbb43a2299d690e3723430c7be0d100bdb849bdf8f040eb534f8b49",
+          "native\\fixture.json": "b17593944acedc6477a245971efdca63cb06e0e5a578751dc34ce2c29680623f",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "cb57c4d8e20e88050e38985092e374938e18dadfb349e6e5c65dc3f9bf96cc21",
+          "report.html": "7e9c27940f2a59b5986962cc8d0f62a0ea94e5eabd858fdd545ef62fdcb4d7cc",
+          "requests.json": "e4f7c53ecc41f16237dca8643ac65b9ed38e6543f08d3a6c7f58a7358547f881",
+          "requests.jsonl": "9b7f2bbba9c829b69fda2228887958d0a68cb11ec28cceeeefd38afb751087f5",
+          "scoring.json": "3e0196544a296695f2a5f9f4490c66a85089f38f43e0072ce1a2c62e5899aa7d",
+          "summary.json": "7486e8be544ef3abdcebe630db1eae40c9982f6bb272617809d549efff6e4abe"
+        },
+        "source_hashes_after": {
+          "actions.json": "047414784cb9f4b1e64495d095ecfed5c10be7bb13ebce16bd128b0b85047267",
+          "events.audit.json": "09b084d7ff3235074435949447f9061bc7a1eb6af8539e2302c792ce4b5a12ef",
+          "events.jsonl": "ebd69110d7949205aea3b65b80c0dbd256a03811c26aeda02921ad446065224d",
+          "final-environment.json": "5fd5b1e37de6306111af8071d7cc7e3c33dc649ac10faf9ffb22c1e19b17ed5c",
+          "graph.json": "938d944430d7007f74a159caeabcc64050e15f14f9174ee0b4ed271164d0e304",
+          "initial-environment.json": "be6ecc128ecb4c3b379be71bda78d5326437ed08b231b024ccc39b392aa52a88",
+          "lineage-state.json": "929ed5b2a770ce1cf025a75cf7c0057698c32868367913f5cdf70586ac58ee5a",
+          "manifest.json": "de970d354cbb43a2299d690e3723430c7be0d100bdb849bdf8f040eb534f8b49",
+          "native\\fixture.json": "b17593944acedc6477a245971efdca63cb06e0e5a578751dc34ce2c29680623f",
+          "policy.json": "37a8a57bb0340ba8311d74b220e767997fc7e1ebfd49eb0db77e902ea93e4211",
+          "provenance.jsonl": "cb57c4d8e20e88050e38985092e374938e18dadfb349e6e5c65dc3f9bf96cc21",
+          "report.html": "7e9c27940f2a59b5986962cc8d0f62a0ea94e5eabd858fdd545ef62fdcb4d7cc",
+          "requests.json": "e4f7c53ecc41f16237dca8643ac65b9ed38e6543f08d3a6c7f58a7358547f881",
+          "requests.jsonl": "9b7f2bbba9c829b69fda2228887958d0a68cb11ec28cceeeefd38afb751087f5",
+          "scoring.json": "3e0196544a296695f2a5f9f4490c66a85089f38f43e0072ce1a2c62e5899aa7d",
+          "summary.json": "7486e8be544ef3abdcebe630db1eae40c9982f6bb272617809d549efff6e4abe"
+        },
+        "plan_export_hashes_before": {
+          "forced-summary.json": "9eb3c110e2ff47dc6b3919c555143ef1e51895b8e9a6eb4121c17f317c7b08f6",
+          "index.html": "dbb7941e210496752c11d9423882ad4713d266bcaa48e597c7351395a65a5dec",
+          "plans.jsonl": "9cedae354350ecd49d25c58cfa5bff14b9c416c6d30361f6437fcc18bf7a6f9f",
+          "summary.json": "99bd03e922df14765ed228554ef0a90fd6ea424e465e5b9f0c186f7b52024036"
+        },
+        "plan_export_hashes_after": {
+          "forced-summary.json": "9eb3c110e2ff47dc6b3919c555143ef1e51895b8e9a6eb4121c17f317c7b08f6",
+          "index.html": "dbb7941e210496752c11d9423882ad4713d266bcaa48e597c7351395a65a5dec",
+          "plans.jsonl": "9cedae354350ecd49d25c58cfa5bff14b9c416c6d30361f6437fcc18bf7a6f9f",
+          "summary.json": "99bd03e922df14765ed228554ef0a90fd6ea424e465e5b9f0c186f7b52024036"
+        },
+        "proposal_summaries": [
+          {
+            "proposal_event_id": "event:00000009",
+            "plan_status": "not_eligible",
+            "plan_reason": "not_selected_sink",
+            "prediction_summary": {
+              "protocol": "counterfactual-joint-coverage-v2",
+              "judgment_format": "english_punctuation_v1",
+              "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+              "status": "unknown",
+              "complete": false,
+              "single_sources": [],
+              "pairs": [],
+              "unknown_count": 0,
+              "unmatched_result_count": 0,
+              "confidence": null
+            }
+          },
+          {
+            "proposal_event_id": "event:00000019",
+            "plan_status": "not_eligible",
+            "plan_reason": "not_selected_sink",
+            "prediction_summary": {
+              "protocol": "counterfactual-joint-coverage-v2",
+              "judgment_format": "english_punctuation_v1",
+              "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+              "status": "unknown",
+              "complete": false,
+              "single_sources": [],
+              "pairs": [],
+              "unknown_count": 0,
+              "unmatched_result_count": 0,
+              "confidence": null
+            }
+          },
+          {
+            "proposal_event_id": "event:00000030",
+            "plan_status": "eligible",
+            "plan_reason": "complete_negative_active_stages",
+            "prediction_summary": {
+              "protocol": "counterfactual-joint-coverage-v2",
+              "judgment_format": "english_punctuation_v1",
+              "scope": "self_reported_auditor_predictions_only; not_observed_behavior_or_calibrated_causality",
+              "status": "complete_predictions",
+              "complete": true,
+              "single_sources": [
+                {
+                  "source_id": "source:6e131b7bb73582e190487b316ea2d65608a6a618d27a288febf74e7e06975368",
+                  "probe_id": "probe-v2:a808e89091229e5cac1ec29d11b1ed045bc2176a3dcb901808d1000ce102c7e9",
+                  "would_call_anyway": false,
+                  "status": "predicted_dependency",
+                  "reason": null
+                },
+                {
+                  "source_id": "source:b7670a0b0177e00104af912bac8513ef21fb9485278cf9a474144be926ef9173",
+                  "probe_id": "probe-v2:a5dbe8b946ec8c2a3b408eb44027153387d9d1be396c2bcb55cb87fe30894fcb",
+                  "would_call_anyway": false,
+                  "status": "predicted_dependency",
+                  "reason": null
+                }
+              ],
+              "pairs": [
+                {
+                  "source_ids": [
+                    "source:6e131b7bb73582e190487b316ea2d65608a6a618d27a288febf74e7e06975368",
+                    "source:b7670a0b0177e00104af912bac8513ef21fb9485278cf9a474144be926ef9173"
+                  ],
+                  "pattern": "predicted_AND_like",
+                  "reason": null,
+                  "would_call_after_removing_first_second_both": [
+                    false,
+                    false,
+                    false
+                  ]
+                }
+              ],
+              "unknown_count": 0,
+              "unmatched_result_count": 0,
+              "confidence": null
+            }
+          }
+        ],
+        "independent_causal_accuracy": null,
+        "native_tool_calls": 0,
+        "primary_agent_model_calls": 0
+      },
+      "prediction_concordance": [
+        {
+          "probe_id": "probe-v2:a808e89091229e5cac1ec29d11b1ed045bc2176a3dcb901808d1000ce102c7e9",
+          "source_ids": null,
+          "known": false,
+          "predicted_call": null,
+          "observed_call": false,
+          "agreement": null
+        },
+        {
+          "probe_id": "probe-v2:a5dbe8b946ec8c2a3b408eb44027153387d9d1be396c2bcb55cb87fe30894fcb",
+          "source_ids": null,
+          "known": false,
+          "predicted_call": null,
+          "observed_call": false,
+          "agreement": null
+        },
+        {
+          "probe_id": "probe-v2:e160c5396e9ff7733dc9d225037d4f740375b8aa4b2e34b3cca743ba4e9febba",
+          "source_ids": null,
+          "known": false,
+          "predicted_call": null,
+          "observed_call": false,
+          "agreement": null
+        }
+      ],
+      "unknown_request_accounting": []
+    }
+  ],
+  "scope": "Forced diagnostic replays and judgments; the baseline method plans none of these probes. No causal accuracy claim."
+}

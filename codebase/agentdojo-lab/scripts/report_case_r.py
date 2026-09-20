@@ -15,7 +15,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from agentdojo_lab import case_r_groq as case_r
-from agentdojo_lab.case_r_diagnostics import rescore_run
+from agentdojo_lab.case_r_diagnostics import argument_concordance, rescore_run
 from agentdojo_lab.paired_report import export_pair
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -425,6 +425,28 @@ def render_attribution(data):
                 f"{pill(variants['semantic_only']['matched'])}</td></tr>"
             )
         follow = entry.get("followup")
+        typed = entry.get("argument_concordance")
+        if typed:
+            typed_rows = "".join(
+                f"<tr><td>{html.escape(', '.join('file ' + str(f) for f in row['removed_files']))}</td>"
+                f"<td>{html.escape(str(row['response_kind']))}</td>"
+                f"<td>{outcome_pill(row['proposed_recipient_outcome'])}</td>"
+                f"<td>{pill(row['attacker_recipient_persisted'])}</td>"
+                f"<td>{html.escape(str(row['judge_would_call_anyway']))}"
+                + (f" ({row['judge_confidence']:.2f})" if isinstance(row.get('judge_confidence'), (int, float)) else "")
+                + f"</td><td>{pill(row['agreement'])}</td></tr>"
+                for row in typed["rows"]
+            )
+            typed_html = (
+                f"<details open><summary>Recipient-level replay / judge (sham re-proposed attacker recipient: "
+                f"{html.escape(str(typed['sham_reproduced_recipient']))}; observed pattern: "
+                f"<b>{html.escape(typed['observed_pattern'])}</b>)</summary>"
+                "<table><tr><th>Removed</th><th>Model response</th><th>Proposed recipient</th>"
+                "<th>Attacker persisted</th><th>Judge: would call anyway</th><th>Agree</th></tr>" + typed_rows
+                + f"</table><p class=\"unknown\">{html.escape(typed['removal_semantics'])}</p></details>"
+            )
+        else:
+            typed_html = ""
         if follow:
             concordance = "".join(
                 f"<tr><td>{html.escape(', '.join(str(s) for s in (row.get('source_ids') or [])))}</td>"
@@ -432,8 +454,8 @@ def render_attribution(data):
                 f"<td>{html.escape(str(row['observed_call']))}</td><td>{pill(row['agreement'])}</td></tr>"
                 for row in follow.get("concordance", [])
             )
-            follow_html = (
-                f"<details open><summary>Forced replay / judge: status {html.escape(str(follow.get('status')))}; "
+            follow_html = typed_html + (
+                f"<details><summary>Whole-call identity replay / judge (frozen replay rule): status {html.escape(str(follow.get('status')))}; "
                 f"baseline plan {html.escape(str(follow.get('baseline_plan_status')))}; "
                 f"sham reproduced {html.escape(str(follow.get('sham_reproduced')))}</summary>"
                 "<table><tr><th>Removed sources</th><th>Known</th><th>Judge: would call anyway</th>"
@@ -522,6 +544,7 @@ def build(batch, followups, output, *, title=None):
         if scoring.get("attack_success"):
             flowcharts.append(flowchart(run_path, slot, scoring))
         rescored = rescore_run(run_path, matcher=matcher)
+        typed = argument_concordance(followups, slot["slot_id"], run_path, plan) if followups else None
         for sink in rescored["sinks"]:
             attribution.append(
                 {
@@ -532,6 +555,7 @@ def build(batch, followups, output, *, title=None):
                     "recipient_eligibility": sink.get("recipient_eligibility"),
                     "rows": sink["rows"],
                     "followup": follow.get(slot["slot_id"]),
+                    "argument_concordance": typed,
                 }
             )
     data = {

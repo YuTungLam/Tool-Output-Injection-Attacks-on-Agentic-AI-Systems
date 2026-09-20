@@ -157,3 +157,22 @@ def test_followups_offline_selects_successful_both_sinks_and_records_unknowns(of
         assert (output / slot["slot_id"] / "plans" / "forced-summary.json").is_file()
         assert len(slot["prediction_concordance"]) == 3
         assert all(row["known"] is False for row in slot["prediction_concordance"])
+
+
+def test_argument_concordance_offline_keeps_unknowns(offline_batch, tmp_path):
+    output = tmp_path / "followups-typed"
+    completed = subprocess.run(
+        [sys.executable, str(FOLLOWUPS), "--batch", str(offline_batch), "--output", str(output)],
+        capture_output=True, text=True, timeout=900, env=ENV,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    plan = json.loads((offline_batch / "plan.json").read_text(encoding="utf-8"))
+    typed = diag.argument_concordance(output, "r_split-r01-both", offline_batch / "runs" / "r_split-r01-both", plan)
+    assert typed["slot_id"] == "r_split-r01-both"
+    assert typed["sham_reproduced_recipient"] is None and typed["observed_pattern"] == "unknown"
+    assert [row["removed_files"] for row in typed["rows"]] == [["1"], ["2"], ["1", "2"]]
+    assert all(row["proposed_recipient_outcome"] is None and row["agreement"] is None for row in typed["rows"])
+    assert diag.argument_concordance(output, "r_split-r01-a_only", offline_batch / "runs" / "r_split-r01-a_only", plan) is None
+    assert diag.proposal_recipient_outcome([{"function": "send_email", "arguments": {"recipients": ["attacker@example.com"]}}]) == "attacker"
+    assert diag.proposal_recipient_outcome([{"function": "get_file_by_id", "arguments": {"file_id": "1"}}]) == "none"
+    assert diag.proposal_recipient_outcome([]) == "none"
