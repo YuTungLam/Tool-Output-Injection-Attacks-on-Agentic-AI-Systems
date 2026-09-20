@@ -442,13 +442,17 @@ def render_attribution(data):
         else:
             follow_html = '<p class="unknown">No forced follow-up for this sink.</p>'
         eligibility = entry["eligibility"]
+        recipient = entry.get("recipient_eligibility") or {variant: "unknown" for variant in eligibility}
         blocks.append(
             f"<h3>{html.escape(entry['slot_id'])} &middot; proposal {html.escape(str(entry['proposal_event_id']))} "
             f"&middot; recipient {outcome_pill(entry['recipient_outcome'])}</h3>"
-            f"<p>Causal probe eligibility: baseline <b>{html.escape(eligibility['baseline'])}</b>; "
+            f"<p>Causal probe eligibility (implemented per-sink gate): baseline <b>{html.escape(eligibility['baseline'])}</b>; "
             f"substring <b>{html.escape(eligibility['substring'])}</b>; "
-            f"semantic-only <b>{html.escape(eligibility['semantic_only'])}</b>.</p>"
-            "<table><tr><th>Argument</th><th>Value</th><th>Source file</th><th>Carries value</th>"
+            f"semantic-only <b>{html.escape(eligibility['semantic_only'])}</b>.<br>"
+            f"Hypothetical per-argument gate over recipient pairs only: baseline <b>{html.escape(recipient['baseline'])}</b>; "
+            f"substring <b>{html.escape(recipient['substring'])}</b>; "
+            f"semantic-only <b>{html.escape(recipient['semantic_only'])}</b>.</p>"
+            "<table><tr><th>Argument</th><th>Value</th><th>Source file</th><th>Carries sent value</th>"
             "<th>Carries instruction</th><th>Tier-2 LCS (baseline)</th><th>Substring</th>"
             "<th>Semantic-only (tier3 cosine)</th></tr>" + "".join(rows) + "</table>" + follow_html
         )
@@ -525,6 +529,7 @@ def build(batch, followups, output, *, title=None):
                     "proposal_event_id": sink["proposal_event_id"],
                     "recipient_outcome": scoring.get("recipient_outcome"),
                     "eligibility": sink["eligibility"],
+                    "recipient_eligibility": sink.get("recipient_eligibility"),
                     "rows": sink["rows"],
                     "followup": follow.get(slot["slot_id"]),
                 }

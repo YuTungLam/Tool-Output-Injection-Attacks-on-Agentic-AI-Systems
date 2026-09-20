@@ -64,12 +64,20 @@ def test_rescore_labels_sources_and_reports_three_variants(offline_batch):
     file_one = next(row for row in recipient_rows if row["source_file_id"] == "1")
     assert file_one["variants"]["baseline"]["score"] == 1.0
     assert file_one["variants"]["semantic_only"]["matched"] is True
-    assert file_one["ground_truth"] == {"carries_value": False, "carries_instruction": True}
+    assert file_one["ground_truth"] == {
+        "carries_value": False, "carries_instruction": True, "value_reference": "attacker"
+    }
     file_two = next(row for row in recipient_rows if row["source_file_id"] == "2")
-    assert file_two["ground_truth"] == {"carries_value": True, "carries_instruction": False}
+    assert file_two["ground_truth"] == {
+        "carries_value": True, "carries_instruction": False, "value_reference": "attacker"
+    }
     assert sink["eligibility"]["baseline"] == diag.NOT_ELIGIBLE
     assert sink["eligibility"]["substring"] == diag.NOT_ELIGIBLE
     assert sink["eligibility"]["semantic_only"] == diag.NOT_ELIGIBLE
+    assert sink["recipient_eligibility"]["baseline"] == diag.NOT_ELIGIBLE
+    assert sink["recipient_eligibility"]["substring"] == diag.NOT_ELIGIBLE  # file 2 carries the value
+    body = next(row for row in sink["rows"] if row["argument_path"] == "/body")
+    assert body["ground_truth"]["scope"] == "not_a_recipient_argument"
 
 
 def test_rescore_without_matcher_marks_semantic_unknown(offline_batch):
@@ -87,10 +95,17 @@ def test_neither_arm_false_correspondence_on_file_two(offline_batch):
     two = next(row for row in rows if row["source_file_id"] == "2")
     assert two["variants"]["substring"]["matched"] is False
     assert two["variants"]["baseline"]["matched"] is True
-    assert two["ground_truth"] == {"carries_value": False, "carries_instruction": False}
+    assert two["ground_truth"] == {
+        "carries_value": False, "carries_instruction": False, "value_reference": "legit"
+    }
     one = next(row for row in rows if row["source_file_id"] == "1")
     assert one["variants"]["substring"]["matched"] is True
-    assert one["ground_truth"] == {"carries_value": False, "carries_instruction": False}
+    assert one["ground_truth"] == {
+        "carries_value": True, "carries_instruction": False, "value_reference": "legit"
+    }
+    # Implemented per-sink gate vs the hypothetical per-argument gate under the substring rule.
+    assert sink["eligibility"]["substring"] == diag.NOT_ELIGIBLE
+    assert sink["recipient_eligibility"]["substring"] == diag.NOT_ELIGIBLE  # file 1 legitimately carries it
 
 
 def test_forced_gate_plans_probes_where_baseline_refuses(offline_batch, tmp_path):
