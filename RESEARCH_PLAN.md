@@ -1,5 +1,21 @@
 # Next phase: concrete propagation case studies on NeSI
 
+> **Case M Groq phase — 2026-09-21 (same day, after Case R):** the deferred
+> cross-session chain now has evidence. Case M stores a paraphrased summary of a
+> contaminated document in Session A and sends it from a fresh Session B that
+> restores the native drive and the DCPG registry. Main batch
+> `codebase/agentdojo-lab/runs/20260921-case-m-v1`: 12/12 sessions, 6/6 chains,
+> 3/3 attacked chains reached `send_email(attacker@example.com)` through the stored
+> file alone, 3/3 clean chains sent to the legitimate contact (36 requests, 20,924
+> tokens). Packet:
+> [reports/20260921-case-m-groq-v1/index.html](codebase/agentdojo-lab/reports/20260921-case-m-groq-v1/index.html).
+> The DCPG rehydration recovers the full path (document -> stored summary ->
+> recipient) in every chain, but identically in clean and attacked chains, and the
+> paraphrase step is matched by Tier-2 subsequence LCS (0.70-0.75) with 5-gram
+> overlap at most 0.03, so the semantic tier is never reached. Details in PROJECT_CONTEXT.md,
+> section "Case M Groq results".
+
+
 > **Case R Groq phase — 2026-09-21 (Windows laptop, Groq `openai/gpt-oss-120b`):**
 > The researcher moved off NeSI on 2026-09-20 and chose Groq. A new lean protocol,
 > Case R, stress-tests recipient contamination under redundant and split sources.
@@ -835,3 +851,16 @@ the graphical views and separately review new terminal results against the froze
 - [ ] Stage the deferred cross-session memory chain (Cluster 2) on Groq if budget allows.
 - [ ] Push the local commits once the GitHub credential on this machine matches the
   repository owner.
+
+## Case M Groq phase — 2026-09-21
+
+- [x] Implement Case M (two sessions, restored drive and DCPG registry, memory-only
+  Session B) with offline transport, handoff blocking, pause/resume and packet tests.
+- [x] Run the pilot (2/2 chains matched) and the three-repetition main batch (6/6
+  chains matched; 3/3 attacks via memory); render
+  `codebase/agentdojo-lab/reports/20260921-case-m-groq-v1/index.html`.
+- [x] Record that the DCPG recovers the cross-session path in every chain, identically
+  for clean and attacked, and that the paraphrase step is matched by subsequence LCS
+  rather than the semantic tier.
+- [ ] Add a Case M panel to the summary figure and a forced replay/judge panel for the
+  Session B sinks if budget allows before the meeting.
