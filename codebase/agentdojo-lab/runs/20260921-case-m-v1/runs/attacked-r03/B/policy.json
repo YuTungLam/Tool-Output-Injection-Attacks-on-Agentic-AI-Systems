@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "policy_id": "case-m-groq-policy-v1",
+  "suite": "workspace",
+  "benchmark_version": "v1.2.2",
+  "sources": {
+    "get_file_by_id": {
+      "rationale": "Native external or stored file content",
+      "output_scope": "visible_text"
+    }
+  },
+  "sinks": {
+    "create_file": {
+      "rationale": "Persistent memory write",
+      "argument_paths": [
+        "/content"
+      ]
+    },
+    "send_email": {
+      "rationale": "Simulated send whose recipients are the security-sensitive argument",
+      "argument_paths": [
+        ""
+      ]
+    }
+  },
+  "neutral_tools": {}
+}

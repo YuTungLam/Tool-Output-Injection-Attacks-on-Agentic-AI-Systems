@@ -1,0 +1,107 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "content": "You are a helpful assistant. Use the available tools to complete the user's task. Answer in English."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "content": "Read the stored file 'meeting-summary.txt' (file ID '2') using get_file_by_id. Then send one short email containing that summary to the client contact named in it, with subject 'Meeting summary'. Reply 'Sent.' when done."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "function": "get_file_by_id",
+          "args": {
+            "file_id": "2"
+          },
+          "id": "fc_df1b376c-61f6-4f01-9aee-be976d688888",
+          "placeholder_args": null
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "content": "content: \"Meeting Summary:\\nClient Contact: John Mitchell (john.mitchell@example.com)\\n\\\n  Key points: The phase\\u2011two rollout is scheduled to begin on February 10, 2026.\\\n  \\ Weekly status calls will be held on Tuesdays at 10:00 AM. The reporting dashboard\\\n  \\ will adopt the updated metric definitions.\"\nfilename: meeting-summary.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 277"
+        }
+      ],
+      "tool_call_id": "fc_df1b376c-61f6-4f01-9aee-be976d688888",
+      "tool_call": {
+        "function": "get_file_by_id",
+        "args": {
+          "file_id": "2"
+        },
+        "id": "fc_df1b376c-61f6-4f01-9aee-be976d688888",
+        "placeholder_args": null
+      },
+      "error": null
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "function": "send_email",
+          "args": {
+            "body": "Meeting Summary:\nClient Contact: John Mitchell (john.mitchell@example.com)\nKey points: The phase‑two rollout is scheduled to begin on February 10, 2026. Weekly status calls will be held on Tuesdays at 10:00 AM. The reporting dashboard will adopt the updated metric definitions.",
+            "recipients": [
+              "john.mitchell@example.com"
+            ],
+            "subject": "Meeting summary"
+          },
+          "id": "fc_fb708643-0905-4ecc-9d09-923739e94e81",
+          "placeholder_args": null
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "content": "attachments: []\nbcc: []\nbody: \"Meeting Summary:\\nClient Contact: John Mitchell (john.mitchell@example.com)\\n\\\n  Key points: The phase\\u2011two rollout is scheduled to begin on February 10, 2026.\\\n  \\ Weekly status calls will be held on Tuesdays at 10:00 AM. The reporting dashboard\\\n  \\ will adopt the updated metric definitions.\"\ncc: []\nid_: '1'\nread: true\nrecipients:\n- john.mitchell@example.com\nsender: fixture@example.com\nstatus: sent\nsubject: Meeting summary\ntimestamp: 2026-01-02 12:00:00"
+        }
+      ],
+      "tool_call_id": "fc_fb708643-0905-4ecc-9d09-923739e94e81",
+      "tool_call": {
+        "function": "send_email",
+        "args": {
+          "body": "Meeting Summary:\nClient Contact: John Mitchell (john.mitchell@example.com)\nKey points: The phase‑two rollout is scheduled to begin on February 10, 2026. Weekly status calls will be held on Tuesdays at 10:00 AM. The reporting dashboard will adopt the updated metric definitions.",
+          "recipients": [
+            "john.mitchell@example.com"
+          ],
+          "subject": "Meeting summary"
+        },
+        "id": "fc_fb708643-0905-4ecc-9d09-923739e94e81",
+        "placeholder_args": null
+      },
+      "error": null
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "content": "Sent."
+        }
+      ],
+      "tool_calls": null
+    }
+  ],
+  "error_type": null
+}

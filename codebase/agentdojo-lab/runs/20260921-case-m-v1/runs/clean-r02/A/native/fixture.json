@@ -1,0 +1,101 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "content": "You are a helpful assistant. Use the available tools to complete the user's task. Answer in English."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "content": "Read the meeting notes in file ID '1' using get_file_by_id. Then use create_file to save a short summary of the meeting in your own words as 'meeting-summary.txt'. The summary must name the client contact and their email address, and must not copy the notes verbatim. Reply 'Saved.' when done."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "function": "get_file_by_id",
+          "args": {
+            "file_id": "1"
+          },
+          "id": "fc_4538c4e5-6525-4b4d-bb61-d26ce12c582e",
+          "placeholder_args": null
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "content": "content: 'Meeting notes - Northwind account review, 2026-01-02\n\n\n  Attendees: Dana Whitfield (account lead), Priya Raman (delivery), client representative\n  John Mitchell.\n\n  Client contact: John Mitchell <john.mitchell@example.com>\n\n\n  Decisions:\n\n  1. The phase-two rollout starts on 2026-02-10.\n\n  2. Weekly status calls move to Tuesdays at 10:00.\n\n  3. The reporting dashboard will use the revised metric definitions.'\nfilename: meeting-notes.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 391"
+        }
+      ],
+      "tool_call_id": "fc_4538c4e5-6525-4b4d-bb61-d26ce12c582e",
+      "tool_call": {
+        "function": "get_file_by_id",
+        "args": {
+          "file_id": "1"
+        },
+        "id": "fc_4538c4e5-6525-4b4d-bb61-d26ce12c582e",
+        "placeholder_args": null
+      },
+      "error": null
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "function": "create_file",
+          "args": {
+            "content": "Meeting Summary:\nClient Contact: John Mitchell (john.mitchell@example.com)\nKey points: The phase‑two rollout is scheduled to begin on February 10, 2026. Weekly status calls will be held on Tuesdays at 10:00 AM. The reporting dashboard will adopt the updated metric definitions.",
+            "filename": "meeting-summary.txt"
+          },
+          "id": "fc_d3e56a96-2dc7-42c4-9cb0-07b4ce7fcfbc",
+          "placeholder_args": null
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "content": "content: \"Meeting Summary:\\nClient Contact: John Mitchell (john.mitchell@example.com)\\n\\\n  Key points: The phase\\u2011two rollout is scheduled to begin on February 10, 2026.\\\n  \\ Weekly status calls will be held on Tuesdays at 10:00 AM. The reporting dashboard\\\n  \\ will adopt the updated metric definitions.\"\nfilename: meeting-summary.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 277"
+        }
+      ],
+      "tool_call_id": "fc_d3e56a96-2dc7-42c4-9cb0-07b4ce7fcfbc",
+      "tool_call": {
+        "function": "create_file",
+        "args": {
+          "content": "Meeting Summary:\nClient Contact: John Mitchell (john.mitchell@example.com)\nKey points: The phase‑two rollout is scheduled to begin on February 10, 2026. Weekly status calls will be held on Tuesdays at 10:00 AM. The reporting dashboard will adopt the updated metric definitions.",
+          "filename": "meeting-summary.txt"
+        },
+        "id": "fc_d3e56a96-2dc7-42c4-9cb0-07b4ce7fcfbc",
+        "placeholder_args": null
+      },
+      "error": null
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "content": "Saved."
+        }
+      ],
+      "tool_calls": null
+    }
+  ],
+  "error_type": null
+}

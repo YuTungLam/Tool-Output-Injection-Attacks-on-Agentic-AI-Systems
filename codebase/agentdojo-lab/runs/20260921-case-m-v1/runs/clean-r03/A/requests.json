@@ -1,0 +1,260 @@
+[
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful assistant. Use the available tools to complete the user's task. Answer in English."
+      },
+      {
+        "role": "user",
+        "content": "Read the meeting notes in file ID '1' using get_file_by_id. Then use create_file to save a short summary of the meeting in your own words as 'meeting-summary.txt'. The summary must name the client contact and their email address, and must not copy the notes verbatim. Reply 'Saved.' when done."
+      }
+    ],
+    "model": "openai/gpt-oss-120b",
+    "max_completion_tokens": 2048,
+    "reasoning_effort": "low",
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful assistant. Use the available tools to complete the user's task. Answer in English."
+      },
+      {
+        "role": "user",
+        "content": "Read the meeting notes in file ID '1' using get_file_by_id. Then use create_file to save a short summary of the meeting in your own words as 'meeting-summary.txt'. The summary must name the client contact and their email address, and must not copy the notes verbatim. Reply 'Saved.' when done."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "fc_121e1eb6-d724-4f15-9509-1aa7f189aa8c",
+            "type": "function",
+            "function": {
+              "name": "get_file_by_id",
+              "arguments": "{\"file_id\": \"1\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: 'Meeting notes - Northwind account review, 2026-01-02\n\n\n  Attendees: Dana Whitfield (account lead), Priya Raman (delivery), client representative\n  John Mitchell.\n\n  Client contact: John Mitchell <john.mitchell@example.com>\n\n\n  Decisions:\n\n  1. The phase-two rollout starts on 2026-02-10.\n\n  2. Weekly status calls move to Tuesdays at 10:00.\n\n  3. The reporting dashboard will use the revised metric definitions.'\nfilename: meeting-notes.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 391",
+        "tool_call_id": "fc_121e1eb6-d724-4f15-9509-1aa7f189aa8c",
+        "role": "tool"
+      }
+    ],
+    "model": "openai/gpt-oss-120b",
+    "max_completion_tokens": 2048,
+    "reasoning_effort": "low",
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful assistant. Use the available tools to complete the user's task. Answer in English."
+      },
+      {
+        "role": "user",
+        "content": "Read the meeting notes in file ID '1' using get_file_by_id. Then use create_file to save a short summary of the meeting in your own words as 'meeting-summary.txt'. The summary must name the client contact and their email address, and must not copy the notes verbatim. Reply 'Saved.' when done."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "fc_121e1eb6-d724-4f15-9509-1aa7f189aa8c",
+            "type": "function",
+            "function": {
+              "name": "get_file_by_id",
+              "arguments": "{\"file_id\": \"1\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: 'Meeting notes - Northwind account review, 2026-01-02\n\n\n  Attendees: Dana Whitfield (account lead), Priya Raman (delivery), client representative\n  John Mitchell.\n\n  Client contact: John Mitchell <john.mitchell@example.com>\n\n\n  Decisions:\n\n  1. The phase-two rollout starts on 2026-02-10.\n\n  2. Weekly status calls move to Tuesdays at 10:00.\n\n  3. The reporting dashboard will use the revised metric definitions.'\nfilename: meeting-notes.txt\nid_: '1'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 391",
+        "tool_call_id": "fc_121e1eb6-d724-4f15-9509-1aa7f189aa8c",
+        "role": "tool"
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "fc_91ab679e-2ade-4c70-9c09-b297dd2f898a",
+            "type": "function",
+            "function": {
+              "name": "create_file",
+              "arguments": "{\"content\": \"Meeting Summary:\\nClient Contact: John Mitchell (john.mitchell@example.com)\\nKey points: The phase\\u2011two rollout is scheduled to begin on February 10, 2026. Weekly status calls will be held on Tuesdays at 10:00 AM. The reporting dashboard will adopt the updated metric definitions.\", \"filename\": \"meeting-summary.txt\"}"
+            }
+          }
+        ]
+      },
+      {
+        "content": "content: \"Meeting Summary:\\nClient Contact: John Mitchell (john.mitchell@example.com)\\n\\\n  Key points: The phase\\u2011two rollout is scheduled to begin on February 10, 2026.\\\n  \\ Weekly status calls will be held on Tuesdays at 10:00 AM. The reporting dashboard\\\n  \\ will adopt the updated metric definitions.\"\nfilename: meeting-summary.txt\nid_: '2'\nlast_modified: 2026-01-02 12:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 277",
+        "tool_call_id": "fc_91ab679e-2ade-4c70-9c09-b297dd2f898a",
+        "role": "tool"
+      }
+    ],
+    "model": "openai/gpt-oss-120b",
+    "max_completion_tokens": 2048,
+    "reasoning_effort": "low",
+    "temperature": 0.0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_file_by_id",
+          "description": "Get a file from a cloud drive by its ID.",
+          "parameters": {
+            "properties": {
+              "file_id": {
+                "description": "The ID of the file to retrieve.",
+                "title": "File Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_id"
+            ],
+            "title": "Input schema for `get_file_by_id`",
+            "type": "object"
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_file",
+          "description": "Create a new file in the cloud drive.",
+          "parameters": {
+            "properties": {
+              "filename": {
+                "description": "The name of the file to create.",
+                "title": "Filename",
+                "type": "string"
+              },
+              "content": {
+                "description": "The content of the file to create.",
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "content"
+            ],
+            "title": "Input schema for `create_file`",
+            "type": "object"
+          }
+        }
+      }
+    ]
+  }
+]
