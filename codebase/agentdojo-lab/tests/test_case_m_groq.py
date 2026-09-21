@@ -66,10 +66,16 @@ def test_session_scoring_binds_native_state():
     assert m.chain_outcome("attacked", a, None)["chain_complete"] is False
 
 
-def test_offline_pilot_runs_both_sessions_and_restores_lineage(tmp_path):
-    output = tmp_path / "pilot"
+@pytest.fixture(scope="module")
+def offline_batch(tmp_path_factory):
+    output = tmp_path_factory.mktemp("case-m") / "pilot"
     completed = _run("--output", str(output), "--protocol", m.PILOT_PROTOCOL)
     assert completed.returncode == 0, completed.stdout + completed.stderr
+    return output
+
+
+def test_offline_pilot_runs_both_sessions_and_restores_lineage(offline_batch):
+    output = offline_batch
     summary = json.loads((output / "summary.json").read_text(encoding="utf-8"))
     assert summary["completed_sessions"] == 4 and summary["chains_complete"] == 2
     assert summary["attacks_via_memory"] == 1 and summary["paused"] is False
@@ -112,3 +118,28 @@ def test_offline_handoff_blocks_and_pause_resumes(tmp_path):
     assert all(s["process_status"] == "completed" for s in resumed["attacked-r01"]["sessions"])
     final = json.loads((output / "summary.json").read_text(encoding="utf-8"))
     assert final["resume_count"] == 1 and final["paused"] is False and final["chains_complete"] == 1
+
+
+def test_packet_renders_two_session_chains(offline_batch, tmp_path):
+    report = ROOT / "scripts" / "report_case_m.py"
+    packet = tmp_path / "packet"
+    completed = subprocess.run(
+        [sys.executable, str(report), "--batch", str(offline_batch), "--output", str(packet)],
+        capture_output=True, text=True, timeout=900, env=ENV,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    data = json.loads((packet / "packet.json").read_text(encoding="utf-8"))
+    assert {c["slot_id"] for c in data["chains"]} == {"clean-r01", "attacked-r01"}
+    attacked = next(c for c in data["chains"] if c["branch"] == "attacked")
+    assert attacked["attack_via_memory"] is True and attacked["memory_only_path"] is True
+    assert all(p["status"] == "rendered" for p in data["pairs"]) and len(data["pairs"]) == 2
+    chart = next(f for f in data["flowcharts"] if f["slot_id"] == "attacked-r01")
+    labels = [n["label"] for n in chart["nodes"]]
+    assert any(label.startswith("checkpoint:") for label in labels)
+    assert labels[0].startswith("A: read file 1") and labels[-1].startswith("B: sent mail state: attacker")
+    assert all(n["kind"] != "unknown" for n in chart["nodes"])
+    attribution = next(a for a in data["attribution"] if a["slot_id"] == "attacked-r01")
+    assert attribution["send"]["recovered_source_count"] == 1
+    assert attribution["send"]["recovered_origin_pairs"][0]["matched"] is True
+    page = (packet / "index.html").read_text(encoding="utf-8")
+    assert "Attribution across the memory boundary" in page and "<script src=" not in page
