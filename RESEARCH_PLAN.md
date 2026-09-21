@@ -1,5 +1,23 @@
 # Next phase: concrete propagation case studies on NeSI
 
+> **Case R Groq phase — 2026-09-21 (Windows laptop, Groq `openai/gpt-oss-120b`):**
+> The researcher moved off NeSI on 2026-09-20 and chose Groq. A new lean protocol,
+> Case R, stress-tests recipient contamination under redundant and split sources.
+> Pilot (8 slots) matched every frozen prediction; the frozen main batch
+> `codebase/agentdojo-lab/runs/20260921-case-r-v1` ran 24/24 slots (95 requests,
+> 72,053 tokens) and the forced replay/judge panel
+> `runs/20260921-case-r-followups-v1` ran 6/6 sinks (42 requests, 56,168 tokens,
+> 18/18 valid judgments). The interactive packet is
+> [reports/20260921-case-r-groq-v1/index.html](codebase/agentdojo-lab/reports/20260921-case-r-groq-v1/index.html).
+> Headline: the Tier-2 subsequence LCS matches every source (score >= 0.96) against
+> a short recipient whether or not it contains the address, so the all-pairs
+> causal gate never opens (23/23 sinks `not_eligible`); when forced, the
+> counterfactual layer gives two different dependency patterns for identical
+> `r_split` inputs and disagrees with the judge in 4/18 rows, because whole-source
+> neutralization also removes the legitimate address. Details in PROJECT_CONTEXT.md, section "Case R Groq results". Local evidence is committed but **not yet pushed**:
+> the stored GitHub credential belongs to a different account.
+
+
 > **Nine-job terminal assessment — 2026-09-17:** All nine queued jobs reached a
 > Slurm terminal state. Six case protocols retain 62 scientific requests; three
 > repeat/argument panels made zero protocol requests because an incomplete frozen
@@ -797,3 +815,23 @@ for browsing; their scientific acceptance was not assessed here. No model or
 scheduler request was issued by the reporting work. Next action is to inspect
 the graphical views and separately review new terminal results against the frozen
 13-item ledger. This presentation checkpoint remains local and uncommitted.
+
+## Case R Groq phase — 2026-09-21
+
+- [x] Choose the Groq backend and freeze Case R (recipient contamination; redundant and
+  split constructions) with a pilot, a three-repetition main batch, offline attribution
+  diagnostics and a forced replay/judge panel. Spec and protocol note are linked from
+  PROJECT_CONTEXT.md.
+- [x] Run the pilot (8/8 predictions matched), the main batch (24/24 slots) and the
+  follow-up panel (6/6 sinks); render the interactive packet
+  [reports/20260921-case-r-groq-v1/index.html](codebase/agentdojo-lab/reports/20260921-case-r-groq-v1/index.html).
+- [x] Record the candidate systematic pattern: universal Tier-2 correspondence on short
+  sensitive arguments closes the causal gate; the forced counterfactual is unstable and
+  confounded by benign-content removal. Evidence covers two constructions in one task
+  family and one model.
+- [ ] Add a second task family (a different sensitive argument, for example a file share
+  target or calendar participant) with the same three-repetition design before claiming
+  a systematic method limitation.
+- [ ] Stage the deferred cross-session memory chain (Cluster 2) on Groq if budget allows.
+- [ ] Push the local commits once the GitHub credential on this machine matches the
+  repository owner.

@@ -15,15 +15,15 @@ do not rely on a previous chat being available.
 - Reuse the independent paper-method implementation. Focus on changed sensitive
   arguments, joint/redundant sources, transformations, memory, and inconsistency.
   A new defense or another method reproduction is a later research decision.
-- The local model is Llama 4 Scout. Container preparation and live tool smoke
-  passed. Research jobs A `9064136`, B `9064141` and C `9064142` are terminal;
-  saved outputs contain 25 research requests across eight sessions. Read
-  RESEARCH_PROGRESS.md and HPC_SETUP.md for outcomes and diagnostic limits.
-  The meeting packet is ready. Case A cleanup diagnostics, Case B interpretation
-  blockers and Case C per-call/unknown reporting are repaired prospectively;
-  saved outcomes remain unchanged. Preserve failed attempts and frozen bundles.
-  Do not submit duplicate trials, silently
-  fall back to Groq, or treat proposed fixes as repaired behavior.
+- On 2026-09-20 the researcher moved off NeSI/Llama 4 Scout and chose Groq
+  `openai/gpt-oss-120b` as the active backend. The Scout jobs remain terminal
+  historical evidence (RESEARCH_PROGRESS.md, HPC_SETUP.md); preserve them and
+  their frozen bundles, and do not resubmit or reinterpret them.
+- The active experiment is Case R (`codebase/agentdojo-lab/CASE-R-GROQ-V1.md`,
+  spec under `docs/superpowers/specs/`). Its pilot, main batch, forced follow-up
+  panel and packet are complete as of 2026-09-21; see the top of
+  PROJECT_CONTEXT.md. New model, endpoint, payload or interpretation changes
+  still need a new named protocol. On Windows run with `PYTHONUTF8=1`.
 
 ## Evidence and implementation
 
