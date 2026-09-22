@@ -879,7 +879,12 @@ the graphical views and separately review new terminal results against the froze
   legitimate carrier, 13/13), so the Case R limitation is broader than cascade ordering
   (reading B). Bounded substring isolates the carrier 23/23 but cannot see the instruction
   source; no evaluator represents decision influence.
-- [ ] Tier-1 transformation stress test (separate spec): reuse the 2026-09-09 canary trials
-  offline first; spend Groq requests only if a new transformation panel is needed.
+- [x] Tier-1 transformation stress test (Case T1, spec
+  `docs/superpowers/specs/2026-09-22-case-t1-canary-transformations-design.md`): pilot 9/9 and
+  main 27/27 sessions on Groq (116 requests, 92,756 tokens). Information reached the sink
+  24/24; the runtime canary 0/24; Tier 2 caught every pair. Verbatim copies reproduce the
+  content field but not the metadata block carrying the canary; an in-content reference
+  survives whole-text transformations (9/9) and is dropped by selective ones (0/15). Packet
+  `codebase/agentdojo-lab/reports/20260922-case-t1-groq-v1/index.html`.
 - [ ] Second task family for Case R (different sensitive argument) before calling the pattern
   systematic; Case M forced replay/judge panel if budget allows.
