@@ -66,8 +66,10 @@ Without `--live` every script is an offline transport control with zero requests
   membership is literal. A proposal is not execution.
 - Information survival, canary survival, Tier-1 attribution and reference survival are
   separate columns; none is causal evidence or a defence measure.
-- The canary placement is a local choice; the paper does not specify where the UUID is
-  injected. Findings concern this reproduction under its declared choices.
+- The canary placement is a local choice. The paper specifies injection at source return
+  into returned content at a designated delimiter and describes the marker as appended;
+  it does not fix the delimiter bytes or field position. Findings concern this
+  reproduction under its declared choices.
 
 ## Result — 2026-09-22
 

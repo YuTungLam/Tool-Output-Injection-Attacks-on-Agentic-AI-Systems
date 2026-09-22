@@ -17,6 +17,7 @@ from agentdojo_lab.policy import ToolPolicy
 
 METHOD = "nt_style_canary_v1"
 SCHEME = "uuid4_yaml_comment_v1"
+PLACEMENT_SCHEME = "uuid4_yaml_content_scalar_v1"
 MAX_CODEPOINTS = 262_144
 MAX_CONTENT_PARTS = 1_024
 MAX_GENERATION_ATTEMPTS = 16
@@ -53,6 +54,12 @@ def _metadata() -> dict:
             "YAML comments preserve ordinary parsed YAML values; model-visible text changes.",
         ],
     }
+
+
+def _placement_metadata(placement: str | None = None) -> dict:
+    from agentdojo_lab.canary_placement import placement_metadata
+
+    return placement_metadata(placement)
 
 
 def _sha(text: str) -> str:
@@ -109,6 +116,10 @@ def validate_assignment(audit: dict) -> dict:
     """
     if not isinstance(audit, dict):
         raise ValueError("Assignment must be an object")
+    if audit.get("scheme") == PLACEMENT_SCHEME:
+        from agentdojo_lab.canary_placement import validate_placement_assignment
+
+        return validate_placement_assignment(audit)
     if (
         type(audit.get("schema_version")) is not int
         or audit["schema_version"] != 1
@@ -156,14 +167,17 @@ def validate_assignment(audit: dict) -> dict:
 def compact_reference(audit: dict) -> dict:
     """Keep a small reference to a validated proof held in the event stream."""
     validated = validate_assignment(audit)
-    return {
+    reference = {
         "method": METHOD,
-        "scheme": SCHEME,
+        "scheme": validated["scheme"],
         "token": validated["token"],
         "marked_text_sha256": validated["marked_text_sha256"],
         "source_span": validated["joined_token_span"],
         "policy_sha256": validated["policy_sha256"],
     }
+    if validated["scheme"] == PLACEMENT_SCHEME:
+        reference["placement"] = validated["placement"]
+    return reference
 
 
 def validate_reference(reference: dict, source: str) -> dict:
@@ -177,10 +191,15 @@ def validate_reference(reference: dict, source: str) -> dict:
     if (
         not isinstance(reference, dict)
         or reference.get("method") != METHOD
-        or reference.get("scheme") != SCHEME
+        or reference.get("scheme") not in {SCHEME, PLACEMENT_SCHEME}
     ):
         raise ValueError("Unsupported marker reference")
     token = _canonical_token(reference.get("token"))
+    if reference["scheme"] == PLACEMENT_SCHEME:
+        from agentdojo_lab.canary_placement import PLACEMENTS
+
+        if not isinstance(reference.get("placement"), str) or reference["placement"] not in PLACEMENTS:
+            raise ValueError("Invalid marker placement")
     for key in ("marked_text_sha256", "policy_sha256"):
         if not isinstance(reference.get(key), str) or not _SHA256.fullmatch(reference[key]):
             raise ValueError("Invalid marker reference fingerprint")
@@ -200,7 +219,11 @@ def marker_matches(source: str, target: str, reference: dict) -> dict:
         raise TypeError("Source and target must be strings")
     result = {
         "method": METHOD,
-        "scheme": SCHEME,
+        "scheme": (
+            PLACEMENT_SCHEME
+            if isinstance(reference, dict) and reference.get("scheme") == PLACEMENT_SCHEME
+            else SCHEME
+        ),
         "status": "not_applicable",
         "score": None,
         "matched": None,
@@ -210,7 +233,11 @@ def marker_matches(source: str, target: str, reference: dict) -> dict:
         "target_spans": [],
         "source_length": len(source),
         "target_length": len(target),
-        "metadata": _metadata(),
+        "metadata": (
+            _metadata()
+            if not isinstance(reference, dict) or reference.get("scheme") != PLACEMENT_SCHEME
+            else _placement_metadata(reference.get("placement"))
+        ),
     }
     if max(len(source), len(target)) > MAX_CODEPOINTS:
         result.update(status="budget_exceeded", reason="max_codepoints_per_input")

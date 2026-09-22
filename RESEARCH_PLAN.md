@@ -1,5 +1,15 @@
 # Next phase: concrete propagation case studies on NeSI
 
+> **Current action — 2026-09-23:** the Groq Case T1 placement main batch is
+> paused on a provider daily-token HTTP 429 after 102/108 sessions; five slots
+> were never started and can be resumed under the frozen source hashes. The
+> [paused packet](codebase/agentdojo-lab/reports/20260923-case-t1-placement-groq-paused-v1/index.html)
+> keeps all 108 rows and 89 eligible final tasks. The separate request-free
+> [Tier-2 scaling diagnostic](codebase/agentdojo-lab/CASE-T2-SHORT-TARGET-V1.md)
+> is complete. The next action is to resume only unstarted slots after quota
+> recovery, then finalize the full packet and Git sync. Details are in the
+> 2026-09-23 active diagnostics section below.
+
 > **Case M Groq phase — 2026-09-21 (same day, after Case R):** the deferred
 > cross-session chain now has evidence. Case M stores a paraphrased summary of a
 > contaminated document in Session A and sends it from a fresh Session B that
@@ -831,6 +841,40 @@ for browsing; their scientific acceptance was not assessed here. No model or
 scheduler request was issued by the reporting work. Next action is to inspect
 the graphical views and separately review new terminal results against the frozen
 13-item ledger. This presentation checkpoint remains local and uncommitted.
+
+## Active Groq diagnostics — 2026-09-23
+
+- [x] Freeze a separate four-position Case T1 runtime-canary protocol, preserving
+  the original source, transformation prompts, model and tools. The named
+  [protocol note](codebase/agentdojo-lab/CASE-T1-PLACEMENT-GROQ-V1.md) and
+  config bind 96 slots and 108 sessions; selected sinks and memory paths must
+  be native-confirmed before entering the principal matrix.
+- [x] Run the request-free scripted main control (108/108 sessions; all 32
+  placement-by-transformation cells eligible). This validates execution and
+  report binding, not model behavior.
+- [x] Preserve the first, network-restricted pilot as a partial infrastructure
+  attempt (three `APIConnectionError` summaries, one interrupted session), then
+  run a separate network-enabled pilot. The latter completed 15/16 sessions
+  (47 requests, 33,124 tokens), with 11/12 final tasks eligible; the one
+  metadata-after verbatim failure is a Groq HTTP 400 schema rejection and is
+  retained in the [pilot packet](codebase/agentdojo-lab/reports/20260923-case-t1-placement-pilot-access-retry-v2/index.html).
+- [ ] Resume the five never-started slots after the Groq daily-token quota
+  recovers. The frozen main batch paused at 102/108 completed sessions,
+  331 captured requests and 263,829 reported tokens, with one preserved HTTP
+  429 failure. The [paused packet](codebase/agentdojo-lab/reports/20260923-case-t1-placement-groq-paused-v1/index.html)
+  retains all 108 planned rows and 89/96 eligible final-stage tasks; fresh
+  metadata-after verbatim is 0/3 original-UUID retention versus 9/9 for
+  in-content placement. Recompute the final report after resumption without
+  replacing the failed slot.
+- [x] Run a separate offline Tier-2 short-target scaling diagnostic with the
+  unchanged LCS implementation: 6,912/6,912 shuffled negatives and 6,775/6,912
+  independent negatives match at the fixed threshold. Its
+  [report](codebase/agentdojo-lab/reports/20260923-tier2-short-target-scaling-v1/index.html)
+  is synthetic, request-free and not source-attribution accuracy.
+- [ ] After resumption, update the dated project context and protocol note
+  with final executed counts, tests, credential scan and Git sync status.
+  Decide the next named protocol from the observed failure modes rather than
+  changing any prior interpretation in place.
 
 ## Case R Groq phase — 2026-09-21
 

@@ -1,0 +1,23 @@
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 25159.47it/s]
+Traceback (most recent call last):
+  File "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/scripts/run_case_t1_placement.py", line 821, in <module>
+    outcome = run_session(args.session_spec.resolve())
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/scripts/run_case_t1_placement.py", line 443, in run_session
+    messages = pipeline.query(prompt, runtime, env, [], {})[3]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/src/agentdojo_lab/observation.py", line 359, in query
+    result = self.pipeline.query(
+             ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/vendor/agentdojo/src/agentdojo/agent_pipeline/agent_pipeline.py", line 192, in query
+    query, runtime, env, messages, extra_args = element.query(query, runtime, env, messages, extra_args)
+                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/scripts/run_case_r_groq.py", line 124, in query
+    return super().query(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/src/agentdojo_lab/groq_adapter.py", line 106, in query
+    ticket, waited = self.pacer.before_request(groq_messages, groq_tools)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/Jerry/Documents/GitHub/YuTungLam/Agentic AI Cybersecurity/codebase/agentdojo-lab/src/agentdojo_lab/pacing.py", line 59, in before_request
+    time.sleep(max(0.01, min(5.0, oldest + self.window_seconds - time.time())))
+KeyboardInterrupt
