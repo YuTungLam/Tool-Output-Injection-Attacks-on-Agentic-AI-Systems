@@ -864,3 +864,22 @@ the graphical views and separately review new terminal results against the froze
   rather than the semantic tier.
 - [ ] Add a Case M panel to the summary figure and a forced replay/judge panel for the
   Session B sinks if budget allows before the meeting.
+
+## Case R tier diagnostic — 2026-09-22
+
+- [x] Bootstrap the lab on the Linux workstation (uv-managed Python 3.12, semantic and
+  figures extras, hash-verified MiniLM) and freeze the tier-ablation design
+  (`docs/superpowers/specs/2026-09-22-case-r-tier-diagnostic-design.md`).
+- [x] Recompute Tier 3/4 independently on every recorded Case R pair, cross-check against the
+  2026-09-21 packet (134/134 agree), and render
+  `codebase/agentdojo-lab/reports/20260922-case-r-tier-diagnostic-v1/index.html` plus the
+  static figure. Zero requests.
+- [x] Record the answer to the supervisor's ordering question: bypassing Tier 2 does not let
+  Tier 3/4 localize the attacker-address source (0/10 attacker-sent sinks; Tier 4 hits only the
+  legitimate carrier, 13/13), so the Case R limitation is broader than cascade ordering
+  (reading B). Bounded substring isolates the carrier 23/23 but cannot see the instruction
+  source; no evaluator represents decision influence.
+- [ ] Tier-1 transformation stress test (separate spec): reuse the 2026-09-09 canary trials
+  offline first; spend Groq requests only if a new transformation panel is needed.
+- [ ] Second task family for Case R (different sensitive argument) before calling the pattern
+  systematic; Case M forced replay/judge panel if budget allows.

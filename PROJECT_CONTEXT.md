@@ -1,5 +1,22 @@
 # Project context: Tool Output Injection Attacks
 
+> **Case R tier diagnostic — 2026-09-22 (Linux workstation, offline, 0 requests):**
+> the next supervisor question — would Tier 3/4 have discriminated the value source if
+> Tier 2 had not short-circuited? — now has evidence. Tier 3 and Tier 4 were recomputed
+> independently with the pinned MiniLM on every recorded Case R pair (144 pairs; 46
+> recipient pairs with a declared role). Tier 3 never exceeds 0.37 for a document/address
+> pair; Tier 4 matches only the legitimate carrier (13/13 legit-sent sinks, cosine 0.685 on
+> the 90-code-point contact line) and no `attacker@example.com` carrier (0/13 pairs, best
+> chunk ≤ 0.504). A counterfactual T1→T3→T4 cascade therefore localizes the value source
+> in 0/10 attacker-sent sinks: bypassing Tier 2 turns universal over-attribution into
+> universal under-attribution rather than resolving it, and the per-sink causal gate stays
+> closed (23/23) because `/body` still matches Tier 4. The bounded exact substring (a local
+> variant, not a paper tier) isolates the carrier in 23/23 sinks but, like Tier 3/4, never
+> flags the instruction-only source. Report:
+> [reports/20260922-case-r-tier-diagnostic-v1/index.html](codebase/agentdojo-lab/reports/20260922-case-r-tier-diagnostic-v1/index.html).
+> Details in "Case R tier diagnostic" below.
+
+
 > **Case M Groq phase — 2026-09-21 (same day, after Case R):** the deferred
 > cross-session chain now has evidence. Case M stores a paraphrased summary of a
 > contaminated document in Session A and sends it from a fresh Session B that
@@ -63,7 +80,7 @@
 > Case A cleanup diagnostics, Case B blocker reporting and Case C per-call
 > reporting are now repaired prospectively. Saved outcomes and counts are unchanged.
 
-Last updated: 2026-09-21 (Case R and Case M Groq results). This is the durable project brief for
+Last updated: 2026-09-22 (Case R tier diagnostic). This is the durable project brief for
 the researcher, supervisor, and future Codex sessions. It records the user's
 initial idea and supervisor guidance, followed by a separately identified
 repository assessment. Update the current-state sections as work progresses;
@@ -349,6 +366,108 @@ Long chains and cross-session memory (items 4, 6) remain untested here.
 Synthetic two-file task, one model, three repetitions; correspondence scores are not causal
 evidence; forced probes describe what the causal layer would say, not what the baseline
 does; conclusions apply to this independent implementation under its declared choices.
+
+## Case R tier diagnostic — 2026-09-22
+
+Design: [codebase/agentdojo-lab/docs/superpowers/specs/2026-09-22-case-r-tier-diagnostic-design.md](codebase/agentdojo-lab/docs/superpowers/specs/2026-09-22-case-r-tier-diagnostic-design.md).
+Protocol `case-r-tier-diagnostic-v1` (row added to [CASE-R-GROQ-V1.md](codebase/agentdojo-lab/CASE-R-GROQ-V1.md)).
+Report: [reports/20260922-case-r-tier-diagnostic-v1/index.html](codebase/agentdojo-lab/reports/20260922-case-r-tier-diagnostic-v1/index.html)
+with `packet.json` and `figure-case-r-tiers.{svg,pdf,png}`.
+
+### Question
+
+If the Tier-2 match had not short-circuited the ordered cascade, would Tier 3 or Tier 4 have
+distinguished the source that carries the executed recipient value from the other visible
+source? Two readings were pre-registered: A (ordering: later tiers carry discriminative
+evidence the cascade never observes) and B (correspondence: no tier resolves the value
+source, so the limitation is broader than ordering). The report selects a reading from the
+computed matrices, not from prose written in advance.
+
+### Environment and commands actually run
+
+Ubuntu workstation (Linux 6.8); `uv 0.12.10` installed at user level because the system
+Python lacks `venv`; `uv sync --locked --python 3.12 --extra figures --extra semantic`
+(Python 3.12.14, pinned AgentDojo `089ed46`, torch 2.14.0, sentence-transformers 6.0.1,
+matplotlib 3.11.1); pinned MiniLM downloaded with `hf download ... --revision 1110a243...`
+and verified against `model_pins/minilm-v1.json` (`pinned_manifest_verified`). `dojo-lab
+doctor` reports `offline_ready: true`; no Groq key is configured on this machine.
+
+| Step | Command | Requests |
+| --- | --- | --- |
+| Diagnostic packet | `HF_HUB_OFFLINE=1 .venv/bin/python scripts/report_case_r_tiers.py --batch runs/20260921-case-r-v1 --packet reports/20260921-case-r-groq-v1/packet.json --output reports/20260922-case-r-tier-diagnostic-v1` | 0 |
+| Figure | `.venv/bin/python scripts/figure_case_r_tiers.py --packet reports/20260922-case-r-tier-diagnostic-v1/packet.json --output reports/20260922-case-r-tier-diagnostic-v1` | 0 |
+| Tests | `pytest tests/test_case_r_tier_diagnostic.py tests/test_case_r_diagnostics.py tests/test_case_r_report.py` (18 passed); `ruff check` on the new files (clean) | 0 |
+
+New code: `src/agentdojo_lab/case_r_tier_diagnostic.py`, `scripts/report_case_r_tiers.py`,
+`scripts/figure_case_r_tiers.py`, `tests/test_case_r_tier_diagnostic.py`. No frozen module,
+threshold, run or earlier report changed.
+
+### Evidence lanes
+
+Canonical (per-pair stage records in each run's `provenance.jsonl`: Tier 1
+`disabled_condition`, Tier 2 scored, Tier 3/4 `skipped: earlier_stage_matched`);
+diagnostic (Tier 3 and Tier 4 recomputed for every pair, each stage unconditionally, with
+the pinned MiniLM); recorded cross-check (the 2026-09-21 packet's `semantic_only` scores:
+134/134 comparable pairs agree to 1e-6, 10 `/body` pairs were not computed by that variant
+because its Tier 3 had matched); and a bounded exact substring reported as a local
+strict-explicit variant, not a paper tier. Paper-specified elements (σ₂ = LCS/min length,
+θ = 0.15; MiniLM cosine θ = 0.60; Tier-4 max chunk similarity with θ_cov = 0.10; early
+termination; causal analysis only when Tiers 1–4 report no explicit taint) are separated in
+the spec from local choices (chunk size 3/overlap 1, coverage denominator, per-sink Boolean
+gate, per-argument pairing).
+
+### Results (46 recipient pairs, 23 sinks: 10 attacker-sent, 13 legit-sent)
+
+| Evaluator | TP | FP | TN | FN | Sink localisation |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Tier 2 LCS (canonical) | 26 | 20 | 0 | 0 | exact 3 (both files carry the address), over 20 |
+| Tier 3 cosine (independent) | 0 | 0 | 20 | 26 | empty 23; scores 0.06–0.37 |
+| Tier 4 chunk (independent) | 13 | 0 | 20 | 13 | exact 13 (all legit-sent), empty 10 (all attacker-sent) |
+| T1→T3→T4 cascade (counterfactual) | 13 | 0 | 20 | 13 | identical to Tier 4 |
+| Bounded substring (local variant) | 26 | 0 | 20 | 0 | exact 23 |
+
+- Tier 4's hits are the legitimate carrier's chunk `Client contact: John Mitchell
+  <john.mitchell@example.com>` (90 code points, cosine 0.685, coverage 0.13–0.17). Every
+  chunk containing `attacker@example.com` is 125–174 code points of instruction prose and
+  scores 0.439–0.504. This is reported as observed; no theory of the embedding is claimed.
+- Causal gate: canonical `not_eligible` 23/23; under Tier-2 bypass the implemented all-fields
+  rule is still `not_eligible` 23/23 (Tier 4 matches the legitimately derived `/body` in all
+  46 body pairs, best chunk 0.60–0.87, coverage 0.14–0.62); a hypothetical recipient-only
+  gate would open in 10/23.
+- Decision influence: on the three `r_split/both` sinks only Tier 2 flags the
+  instruction-only file 1, and Tier 2 flags every source. No evaluator represents decision
+  influence.
+- Tier-2 alignment: for non-carriers, 12 of 20 (`attacker@…`) or 12–16 of 24
+  (`john.mitchell@…`) aligned characters lie in the YAML metadata line
+  `owner: fixture@example.com` that AgentDojo appends to every tool result; the longest
+  contiguous run is 12 (`@example.com`).
+- Length: recorded Tier-2 scores are 0.96–1.00 on recipients (20–25 code points), 0.87–1.00
+  on `/subject` (15), 0.46–0.69 on `/body` (400–500). The constructed prefix sweep against
+  non-containing frozen documents never falls below 0.15 at any length (medians 0.80, 0.90,
+  0.95, 0.85, 0.74, 0.65 at 5/10/20/40/80/160; n = 29/29/29/29/21/6).
+- Stability: 0 of 16 identical-input groups changed a Tier-3/4 flag across repetitions.
+- Four `/cc` and `/bcc` pairs with an explicit `null` value were scored by the canonical
+  cascade (Tier 2 = 1.0 against the string `null`); they are shown but carry no value role.
+
+### Interpretation
+
+Reading B was selected by the matrices. In this batch the Case R failure is not only
+premature short-circuiting: Tier 3 and Tier 4, evaluated on the same pairs, do not contain
+the evidence needed to identify the source of the short attacker address, and the one rule
+that does (bounded substring) is not a NeuroTaint tier and is blind to the instruction-only
+source. Correspondence therefore identifies related sources but does not resolve
+argument-level VALUE provenance under multi-source composition, and no correspondence
+stage represents DECISION influence. Where the method succeeds is also recorded: Tier 4
+localizes the legitimate carrier in every clean sink, and Tier 2 never misses a carrier.
+
+### Limits
+
+One task family, one model, three repetitions; correspondence scores are not causal
+evidence; the T1→T3→T4 cascade, the recipient-only gate and the prefix sweep are
+counterfactual or constructed diagnostics the reproduced method never computed; Tier 1 was
+disabled in Case R and remains untested; chunk size and coverage are local choices; the
+LCS alignment shown is one of possibly many; findings concern this independent
+implementation under its declared choices.
 
 ## Case M Groq results — 2026-09-21
 

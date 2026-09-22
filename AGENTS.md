@@ -21,9 +21,11 @@ do not rely on a previous chat being available.
   their frozen bundles, and do not resubmit or reinterpret them.
 - The active experiment is Case R (`codebase/agentdojo-lab/CASE-R-GROQ-V1.md`,
   spec under `docs/superpowers/specs/`). Its pilot, main batch, forced follow-up
-  panel and packet are complete as of 2026-09-21; see the top of
-  PROJECT_CONTEXT.md. New model, endpoint, payload or interpretation changes
-  still need a new named protocol. On Windows run with `PYTHONUTF8=1`.
+  panel and packet are complete as of 2026-09-21, and the offline tier
+  ablation (`case-r-tier-diagnostic-v1`, 2026-09-22) answered the Tier-2
+  short-circuit question; see the top of PROJECT_CONTEXT.md. New model,
+  endpoint, payload or interpretation changes still need a new named protocol.
+  On Windows run with `PYTHONUTF8=1`.
 
 ## Evidence and implementation
 
