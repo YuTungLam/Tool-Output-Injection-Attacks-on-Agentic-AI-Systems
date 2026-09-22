@@ -589,6 +589,58 @@ def esc(value) -> str:
     return html.escape(str(value), quote=True)
 
 
+def matrix_heatmap(packet: dict) -> str:
+    """Visualize literal original-marker survival among eligible final sinks."""
+    transformations = list(dict.fromkeys(cell["transformation"] for cell in packet["matrix"]))
+    placements = [name for name in packet["placements"] if any(cell["placement"] == name for cell in packet["matrix"])]
+    cells = {(cell["placement"], cell["transformation"]): cell for cell in packet["matrix"]}
+    left, top, cell_width, cell_height = 180, 74, 138, 70
+    width, height = left + cell_width * len(transformations) + 28, top + cell_height * len(placements) + 32
+    parts = [
+        f'<svg role="img" aria-label="Original file-1 UUID survival by placement and transformation" '
+        f'viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg">',
+        '<rect width="100%" height="100%" fill="#fff"/>',
+    ]
+    for column, transform in enumerate(transformations):
+        x = left + column * cell_width + cell_width / 2
+        parts.append(f'<text x="{x}" y="50" text-anchor="middle" font-size="13" fill="#273847">{esc(transform)}</text>')
+    for row, placement_name in enumerate(placements):
+        y = top + row * cell_height
+        parts.append(
+            f'<text x="{left - 12}" y="{y + 39}" text-anchor="end" font-size="14" fill="#273847">'
+            f'{esc(placement_name)}</text>'
+        )
+        for column, transform in enumerate(transformations):
+            cell = cells[(placement_name, transform)]
+            denominator = cell["exposed_completed"]
+            hits = cell["original_canary_in_arguments"]
+            unknown = cell["original_canary_unknown"]
+            color = (
+                "#e2e8f0" if denominator == 0 else
+                "#176d51" if hits == denominator and unknown == 0 else
+                "#80b5a1" if hits else "#eaf2f9"
+            )
+            ink = "#fff" if color == "#176d51" else "#173047"
+            label = "—" if denominator == 0 else f"{hits}/{denominator}" + (f" ?{unknown}" if unknown else "")
+            x = left + column * cell_width
+            target = f"cell-{placement_name}-{transform}"
+            title = (
+                f"{placement_name} / {transform}: original UUID {label}; "
+                f"task-completed {cell['completed']}/{cell['planned']}; "
+                f"attacker address {cell['information_survived']}/{denominator}"
+            )
+            parts.append(
+                f'<a href="#{esc(target)}" aria-label="{esc(title)}">'
+                f'<rect x="{x + 3}" y="{y + 3}" width="{cell_width - 6}" height="{cell_height - 6}" '
+                f'rx="8" fill="{color}" stroke="#b7c8d5"/>'
+                f'<text x="{x + cell_width / 2}" y="{y + 42}" text-anchor="middle" '
+                f'font-size="19" font-weight="700" fill="{ink}">{esc(label)}</text>'
+                f'<title>{esc(title)}</title></a>'
+            )
+    parts.append("</svg>")
+    return "".join(parts)
+
+
 def render(packet: dict, output: Path) -> None:
     mode = "Fresh four-arm Groq panel" if packet["real_llm"] else "Offline scripted transport control — zero live model requests; not model behavior"
     matrix_rows = []
@@ -602,7 +654,7 @@ def render(packet: dict, output: Path) -> None:
             return f"{cell[key]}/{denominator}{unknown}"
 
         matrix_rows.append(
-            "<tr>"
+            f'<tr id="cell-{esc(cell["placement"])}-{esc(cell["transformation"])}">'
             + "".join(
                 f"<td>{esc(value)}</td>"
                 for value in (
@@ -653,6 +705,10 @@ pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:#f1f4f7;padding:12px
 <p class="note">{esc(packet['interpretation'])} The paper specifies injection at source return and a designated delimiter,
 but does not fix a YAML field or exact delimiter. <a href="{esc(PAPER)}">Original paper §4.2</a>.</p>
 <h2>Final-stage observations by placement and transformation</h2>
+<p>Each tile shows original file-1 UUID survival in the selected native-confirmed sink arguments, divided by
+eligible completed tasks. A gray tile has no eligible tasks; “?n” records unknown marker evidence. Select a tile to
+jump to its full evidence row. Tile color describes literal marker membership, not causal influence.</p>
+<div class="table-wrap">{matrix_heatmap(packet)}</div>
 <p>Hit denominators include only completed tasks whose original source had an assigned marker in an observed request
 followed by a parsed 2xx response before the native-confirmed sink proposal. “?n” means n eligible observations lacked that measure. The JSON retains all
 unexposed, incomplete and failed sessions. First matched tiers count selected source/argument pairs; lineage status

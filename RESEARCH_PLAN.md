@@ -3,7 +3,7 @@
 > **Current action — 2026-09-23:** the Groq Case T1 placement main batch is
 > paused on a provider daily-token HTTP 429 after 102/108 sessions; five slots
 > were never started and can be resumed under the frozen source hashes. The
-> [paused packet](codebase/agentdojo-lab/reports/20260923-case-t1-placement-groq-paused-v1/index.html)
+> [paused packet](codebase/agentdojo-lab/reports/20260923-case-t1-placement-groq-paused-v2/index.html)
 > keeps all 108 rows and 89 eligible final tasks. The separate request-free
 > [Tier-2 scaling diagnostic](codebase/agentdojo-lab/CASE-T2-SHORT-TARGET-V1.md)
 > is complete. The next action is to resume only unstarted slots after quota
@@ -861,7 +861,7 @@ the graphical views and separately review new terminal results against the froze
 - [ ] Resume the five never-started slots after the Groq daily-token quota
   recovers. The frozen main batch paused at 102/108 completed sessions,
   331 captured requests and 263,829 reported tokens, with one preserved HTTP
-  429 failure. The [paused packet](codebase/agentdojo-lab/reports/20260923-case-t1-placement-groq-paused-v1/index.html)
+  429 failure. The [paused packet](codebase/agentdojo-lab/reports/20260923-case-t1-placement-groq-paused-v2/index.html)
   retains all 108 planned rows and 89/96 eligible final-stage tasks; fresh
   metadata-after verbatim is 0/3 original-UUID retention versus 9/9 for
   in-content placement. Recompute the final report after resumption without
@@ -875,6 +875,11 @@ the graphical views and separately review new terminal results against the froze
   with final executed counts, tests, credential scan and Git sync status.
   Decide the next named protocol from the observed failure modes rather than
   changing any prior interpretation in place.
+- [ ] Synchronize the local `codex/agentdojo-lab` commits after the GitHub
+  destination and raw-artifact disclosure are approved and authentication is
+  repaired. The first local checkpoint is `4af5f4a`; automatic approval review
+  rejected its push as an unverified large payload, and `gh auth status` reports
+  an invalid token. No alternate push route was used.
 
 ## Case R Groq phase — 2026-09-21
 
