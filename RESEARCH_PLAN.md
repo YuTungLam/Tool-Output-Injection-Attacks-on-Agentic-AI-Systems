@@ -1,13 +1,13 @@
 # Next phase: concrete propagation case studies on NeSI
 
-> **Current action — 2026-09-23:** the Groq Case T1 placement main batch is
-> paused on a provider daily-token HTTP 429 after 102/108 sessions; five slots
-> were never started and can be resumed under the frozen source hashes. The
-> [paused packet](codebase/agentdojo-lab/reports/20260923-case-t1-placement-groq-paused-v2/index.html)
-> keeps all 108 rows and 89 eligible final tasks. The separate request-free
+> **Current action — 2026-09-23:** the Groq Case T1 placement main batch has
+> completed its one permitted resume under frozen source hashes. The
+> [final packet](codebase/agentdojo-lab/reports/20260923-case-t1-placement-groq-v1/index.html)
+> retains 108/108 started sessions, 107 completed and one preserved HTTP 429;
+> 94/96 final tasks pass the native/path/exposure gates. The separate request-free
 > [Tier-2 scaling diagnostic](codebase/agentdojo-lab/CASE-T2-SHORT-TARGET-V1.md)
-> is complete. The next action is to resume only unstarted slots after quota
-> recovery, then finalize the full packet and Git sync. Details are in the
+> is complete. The next action is to review the placement mechanism and choose
+> any new named protocol; Git sync remains blocked. Details are in the
 > 2026-09-23 active diagnostics section below.
 
 > **Case M Groq phase — 2026-09-21 (same day, after Case R):** the deferred
@@ -858,23 +858,26 @@ the graphical views and separately review new terminal results against the froze
   (47 requests, 33,124 tokens), with 11/12 final tasks eligible; the one
   metadata-after verbatim failure is a Groq HTTP 400 schema rejection and is
   retained in the [pilot packet](codebase/agentdojo-lab/reports/20260923-case-t1-placement-pilot-access-retry-v2/index.html).
-- [ ] Resume the five never-started slots after the Groq daily-token quota
-  recovers. The frozen main batch paused at 102/108 completed sessions,
-  331 captured requests and 263,829 reported tokens, with one preserved HTTP
-  429 failure. The [paused packet](codebase/agentdojo-lab/reports/20260923-case-t1-placement-groq-paused-v2/index.html)
-  retains all 108 planned rows and 89/96 eligible final-stage tasks; fresh
-  metadata-after verbatim is 0/3 original-UUID retention versus 9/9 for
-  in-content placement. Recompute the final report after resumption without
-  replacing the failed slot.
+- [x] Resume only the five never-started slots after the Groq daily-token
+  quota recovered, retaining the earlier HTTP 429 trial byte for byte. The
+  final batch has 108/108 started sessions, 107 completed, one failed, no
+  remaining pause, 346 captured requests and 274,627 reported tokens. The
+  [final packet](codebase/agentdojo-lab/reports/20260923-case-t1-placement-groq-v1/index.html)
+  has 94/96 eligible final-stage tasks: fresh metadata-after verbatim is 0/3
+  original-UUID retention versus 9/9 in the three content arms; two of nine
+  in-content paraphrases retain the marker; 12/12 restored B paths recover
+  lineage candidates but 0/12 final sinks retain the original marker. The
+  [paused packet](codebase/agentdojo-lab/reports/20260923-case-t1-placement-groq-paused-v2/index.html)
+  remains a versioned pre-resume snapshot.
 - [x] Run a separate offline Tier-2 short-target scaling diagnostic with the
   unchanged LCS implementation: 6,912/6,912 shuffled negatives and 6,775/6,912
   independent negatives match at the fixed threshold. Its
   [report](codebase/agentdojo-lab/reports/20260923-tier2-short-target-scaling-v1/index.html)
   is synthetic, request-free and not source-attribution accuracy.
-- [ ] After resumption, update the dated project context and protocol note
-  with final executed counts, tests, credential scan and Git sync status.
-  Decide the next named protocol from the observed failure modes rather than
-  changing any prior interpretation in place.
+- [x] Update the dated project context and protocol note with final executed
+  counts and failure limits. Verification and Git status are recorded there;
+  decide any next named protocol from the observed failure modes rather than
+  changing prior interpretations in place.
 - [ ] Synchronize the local `codex/agentdojo-lab` commits after the GitHub
   destination and raw-artifact disclosure are approved and authentication is
   repaired. The first local checkpoint is `4af5f4a`; automatic approval review
