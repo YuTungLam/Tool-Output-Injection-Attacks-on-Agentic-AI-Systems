@@ -9,9 +9,11 @@
 > four-cell address/context comparison and eight prespecified synthetic
 > cells show a string-and-context interaction. A masked follow-up shows that
 > a whole-source Tier-4 hit can come from a chunk without the target email;
-> no new API requests were made.
-> Keep all completed DeepSeek evidence intact. Review the chunk-level result
-> and validation before choosing any separately frozen follow-up.
+> no new API requests were made. The
+> [focused original-pair audit](codebase/agentdojo-lab/reports/20260929-case-r-diksha-original-asymmetry-audit-v1/index.html)
+> completes step 1 by checking all original chunks, continuous scores,
+> coverage and truncation. Strict value-versus-context attribution remains
+> step 2. Keep all completed DeepSeek evidence intact.
 
 > **Run-denominator addendum — 2026-09-29:** the
 > [DeepSeek native-main recount](codebase/agentdojo-lab/reports/20260929-deepseek-native-carrier-main-v2-run-denominator-v1/index.html)
@@ -136,8 +138,8 @@
 
 Plan date: 2026-09-14; checklist reviewed 2026-09-16; latest phase updated
 2026-09-29. Status: **DeepSeek native-task main v2 complete with 232 executed
-declared sinks; Diksha Case R offline crossover complete; cross-model scale-up
-paused**.
+declared sinks; Diksha Case R step-1 original asymmetry audit complete;
+cross-model scale-up paused**.
 The meeting packet and descriptive coverage assessment are now complete.
 This plan follows the researcher's new supervisor guidance in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
@@ -186,6 +188,23 @@ without locating the correction carrier. The [first preflight](codebase/agentdoj
 is retained because its prose omitted this chunk-level nuance; scores did
 not change. This is a synthetic offline control with zero live/API requests.
 
+**Step-1 closeout, 2026-09-29.** The
+[frozen derived-audit protocol](codebase/agentdojo-lab/CASE-R-DIKSHA-ORIGINAL-ASYMMETRY-AUDIT-V1.md)
+checks the three saved-packet hashes and rehashes all 124 raw evidence files
+listed by the verified crossover. The [focused report](codebase/agentdojo-lab/reports/20260929-case-r-diksha-original-asymmetry-audit-v1/index.html)
+shows every original Tier-4 chunk, continuous T3/T4 scores and the 46-event
+index, grouped into 11 distinct exact source-target inputs. All 46 pairs were
+complete and untruncated (116–180 source tokens under the 256-token cap).
+The two distinct legitimate carriers score 0.684837 on chunks containing
+the actual executed target and cover 90/547 or 90/687 source code points;
+the three distinct attacker carriers have visible target-containing chunks
+scoring only 0.438916–0.503944 and zero coverage. T3 misses both groups;
+exact substring finds both. This validates and locates the original binary
+split in the fixed Tier-4 scoring mechanics. The masked control shows that
+a whole-source hit need not identify the address-bearing chunk. There was
+one read-only derived-audit run, zero new encoder or API requests, and no
+change to the original Groq or DeepSeek artifacts.
+
 The [request-free preflight](codebase/agentdojo-lab/runs/20260929-case-r-diksha-offline-preflight-v1/packet.json)
 is preserved. Its preliminary hard-coded interpretation count said four
 unique carrier inputs; the final packet corrects that to five (2 + 3)
@@ -193,16 +212,17 @@ without changing scores or raw evidence. The run and render commands
 actually used are recorded in
 [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md#diksha-first-case-r-semantic-crossover--2026-09-29).
 No Groq, DeepSeek or other API request was made. A focused 59-test selection,
-Ruff, `py_compile`, link and diff checks passed; the full repository suite
-was not run. New work remains local and Git push is not
-verified.
+Ruff, Python compilation, link and diff checks passed again in the step-1
+closeout; the full repository suite was not run. New work remains local and
+Git push is not verified.
 
-Next actions: review both offline packets and focused validation with
-Diksha; keep DeepSeek runs and reports unchanged; decide any single-factor
-offline follow-up only after that review. A live check is not part of this
-protocol and would require a new, bounded Groq-only protocol. Do not resume
-the deferred multi-model or cross-suite batches from historical next-step
-notes.
+Next actions: step 1 is complete as a bounded descriptive audit. The
+remaining question is whether value, surrounding context or their
+interaction causes the split, requiring a strictly matched step-2 design.
+Keep DeepSeek runs and reports unchanged and cross-model/suite scaling
+paused. A live check is outside this protocol and would require a new,
+bounded Groq-only protocol. Do not resume deferred batches from historical
+next-step notes.
 
 ## DeepSeek carrier comparison — 2026-09-28
 

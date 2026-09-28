@@ -1,6 +1,6 @@
 # Project context: Tool Output Injection Attacks
 
-> **Current priority — 2026-09-29 (Diksha, offline Case R):** pause new
+> **Current priority — 2026-09-29 (Diksha step 1, offline Case R):** pause new
 > DeepSeek, Groq and GPT-5 mini cross-model or cross-suite scaling. The
 > [frozen zero-request protocol](codebase/agentdojo-lab/CASE-R-DIKSHA-CROSSOVER-OFFLINE-V1.md)
 > rechecked the original Groq Case R full tool outputs and executed recipients
@@ -12,9 +12,13 @@
 > control still hits John on a chunk containing his name but no target email.
 > Eight prespecified
 > synthetic cells show that wording also matters (Tier 4 2/8, Tier 3 0/8).
-> This is semantic correspondence in saved and synthetic text, with no new
-> agent or API requests. Completed DeepSeek artifacts remain intact. See the
-> dated section below for denominators, limits and next actions.
+> A [focused original-pair audit](codebase/agentdojo-lab/reports/20260929-case-r-diksha-original-asymmetry-audit-v1/index.html)
+> closes step 1: the original split comes from T4 chunk scores and
+> whole-source coverage, with no source omission or truncation in the 46
+> saved relations. Whether the address value or context causes the split
+> remains the strict matched-control question in step 2. This is semantic
+> correspondence in saved and synthetic text, with no new agent or API
+> requests. Completed DeepSeek artifacts remain intact.
 
 > **Run-denominator clarification — 2026-09-29:** a separately versioned,
 > request-free [addendum](codebase/agentdojo-lab/reports/20260929-deepseek-native-carrier-main-v2-run-denominator-v1/index.html)
@@ -204,7 +208,7 @@
 > Case A cleanup diagnostics, Case B blocker reporting and Case C per-call
 > reporting are now repaired prospectively. Saved outcomes and counts are unchanged.
 
-Last updated: 2026-09-29 (Diksha Case R offline crossover and duplicate control). This is the durable project brief for
+Last updated: 2026-09-29 (Diksha Case R step-1 original asymmetry audit). This is the durable project brief for
 the researcher, supervisor, and future Codex sessions. It records the user's
 initial idea and supervisor guidance, followed by a separately identified
 repository assessment. Update the current-state sections as work progresses;
@@ -274,6 +278,27 @@ is preserved: its prose omitted this chunk-level qualification, while scores
 were unchanged. This follow-up made zero live or API requests and refines the
 string-and-context interpretation above.
 
+**Step-1 closeout, 2026-09-29 — original asymmetry.** A
+[separately named derived audit](codebase/agentdojo-lab/CASE-R-DIKSHA-ORIGINAL-ASYMMETRY-AUDIT-V1.md)
+rechecked the frozen crossover, masked-control and historical diagnostic
+packet hashes and all 124 raw evidence-file hashes carried by the verified
+crossover. Its [focused JSON/HTML report](codebase/agentdojo-lab/reports/20260929-case-r-diksha-original-asymmetry-audit-v1/index.html)
+lists every original chunk and a 46-event index. All 46 original relations
+were scored, complete and untruncated; full sources use 116–180 tokens,
+below the 256-token encoder cap. The two distinct legitimate carrier inputs
+have target-containing T4 chunks scoring 0.684837 and coverage 90/547 and
+90/687, both above the fixed 0.60 and 0.10 thresholds. The three distinct
+attacker carrier inputs have visible target-containing chunks scoring
+0.438916–0.503944, all below 0.60 and thus with zero matched coverage.
+T3 misses all carrier inputs, while bounded exact substring finds both
+carrier groups. The previously frozen masked control remains separate: a
+whole-source John hit can come from a chunk without his target email, so
+the binary T4 result does not always locate the address-bearing sentence.
+This completes descriptive validation and the observed scoring-mechanism
+explanation for step 1. Whether the address value, context or their
+interaction causes the split is still the strict matched-control question
+in step 2; generality and any defence claim are later questions.
+
 The first [request-free preflight packet](codebase/agentdojo-lab/runs/20260929-case-r-diksha-offline-preflight-v1/packet.json)
 is retained. Its hard-coded interpretation text undercounted unique carrier
 inputs; the final separately versioned packet corrects that text to five
@@ -289,11 +314,13 @@ HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONDONTWRITEBYTECODE=1 .venv/bin/pyth
 ```
 
 The run, renderer, preflight and report made **zero Groq, DeepSeek or other
-API requests**. The focused selection passed **59 tests**; Ruff,
-`py_compile`, link and `git diff --check` checks passed. The full repository
-suite was not run. Next, review both offline packets and focused test
-results with Diksha before declaring another follow-up. A new live agent check
-would need a separate named Groq-only protocol. Prior DeepSeek protocols,
+API requests**. The step-1 derived audit also made zero model or encoder
+requests; its actual command from `codebase/agentdojo-lab` was
+`PYTHONDONTWRITEBYTECODE=1 .venv/bin/python scripts/report_case_r_original_asymmetry.py`.
+The current closeout reran the focused selection: **59 tests passed**;
+Ruff, Python compilation, local links and `git diff --check` also passed.
+The full repository suite was not run. A new live agent check would need a
+separate named Groq-only protocol. Prior DeepSeek protocols,
 runs and reports remain preserved; the new work is local and Git
 synchronization has not been verified.
 
