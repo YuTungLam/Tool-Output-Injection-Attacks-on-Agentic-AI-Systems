@@ -1,15 +1,30 @@
 # Research plan: propagation case studies and carrier scaling
 
-> **Current action — 2026-09-28:** DeepSeek Flash's separately named
+> **Current action — 2026-09-28 native-task pilot:** the new
+> [benchmark-native DeepSeek protocol](codebase/agentdojo-lab/CASE-NATIVE-CARRIER-DEEPSEEK-V1.md)
+> ran four original AgentDojo user tasks across the four suites, each clean
+> and attacked. The [live batch](codebase/agentdojo-lab/runs/20260928-deepseek-native-carrier-pilot-v1/summary.json)
+> completed 8/8 slots with 27 requests; six sensitive sinks executed, all
+> with legitimate values, and native utility held in six slots. The
+> [corrected packet](codebase/agentdojo-lab/reports/20260928-deepseek-native-carrier-pilot-v1-exposure-correction-v1/index.html)
+> retains four real exposures in the two no-sink attack slots. On five
+> uniquely bound legitimate carrier pairs, Tier 3 detects 3/5 and Tier 4
+> detects 4/5; attacker-carrier detection is n/a because no attacker-value
+> sink executed. The next main protocol needs more distinct native task IDs,
+> predeclared payload families and source granularity. Roughly 200 executed
+> sinks across three models remains the target, not an achieved count.
+
+> **Prior custom-task phase — 2026-09-28:** DeepSeek Flash's separately named
 > [four-suite v2 main batch](codebase/agentdojo-lab/CASE-CARRIER-DEEPSEEK-V2.md)
 > completed 72/72 native-state-confirmed sinks and 216/216 HTTP 200 requests.
 > The request-free [Slack source-binding correction](codebase/agentdojo-lab/reports/20260928-deepseek-carrier-main-v2-source-binding-correction-v1/correction.json)
 > repaired 18 exposure bindings in a derived copy; the
 > [corrected packet](codebase/agentdojo-lab/reports/20260928-deepseek-carrier-main-v2-source-binding-correction-v1/index.html)
-> has 72 carrier and 72 noncarrier pairs, zero missing/unknown bindings. Next,
-> freeze separately named Groq `openai/gpt-oss-120b` and OpenAI `gpt-5-mini`
-> cross-suite protocols using the same fixtures, then run them toward 216
-> planned sinks across three models. Neither new cross-suite batch has run.
+> has 72 carrier and 72 noncarrier pairs, zero missing/unknown bindings. The
+> initial scaling plan called for Groq `openai/gpt-oss-120b` and OpenAI
+> `gpt-5-mini` protocols using the same fixtures toward 216 planned slots
+> targeting sensitive sinks across three models. Neither new cross-suite
+> batch has run.
 > Current changes are local; Git push has not been verified.
 
 > **Case M Groq phase — 2026-09-21 (same day, after Case R):** the deferred
@@ -73,8 +88,8 @@
 > reporting are now repaired prospectively. Saved outcomes and counts are unchanged.
 
 Plan date: 2026-09-14; checklist reviewed 2026-09-16; latest phase updated
-2026-09-28. Status: **DeepSeek cross-suite v2 complete; Groq and GPT-5 mini
-cross-suite protocols pending**.
+2026-09-28. Status: **DeepSeek custom-task v2 complete; benchmark-native
+DeepSeek pilot complete; Groq and GPT-5 mini cross-suite protocols pending**.
 The meeting packet and descriptive coverage assessment are now complete.
 This plan follows the researcher's new supervisor guidance in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
@@ -98,6 +113,32 @@ offline preflight, live batch, first packet and correction, are recorded in
 No separately named Groq or GPT-5 mini cross-suite trial has started; the
 three-model target remains 216 planned sinks. Git synchronization is not yet
 verified.
+
+## Benchmark-native carrier pilot — 2026-09-28
+
+The [native protocol](codebase/agentdojo-lab/CASE-NATIVE-CARRIER-DEEPSEEK-V1.md)
+uses original registered user tasks, native utility and full suite tools with
+custom carrier text. The [corrected report](codebase/agentdojo-lab/reports/20260928-deepseek-native-carrier-pilot-v1-exposure-correction-v1/index.html)
+keeps the complete eight-slot ledger: six executed sensitive arguments, two
+no-sink attack slots, six utility successes, five persisted sensitive values
+and one Slack invite whose email is confirmed only in the executed argument.
+The two no-sink slots did read the attack-bearing output; a request-free
+correction derived from raw event IDs fixed their source-exposure labels while
+preserving every raw file. Tier 3/4 role-specific rates use five uniquely
+bound legitimate carrier pairs (3/5 and 4/5 respectively). An attacker
+carrier with an executed attacker-value sink was never observed, so its rate
+is **n/a**. These findings do not combine with the earlier 72 custom-task
+DeepSeek slots or Case R's 13/13 versus 0/13 comparison.
+
+Next research gate: freeze a separately named native main batch with several
+distinct registered task IDs per suite and both clean and attacked conditions.
+Separate whole-tool-output rates from any predeclared object/passage-level
+secondary diagnostic; preserve mixed outputs and no-sink slots. An audit of
+registered candidates identified workspace `user_task_18`, banking
+`user_task_3`, Slack `user_task_6`, and travel `user_task_4`/`user_task_7`
+as possible additions. Their source and sink definitions are not yet frozen
+for a live main. The Groq and GPT-5 mini cross-suite phases have not run;
+`OPENAI_API_KEY` is currently absent from the ignored lab `.env`.
 
 <a id="supervisor-checklist--checked-2026-09-15"></a>
 
