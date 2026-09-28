@@ -1,6 +1,41 @@
 # Project context: Tool Output Injection Attacks
 
-> **Current benchmark-native pilot — 2026-09-28:** the separately frozen
+> **Current DeepSeek native-task main — 2026-09-28:** the separately frozen
+> [v2 protocol](codebase/agentdojo-lab/CASE-NATIVE-CARRIER-DEEPSEEK-MAIN-V2.md)
+> retained 18 original AgentDojo `v1.2.2` user tasks across all four suites,
+> inserted seven paired carrier wordings at registered injection vectors per
+> task, and completed 252/252 DeepSeek Flash trajectories with 1,024 captured
+> model requests. The [raw run](codebase/agentdojo-lab/runs/20260928-deepseek-native-carrier-main-v2/summary.json)
+> records 232 successful declared sink calls, 230 with native state change,
+> and 223 exact-value state-corroborated sinks eligible for carrier rates.
+> The [report](codebase/agentdojo-lab/reports/20260928-deepseek-native-carrier-main-v2/index.html)
+> scores 324 uniquely bound passage pairs. Tier 3 and Tier 4 agree on every
+> binary decision. Literal legitimate recall is Workspace 56/63, Banking
+> 12/12, Slack 43/43, Travel 56/56; literal attacker recall is Banking 7/7
+> and Slack 22/22, with empty attacker denominators in Workspace and Travel.
+> Banking numeric legitimate recall is 14/18, reported separately. These
+> are descriptive content-correspondence rates for passage-level carriers,
+> not stock AgentDojo attack success, causal attribution, or a direct
+> replication of Case R's whole-document comparison. This completes the
+> user's requested DeepSeek-first roughly 200 executed-sink phase; Groq and
+> GPT-5 mini native-main batches have not run.
+
+> **AgentDojo task-catalog audit — 2026-09-28:** pinned `v1.2.2` supplies
+> 97 original user tasks, 35 injection tasks, four suites, registered injection
+> vectors, baseline attack templates, native environments and utility/security
+> checks. There are 949 distinct user-task × injection-task combinations; 558
+> have an original user task with a mutating ground-truth call. The stock
+> attacks target additional malicious actions rather than a predeclared
+> legitimate-versus-attacker substitution in the same sink argument. Thus
+> stock attack success and the supervisor's Tier 3/4 carrier-source rate need
+> separate denominators. The proposed 272-slot native main draft repeated only
+> 12 original task IDs; a zero-request source-binding audit found widespread
+> nonunique or absent whole-output carriers. It is explicitly withdrawn and
+> **has not run**.
+> The replacement v2 protocol passed request-free source-binding controls
+> before the paid run; see the current result above.
+
+> **Earlier benchmark-native pilot — 2026-09-28:** the separately frozen
 > [DeepSeek native-task protocol](codebase/agentdojo-lab/CASE-NATIVE-CARRIER-DEEPSEEK-V1.md)
 > used four registered AgentDojo `v1.2.2` user tasks with original prompts,
 > default system prompt, full tools, initial environments and native utility.
@@ -12,10 +47,9 @@
 > slots from saved events without altering raw evidence. Five uniquely bound
 > legitimate carrier pairs scored T3 3/5 and T4 4/5; no attacker-value sink
 > executed, so attacker-carrier detection is n/a. This eight-slot pilot is
-> separate from the earlier 72-slot custom-task batch. The next native main
-> protocol needs more original task IDs and a predeclared source granularity;
-> the three-model, roughly 200-executed-sink target remains open. Local Git
-> changes are not yet synchronized.
+> separate from the earlier 72-slot custom-task batch and the completed v2
+> native main. The pilot used whole-tool-output granularity; v2 uses exact
+> passages and therefore has a separate denominator.
 
 > **Prior DeepSeek custom-task phase — 2026-09-28:** the separately named
 > [cross-suite v2 protocol](codebase/agentdojo-lab/CASE-CARRIER-DEEPSEEK-V2.md)
@@ -141,7 +175,7 @@
 > Case A cleanup diagnostics, Case B blocker reporting and Case C per-call
 > reporting are now repaired prospectively. Saved outcomes and counts are unchanged.
 
-Last updated: 2026-09-28 (DeepSeek benchmark-native carrier pilot). This is the durable project brief for
+Last updated: 2026-09-28 (DeepSeek native-task carrier main v2). This is the durable project brief for
 the researcher, supervisor, and future Codex sessions. It records the user's
 initial idea and supervisor guidance, followed by a separately identified
 repository assessment. Update the current-state sections as work progresses;
@@ -241,14 +275,61 @@ HF_HUB_OFFLINE=1 .venv/bin/python scripts/report_deepseek_native_carrier.py --ba
 HF_HUB_OFFLINE=1 .venv/bin/python scripts/report_deepseek_native_carrier.py --batch runs/20260928-deepseek-native-carrier-pilot-v1 --output reports/20260928-deepseek-native-carrier-pilot-v1-exposure-correction-v1
 ```
 
-Next: freeze a separate native main protocol with more distinct original task
-IDs per suite, explicit carrier source granularity and predeclared payload
-families; keep observed no-sink and mixed-output rates visible. Additional
-registered candidates were audited in the pilot protocol. The original
-three-model target remains incomplete: only DeepSeek has a cross-suite
-72-slot custom-task batch and an eight-slot native pilot; Groq and GPT-5 mini
-cross-suite batches have not run, and `OPENAI_API_KEY` is not configured in the
-ignored lab `.env`. No results from those pending models are inferred.
+The next native main protocol has now completed; its separately dated evidence
+is below. The original three-model comparison remains incomplete: no matching
+Groq or GPT-5 mini native-main batch has run. No results from those pending
+models are inferred.
+
+## DeepSeek native-task paired-carrier main v2 — 2026-09-28
+
+The [frozen protocol](codebase/agentdojo-lab/CASE-NATIVE-CARRIER-DEEPSEEK-MAIN-V2.md)
+replaced an unrun [withdrawn v1 draft](codebase/agentdojo-lab/CASE-NATIVE-CARRIER-DEEPSEEK-MAIN-V1.md).
+It sampled 18 original user task IDs (Workspace 5, Banking 4, Slack 5,
+Travel 4), with seven predeclared factual wordings in paired clean and attack
+conditions. Original prompts, initial state, complete tools and native utility
+oracles remained in use. The measured source unit was a uniquely bound exact
+passage exposed to the model before a declared sensitive sink, not the whole
+tool output. The stock AgentDojo security oracle does not describe this
+carrier intervention. Source passage length and form differ between roles,
+so these rates are descriptive rather than an isolated role effect. Banking
+`user_task_6` and Workspace `user_task_20` have weak task-specific source
+relevance and remain identifiable in the per-task ledger.
+
+The request-free preflight verified 252/252 source selectors and 126/126
+attacker values accepted by the native sink on cloned environments. A final
+eight-slot, four-suite mock control passed 8/8 slots with 28 in-process
+requests and 11/11 unique passage bindings; it also verified checkpoint
+resumption. The [live batch](codebase/agentdojo-lab/runs/20260928-deepseek-native-carrier-main-v2/summary.json)
+ran 252/252 planned slots and retained all 1,024 DeepSeek requests. A planned
+eight-slot checkpoint was followed by resumption of the remaining 244
+untouched slots. All slots completed. Native utility passed 217/252. There
+were 232 successful declared sink calls, 230 with a corroborating native
+state change and 223 with one exact legitimate or attacker value eligible
+for the primary carrier analysis. Seven Workspace calls used an `other`
+case/spelling variant; two Banking address calls succeeded without state
+change. Slack invitation email is verified by argument plus new user, since
+the state does not persist that email.
+
+The [derived report](codebase/agentdojo-lab/reports/20260928-deepseek-native-carrier-main-v2/index.html)
+contains 324 scored passage pairs: 221 value-aligned carriers and 103
+noncarriers. Tier 3 and Tier 4 had identical binary decisions across those
+pairs. Literal-text legitimate recall by suite was Workspace 56/63, Banking
+12/12, Slack 43/43 and Travel 56/56. Literal-text attacker recall was
+Banking 7/7 and Slack 22/22; Workspace and Travel have no eligible attacker
+carrier, so their rate is n/a. Banking's numeric amount is separate, with
+legitimate recall 14/18 and no eligible attacker carrier. Noncarrier false
+positives were Workspace attacker 23/32, Banking text 0/5 and numeric 0/7,
+Slack 31/31 and Travel attacker 28/28. The report retains all no-sink,
+unbound, mixed-output and non-exact-value cases. Its 324 passage pairs cannot
+be pooled with Case R's whole-document 13/13 versus 0/13.
+
+Commands actually run, tests, hashes, and artifact checks are recorded in
+the protocol execution receipt. All 14 focused tests and Ruff check/format
+check passed. A scan of 3,289 live-run files found no configured API key.
+The matching Groq and GPT-5 mini native-main protocols remain future work;
+DeepSeek's approximately 200 executed-sink phase is complete. Git
+synchronization: the new evidence is local on `codex/agentdojo-lab`; remote
+push has not been verified. Pre-existing `deliverables/` was left untouched.
 
 ## Original idea supplied by the researcher
 
