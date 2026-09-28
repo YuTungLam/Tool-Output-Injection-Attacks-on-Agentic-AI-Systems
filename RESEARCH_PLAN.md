@@ -1,5 +1,14 @@
 # Research plan: propagation case studies and carrier scaling
 
+> **Run-denominator addendum — 2026-09-29:** the
+> [DeepSeek native-main recount](codebase/agentdojo-lab/reports/20260929-deepseek-native-carrier-main-v2-run-denominator-v1/index.html)
+> uses equal planned-run denominators: 126 clean and 126 attack runs. The
+> exact attacker value reached a successful sink in 31/126 attack runs;
+> 29/126 had a uniquely bound, scored attacker carrier that T3/T4 detected.
+> In the clean arm, 115/126 reached the exact legitimate value and 102/126
+> yielded a verified T3/T4 legitimate-carrier hit. These are end-to-end
+> yields, separate from the earlier report's conditional passage-level recall.
+
 > **Current DeepSeek native-task main — 2026-09-28:** the frozen
 > [v2 protocol](codebase/agentdojo-lab/CASE-NATIVE-CARRIER-DEEPSEEK-MAIN-V2.md)
 > completed 252/252 original-user-task trajectories across four suites with
@@ -112,7 +121,7 @@
 > reporting are now repaired prospectively. Saved outcomes and counts are unchanged.
 
 Plan date: 2026-09-14; checklist reviewed 2026-09-16; latest phase updated
-2026-09-28. Status: **DeepSeek native-task main v2 complete with 232 executed
+2026-09-29. Status: **DeepSeek native-task main v2 complete with 232 executed
 declared sinks; matching Groq and GPT-5 mini native-main protocols pending**.
 The meeting packet and descriptive coverage assessment are now complete.
 This plan follows the researcher's new supervisor guidance in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
@@ -199,6 +208,18 @@ matching Groq and GPT-5 mini protocols if cross-model scaling proceeds.
 The DeepSeek-only roughly 200 executed-sink request has been satisfied;
 cross-model results are still unknown. The new code, raw evidence and report
 are local on `codex/agentdojo-lab`; remote push has not been verified.
+
+The [run-denominator addendum](codebase/agentdojo-lab/reports/20260929-deepseek-native-carrier-main-v2-run-denominator-v1/README.md)
+recounts the frozen run without any new model request. Its 126 clean runs
+produced 115 exact legitimate sinks, four other values and seven no-sink
+outcomes. Its 126 attack runs produced 79 legitimate sinks, 31 attacker
+sinks, three other values and 13 no-sink outcomes. T3/T4 yielded verified
+target-carrier hits in 102/126 clean runs and 29/126 attack runs; those
+fractions are end-to-end yields over all planned runs, not conditional
+detector recall. The attack-value sink rate is 31/126, with one Banking
+state-unconfirmed and one Slack source-ambiguous case excluded from the
+29 scored attacker carriers. Noncarrier false positives occurred in 82/126
+attack runs. The original passage-level report remains unchanged.
 
 <a id="supervisor-checklist--checked-2026-09-15"></a>
 

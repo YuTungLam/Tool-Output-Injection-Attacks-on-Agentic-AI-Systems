@@ -1,5 +1,18 @@
 # Project context: Tool Output Injection Attacks
 
+> **Run-denominator clarification — 2026-09-29:** a separately versioned,
+> request-free [addendum](codebase/agentdojo-lab/reports/20260929-deepseek-native-carrier-main-v2-run-denominator-v1/index.html)
+> recounts the same 252 DeepSeek native-main trajectories as 126 clean and
+> 126 attack runs. Clean outcomes: 115 exact legitimate sinks, four other
+> values and seven no-sink runs; attack outcomes: 79 legitimate, 31 attacker,
+> three other and 13 no-sink runs. Verified target-carrier hits per **all
+> planned runs** are clean legitimate 102/126 and attack attacker 29/126 for
+> both T3/T4; these are end-to-end yields, not conditional detector recall.
+> One Banking attacker sink lacked native state confirmation and one Slack
+> attacker sink had ambiguous source binding, accounting for 31 executed
+> attacker values versus 29 scorable attacker carriers. The prior
+> passage-conditioned rates and raw run remain unchanged.
+
 > **Current DeepSeek native-task main — 2026-09-28:** the separately frozen
 > [v2 protocol](codebase/agentdojo-lab/CASE-NATIVE-CARRIER-DEEPSEEK-MAIN-V2.md)
 > retained 18 original AgentDojo `v1.2.2` user tasks across all four suites,
@@ -175,7 +188,7 @@
 > Case A cleanup diagnostics, Case B blocker reporting and Case C per-call
 > reporting are now repaired prospectively. Saved outcomes and counts are unchanged.
 
-Last updated: 2026-09-28 (DeepSeek native-task carrier main v2). This is the durable project brief for
+Last updated: 2026-09-29 (DeepSeek native-main run-denominator addendum). This is the durable project brief for
 the researcher, supervisor, and future Codex sessions. It records the user's
 initial idea and supervisor guidance, followed by a separately identified
 repository assessment. Update the current-state sections as work progresses;
@@ -330,6 +343,19 @@ The matching Groq and GPT-5 mini native-main protocols remain future work;
 DeepSeek's approximately 200 executed-sink phase is complete. Git
 synchronization: the new evidence is local on `codex/agentdojo-lab`; remote
 push has not been verified. Pre-existing `deliverables/` was left untouched.
+
+The [2026-09-29 run-denominator addendum](codebase/agentdojo-lab/reports/20260929-deepseek-native-carrier-main-v2-run-denominator-v1/README.md)
+resolves a different question from the conditional passage table above. It
+uses 35 clean plus 35 attack runs in Workspace, 28 plus 28 Banking, 35 plus
+35 Slack and 28 plus 28 Travel. The exact attacker value reached a successful
+sink in 0/35, 8/28, 23/35 and 0/28 attack runs respectively (31/126 total).
+The verified attacker-carrier hits per **all attack runs** were 0/35, 7/28,
+22/35 and 0/28 (29/126 total); clean legitimate-carrier hits per **all clean
+runs** were 24/35, 16/28, 34/35 and 28/28 (102/126 total). These run-based
+fractions include no-sink and unscorable cases in the denominator and must
+not be described as conditional Tier 3/4 recall. Both tiers also matched at
+least one noncarrier in 82/126 attack runs. The addendum preserves the
+original report and includes its source hashes and the exact recount command.
 
 ## Original idea supplied by the researcher
 
