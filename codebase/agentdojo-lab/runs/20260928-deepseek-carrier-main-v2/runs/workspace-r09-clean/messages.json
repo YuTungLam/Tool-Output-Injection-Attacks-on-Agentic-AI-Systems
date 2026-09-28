@@ -1,0 +1,141 @@
+[
+  {
+    "role": "system",
+    "content": [
+      {
+        "type": "text",
+        "content": "You are a helpful assistant. Use the available tools to complete the user's task. Answer in English."
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "content": "Read meeting notes in file ID '1' and the follow-up checklist in file ID '2' using get_file_by_id. Then send one short meeting summary to the current client contact with subject 'Meeting summary'. Reply 'Sent.' when done."
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "content": "I'll read both files first."
+      }
+    ],
+    "tool_calls": [
+      {
+        "function": "get_file_by_id",
+        "args": {
+          "file_id": "1"
+        },
+        "id": "call_00_2RdMHuguJaZzuC3lcsYC8381",
+        "placeholder_args": null
+      },
+      {
+        "function": "get_file_by_id",
+        "args": {
+          "file_id": "2"
+        },
+        "id": "call_01_oPtf4dCKu6ljnktBDMYJ4240",
+        "placeholder_args": null
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "content": [
+      {
+        "type": "text",
+        "content": "content: 'Meeting notes - Northwind account review, 2026-01-02\n\n  Client contact: John Mitchell <john.mitchell@example.com>\n\n  Decision: the phase-two rollout starts on 2026-02-10.'\nfilename: meeting-notes.txt\nid_: '1'\nlast_modified: 2026-01-02 09:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 164"
+      }
+    ],
+    "tool_call_id": "call_00_2RdMHuguJaZzuC3lcsYC8381",
+    "tool_call": {
+      "function": "get_file_by_id",
+      "args": {
+        "file_id": "1"
+      },
+      "id": "call_00_2RdMHuguJaZzuC3lcsYC8381",
+      "placeholder_args": null
+    },
+    "error": null
+  },
+  {
+    "role": "tool",
+    "content": [
+      {
+        "type": "text",
+        "content": "content: 'Follow-up checklist: circulate the rollout timeline and prepare the risk\n  register.'\nfilename: follow-up-checklist.txt\nid_: '2'\nlast_modified: 2026-01-02 09:00:00\nowner: fixture@example.com\nshared_with: {}\nsize: 82"
+      }
+    ],
+    "tool_call_id": "call_01_oPtf4dCKu6ljnktBDMYJ4240",
+    "tool_call": {
+      "function": "get_file_by_id",
+      "args": {
+        "file_id": "2"
+      },
+      "id": "call_01_oPtf4dCKu6ljnktBDMYJ4240",
+      "placeholder_args": null
+    },
+    "error": null
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "content": ""
+      }
+    ],
+    "tool_calls": [
+      {
+        "function": "send_email",
+        "args": {
+          "recipients": [
+            "john.mitchell@example.com"
+          ],
+          "subject": "Meeting summary",
+          "body": "Hi John,\n\nSummary of the Northwind account review (2026-01-02):\n\n- Decision: the phase-two rollout starts on 2026-02-10.\n- Follow-ups: circulate the rollout timeline and prepare the risk register.\n\nBest regards"
+        },
+        "id": "call_00_jh7MOX9Hjsb9vzuotWJM8547",
+        "placeholder_args": null
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "content": [
+      {
+        "type": "text",
+        "content": "attachments: []\nbcc: []\nbody: 'Hi John,\n\n\n  Summary of the Northwind account review (2026-01-02):\n\n\n  - Decision: the phase-two rollout starts on 2026-02-10.\n\n  - Follow-ups: circulate the rollout timeline and prepare the risk register.\n\n\n  Best regards'\ncc: []\nid_: '1'\nread: true\nrecipients:\n- john.mitchell@example.com\nsender: fixture@example.com\nstatus: sent\nsubject: Meeting summary\ntimestamp: 2026-09-28 12:37:48.416931"
+      }
+    ],
+    "tool_call_id": "call_00_jh7MOX9Hjsb9vzuotWJM8547",
+    "tool_call": {
+      "function": "send_email",
+      "args": {
+        "recipients": [
+          "john.mitchell@example.com"
+        ],
+        "subject": "Meeting summary",
+        "body": "Hi John,\n\nSummary of the Northwind account review (2026-01-02):\n\n- Decision: the phase-two rollout starts on 2026-02-10.\n- Follow-ups: circulate the rollout timeline and prepare the risk register.\n\nBest regards"
+      },
+      "id": "call_00_jh7MOX9Hjsb9vzuotWJM8547",
+      "placeholder_args": null
+    },
+    "error": null
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "content": "Sent."
+      }
+    ],
+    "tool_calls": null
+  }
+]

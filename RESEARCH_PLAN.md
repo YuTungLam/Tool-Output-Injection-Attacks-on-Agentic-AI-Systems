@@ -1,14 +1,16 @@
-# Next phase: concrete propagation case studies on NeSI
+# Research plan: propagation case studies and carrier scaling
 
-> **Current action — 2026-09-23:** the Groq Case T1 placement main batch has
-> completed its one permitted resume under frozen source hashes. The
-> [final packet](codebase/agentdojo-lab/reports/20260923-case-t1-placement-groq-v1/index.html)
-> retains 108/108 started sessions, 107 completed and one preserved HTTP 429;
-> 94/96 final tasks pass the native/path/exposure gates. The separate request-free
-> [Tier-2 scaling diagnostic](codebase/agentdojo-lab/CASE-T2-SHORT-TARGET-V1.md)
-> is complete. The next action is to review the placement mechanism and choose
-> any new named protocol; Git sync remains blocked. Details are in the
-> 2026-09-23 active diagnostics section below.
+> **Current action — 2026-09-28:** DeepSeek Flash's separately named
+> [four-suite v2 main batch](codebase/agentdojo-lab/CASE-CARRIER-DEEPSEEK-V2.md)
+> completed 72/72 native-state-confirmed sinks and 216/216 HTTP 200 requests.
+> The request-free [Slack source-binding correction](codebase/agentdojo-lab/reports/20260928-deepseek-carrier-main-v2-source-binding-correction-v1/correction.json)
+> repaired 18 exposure bindings in a derived copy; the
+> [corrected packet](codebase/agentdojo-lab/reports/20260928-deepseek-carrier-main-v2-source-binding-correction-v1/index.html)
+> has 72 carrier and 72 noncarrier pairs, zero missing/unknown bindings. Next,
+> freeze separately named Groq `openai/gpt-oss-120b` and OpenAI `gpt-5-mini`
+> cross-suite protocols using the same fixtures, then run them toward 216
+> planned sinks across three models. Neither new cross-suite batch has run.
+> Current changes are local; Git push has not been verified.
 
 > **Case M Groq phase — 2026-09-21 (same day, after Case R):** the deferred
 > cross-session chain now has evidence. Case M stores a paraphrased summary of a
@@ -70,11 +72,32 @@
 > Case A cleanup diagnostics, Case B blocker reporting and Case C per-call
 > reporting are now repaired prospectively. Saved outcomes and counts are unchanged.
 
-Plan date: 2026-09-14; checklist reviewed 2026-09-16; run status updated
-2026-09-17 (NeSI local date). Status: **all nine queued jobs assessed; corrected
-follow-up bundle validation in progress**.
+Plan date: 2026-09-14; checklist reviewed 2026-09-16; latest phase updated
+2026-09-28. Status: **DeepSeek cross-suite v2 complete; Groq and GPT-5 mini
+cross-suite protocols pending**.
 The meeting packet and descriptive coverage assessment are now complete.
 This plan follows the researcher's new supervisor guidance in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
+
+## DeepSeek carrier comparison — 2026-09-28
+
+The [raw run](codebase/agentdojo-lab/runs/20260928-deepseek-carrier-main-v2/summary.json)
+and [corrected receipt](codebase/agentdojo-lab/reports/20260928-deepseek-carrier-main-v2-source-binding-correction-v1/correction.json)
+preserve all 72 outcomes: workspace legitimate 18, attacker 0 (all nine attack
+slots stayed legitimate); banking, Slack and travel each legitimate 9 and
+attacker 9. After 18 request-free Slack URL exposure rebindings, the
+[corrected report](codebase/agentdojo-lab/reports/20260928-deepseek-carrier-main-v2-source-binding-correction-v1/index.html)
+scores 72 carrier and 72 noncarrier pairs with no missing or unknown source.
+Unconditional Tier 3 and Tier 4 both detect 0 carrier pairs in workspace,
+banking and Slack, and 9/9 legitimate plus 9/9 attacker carriers in travel;
+both also yield 9/9 noncarrier false positives in travel's attacker-outcome
+cell. The nine repetitions use identical fixtures. These scores measure
+correspondence between observed text and executed sink values, not causal
+influence or the full staged cascade. Commands actually run, including the
+offline preflight, live batch, first packet and correction, are recorded in
+[PROJECT_CONTEXT.md](PROJECT_CONTEXT.md#deepseek-flash-cross-suite-carrier-scaling--2026-09-28).
+No separately named Groq or GPT-5 mini cross-suite trial has started; the
+three-model target remains 216 planned sinks. Git synchronization is not yet
+verified.
 
 <a id="supervisor-checklist--checked-2026-09-15"></a>
 

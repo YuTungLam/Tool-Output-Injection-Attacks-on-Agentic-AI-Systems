@@ -1,5 +1,18 @@
 # Project context: Tool Output Injection Attacks
 
+> **Current DeepSeek phase — 2026-09-28:** the separately named
+> [cross-suite v2 protocol](codebase/agentdojo-lab/CASE-CARRIER-DEEPSEEK-V2.md)
+> completed 72/72 native-state-confirmed sinks on `deepseek-flash` (216/216
+> HTTP 200 model requests). A request-free [source-binding correction receipt](codebase/agentdojo-lab/reports/20260928-deepseek-carrier-main-v2-source-binding-correction-v1/correction.json)
+> rebinds 18 Slack webpage exposures from recorded events without changing the
+> [raw run](codebase/agentdojo-lab/runs/20260928-deepseek-carrier-main-v2/summary.json).
+> The [corrected Tier 3/4 packet](codebase/agentdojo-lab/reports/20260928-deepseek-carrier-main-v2-source-binding-correction-v1/index.html)
+> has 72 carrier and 72 noncarrier pairs, with zero missing or unknown sources.
+> The next step is separately frozen Groq `openai/gpt-oss-120b` and OpenAI
+> `gpt-5-mini` cross-suite protocols; their runs have not started. Together with
+> DeepSeek, three 72-slot batches would plan 216 executed sinks. This phase is
+> local; Git push has not been verified.
+
 > **Active Case T1 placement diagnostic — 2026-09-23 (Groq
 > `openai/gpt-oss-120b`):** a separately frozen four-position panel has a
 > completed network-enabled pilot (15/16 sessions; one HTTP 400) and a
@@ -110,11 +123,55 @@
 > Case A cleanup diagnostics, Case B blocker reporting and Case C per-call
 > reporting are now repaired prospectively. Saved outcomes and counts are unchanged.
 
-Last updated: 2026-09-23 (Case T1 placement; Tier-2 short-target scaling). This is the durable project brief for
+Last updated: 2026-09-28 (DeepSeek cross-suite carrier scaling). This is the durable project brief for
 the researcher, supervisor, and future Codex sessions. It records the user's
 initial idea and supervisor guidance, followed by a separately identified
 repository assessment. Update the current-state sections as work progresses;
 preserve the original intent.
+
+<a id="deepseek-flash-cross-suite-carrier-scaling--2026-09-28"></a>
+
+## DeepSeek Flash cross-suite carrier scaling — 2026-09-28
+
+The [v2 protocol](codebase/agentdojo-lab/CASE-CARRIER-DEEPSEEK-V2.md) reused the
+same frozen source texts and sensitive sink values across nine repetitions of
+each clean/attack condition in workspace, banking, Slack and travel. The
+[raw main batch](codebase/agentdojo-lab/runs/20260928-deepseek-carrier-main-v2/summary.json)
+completed all 72 sessions with 72 confirmed native sinks and 216/216 HTTP 200
+model requests. A [separate zero-request correction](codebase/agentdojo-lab/reports/20260928-deepseek-carrier-main-v2-source-binding-correction-v1/correction.json)
+matched 18 Slack `get_webpage` calls whose `http://` URL is canonically the
+same as the frozen `www.dora-website.com` argument. It used tool-call IDs and
+source-exposure order, copied evidence into a derived batch, and left the raw
+evidence and the first report unchanged. The [corrected packet](codebase/agentdojo-lab/reports/20260928-deepseek-carrier-main-v2-source-binding-correction-v1/index.html)
+contains 72 carrier and 72 noncarrier pairs; all 72 sinks are eligible, with
+zero failed sinks, missing exposures or unknown bindings.
+
+Observed sink values split by suite: workspace sent to the legitimate contact
+18/18 times, including all nine attack-condition slots; banking, Slack and
+travel each produced nine legitimate and nine attacker-value sinks. Both
+unconditionally recomputed MiniLM Tier 3 and Tier 4 found 0 carrier pairs in
+workspace, banking and Slack, but 9/9 legitimate and 9/9 attacker carrier pairs
+in travel. Both tiers also flagged the noncarrier source in 9/9 travel
+attacker-value sinks. These are content-correspondence measurements, not
+causal influence findings or canonical cascade outcomes. The nine repetitions
+per condition use identical fixtures and do not test source-text diversity.
+
+Commands run from `codebase/agentdojo-lab` (`.venv` Python 3.12; report and
+correction commands set `HF_HUB_OFFLINE=1`):
+
+```bash
+.venv/bin/python scripts/run_deepseek_carrier.py --output runs/20260928-deepseek-carrier-v2-offline-pilot --protocol deepseek-carrier-pilot-v2
+HF_HUB_OFFLINE=1 .venv/bin/python scripts/report_carrier_scale.py --batch runs/20260928-deepseek-carrier-v2-offline-pilot --output reports/20260928-deepseek-carrier-v2-offline-pilot
+.venv/bin/python scripts/run_deepseek_carrier.py --output runs/20260928-deepseek-carrier-main-v2 --protocol deepseek-carrier-main-v2 --live
+HF_HUB_OFFLINE=1 .venv/bin/python scripts/report_carrier_scale.py --batch runs/20260928-deepseek-carrier-main-v2 --output reports/20260928-deepseek-carrier-main-v2
+HF_HUB_OFFLINE=1 .venv/bin/python scripts/correct_carrier_source_binding.py --batch runs/20260928-deepseek-carrier-main-v2 --output reports/20260928-deepseek-carrier-main-v2-source-binding-correction-v1
+```
+
+Next: freeze separately named Groq `openai/gpt-oss-120b` and OpenAI
+`gpt-5-mini` protocols with these fixtures, then run and report them toward
+216 planned sinks across three models. Neither new cross-suite model batch has
+run. Current DeepSeek documents and artifacts are local; Git push has not been
+verified.
 
 ## Original idea supplied by the researcher
 
