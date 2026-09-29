@@ -4,7 +4,19 @@
 > researcher resumed steps 2–4 in sequence, with continuation governed by
 > the observed result at each step. The strictly matched
 > [step-2 factorial protocol](codebase/agentdojo-lab/CASE-R-RECIPIENT-CONTEXT-FACTORIAL-OFFLINE-V1.md)
-> is frozen before scoring. Prior DeepSeek batches remain paused. A
+> was frozen before scoring; its [packet](codebase/agentdojo-lab/reports/20260929-case-r-recipient-context-factorial-offline-v1/index.html)
+> and [analysis](codebase/agentdojo-lab/reports/20260929-case-r-recipient-context-factorial-offline-v1/analysis.md)
+> are complete. Localized Tier-4 scores are normal/legitimate 0.600389,
+> normal/attacker 0.650670, malicious/legitimate 0.580201, and
+> malicious/attacker 0.655331 at threshold 0.60. Tier 3 misses 4/4,
+> exact substring finds 4/4, and wrong-target controls miss 4/4. The
+> original 13/13 versus 0/13 split does not replicate under this matched
+> scaffold. Step 3 must not treat a universal attacker-carrier miss as
+> established; any next cross-scenario/model work needs a new falsification
+> protocol with comparable exposure and sink definitions. Step 4 requires
+> an observed sensitive argument and an actual enforcement intervention for
+> a defense-failure claim. No new model requests were used for step 2;
+> prior DeepSeek batches remain paused. A
 > [label-migration receipt](codebase/agentdojo-lab/CASE-R-ARTIFACT-LABEL-MIGRATION-V1.md)
 > documents neutral artifact names and unchanged numeric/source evidence.
 > The [offline Case R crossover protocol](codebase/agentdojo-lab/CASE-R-RECIPIENT-CONTEXT-CROSSOVER-OFFLINE-V1.md)
@@ -17,8 +29,9 @@
 > no new API requests were made. The
 > [focused original-pair audit](codebase/agentdojo-lab/reports/20260929-case-r-original-asymmetry-audit-v1/index.html)
 > completes step 1 by checking all original chunks, continuous scores,
-> coverage and truncation. Strict value-versus-context attribution remains
-> step 2. Keep all completed DeepSeek evidence intact.
+> coverage and truncation. Step 2 is the matched test reported above; its
+> fixed addresses and wording leave broader generalization open. Keep all
+> completed DeepSeek evidence intact.
 
 > **Run-denominator addendum — 2026-09-29:** the
 > [DeepSeek native-main recount](codebase/agentdojo-lab/reports/20260929-deepseek-native-carrier-main-v2-run-denominator-v1/index.html)

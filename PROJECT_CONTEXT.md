@@ -4,7 +4,19 @@
 > researcher resumed steps 2–4 in sequence, with later experiments guided
 > by each preceding result. The strictly matched recipient × context
 > [factorial protocol](codebase/agentdojo-lab/CASE-R-RECIPIENT-CONTEXT-FACTORIAL-OFFLINE-V1.md)
-> is frozen but not yet scored. Prior DeepSeek batches remain paused. A
+> and [scored report](codebase/agentdojo-lab/reports/20260929-case-r-recipient-context-factorial-offline-v1/index.html)
+> are complete. Localized Tier-4 scores are normal/legitimate 0.600389,
+> normal/attacker 0.650670, malicious/legitimate 0.580201, and
+> malicious/attacker 0.655331 at threshold 0.60. The original
+> legitimate-hit/attacker-miss split does not hold under this matched
+> scaffold. Tier 3 misses 4/4, exact substring finds 4/4, and all four
+> wrong-target controls miss. The [analysis](codebase/agentdojo-lab/reports/20260929-case-r-recipient-context-factorial-offline-v1/analysis.md)
+> includes chunks, score contrasts and limits. This is offline text
+> correspondence, with no new model request or simulated sink. Do not scale
+> the original split as an established rule; a next cross-scenario test must
+> use a separately frozen falsification protocol. A defense-failure claim
+> still needs observed sensitive arguments and actual enforcement. Prior
+> DeepSeek batches remain paused. A
 > [label-migration receipt](codebase/agentdojo-lab/CASE-R-ARTIFACT-LABEL-MIGRATION-V1.md)
 > records neutral artifact names and unchanged numeric and source-text
 > evidence. The
@@ -21,10 +33,9 @@
 > A [focused original-pair audit](codebase/agentdojo-lab/reports/20260929-case-r-original-asymmetry-audit-v1/index.html)
 > closes step 1: the original split comes from T4 chunk scores and
 > whole-source coverage, with no source omission or truncation in the 46
-> saved relations. Whether the address value or context causes the split
-> remains the strict matched-control question in step 2. This is semantic
-> correspondence in saved and synthetic text, with no new agent or API
-> requests. Completed DeepSeek artifacts remain intact.
+> saved relations. The matched-control result above resolves the immediate
+> step-2 check for these fixed strings while leaving generalization open.
+> Completed DeepSeek artifacts remain intact.
 
 > **Run-denominator clarification — 2026-09-29:** a separately versioned,
 > request-free [addendum](codebase/agentdojo-lab/reports/20260929-deepseek-native-carrier-main-v2-run-denominator-v1/index.html)
