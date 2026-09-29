@@ -11,8 +11,10 @@
 > malicious/attacker 0.655331 at threshold 0.60. Tier 3 misses 4/4,
 > exact substring finds 4/4, and wrong-target controls miss 4/4. The
 > original 13/13 versus 0/13 split does not replicate under this matched
-> scaffold. Step 3 must not treat a universal attacker-carrier miss as
-> established; any next cross-scenario/model work needs a new falsification
+> scaffold. The [stage-3 scale decision](codebase/agentdojo-lab/CASE-R-CROSS-SCENARIO-SCALE-DECISION-V1.md)
+> is a no-go for the conditional multi-model, multi-suite batch, with no new
+> model calls; it is not a completed cross-model study. Any next
+> cross-scenario/model work needs a new falsification
 > protocol with comparable exposure and sink definitions. Step 4 requires
 > an observed sensitive argument and an actual enforcement intervention for
 > a defense-failure claim. No new model requests were used for step 2;

@@ -13,7 +13,10 @@
 > wrong-target controls miss. The [analysis](codebase/agentdojo-lab/reports/20260929-case-r-recipient-context-factorial-offline-v1/analysis.md)
 > includes chunks, score contrasts and limits. This is offline text
 > correspondence, with no new model request or simulated sink. Do not scale
-> the original split as an established rule; a next cross-scenario test must
+> the original split as an established rule. The
+> [stage-3 scale decision](codebase/agentdojo-lab/CASE-R-CROSS-SCENARIO-SCALE-DECISION-V1.md)
+> records a no-go for the conditional multi-model, multi-suite batch; no new
+> model calls were made for that decision. A next cross-scenario test must
 > use a separately frozen falsification protocol. A defense-failure claim
 > still needs observed sensitive arguments and actual enforcement. Prior
 > DeepSeek batches remain paused. A
