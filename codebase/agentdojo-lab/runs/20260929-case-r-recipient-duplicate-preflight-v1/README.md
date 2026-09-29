@@ -7,5 +7,5 @@ separated. Inspection of the saved chunks showed that the John hit comes from
 a **non-target-containing name-only chunk**, while neither correction chunk
 containing the target email matches. The verified report explicitly records
 that distinction:
-[`reports/20260929-case-r-diksha-duplicate-control-offline-v1/`](../../reports/20260929-case-r-diksha-duplicate-control-offline-v1/).
+[`reports/20260929-case-r-recipient-duplicate-control-offline-v1/`](../../reports/20260929-case-r-recipient-duplicate-control-offline-v1/).
 No API or live agent request was made for either packet.

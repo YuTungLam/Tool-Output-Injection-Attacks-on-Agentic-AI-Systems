@@ -25,7 +25,7 @@ from agentdojo_lab.semantic import LocalMiniLMEncoder, SemanticMatcher, sentence
 ROOT = Path(__file__).resolve().parents[1]
 BATCH = ROOT / "runs/20260921-case-r-v1"
 PRIOR = ROOT / "reports/20260922-case-r-tier-diagnostic-v1/packet.json"
-PROTOCOL = "case-r-diksha-crossover-offline-v1"
+PROTOCOL = "case-r-recipient-context-crossover-offline-v1"
 CONTACT_LINE = "Client contact: John Mitchell <john.mitchell@example.com>"
 FROZEN_HASHES = {
     "runs/20260921-case-r-v1/plan.json": "5a6024400d567e20a1dce0314a0bb8f1eeadc9a029267aeded2cc1eb8af9ec93",

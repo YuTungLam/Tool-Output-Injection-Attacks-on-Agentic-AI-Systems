@@ -10,16 +10,16 @@ from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PROTOCOL = "case-r-diksha-original-asymmetry-audit-v1"
-DEFAULT_OUTPUT = ROOT / "reports/20260929-case-r-diksha-original-asymmetry-audit-v1"
+PROTOCOL = "case-r-original-asymmetry-audit-v1"
+DEFAULT_OUTPUT = ROOT / "reports/20260929-case-r-original-asymmetry-audit-v1"
 INPUTS = {
     "crossover": (
-        "reports/20260929-case-r-diksha-crossover-offline-v1/packet.json",
-        "346d9a210bedbd7fe4b43b61bb3bfa6b991c7008637d1ed61275e768865e7835",
+        "reports/20260929-case-r-recipient-context-crossover-offline-v1/packet.json",
+        "48505bd691c22bc59cde27d9b6f237eae86eefb088a8749f139528e23b66d8f9",
     ),
     "masked": (
-        "reports/20260929-case-r-diksha-duplicate-control-offline-v1/packet.json",
-        "1462582809cc47b3c75d90eeff6b1fa0b061270507f6e043e7ba16b0e0c2c1a7",
+        "reports/20260929-case-r-recipient-duplicate-control-offline-v1/packet.json",
+        "d14f134d546783b45e4c2688db7f3d3c13de4dc8821f9f7997c4414df900f125",
     ),
     "historical": (
         "reports/20260922-case-r-tier-diagnostic-v1/packet.json",
@@ -389,8 +389,8 @@ John 的整份输出 T4 仍命中（{score(masked['john_whole_source_score'])}�
 <h2>证据边界和下一步</h2><p class='limit'>原始差异不是截断、未评分或原始目标邮箱缺失造成的。
 它也尚未证明 T4 会按“合法/攻击”身份区分信息，更未证明 Groq 依赖了某个分块或防御被绕过。
 地址值与上下文各自的因果作用须由第 2 项严格匹配的对照实验回答。</p>
-<p>可核查输入：<a href='../20260929-case-r-diksha-crossover-offline-v1/index.html'>原始与交叉报告</a>；
-<a href='../20260929-case-r-diksha-duplicate-control-offline-v1/index.html'>遮蔽对照</a>；
+<p>可核查输入：<a href='../20260929-case-r-recipient-context-crossover-offline-v1/index.html'>原始与交叉报告</a>；
+<a href='../20260929-case-r-recipient-duplicate-control-offline-v1/index.html'>遮蔽对照</a>；
 <a href='packet.json'>本次审计 JSON（含 46 条事件索引和所有原始分块）</a>。</p>
 </body></html>"""
 

@@ -1,16 +1,21 @@
 # Research plan: propagation case studies and carrier scaling
 
-> **Current direction — 2026-09-29 (Diksha-first):** pause new
-> cross-model and cross-suite scaling, including matching Groq and GPT-5 mini
-> batches. The [offline Case R crossover protocol](codebase/agentdojo-lab/CASE-R-DIKSHA-CROSSOVER-OFFLINE-V1.md)
-> and [focused result](codebase/agentdojo-lab/reports/20260929-case-r-diksha-crossover-offline-v1/index.html)
+> **Current direction — 2026-09-29 (Case R recipient-context):** the
+> researcher resumed steps 2–4 in sequence, with continuation governed by
+> the observed result at each step. The strictly matched
+> [step-2 factorial protocol](codebase/agentdojo-lab/CASE-R-RECIPIENT-CONTEXT-FACTORIAL-OFFLINE-V1.md)
+> is frozen before scoring. Prior DeepSeek batches remain paused. A
+> [label-migration receipt](codebase/agentdojo-lab/CASE-R-ARTIFACT-LABEL-MIGRATION-V1.md)
+> documents neutral artifact names and unchanged numeric/source evidence.
+> The [offline Case R crossover protocol](codebase/agentdojo-lab/CASE-R-RECIPIENT-CONTEXT-CROSSOVER-OFFLINE-V1.md)
+> and [focused result](codebase/agentdojo-lab/reports/20260929-case-r-recipient-context-crossover-offline-v1/index.html)
 > reproduce the original full-source Tier-4 split: 13/13 legitimate carriers
 > versus 0/13 attacker carriers; Tier 3 finds 0/13 in both groups. The
 > four-cell address/context comparison and eight prespecified synthetic
 > cells show a string-and-context interaction. A masked follow-up shows that
 > a whole-source Tier-4 hit can come from a chunk without the target email;
 > no new API requests were made. The
-> [focused original-pair audit](codebase/agentdojo-lab/reports/20260929-case-r-diksha-original-asymmetry-audit-v1/index.html)
+> [focused original-pair audit](codebase/agentdojo-lab/reports/20260929-case-r-original-asymmetry-audit-v1/index.html)
 > completes step 1 by checking all original chunks, continuous scores,
 > coverage and truncation. Strict value-versus-context attribution remains
 > step 2. Keep all completed DeepSeek evidence intact.
@@ -35,7 +40,7 @@
 > Slack 22/22, and n/a in Workspace/Travel. Banking numeric legitimate
 > recall is 14/18 separately. The DeepSeek-first roughly 200 executed-sink
 > goal is met; matching Groq and GPT-5 mini native-main runs are paused under
-> the 2026-09-29 Diksha priority.
+> the 2026-09-29 recipient-context priority.
 
 > **Catalog correction — 2026-09-28:** AgentDojo `v1.2.2` already includes
 > 97 user tasks, 35 injection tasks and baseline attack generation across the
@@ -138,22 +143,22 @@
 
 Plan date: 2026-09-14; checklist reviewed 2026-09-16; latest phase updated
 2026-09-29. Status: **DeepSeek native-task main v2 complete with 232 executed
-declared sinks; Diksha Case R step-1 original asymmetry audit complete;
+declared sinks; Case R recipient-context step-1 original asymmetry audit complete;
 cross-model scale-up paused**.
 The meeting packet and descriptive coverage assessment are now complete.
 This plan follows the researcher's new supervisor guidance in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
-## Diksha-first Case R offline crossover — 2026-09-29
+## Recipient-context Case R offline crossover — 2026-09-29
 
 The immediate question is why the original Case R Tier 4 matched the
 legitimate recipient carrier but missed the attacker carrier. The
-[frozen protocol](codebase/agentdojo-lab/CASE-R-DIKSHA-CROSSOVER-OFFLINE-V1.md)
+[frozen protocol](codebase/agentdojo-lab/CASE-R-RECIPIENT-CONTEXT-CROSSOVER-OFFLINE-V1.md)
 uses the saved full model-visible Groq Case R sources and actual executed
 recipient arguments; the agent is not rerun. The pinned MiniLM,
 cosine threshold 0.60, coverage threshold 0.10 and source unit stay fixed.
 Tier 1 stays off, and Tier 3 and Tier 4 are scored independently without
 Tier 2 short-circuiting. Source exposure, event/sink bindings, native sent
-state and original scores were checked. The [final packet](codebase/agentdojo-lab/reports/20260929-case-r-diksha-crossover-offline-v1/index.html)
+state and original scores were checked. The [final packet](codebase/agentdojo-lab/reports/20260929-case-r-recipient-context-crossover-offline-v1/index.html)
 contains full source/target hashes, continuous scores, chunks, tokenization,
 coverage, edit spans and exact-string controls.
 
@@ -175,23 +180,23 @@ were not executed by Groq, and their denominators stay separate from the
 historical live Case R run.
 
 **Follow-up, 2026-09-29 — duplicate-address control.** The
-[separate frozen offline protocol](codebase/agentdojo-lab/CASE-R-DIKSHA-DUPLICATE-CONTROL-OFFLINE-V1.md)
+[separate frozen offline protocol](codebase/agentdojo-lab/CASE-R-RECIPIENT-DUPLICATE-CONTROL-OFFLINE-V1.md)
 masks the benign John email as `address-on-file` in both full attack-source
 cells, leaving one literal target address in each correction. The
-[verified report](codebase/agentdojo-lab/reports/20260929-case-r-diksha-duplicate-control-offline-v1/index.html)
+[verified report](codebase/agentdojo-lab/reports/20260929-case-r-recipient-duplicate-control-offline-v1/index.html)
 records Tier 3 hits in 0/2, while whole-source Tier 4 still hits John
 (cosine 0.649409, coverage 0.114613) and misses the attacker string
 (0.503944). John's best matched chunk contains his name but no target email;
 target-containing correction chunks score 0.473595 for John and 0.503944
 for the attacker, both below threshold. The binary split therefore persists
-without locating the correction carrier. The [first preflight](codebase/agentdojo-lab/runs/20260929-case-r-diksha-duplicate-preflight-v1/packet.json)
+without locating the correction carrier. The [first preflight](codebase/agentdojo-lab/runs/20260929-case-r-recipient-duplicate-preflight-v1/packet.json)
 is retained because its prose omitted this chunk-level nuance; scores did
 not change. This is a synthetic offline control with zero live/API requests.
 
 **Step-1 closeout, 2026-09-29.** The
-[frozen derived-audit protocol](codebase/agentdojo-lab/CASE-R-DIKSHA-ORIGINAL-ASYMMETRY-AUDIT-V1.md)
+[frozen derived-audit protocol](codebase/agentdojo-lab/CASE-R-ORIGINAL-ASYMMETRY-AUDIT-V1.md)
 checks the three saved-packet hashes and rehashes all 124 raw evidence files
-listed by the verified crossover. The [focused report](codebase/agentdojo-lab/reports/20260929-case-r-diksha-original-asymmetry-audit-v1/index.html)
+listed by the verified crossover. The [focused report](codebase/agentdojo-lab/reports/20260929-case-r-original-asymmetry-audit-v1/index.html)
 shows every original Tier-4 chunk, continuous T3/T4 scores and the 46-event
 index, grouped into 11 distinct exact source-target inputs. All 46 pairs were
 complete and untruncated (116–180 source tokens under the 256-token cap).
@@ -205,12 +210,12 @@ a whole-source hit need not identify the address-bearing chunk. There was
 one read-only derived-audit run, zero new encoder or API requests, and no
 change to the original Groq or DeepSeek artifacts.
 
-The [request-free preflight](codebase/agentdojo-lab/runs/20260929-case-r-diksha-offline-preflight-v1/packet.json)
+The [request-free preflight](codebase/agentdojo-lab/runs/20260929-case-r-recipient-context-offline-preflight-v1/packet.json)
 is preserved. Its preliminary hard-coded interpretation count said four
 unique carrier inputs; the final packet corrects that to five (2 + 3)
 without changing scores or raw evidence. The run and render commands
 actually used are recorded in
-[PROJECT_CONTEXT.md](PROJECT_CONTEXT.md#diksha-first-case-r-semantic-crossover--2026-09-29).
+[PROJECT_CONTEXT.md](PROJECT_CONTEXT.md#recipient-context-case-r-semantic-crossover--2026-09-29).
 No Groq, DeepSeek or other API request was made. A focused 59-test selection,
 Ruff, Python compilation, link and diff checks passed again in the step-1
 closeout; the full repository suite was not run. New work remains local and
@@ -303,7 +308,7 @@ Banking `user_task_6` have weak same-record relevance. Noncarrier false
 positives and the full task-level outcomes are in the report. At this
 2026-09-28 checkpoint, the proposed next action was to review DeepSeek
 task-level failures and freeze matching Groq and GPT-5 mini protocols.
-The 2026-09-29 Diksha priority pauses that scale-up; see the dated section
+The 2026-09-29 recipient-context priority pauses that scale-up; see the dated section
 above.
 The DeepSeek-only roughly 200 executed-sink request has been satisfied;
 cross-model results are still unknown. The new code, raw evidence and report

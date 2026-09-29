@@ -1,6 +1,6 @@
-# Case R Diksha crossover: fixed MiniLM, offline v1
+# Case R recipient-context crossover: fixed MiniLM, offline v1
 
-Protocol frozen 2026-09-29. Protocol ID: `case-r-diksha-crossover-offline-v1`.
+Protocol frozen 2026-09-29. Protocol ID: `case-r-recipient-context-crossover-offline-v1`.
 This is a zero-request diagnostic of the existing Case R evidence. No new agent
 trajectory or model request is planned. It does not replace the Case R protocol,
 its canonical cascade, or any completed DeepSeek run. The checkout inspected for
@@ -154,10 +154,10 @@ pause cross-model and cross-suite scaling during this phase.
 ## Execution receipt — 2026-09-29
 
 The request-free verified packet is
-[`reports/20260929-case-r-diksha-crossover-offline-v1/packet.json`](reports/20260929-case-r-diksha-crossover-offline-v1/packet.json),
-with a [readable HTML report](reports/20260929-case-r-diksha-crossover-offline-v1/index.html).
+[`reports/20260929-case-r-recipient-context-crossover-offline-v1/packet.json`](reports/20260929-case-r-recipient-context-crossover-offline-v1/packet.json),
+with a [readable HTML report](reports/20260929-case-r-recipient-context-crossover-offline-v1/index.html).
 The first generated preflight packet is preserved under
-[`runs/20260929-case-r-diksha-offline-preflight-v1/`](runs/20260929-case-r-diksha-offline-preflight-v1/)
+[`runs/20260929-case-r-recipient-context-offline-preflight-v1/`](runs/20260929-case-r-recipient-context-offline-preflight-v1/)
 with a correction note; its scores are numerically identical, but its prose
 miscounted unique carrier inputs. The verified build additionally asserts each
 raw source exposure, executed send action and native sent state. All original
@@ -181,17 +181,22 @@ The separate eight-cell generality panel has T4 hits in 2/8 and T3 hits in
 score under this fixed encoder. The parsed-content and oracle-passage analysis
 is secondary; it is not agent-model behaviour or tracer source discovery.
 
-Commands actually run from this lab directory (POSIX Python 3.12; network
-disabled for model files):
+The predecessor commands are preserved in Git commit `ba4ebe98`. Current
+equivalent entry points from this lab directory (POSIX Python 3.12; network
+disabled for model files) are:
 
 ```bash
-HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python scripts/run_case_r_diksha.py --output reports/20260929-case-r-diksha-crossover-offline-v1
-HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python scripts/run_case_r_diksha.py --output reports/20260929-case-r-diksha-crossover-offline-v1-verified
-.venv/bin/python scripts/render_case_r_diksha.py --packet reports/20260929-case-r-diksha-crossover-offline-v1-verified/packet.json --output reports/20260929-case-r-diksha-crossover-offline-v1-verified/index.html
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python scripts/run_case_r_recipient_context.py --output reports/20260929-case-r-recipient-context-crossover-offline-v1
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python scripts/run_case_r_recipient_context.py --output reports/20260929-case-r-recipient-context-crossover-offline-v1-verified
+.venv/bin/python scripts/render_case_r_recipient_context.py --packet reports/20260929-case-r-recipient-context-crossover-offline-v1-verified/packet.json --output reports/20260929-case-r-recipient-context-crossover-offline-v1-verified/index.html
 ```
 
-The initial output directory was moved to `runs/20260929-case-r-diksha-offline-preflight-v1/`,
+The initial output directory was moved to `runs/20260929-case-r-recipient-context-offline-preflight-v1/`,
 and the verified directory was moved to the final report path above; no
 generated packet was overwritten. Both builds made **zero** Groq, DeepSeek or
 other live model requests. This protocol does not require a live rerun. Any
 future controlled Groq trajectory check needs a separately frozen protocol.
+
+The active artifact labels and packet cross-references were normalized after
+this historical execution; see the [migration receipt](CASE-R-ARTIFACT-LABEL-MIGRATION-V1.md).
+The original packet bytes remain in Git commit `ba4ebe98`.

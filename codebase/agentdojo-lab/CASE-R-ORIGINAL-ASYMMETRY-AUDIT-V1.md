@@ -1,13 +1,13 @@
-# Case R Diksha original asymmetry audit, offline v1
+# Case R original asymmetry audit, offline v1
 
-Frozen 2026-09-29. Protocol ID: `case-r-diksha-original-asymmetry-audit-v1`.
+Frozen 2026-09-29. Protocol ID: `case-r-original-asymmetry-audit-v1`.
 This is a read-only derived analysis of the original Groq Case R recipient/source
 pairs. It makes zero agent, Groq, DeepSeek or encoder requests and does not change
 the original scorer, run, saved packets or canonical cascade.
 
 ## Question and fixed inputs
 
-For Diksha's first step, validate the observed Tier 3/4 split and explain its
+For the first step, validate the observed Tier 3/4 split and explain its
 *observable scoring mechanism* using continuous scores, every matched chunk,
 target containment, coverage and truncation status. Do not infer why the agent
 chose a recipient or attribute the split to legitimate versus attacker identity.
@@ -15,8 +15,8 @@ The separate, strictly matched recipient-by-context causal design remains step 2
 
 | Input | Frozen SHA-256 |
 | --- | --- |
-| `reports/20260929-case-r-diksha-crossover-offline-v1/packet.json` | `346d9a210bedbd7fe4b43b61bb3bfa6b991c7008637d1ed61275e768865e7835` |
-| `reports/20260929-case-r-diksha-duplicate-control-offline-v1/packet.json` | `1462582809cc47b3c75d90eeff6b1fa0b061270507f6e043e7ba16b0e0c2c1a7` |
+| `reports/20260929-case-r-recipient-context-crossover-offline-v1/packet.json` | `48505bd691c22bc59cde27d9b6f237eae86eefb088a8749f139528e23b66d8f9` |
+| `reports/20260929-case-r-recipient-duplicate-control-offline-v1/packet.json` | `d14f134d546783b45e4c2688db7f3d3c13de4dc8821f9f7997c4414df900f125` |
 | `reports/20260922-case-r-tier-diagnostic-v1/packet.json` | `c875b15c06edae9e8bbaa00e17ad64b1750600d5c388ff0b6b2946f6998355e7` |
 
 Recheck every raw file hash carried by the verified crossover packet. Abort on a
@@ -41,7 +41,7 @@ favorable subset.
 ## Output and interpretation limits
 
 Generate one derived JSON packet and readable HTML report at
-`reports/20260929-case-r-diksha-original-asymmetry-audit-v1/`. Preserve source
+`reports/20260929-case-r-original-asymmetry-audit-v1/`. Preserve source
 IDs, occurrence counts, raw and target hashes, all five distinct carrier
 inputs' Tier 3/4 scores, coverage numerator/denominator and all Tier 4 chunks.
 Include the six distinct noncarriers as controls. Show whether the best or
@@ -69,11 +69,15 @@ PYTHONDONTWRITEBYTECODE=1 .venv/bin/pytest -q tests/test_case_r_tier_diagnostic.
 
 The audit rehashed 124 raw evidence files, accepted 46/46 original relations
 and 11 exact unique source-target inputs, and made zero model/encoder/API
-requests. Its output is [packet.json](reports/20260929-case-r-diksha-original-asymmetry-audit-v1/packet.json)
-(SHA-256 `ab3b673dbf449b4a5fa753bb3c4cd68562a47f7878b503030f3bca0122c371e1`)
-and [the HTML report](reports/20260929-case-r-diksha-original-asymmetry-audit-v1/index.html)
-(SHA-256 `4487b5ef75d3f709fe4bd51ec6ff2a0402fb0c6a651a8711e03cd367b9ce1ce8`).
+requests. Its output is [packet.json](reports/20260929-case-r-original-asymmetry-audit-v1/packet.json)
+(SHA-256 `a6feac4eb1488bca306e2039b2245ae24ab2e179b7a814ae774313e9d4467f4c`)
+and [the HTML report](reports/20260929-case-r-original-asymmetry-audit-v1/index.html)
+(SHA-256 `ae39c6b4670848ffe9ecddf86051e1b2de47d63d8c7925d0fb2350f8c2904896`).
 The focused selection passed 59 tests; Ruff, local links and
 `git diff --check` passed. An independent read-only review found no substantive
 disagreement with the frozen input packets. The full repository suite was
 not run.
+
+The active artifact labels and dependent hashes were normalized after this
+historical execution; see the [migration receipt](CASE-R-ARTIFACT-LABEL-MIGRATION-V1.md).
+The original packet bytes remain in Git commit `ba4ebe98`.

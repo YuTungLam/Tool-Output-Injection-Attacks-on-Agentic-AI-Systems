@@ -6,8 +6,8 @@ import argparse
 import json
 from pathlib import Path
 
-from render_case_r_diksha import detail, esc, interpretation_html, summary_table
-from run_case_r_diksha import (
+from render_case_r_recipient_context import detail, esc, interpretation_html, summary_table
+from run_case_r_recipient_context import (
     CONTACT_LINE,
     ROOT,
     TEMPLATE_HASHES,
@@ -24,9 +24,9 @@ from run_case_r_diksha import (
 from agentdojo_lab import case_r_groq
 from agentdojo_lab.semantic import LocalMiniLMEncoder, SemanticMatcher
 
-PROTOCOL = "case-r-diksha-duplicate-control-offline-v1"
+PROTOCOL = "case-r-recipient-duplicate-control-offline-v1"
 MASK = "address-on-file"
-MAIN_PACKET = ROOT / "reports/20260929-case-r-diksha-crossover-offline-v1/packet.json"
+MAIN_PACKET = ROOT / "reports/20260929-case-r-recipient-context-crossover-offline-v1/packet.json"
 
 
 def correction_chunks(row: dict) -> list[dict]:
@@ -44,9 +44,9 @@ def build() -> dict:
     if digest(attack["source_text"]) != TEMPLATE_HASHES["attack"]:
         raise ValueError("Frozen attack source mismatch")
     if not MAIN_PACKET.is_file():
-        raise FileNotFoundError("Primary Diksha crossover packet missing")
+        raise FileNotFoundError("Primary reviewer crossover packet missing")
     main = json.loads(MAIN_PACKET.read_text(encoding="utf-8"))
-    if main.get("protocol") != "case-r-diksha-crossover-offline-v1":
+    if main.get("protocol") != "case-r-recipient-context-crossover-offline-v1":
         raise ValueError("Primary crossover protocol mismatch")
     original_attack_john = next(
         r for r in main["crossover"]["rows"]
