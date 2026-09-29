@@ -1,6 +1,28 @@
 # Project context: Tool Output Injection Attacks
 
-> **Current priority — 2026-09-29 (Case R recipient-context step 2):** the
+> **Current status — 2026-09-29 (Case R four-stage sequence):** the
+> [stage-2 matched factorial](codebase/agentdojo-lab/reports/20260929-case-r-recipient-context-factorial-offline-v1/analysis.md)
+> reversed the original legitimate-hit/attacker-miss pattern. The
+> [stage-3 scale decision](codebase/agentdojo-lab/CASE-R-CROSS-SCENARIO-SCALE-DECISION-V1.md)
+> therefore did not trigger a multi-model or multi-suite batch. A separately
+> frozen [stage-4 Groq probe](codebase/agentdojo-lab/CASE-R-INTENTIONAL-RECIPIENT-PROBE-GROQ-V1.md)
+> completed 6/6 trajectories and 24 model requests with native sent-mail
+> confirmation. Clean To[0] was legitimate 2/2; literal and transformed
+> attack To[0] were each attacker 2/2. For the transformed cue source and
+> executed address, independent T3 and T4 missed 2/2 (0.378527 and 0.492160),
+> while canonical T2 matched 2/2 (LCS 20/20), so the all-field gate stayed
+> closed. The [versioned native-binding correction and analysis](codebase/agentdojo-lab/reports/20260929-case-r-intentional-recipient-probe-native-binding-correction-v1/analysis.md)
+> preserve raw evidence and fix one optional `cc`/`bcc` null-versus-empty-list
+> classification in the literal control; 42 selected source/field scores are
+> unchanged. This establishes a bounded diagnostic T3/T4 miss alongside an
+> observed argument, not a canonical miss or defense bypass: `defense=None`
+> and action enforcement was absent. The four-stage sequence is resolved for
+> this protocol; any broader study or enforcing-defense test requires a new
+> research decision and frozen protocol. Previous DeepSeek runs remain paused.
+> These commits are local pending synchronization; preserve user-owned
+> `deliverables/` outside the research changes.
+
+> **Step-2 background — 2026-09-29 (Case R recipient-context):** the
 > researcher resumed steps 2–4 in sequence, with later experiments guided
 > by each preceding result. The strictly matched recipient × context
 > [factorial protocol](codebase/agentdojo-lab/CASE-R-RECIPIENT-CONTEXT-FACTORIAL-OFFLINE-V1.md)

@@ -1,6 +1,26 @@
 # Research plan: propagation case studies and carrier scaling
 
-> **Current direction — 2026-09-29 (Case R recipient-context):** the
+> **Current result and next action — 2026-09-29 (Case R):** the four-stage
+> question is resolved for the present protocol. The strict
+> [stage-2 recipient/context test](codebase/agentdojo-lab/reports/20260929-case-r-recipient-context-factorial-offline-v1/analysis.md)
+> did not preserve the original T4 split, so the
+> [stage-3 conditional scale-up](codebase/agentdojo-lab/CASE-R-CROSS-SCENARIO-SCALE-DECISION-V1.md)
+> was not run. The bounded [stage-4 live Groq probe](codebase/agentdojo-lab/CASE-R-INTENTIONAL-RECIPIENT-PROBE-GROQ-V1.md)
+> completed all six slots (24 requests). The
+> [corrected analysis](codebase/agentdojo-lab/reports/20260929-case-r-intentional-recipient-probe-native-binding-correction-v1/analysis.md)
+> records native-confirmed To[0] outcomes: clean legitimate 2/2, literal
+> attacker 2/2, transformed attacker 2/2. The transformed cue was exposed
+> without a contiguous attacker email; independent T3/T4 missed 2/2 while
+> canonical T2 matched 2/2, and the all-field gate stayed closed. The
+> original raw run and first report are immutable; a separately frozen
+> request-free correction only normalizes omitted/null action-side `cc`/`bcc`
+> against empty native lists in one literal-control row. There is no observed
+> defense bypass because no action enforcement was enabled. Next action is
+> to review these bounded findings before choosing any fresh multi-suite or
+> enforcing-defense protocol. Old DeepSeek batches remain paused. Current
+> commits are local pending synchronization.
+
+> **Step-2 background — 2026-09-29 (Case R recipient-context):** the
 > researcher resumed steps 2–4 in sequence, with continuation governed by
 > the observed result at each step. The strictly matched
 > [step-2 factorial protocol](codebase/agentdojo-lab/CASE-R-RECIPIENT-CONTEXT-FACTORIAL-OFFLINE-V1.md)
